@@ -133,3 +133,35 @@ test('reply decorator', async (t) => {
     }
   })
 })
+
+test('addToSchema and addToRoot', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const root = {
+    add: async ({ x, y }) => x + y
+  };
+
+  app.register(GQL)
+
+  app.register(async function (app) {
+    app.graphql.extendSchema(schema)
+    app.graphql.defineResolvers(root)
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = '{ add(x: 2, y: 2) }';
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      add: 4
+    }
+  })
+})

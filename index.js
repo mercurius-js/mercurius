@@ -23,14 +23,27 @@ module.exports = fp(async function (app, opts) {
 
   if (typeof schema === 'string') {
     schema = buildSchema(schema)
+  } else {
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'Query',
+        fields: { },
+      })
+    })
   }
 
-  const schemaValidationErrors = validateSchema(schema);
-  if (schemaValidationErrors.length > 0) {
-    const err = new Error('schema issues')
-    err.errors = schemaValidationErrors
-    throw err
-  }
+  app.ready(async function (err) {
+    if (err) {
+      throw err
+    }
+
+    const schemaValidationErrors = validateSchema(schema);
+    if (schemaValidationErrors.length > 0) {
+      const err = new Error('schema issues')
+      err.errors = schemaValidationErrors
+      throw err
+    }
+  })
 
   const graphqlCtx = Symbol('ctx')
 
@@ -46,7 +59,21 @@ module.exports = fp(async function (app, opts) {
     return this[graphqlCtx].graphql(source, Object.assign({ reply: this }, context), variables)
   })
 
-  app.decorate('graphql', function (source, context, variables) {
+  app.decorate('graphql', fastifyGraphQl)
+
+  fastifyGraphQl.extendSchema = function (s) {
+    if (typeof s === 'string') {
+      s = parse(s)
+    }
+
+    schema = extendSchema(schema, s)
+  }
+
+  fastifyGraphQl.defineResolvers = function (resolvers) {
+    root = Object.assign({}, root, resolvers)
+  }
+
+  function fastifyGraphQl (source, context, variables) {
     context = Object.assign({ app: this }, context)
 
     // Parse, with a little lru
@@ -74,6 +101,6 @@ module.exports = fp(async function (app, opts) {
       context,
       variables
     )
-  })
+  }
 })
 
