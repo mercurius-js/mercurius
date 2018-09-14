@@ -1,10 +1,3 @@
-# fastify-gql
-
-Fastify barebone GraphQL adapter
-
-## Example
-
-```js
 'use strict'
 
 const Fastify = require('fastify')
@@ -33,10 +26,3 @@ app.get('/', async function (req, reply) {
 })
 
 app.listen(3000)
-```
-
-See test.js for more examples, docs are coming.
-
-## License
-
-MIT
