@@ -32,6 +32,20 @@ module.exports = fp(async function (app, opts) {
     throw err
   }
 
+  const graphqlCtx = Symbol('ctx')
+
+  // TODO send a PR to fastify, this should not be needed
+  app.addHook('preHandler', function (req, reply, next) {
+    reply[graphqlCtx] = this
+    next()
+  })
+
+  app.decorateReply(graphqlCtx, null)
+
+  app.decorateReply('graphql', function (source, context, variables) {
+    return this[graphqlCtx].graphql(source, Object.assign({ reply: this }, context), variables)
+  })
+
   app.decorate('graphql', function (source, context, variables) {
     context = Object.assign({ app: this }, context)
 
