@@ -2,9 +2,10 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
+const querystring = require('querystring')
 const GQL = require('..')
 
-test('route', async (t) => {
+test('POST route', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -38,7 +39,7 @@ test('route', async (t) => {
   })
 })
 
-test('routes variables', async (t) => {
+test('GET route', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -55,8 +56,34 @@ test('routes variables', async (t) => {
     root
   })
 
-  // needed so that graphql is defined
-  await app.ready()
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
+
+test('POST route variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const root = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    root
+  })
 
   const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
 
@@ -79,7 +106,7 @@ test('routes variables', async (t) => {
   })
 })
 
-test('routes operationName', async (t) => {
+test('POST route operationName', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -95,9 +122,6 @@ test('routes operationName', async (t) => {
     schema,
     root
   })
-
-  // needed so that graphql is defined
-  await app.ready()
 
   const query = `
     query MyQuery ($x: Int!, $y: Int!) {
@@ -120,6 +144,43 @@ test('routes operationName', async (t) => {
       },
       operationName: 'Double'
     }
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
+
+test('GET route variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const root = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    root
+  })
+
+  const query = querystring.stringify({
+    query: 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
+    variables: JSON.stringify({
+      x: 2,
+      y: 2
+    })
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?' + query
   })
 
   t.deepEqual(JSON.parse(res.body), {
