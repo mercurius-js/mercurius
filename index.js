@@ -50,8 +50,8 @@ module.exports = fp(async function (app, opts) {
 
   app.decorateReply(graphqlCtx, null)
 
-  app.decorateReply('graphql', function (source, context, variables) {
-    return app.graphql(source, Object.assign({ reply: this }, context), variables)
+  app.decorateReply('graphql', function (source, context, variables, operationName) {
+    return app.graphql(source, Object.assign({ reply: this }, context), variables, operationName)
   })
 
   app.decorate('graphql', fastifyGraphQl)
@@ -68,7 +68,7 @@ module.exports = fp(async function (app, opts) {
     root = Object.assign({}, root, resolvers)
   }
 
-  function fastifyGraphQl (source, context, variables) {
+  function fastifyGraphQl (source, context, variables, operationName) {
     context = Object.assign({ app: this }, context)
 
     // Parse, with a little lru
@@ -101,7 +101,8 @@ module.exports = fp(async function (app, opts) {
       document,
       root,
       context,
-      variables
+      variables,
+      operationName
     )
   }
 })
