@@ -2,7 +2,7 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
-const GQL = require('.')
+const GQL = require('..')
 
 test('basic GQL', async (t) => {
   const app = Fastify()
@@ -141,88 +141,6 @@ test('operationName', async (t) => {
   })
 })
 
-test('reply decorator', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const root = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    root
-  })
-
-  app.get('/', async function (req, reply) {
-    const query = '{ add(x: 2, y: 2) }'
-    return reply.graphql(query)
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/'
-  })
-
-  t.deepEqual(JSON.parse(res.body), {
-    data: {
-      add: 4
-    }
-  })
-})
-
-test('reply decorator operationName', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const root = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    root
-  })
-
-  app.get('/', async function (req, reply) {
-    const query = `
-      query MyQuery ($x: Int!, $y: Int!) {
-        add(x: $x, y: $y)
-      }
-
-      query Double ($x: Int!) {
-        add(x: $x, y: $x)
-      }
-    `
-    return reply.graphql(query, null, {
-      x: 2,
-      y: 1 // useless but we need it verify we call Double
-    }, 'Double')
-  })
-
-  // needed so that graphql is defined
-  await app.ready()
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/'
-  })
-
-  t.deepEqual(JSON.parse(res.body), {
-    data: {
-      add: 4
-    }
-  })
-})
-
 test('addToSchema and addToRoot', async (t) => {
   const app = Fastify()
   const schema = `
@@ -249,81 +167,6 @@ test('addToSchema and addToRoot', async (t) => {
   const res = await app.graphql(query)
 
   t.deepEqual(res, {
-    data: {
-      add: 4
-    }
-  })
-})
-
-test('route', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const root = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    root
-  })
-
-  const query = '{ add(x: 2, y: 2) }'
-
-  const res = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query
-    }
-  })
-
-  t.deepEqual(JSON.parse(res.body), {
-    data: {
-      add: 4
-    }
-  })
-})
-
-test('routes variables', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const root = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    root
-  })
-
-  // needed so that graphql is defined
-  await app.ready()
-
-  const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
-
-  const res = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query,
-      variables: {
-        x: 2,
-        y: 2
-      }
-    }
-  })
-
-  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }

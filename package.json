@@ -4,7 +4,7 @@
   "description": "Fastify barebone GraphQL adapter",
   "main": "index.js",
   "scripts": {
-    "test": "standard | snazzy && tap test.js"
+    "test": "standard | snazzy && tap -J test/*.js"
   },
   "repository": {
     "type": "git",

@@ -9,6 +9,9 @@ module.exports = async function (app, opts) {
           query: {
             type: 'string'
           },
+          operationName: {
+            type: 'string'
+          },
           variables: {
             type: 'object',
             additionalProperties: true
@@ -28,6 +31,12 @@ module.exports = async function (app, opts) {
       }
     }
   }, async function (request, reply) {
-    return reply.graphql(request.body.query, null, request.body.variables)
+    const {
+      query,
+      variables,
+      operationName
+    } = request.body
+
+    return reply.graphql(query, null, variables, operationName)
   })
 }
