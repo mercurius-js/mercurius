@@ -16,7 +16,7 @@ const {
 
 module.exports = fp(async function (app, opts) {
   // TODO make the LRU size configurable
-  const lru = (!opts.hasOwnProperty('cache') || opts.cache) && LRU(1000)
+  const lru = (!opts.hasOwnProperty('cache') || opts.cache) && LRU(1024)
 
   let root = opts.root
   let schema = opts.schema
