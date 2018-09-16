@@ -13,7 +13,7 @@ const schema = `
 
 const root = {
   add: async ({ x, y }) => x + y
-};
+}
 
 app.register(GQL, {
   schema,

@@ -2,14 +2,13 @@
 
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
+const routes = require('./routes')
 const {
-  graphql,
   parse,
   buildSchema,
   GraphQLObjectType,
   GraphQLSchema,
   extendSchema,
-  buildASTSchema,
   validate,
   validateSchema,
   execute
@@ -27,7 +26,7 @@ module.exports = fp(async function (app, opts) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
-        fields: { },
+        fields: { }
       })
     })
   }
@@ -37,7 +36,7 @@ module.exports = fp(async function (app, opts) {
       throw err
     }
 
-    const schemaValidationErrors = validateSchema(schema);
+    const schemaValidationErrors = validateSchema(schema)
     if (schemaValidationErrors.length > 0) {
       const err = new Error('schema issues')
       err.errors = schemaValidationErrors
@@ -47,16 +46,12 @@ module.exports = fp(async function (app, opts) {
 
   const graphqlCtx = Symbol('ctx')
 
-  // TODO send a PR to fastify, this should not be needed
-  app.addHook('preHandler', function (req, reply, next) {
-    reply[graphqlCtx] = this
-    next()
-  })
+  app.register(routes)
 
   app.decorateReply(graphqlCtx, null)
 
   app.decorateReply('graphql', function (source, context, variables) {
-    return this[graphqlCtx].graphql(source, Object.assign({ reply: this }, context), variables)
+    return app.graphql(source, Object.assign({ reply: this }, context), variables)
   })
 
   app.decorate('graphql', fastifyGraphQl)
@@ -77,20 +72,27 @@ module.exports = fp(async function (app, opts) {
     context = Object.assign({ app: this }, context)
 
     // Parse, with a little lru
-    let document = lru.get(source)
-    if (!document) {
+    let cached = lru.get(source)
+    let document = null
+    if (!cached) {
       try {
         document = parse(source)
-        lru.set(source, document)
-      } catch (syntaxError) {
-        return { errors: [syntaxError] };
-      }
-    }
 
-    // Validate
-    const validationErrors = validate(schema, document);
-    if (validationErrors.length > 0) {
-      return { errors: validationErrors };
+        // Validate
+        const validationErrors = validate(schema, document)
+
+        lru.set(source, { document, validationErrors })
+
+        if (validationErrors.length > 0) {
+          return { errors: validationErrors }
+        }
+      } catch (syntaxError) {
+        return { errors: [syntaxError] }
+      }
+    } else if (cached.validationErrors.length > 0) {
+      return { errors: cached.validationErrors }
+    } else {
+      document = cached.document
     }
 
     // Execute
@@ -103,4 +105,3 @@ module.exports = fp(async function (app, opts) {
     )
   }
 })
-
