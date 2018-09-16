@@ -15,7 +15,8 @@ const {
 } = require('graphql')
 
 module.exports = fp(async function (app, opts) {
-  const lru = LRU(1000)
+  // TODO make the LRU size configurable
+  const lru = (!opts.hasOwnProperty('cache') || opts.cache) && LRU(1000)
 
   let root = opts.root
   let schema = opts.schema
@@ -72,7 +73,7 @@ module.exports = fp(async function (app, opts) {
     context = Object.assign({ app: this }, context)
 
     // Parse, with a little lru
-    let cached = lru.get(source)
+    let cached = lru && lru.get(source)
     let document = null
     if (!cached) {
       try {
@@ -81,7 +82,9 @@ module.exports = fp(async function (app, opts) {
         // Validate
         const validationErrors = validate(schema, document)
 
-        lru.set(source, { document, validationErrors })
+        if (lru) {
+          lru.set(source, { document, validationErrors })
+        }
 
         if (validationErrors.length > 0) {
           return { errors: validationErrors }
