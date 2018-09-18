@@ -31,7 +31,7 @@ module.exports = async function (app, opts) {
       },
       response: responseSchema
     }
-  }, async function (request, reply) {
+  }, function (request, reply) {
     let {
       query,
       variables,
@@ -64,7 +64,7 @@ module.exports = async function (app, opts) {
       },
       response: responseSchema
     }
-  }, async function (request, reply) {
+  }, function (request, reply) {
     const {
       query,
       variables,

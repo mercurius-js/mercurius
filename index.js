@@ -18,7 +18,7 @@ function buildCache (opts) {
   if (opts.hasOwnProperty('cache')) {
     if (opts.cache === false) {
       // no cache
-      return
+      return null
     } else if (typeof opts.cache === 'number') {
       // cache size as specified
       return LRU(opts.cache)
@@ -31,6 +31,7 @@ function buildCache (opts) {
 
 module.exports = fp(async function (app, opts) {
   const lru = buildCache(opts)
+  const lruErrors = buildCache(opts)
 
   let root = opts.root
   let schema = opts.schema
@@ -65,8 +66,12 @@ module.exports = fp(async function (app, opts) {
 
   app.decorateReply(graphqlCtx, null)
 
-  app.decorateReply('graphql', function (source, context, variables, operationName) {
-    return app.graphql(source, Object.assign({ reply: this }, context), variables, operationName)
+  app.decorateReply('graphql', async function (source, context, variables, operationName) {
+    const res = await app.graphql(source, Object.assign({ reply: this }, context), variables, operationName)
+    if (res.errors) {
+      this.code(400)
+    }
+    return res
   })
 
   app.decorate('graphql', fastifyGraphQl)
@@ -87,27 +92,37 @@ module.exports = fp(async function (app, opts) {
     context = Object.assign({ app: this }, context)
 
     // Parse, with a little lru
-    let cached = lru && lru.get(source)
+    const cached = lru !== null && lru.get(source)
     let document = null
     if (!cached) {
+      // We use two caches to avoid errors bust the good
+      // cache. This is a protection against DoS attacks
+      const cachedError = lruErrors !== null && lruErrors.get(source)
+
+      if (cachedError) {
+        // this query errored
+        return { errors: cachedError.validationErrors }
+      }
+
       try {
         document = parse(source)
 
         // Validate
         const validationErrors = validate(schema, document)
 
-        if (lru) {
-          lru.set(source, { document, validationErrors })
+        if (validationErrors.length > 0) {
+          if (lruErrors) {
+            lruErrors.set(source, { document, validationErrors })
+          }
+          return { errors: validationErrors }
         }
 
-        if (validationErrors.length > 0) {
-          return { errors: validationErrors }
+        if (lru) {
+          lru.set(source, { document, validationErrors })
         }
       } catch (syntaxError) {
         return { errors: [syntaxError] }
       }
-    } else if (cached.validationErrors.length > 0) {
-      return { errors: cached.validationErrors }
     } else {
       document = cached.document
     }

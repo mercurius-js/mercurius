@@ -85,3 +85,34 @@ test('reply decorator operationName', async (t) => {
     }
   })
 })
+
+test('reply decorator set status code to 400 with bad query', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const root = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    root
+  })
+
+  app.get('/', function (req, reply) {
+    const query = '{ add(x: 2, y: 2)'
+    return reply.graphql(query)
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/'
+  })
+
+  t.equal(res.statusCode, 400)
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
+})
