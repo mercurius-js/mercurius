@@ -32,6 +32,7 @@ test('POST route', async (t) => {
     }
   })
 
+  t.equal(res.statusCode, 200)
   t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
@@ -245,4 +246,76 @@ test('POST return 400 on error', async (t) => {
 
   t.equal(res.statusCode, 400) // Bad Request
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+})
+
+test('mutation with POST', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Mutation {
+      setMessage(message: String): String
+    }
+    type Query {
+      getMessage: String
+    }
+  `
+
+  let msg = 'hello'
+  const root = {
+    setMessage: async ({ message }) => msg = message,
+    getMessage: async () => msg
+  }
+
+  app.register(GQL, {
+    schema,
+    root
+  })
+
+  const query = 'mutation { setMessage(message: "hello world") }'
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      setMessage: 'hello world'
+    }
+  })
+  t.equal(msg, 'hello world')
+})
+
+test('mutation with GET errors', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Mutation {
+      setMessage(message: String): String
+    }
+    type Query {
+      getMessage: String
+    }
+  `
+
+  const root = {
+    setMessage: async ({ message }) => t.fail('should never get called')
+  }
+
+  app.register(GQL, {
+    schema,
+    root
+  })
+
+  const query = querystring.stringify({
+    query: 'mutation { setMessage(message: "hello world") }'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?' + query
+  })
+
+  t.equal(res.statusCode, 405) // method not allowed
 })

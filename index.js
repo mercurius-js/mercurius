@@ -6,6 +6,7 @@ const routes = require('./routes')
 const {
   parse,
   buildSchema,
+  getOperationAST,
   GraphQLObjectType,
   GraphQLSchema,
   extendSchema,
@@ -66,12 +67,8 @@ module.exports = fp(async function (app, opts) {
 
   app.decorateReply(graphqlCtx, null)
 
-  app.decorateReply('graphql', async function (source, context, variables, operationName) {
-    const res = await app.graphql(source, Object.assign({ reply: this }, context), variables, operationName)
-    if (res.errors) {
-      this.code(400)
-    }
-    return res
+  app.decorateReply('graphql', function (source, context, variables, operationName) {
+    return app.graphql(source, Object.assign({ reply: this }, context), variables, operationName)
   })
 
   app.decorate('graphql', fastifyGraphQl)
@@ -88,8 +85,9 @@ module.exports = fp(async function (app, opts) {
     root = Object.assign({}, root, resolvers)
   }
 
-  function fastifyGraphQl (source, context, variables, operationName) {
+  async function fastifyGraphQl (source, context, variables, operationName) {
     context = Object.assign({ app: this }, context)
+    const reply = context.reply
 
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
@@ -101,33 +99,54 @@ module.exports = fp(async function (app, opts) {
 
       if (cachedError) {
         // this query errored
+        if (reply) {
+          reply.code(400) // Bad Request
+        }
         return { errors: cachedError.validationErrors }
       }
 
       try {
         document = parse(source)
-
-        // Validate
-        const validationErrors = validate(schema, document)
-
-        if (validationErrors.length > 0) {
-          if (lruErrors) {
-            lruErrors.set(source, { document, validationErrors })
-          }
-          return { errors: validationErrors }
-        }
-
-        if (lru) {
-          lru.set(source, { document, validationErrors })
-        }
       } catch (syntaxError) {
+        if (reply) {
+          reply.code(400) // Bad Request
+        }
         return { errors: [syntaxError] }
+      }
+
+      // Validate
+      const validationErrors = validate(schema, document)
+
+      if (validationErrors.length > 0) {
+        if (lruErrors) {
+          lruErrors.set(source, { document, validationErrors })
+        }
+        if (reply) {
+          reply
+            .code(400) // Bad Request
+            .header('Allow', 'POST') // allow POST methods
+        }
+        return { errors: validationErrors }
+      }
+
+      if (lru) {
+        lru.set(source, { document, validationErrors })
       }
     } else {
       document = cached.document
     }
 
+    if (reply && reply.request.raw.method === 'GET') {
+      // let's validate we cannot do mutations here
+      const operationAST = getOperationAST(document, operationName);
+      if (operationAST && operationAST.operation !== 'query') {
+        reply.code(405) // Method not allowed
+        return { errors: ['Operation cannot be perfomed via a GET request'] }
+      }
+    }
+
     // Execute
+    // This may throw. Where is the error going?
     return execute(
       schema,
       document,
