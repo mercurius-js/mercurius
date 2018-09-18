@@ -14,9 +14,23 @@ const {
   execute
 } = require('graphql')
 
+function buildCache (opts) {
+  if (opts.hasOwnProperty('cache')) {
+    if (opts.cache === false) {
+      // no cache
+      return
+    } else if (typeof opts.cache === 'number') {
+      // cache size as specified
+      return LRU(opts.cache)
+    }
+  }
+
+  // default cache, 1024 entries
+  return LRU(1024)
+}
+
 module.exports = fp(async function (app, opts) {
-  // TODO make the LRU size configurable
-  const lru = (!opts.hasOwnProperty('cache') || opts.cache) && LRU(1024)
+  const lru = buildCache(opts)
 
   let root = opts.root
   let schema = opts.schema
