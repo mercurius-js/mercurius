@@ -254,6 +254,7 @@ test('mutation with POST', async (t) => {
     type Mutation {
       setMessage(message: String): String
     }
+
     type Query {
       getMessage: String
     }
@@ -261,8 +262,11 @@ test('mutation with POST', async (t) => {
 
   let msg = 'hello'
   const root = {
-    setMessage: async ({ message }) => msg = message,
-    getMessage: async () => msg
+    setMessage: async ({ message }) => {
+      msg = message
+      return message
+    },
+    async getMessage () { return msg }
   }
 
   app.register(GQL, {
@@ -318,4 +322,5 @@ test('mutation with GET errors', async (t) => {
   })
 
   t.equal(res.statusCode, 405) // method not allowed
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })

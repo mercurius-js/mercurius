@@ -3,6 +3,7 @@
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./routes')
+const { BadRequest, MethodNotAllowed } = require('http-errors')
 const {
   parse,
   buildSchema,
@@ -99,19 +100,17 @@ module.exports = fp(async function (app, opts) {
 
       if (cachedError) {
         // this query errored
-        if (reply) {
-          reply.code(400) // Bad Request
-        }
-        return { errors: cachedError.validationErrors }
+        const err = new BadRequest()
+        err.errors = cachedError.validationErrors
+        throw err
       }
 
       try {
         document = parse(source)
       } catch (syntaxError) {
-        if (reply) {
-          reply.code(400) // Bad Request
-        }
-        return { errors: [syntaxError] }
+        const err = new BadRequest()
+        err.errors = [syntaxError]
+        throw err
       }
 
       // Validate
@@ -121,12 +120,9 @@ module.exports = fp(async function (app, opts) {
         if (lruErrors) {
           lruErrors.set(source, { document, validationErrors })
         }
-        if (reply) {
-          reply
-            .code(400) // Bad Request
-            .header('Allow', 'POST') // allow POST methods
-        }
-        return { errors: validationErrors }
+        const err = new BadRequest()
+        err.errors = validationErrors
+        throw err
       }
 
       if (lru) {
@@ -138,10 +134,11 @@ module.exports = fp(async function (app, opts) {
 
     if (reply && reply.request.raw.method === 'GET') {
       // let's validate we cannot do mutations here
-      const operationAST = getOperationAST(document, operationName);
-      if (operationAST && operationAST.operation !== 'query') {
-        reply.code(405) // Method not allowed
-        return { errors: ['Operation cannot be perfomed via a GET request'] }
+      const operationAST = getOperationAST(document, operationName)
+      if (operationAST.operation !== 'query') {
+        const err = new MethodNotAllowed()
+        err.errors = { errors: ['Operation cannot be perfomed via a GET request'] }
+        throw err
       }
     }
 

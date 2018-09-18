@@ -87,6 +87,8 @@ test('reply decorator operationName', async (t) => {
 })
 
 test('reply decorator set status code to 400 with bad query', async (t) => {
+  t.plan(3)
+
   const app = Fastify()
   const schema = `
     type Query {
@@ -101,6 +103,11 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   app.register(GQL, {
     schema,
     root
+  })
+
+  app.setErrorHandler(async function (err, request, reply) {
+    t.pass('error handler called')
+    return { errors: err.errors }
   })
 
   app.get('/', function (req, reply) {
