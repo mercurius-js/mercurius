@@ -189,3 +189,29 @@ test('GET route variables', async (t) => {
     }
   })
 })
+
+test('disable routes', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const root = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    root,
+    routes: false
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.deepEqual(res.statusCode, 404)
+})
