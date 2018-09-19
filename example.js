@@ -17,7 +17,8 @@ const root = {
 
 app.register(GQL, {
   schema,
-  root
+  root,
+  graphiql: true
 })
 
 app.get('/', async function (req, reply) {

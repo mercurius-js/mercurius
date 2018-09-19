@@ -1,5 +1,8 @@
 'use strict'
 
+const { join } = require('path')
+const Static = require('fastify-static')
+
 const responseSchema = {
   '2xx': {
     type: 'object',
@@ -72,7 +75,7 @@ module.exports = async function (app, opts) {
             type: 'string'
           },
           variables: {
-            type: 'object',
+            type: ['object', 'null'],
             additionalProperties: true
           }
         }
@@ -88,4 +91,14 @@ module.exports = async function (app, opts) {
 
     return reply.graphql(query, null, variables, operationName)
   })
+
+  if (opts.graphiql) {
+    app.register(Static, {
+      root: join(__dirname, 'static')
+    })
+
+    app.get('/graphiql', (req, reply) => {
+      reply.redirect('/graphiql.html')
+    })
+  }
 }

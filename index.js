@@ -64,7 +64,9 @@ module.exports = fp(async function (app, opts) {
 
   const graphqlCtx = Symbol('ctx')
 
-  if (opts.routes !== false) app.register(routes)
+  if (opts.routes !== false) app.register(routes, {
+    graphiql: opts.graphiql
+  })
 
   app.decorateReply(graphqlCtx, null)
 

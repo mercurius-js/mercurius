@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "fastify-plugin": "^1.2.0",
+    "fastify-static": "^0.14.0",
     "graphql": "^14.0.2",
     "http-errors": "^1.7.1",
     "tiny-lru": "^1.6.1"
