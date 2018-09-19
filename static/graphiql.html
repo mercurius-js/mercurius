@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>GraphiQL via fastify-gql</title>
+  <meta name="robots" content="noindex"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #main {
+      height: 100vh;
+    }
+  </style>
+  <!-- We are not vendoring these because of the patent clause in GraphiQL -->
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/graphiql@0.12.0/graphiql.css"/>
+  <script src="https://unpkg.com/react@15.6.2/dist/react.min.js"></script>
+  <script src="https://unpkg.com/react-dom@15.6.2/dist/react-dom.min.js"></script>
+  <script src="https://unpkg.com/graphiql@0.12.0/graphiql.min.js"></script>
+</head>
+<body>
+  <div id="main"></div>
+  <script>
+    async function fetcher (params) {
+      const res = await fetch('/graphql', {
+        method: 'post',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params),
+        credentials: 'include'
+      })
+
+      return res.json()
+    }
+
+    ReactDOM.render(
+      React.createElement(GraphiQL, { fetcher }),
+      document.getElementById('main')
+    )
+  </script>
+</body>
+</html>

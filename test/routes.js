@@ -324,3 +324,39 @@ test('mutation with GET errors', async (t) => {
   t.equal(res.statusCode, 405) // method not allowed
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
+
+test('POST should support null variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const root = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    root
+  })
+
+  const query = '{ add(x: 2, y: 2) }'
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query,
+      variables: null
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
