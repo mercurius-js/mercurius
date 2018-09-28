@@ -13,13 +13,13 @@ test('POST route', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = '{ add(x: 2, y: 2) }'
@@ -48,13 +48,13 @@ test('GET route', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const res = await app.inject({
@@ -77,13 +77,13 @@ test('POST route variables', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
@@ -115,13 +115,13 @@ test('POST route operationName', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = `
@@ -162,13 +162,13 @@ test('GET route variables', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = querystring.stringify({
@@ -199,13 +199,13 @@ test('disable routes', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root,
+    resolvers,
     routes: false
   })
 
@@ -225,13 +225,13 @@ test('POST return 400 on error', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = '{ add(x: 2, y: 2)'
@@ -261,7 +261,7 @@ test('mutation with POST', async (t) => {
   `
 
   let msg = 'hello'
-  const root = {
+  const resolvers = {
     setMessage: async ({ message }) => {
       msg = message
       return message
@@ -271,7 +271,7 @@ test('mutation with POST', async (t) => {
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = 'mutation { setMessage(message: "hello world") }'
@@ -303,13 +303,13 @@ test('mutation with GET errors', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     setMessage: async ({ message }) => t.fail('should never get called')
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = querystring.stringify({
@@ -333,13 +333,13 @@ test('POST should support null variables', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   const query = '{ add(x: 2, y: 2) }'

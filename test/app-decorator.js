@@ -12,13 +12,13 @@ test('basic GQL', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   // needed so that graphql is defined
@@ -42,7 +42,7 @@ test('support context', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     ctx: async (_, ctx) => {
       t.equal(ctx.app, app)
       return ctx.num
@@ -51,7 +51,7 @@ test('support context', async (t) => {
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   // needed so that graphql is defined
@@ -75,13 +75,13 @@ test('variables', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   // needed so that graphql is defined
@@ -108,13 +108,13 @@ test('operationName', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   // needed so that graphql is defined
@@ -141,7 +141,7 @@ test('operationName', async (t) => {
   })
 })
 
-test('addToSchema and addToRoot', async (t) => {
+test('addToSchema and addToresolvers', async (t) => {
   const app = Fastify()
   const schema = `
     extend type Query {
@@ -149,7 +149,7 @@ test('addToSchema and addToRoot', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
@@ -157,7 +157,7 @@ test('addToSchema and addToRoot', async (t) => {
 
   app.register(async function (app) {
     app.graphql.extendSchema(schema)
-    app.graphql.defineResolvers(root)
+    app.graphql.defineResolvers(resolvers)
   })
 
   // needed so that graphql is defined
@@ -181,13 +181,13 @@ test('basic GQL no cache', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root,
+    resolvers,
     cache: false
   })
 
@@ -200,6 +200,70 @@ test('basic GQL no cache', async (t) => {
   t.deepEqual(res, {
     data: {
       add: 4
+    }
+  })
+})
+
+test('complex types', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Person {
+      name: String
+      friends: [Person]
+    }
+
+    type Query {
+      people: [Person]
+    }
+  `
+
+  const resolvers = {
+    Person: {
+      friends: (root) => {
+        if (root.name === 'matteo') {
+          return [Promise.resolve({ name: 'marco' })]
+        }
+        if (root.name === 'marco') {
+          return [Promise.resolve({ name: 'matteo' })]
+        }
+        return []
+      }
+    },
+    Query: {
+      people: (root) => {
+        return [Promise.resolve({
+          name: 'matteo'
+        }), Promise.resolve({
+          name: 'marco'
+        })]
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = '{ people { name, friends { name } } }'
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      people: [{
+        name: 'matteo',
+        friends: [{
+          name: 'marco'
+        }]
+      }, {
+        name: 'marco',
+        friends: [{
+          name: 'matteo'
+        }]
+      }]
     }
   })
 })

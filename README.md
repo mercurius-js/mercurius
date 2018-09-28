@@ -18,13 +18,15 @@ const schema = `
   }
 `
 
-const root = {
-  add: async ({ x, y }) => x + y
+const resolvers = {
+  Query: {
+    add: async ({ x, y }) => x + y
+  }
 };
 
 app.register(GQL, {
   schema,
-  root
+  resolvers
 })
 
 app.get('/', async function (req, reply) {

@@ -35,7 +35,7 @@ module.exports = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
 
-  let root = opts.root
+  let root = {}
   let schema = opts.schema
 
   if (typeof schema === 'string') {
@@ -87,7 +87,24 @@ module.exports = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
-    root = Object.assign({}, root, resolvers)
+    for (const name of Object.keys(resolvers)) {
+      const type = schema.getType(name)
+      if (typeof resolvers[name] === 'function') {
+        root[name] = resolvers[name]
+      } else if (type instanceof GraphQLObjectType) {
+        const fields = type.getFields()
+        const resolver = resolvers[name]
+        for (const prop of Object.keys(resolver)) {
+          fields[prop].resolve = resolver[prop]
+        }
+      } else {
+        throw new Error(`Cannot find type ${name}`)
+      }
+    }
+  }
+
+  if (opts.resolvers) {
+    fastifyGraphQl.defineResolvers(opts.resolvers)
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {

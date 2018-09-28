@@ -12,13 +12,13 @@ test('reply decorator', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   app.get('/', async function (req, reply) {
@@ -46,13 +46,13 @@ test('reply decorator operationName', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   app.get('/', async function (req, reply) {
@@ -96,13 +96,13 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
     }
   `
 
-  const root = {
+  const resolvers = {
     add: async ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    root
+    resolvers
   })
 
   app.setErrorHandler(async function (err, request, reply) {

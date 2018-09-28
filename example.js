@@ -11,13 +11,13 @@ const schema = `
   }
 `
 
-const root = {
+const resolvers = {
   add: async ({ x, y }) => x + y
 }
 
 app.register(GQL, {
   schema,
-  root,
+  resolvers,
   graphiql: true
 })
 
