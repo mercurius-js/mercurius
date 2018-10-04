@@ -62,11 +62,8 @@ const resolvers = {
   }
 }
 
-const schema = makeExecutableSchema({ typeDefs, resolvers })
-
 app.register(GQL, {
-  schema,
-  resolvers
+  schema: makeExecutableSchema({ typeDefs, resolvers })
 })
 
 app.get('/', async function (req, reply) {
