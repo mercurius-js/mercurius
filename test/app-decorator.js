@@ -3,7 +3,10 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
-const { GraphQLScalarType } = require('graphql')
+const {
+  GraphQLScalarType,
+  GraphQLEnumType
+} = require('graphql')
 const { makeExecutableSchema } = require('graphql-tools')
 
 test('basic GQL', async (t) => {
@@ -345,6 +348,49 @@ test('scalar should be supported', async (t) => {
   t.deepEqual(res, {
     data: {
       add: 4
+    }
+  })
+})
+
+test('enum should be supported', async (t) => {
+  const app = Fastify()
+  const schema = `
+    enum MyEnum {
+      YES
+      NO
+    }
+
+    type Query {
+      add(x: Int, y: Int): MyEnum
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y,
+    MyEnum: new GraphQLEnumType({
+      name: 'MyEnum',
+      description: 'MyEnum custom scalar type',
+      values: {
+        'YES': { value: 4 },
+        'NO': { value: 2 }
+      }
+    })
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = '{ add(x: 2, y: 2) }'
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      add: 'YES'
     }
   })
 })

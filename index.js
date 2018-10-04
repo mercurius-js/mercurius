@@ -10,6 +10,7 @@ const {
   getOperationAST,
   GraphQLObjectType,
   GraphQLScalarType,
+  GraphQLEnumType,
   GraphQLSchema,
   extendSchema,
   validate,
@@ -98,7 +99,7 @@ module.exports = fp(async function (app, opts) {
         for (const prop of Object.keys(resolver)) {
           fields[prop].resolve = resolver[prop]
         }
-      } else if (type instanceof GraphQLScalarType) {
+      } else if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
         const resolver = resolvers[name]
         for (const prop of Object.keys(resolver)) {
           type[prop] = resolver[prop]
