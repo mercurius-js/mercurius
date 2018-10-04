@@ -4,6 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
 const { GraphQLScalarType } = require('graphql')
+const { makeExecutableSchema } = require('graphql-tools')
 
 test('basic GQL', async (t) => {
   const app = Fastify()
@@ -265,6 +266,36 @@ test('complex types', async (t) => {
           name: 'matteo'
         }]
       }]
+    }
+  })
+})
+
+test('makeSchemaExecutable', async (t) => {
+  const app = Fastify()
+  const typeDefs = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: async (_, { x, y }) => x + y
+    }
+  }
+
+  const schema = makeExecutableSchema({ typeDefs, resolvers })
+  app.register(GQL, {
+    schema
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+  const query = '{ add(x: 2, y: 2) }'
+  const res = await app.graphql(query)
+  t.deepEqual(res, {
+    data: {
+      add: 4
     }
   })
 })

@@ -41,7 +41,7 @@ module.exports = fp(async function (app, opts) {
 
   if (typeof schema === 'string') {
     schema = buildSchema(schema)
-  } else {
+  } else if (!opts.schema) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',

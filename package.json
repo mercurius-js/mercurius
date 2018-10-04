@@ -19,6 +19,7 @@
   "devDependencies": {
     "autocannon": "^3.0.0",
     "fastify": "^1.11.2",
+    "graphql-tools": "^4.0.0",
     "pre-commit": "^1.2.2",
     "snazzy": "^8.0.0",
     "standard": "^12.0.1",
