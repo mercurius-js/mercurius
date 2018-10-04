@@ -3,6 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
+const { GraphQLScalarType } = require('graphql')
 
 test('basic GQL', async (t) => {
   const app = Fastify()
@@ -264,6 +265,55 @@ test('complex types', async (t) => {
           name: 'matteo'
         }]
       }]
+    }
+  })
+})
+
+test('scalar should be supported', async (t) => {
+  t.plan(2)
+
+  const app = Fastify()
+  const schema = `
+    scalar Date
+
+    type Query {
+      add(x: Int, y: Int): Date
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y,
+    Date: new GraphQLScalarType({
+      name: 'Date',
+      description: 'Date custom scalar type',
+      parseValue (value) {
+        return value
+      },
+      serialize (value) {
+        t.pass(value, 4)
+        return value
+      },
+      parseLiteral (ast) {
+        // not called on this test
+        return null
+      }
+    })
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = '{ add(x: 2, y: 2) }'
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      add: 4
     }
   })
 })

@@ -9,6 +9,7 @@ const {
   buildSchema,
   getOperationAST,
   GraphQLObjectType,
+  GraphQLScalarType,
   GraphQLSchema,
   extendSchema,
   validate,
@@ -96,6 +97,11 @@ module.exports = fp(async function (app, opts) {
         const resolver = resolvers[name]
         for (const prop of Object.keys(resolver)) {
           fields[prop].resolve = resolver[prop]
+        }
+      } else if (type instanceof GraphQLScalarType) {
+        const resolver = resolvers[name]
+        for (const prop of Object.keys(resolver)) {
+          type[prop] = resolver[prop]
         }
       } else {
         throw new Error(`Cannot find type ${name}`)
