@@ -5,6 +5,44 @@
  * Make sure to inspect the output below.  Do not ignore changes!
  */
 'use strict'
+exports[`test/routes.js TAP GET return 500 on resolver error > undefined 1`] = `
+{
+  "errors": [
+    {
+      "message": "this is a dummy error",
+      "locations": [
+        {
+          "line": 1,
+          "column": 2
+        }
+      ],
+      "path": [
+        "add"
+      ]
+    }
+  ]
+}
+`
+
+exports[`test/routes.js TAP POST return 500 on resolver error > undefined 1`] = `
+{
+  "errors": [
+    {
+      "message": "this is a dummy error",
+      "locations": [
+        {
+          "line": 1,
+          "column": 2
+        }
+      ],
+      "path": [
+        "add"
+      ]
+    }
+  ]
+}
+`
+
 exports[`test/routes.js TAP POST return 400 on error > undefined 1`] = `
 {
   "errors": [

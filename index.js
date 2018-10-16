@@ -3,7 +3,7 @@
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./routes')
-const { BadRequest, MethodNotAllowed } = require('http-errors')
+const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
 const {
   parse,
   buildSchema,
@@ -170,9 +170,7 @@ module.exports = fp(async function (app, opts) {
       }
     }
 
-    // Execute
-    // This may throw. Where is the error going?
-    return execute(
+    const execution = await execute(
       schema,
       document,
       root,
@@ -180,5 +178,12 @@ module.exports = fp(async function (app, opts) {
       variables,
       operationName
     )
+    if (execution.errors) {
+      const err = new InternalServerError()
+      err.errors = execution.errors
+      throw err
+    }
+
+    return execution
   }
 })

@@ -217,6 +217,62 @@ test('disable routes', async (t) => {
   t.deepEqual(res.statusCode, 404)
 })
 
+test('GET return 500 on resolver error', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => { throw new Error('this is a dummy error') }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.equal(res.statusCode, 500) // Internal Server Error
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+})
+
+test('POST return 500 on resolver error', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => { throw new Error('this is a dummy error') }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = '{add(x:2,y:2)}'
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 500) // Internal Server Error
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+})
+
 test('POST return 400 on error', async (t) => {
   const app = Fastify()
   const schema = `
