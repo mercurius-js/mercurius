@@ -11,6 +11,7 @@ const responseSchema = {
         type: 'object',
         additionalProperties: true
       }
+      // TODO make this include errors
     }
   }
 }

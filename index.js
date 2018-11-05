@@ -4,6 +4,7 @@ const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./routes')
 const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
+const { compileQuery } = require('graphql-jit')
 const {
   parse,
   buildSchema,
@@ -154,7 +155,7 @@ module.exports = fp(async function (app, opts) {
       }
 
       if (lru) {
-        lru.set(source, { document, validationErrors })
+        lru.set(source, { document, validationErrors, count: 1, jit: null })
       }
     } else {
       document = cached.document
@@ -168,6 +169,17 @@ module.exports = fp(async function (app, opts) {
         err.errors = { errors: ['Operation cannot be perfomed via a GET request'] }
         throw err
       }
+    }
+
+    // really really good heuristics
+    // TODO make this configurable
+    if (cached && ++cached.count === 2) {
+      cached.jit = compileQuery(schema, document, operationName)
+    }
+
+    if (cached && cached.jit !== null) {
+      const res = await cached.jit.query(root, context, variables || {})
+      return res
     }
 
     const execution = await execute(
