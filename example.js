@@ -20,13 +20,6 @@ const resolvers = {
   }
 }
 
-// const resolvers = {
-//   add: async (obj) => {
-//     const { x, y } = obj
-//     return x + y
-//   }
-// }
-
 app.register(GQL, {
   schema,
   resolvers,

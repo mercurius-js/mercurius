@@ -38,6 +38,12 @@ module.exports = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
 
+  const minJit = opts.jit || 0
+
+  if (typeof minJit !== 'number') {
+    throw new Error('the jit option must be a number')
+  }
+
   let root = {}
   let schema = opts.schema
 
@@ -171,9 +177,8 @@ module.exports = fp(async function (app, opts) {
       }
     }
 
-    // really really good heuristics
-    // TODO make this configurable
-    if (cached && ++cached.count === 2) {
+    // minJit is 0 by default
+    if (cached && ++cached.count === minJit) {
       cached.jit = compileQuery(schema, document, operationName)
     }
 
