@@ -12,7 +12,12 @@ const schema = `
 `
 
 const resolvers = {
-  add: async ({ x, y }) => x + y
+  Query: {
+    add: async (_, obj) => {
+      const { x, y } = obj
+      return x + y
+    }
+  }
 }
 
 app.register(GQL, {
