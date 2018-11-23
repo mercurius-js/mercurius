@@ -1,5 +1,7 @@
 # fastify-gql
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/mcollina/fastify-gql.svg)](https://greenkeeper.io/)
+
 Fastify barebone GraphQL adapter
 
 ## Example

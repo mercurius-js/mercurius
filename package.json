@@ -31,6 +31,6 @@
     "graphql": "^14.0.2",
     "graphql-jit": "0.0.6",
     "http-errors": "^1.7.1",
-    "tiny-lru": "^1.6.1"
+    "tiny-lru": "^2.0.0"
   }
 }
