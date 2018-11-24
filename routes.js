@@ -2,6 +2,7 @@
 
 const { join } = require('path')
 const Static = require('fastify-static')
+const { BadRequest } = require('http-errors')
 
 const responseSchema = {
   '2xx': {
@@ -58,7 +59,13 @@ module.exports = async function (app, opts) {
     } = request.query
 
     if (variables) {
-      variables = JSON.parse(variables)
+      try {
+        variables = JSON.parse(variables)
+      } catch (err) {
+        request.log.info({ err: err })
+        reply.send(new BadRequest(err.message))
+        return
+      }
     }
 
     return reply.graphql(query, null, variables, operationName)
@@ -70,7 +77,8 @@ module.exports = async function (app, opts) {
         type: 'object',
         properties: {
           query: {
-            type: 'string'
+            type: 'string',
+            description: 'the GraphQL query'
           },
           operationName: {
             type: 'string'

@@ -146,7 +146,7 @@ test('operationName', async (t) => {
   })
 })
 
-test('addToSchema and addToresolvers', async (t) => {
+test('extendSchema and defineResolvers', async (t) => {
   const app = Fastify()
   const schema = `
     extend type Query {

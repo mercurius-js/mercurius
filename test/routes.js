@@ -69,6 +69,63 @@ test('GET route', async (t) => {
   })
 })
 
+test('GET route with variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}&variables=${JSON.stringify({ x: 2, y: 2 })}`
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
+
+test('GET route with bad JSON variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
+
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}&variables=notajson`
+  })
+
+  t.is(res.statusCode, 400)
+})
+
 test('POST route variables', async (t) => {
   const app = Fastify()
   const schema = `
