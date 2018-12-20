@@ -6,7 +6,7 @@ Fastify barebone GraphQL adapter.
 Queries are cached on reuse to reduce the overhead of query parsing and
 validation.
 fastify-gql supports a Just-In-Time compiler via
-[graphql-js](http://npm.im/graphql-jit).
+[graphql-jit](http://npm.im/graphql-jit).
 
 ## Install
 
