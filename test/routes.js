@@ -555,3 +555,35 @@ test('error if there are functions defined in the root object', async (t) => {
     t.is(err.message, 'jit is not possible if there are root functions')
   }
 })
+
+test('GET graphiql endpoint', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    graphiql: true,
+    prefix: '/test'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/graphiql.html')
+})
+
+test('GET graphiql endpoint with prefix', async (t) => {
+  const app = Fastify()
+  app.register(async function (app, opts) {
+    app.register(GQL, {
+      graphiql: true
+    })
+  }, { prefix: '/test' })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test/graphiql'
+  })
+
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/test/graphiql.html')
+})
