@@ -559,8 +559,7 @@ test('error if there are functions defined in the root object', async (t) => {
 test('GET graphiql endpoint', async (t) => {
   const app = Fastify()
   app.register(GQL, {
-    graphiql: true,
-    prefix: '/test'
+    graphiql: true
   })
 
   const res = await app.inject({
