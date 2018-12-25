@@ -605,28 +605,53 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
 
 test('GET graphql endpoint with prefix', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
   app.register(GQL, {
+    schema,
+    resolvers,
     prefix: '/test-prefix'
   })
 
   const res = await app.inject({
     method: 'GET',
-    url: '/test-prefix/graphql'
+    url: '/test-prefix/graphql?query={add(x:2,y:2)}'
   })
 
-  t.strictEqual(res.statusCode, 400)
+  t.strictEqual(res.statusCode, 200)
 })
 
 test('GET graphql endpoint with prefixed wrapper', async (t) => {
   const app = Fastify()
+
   app.register(async function (app, opts) {
-    app.register(GQL, {})
+    const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+    `
+
+    const resolvers = {
+      add: async ({ x, y }) => x + y
+    }
+
+    app.register(GQL, {
+      schema,
+      resolvers
+    })
   }, { prefix: '/test-wrapper-prefix' })
 
   const res = await app.inject({
     method: 'GET',
-    url: '/test-wrapper-prefix/graphql'
+    url: '/test-wrapper-prefix/graphql?query={add(x:2,y:2)}'
   })
 
-  t.strictEqual(res.statusCode, 400)
+  t.strictEqual(res.statusCode, 200)
 })

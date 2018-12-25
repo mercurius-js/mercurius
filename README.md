@@ -103,7 +103,7 @@ __fastify-gql__ supports the following options:
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
-* `prefix`: String. Change the route prefix of graphql endpoint if enabled.
+* `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
 
 ### HTTP endpoints
 
