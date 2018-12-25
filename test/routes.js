@@ -572,17 +572,33 @@ test('GET graphiql endpoint', async (t) => {
 
 test('GET graphiql endpoint with prefix', async (t) => {
   const app = Fastify()
+  app.register(GQL, {
+    graphiql: true,
+    prefix: '/test-prefix'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-prefix/graphiql'
+  })
+
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/test-prefix/graphiql.html')
+})
+
+test('GET graphiql endpoint with prefixed wrapper', async (t) => {
+  const app = Fastify()
   app.register(async function (app, opts) {
     app.register(GQL, {
       graphiql: true
     })
-  }, { prefix: '/test' })
+  }, { prefix: '/test-wrapper-prefix' })
 
   const res = await app.inject({
     method: 'GET',
-    url: '/test/graphiql'
+    url: '/test-wrapper-prefix/graphiql'
   })
 
   t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/test/graphiql.html')
+  t.strictEqual(res.headers.location, '/test-wrapper-prefix/graphiql.html')
 })
