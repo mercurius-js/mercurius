@@ -602,3 +602,31 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
   t.strictEqual(res.statusCode, 302)
   t.strictEqual(res.headers.location, '/test-wrapper-prefix/graphiql.html')
 })
+
+test('GET graphql endpoint with prefix', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    prefix: '/test-prefix'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-prefix/graphql'
+  })
+
+  t.strictEqual(res.statusCode, 400)
+})
+
+test('GET graphql endpoint with prefixed wrapper', async (t) => {
+  const app = Fastify()
+  app.register(async function (app, opts) {
+    app.register(GQL, {})
+  }, { prefix: '/test-wrapper-prefix' })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-wrapper-prefix/graphql'
+  })
+
+  t.strictEqual(res.statusCode, 400)
+})
