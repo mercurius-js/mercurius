@@ -555,3 +555,103 @@ test('error if there are functions defined in the root object', async (t) => {
     t.is(err.message, 'jit is not possible if there are root functions')
   }
 })
+
+test('GET graphiql endpoint', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    graphiql: true
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/graphiql.html')
+})
+
+test('GET graphiql endpoint with prefix', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    graphiql: true,
+    prefix: '/test-prefix'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-prefix/graphiql'
+  })
+
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/test-prefix/graphiql.html')
+})
+
+test('GET graphiql endpoint with prefixed wrapper', async (t) => {
+  const app = Fastify()
+  app.register(async function (app, opts) {
+    app.register(GQL, {
+      graphiql: true
+    })
+  }, { prefix: '/test-wrapper-prefix' })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-wrapper-prefix/graphiql'
+  })
+
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/test-wrapper-prefix/graphiql.html')
+})
+
+test('GET graphql endpoint with prefix', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    prefix: '/test-prefix'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-prefix/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.strictEqual(res.statusCode, 200)
+})
+
+test('GET graphql endpoint with prefixed wrapper', async (t) => {
+  const app = Fastify()
+
+  app.register(async function (app, opts) {
+    const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+    `
+
+    const resolvers = {
+      add: async ({ x, y }) => x + y
+    }
+
+    app.register(GQL, {
+      schema,
+      resolvers
+    })
+  }, { prefix: '/test-wrapper-prefix' })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-wrapper-prefix/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.strictEqual(res.statusCode, 200)
+})

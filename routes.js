@@ -107,7 +107,7 @@ module.exports = async function (app, opts) {
     })
 
     app.get('/graphiql', (req, reply) => {
-      reply.redirect('/graphiql.html')
+      reply.redirect(`${app.basePath}/graphiql.html`)
     })
   }
 }

@@ -75,7 +75,8 @@ module.exports = fp(async function (app, opts) {
 
   if (opts.routes !== false) {
     app.register(routes, {
-      graphiql: opts.graphiql
+      graphiql: opts.graphiql,
+      prefix: opts.prefix
     })
   }
 
