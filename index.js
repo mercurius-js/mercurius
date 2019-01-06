@@ -204,4 +204,6 @@ module.exports = fp(async function (app, opts) {
 
     return execution
   }
+}, {
+  name: 'fastify-gql'
 })
