@@ -3,6 +3,8 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
+const { GraphQLError } = require('graphql')
+
 const {
   GraphQLScalarType,
   GraphQLEnumType
@@ -212,6 +214,38 @@ test('extendSchema and defineResolvers with mutation definition', async (t) => {
       sub: 0
     }
   })
+})
+
+test('extendSchema and defineResolvers throws without mutation definition', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      add(x: Int, y: Int): Int
+    }
+    
+    type Mutation {
+      sub(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y,
+    sub: async ({ x, y }) => x - y
+  }
+
+  app.register(GQL)
+
+  app.register(async function (app) {
+    app.graphql.extendSchema(schema)
+    app.graphql.defineResolvers(resolvers)
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const mutation = 'mutation { sub(x: 2, y: 2) }'
+
+  t.rejects(app.graphql(mutation), GraphQLError)
 })
 
 test('basic GQL no cache', async (t) => {
