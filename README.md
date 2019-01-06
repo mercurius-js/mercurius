@@ -104,6 +104,7 @@ __fastify-gql__ supports the following options:
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
 * `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
+* `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 
 ### HTTP endpoints
 
@@ -208,7 +209,7 @@ const GQL = require('fastify-gql')
 
 const app = Fastify()
 const schema = `
-  type Query {
+  extend type Query {
     add(x: Int, y: Int): Int
   }
 `
