@@ -103,7 +103,8 @@ module.exports = async function (app, opts) {
 
   if (opts.graphiql) {
     app.register(Static, {
-      root: join(__dirname, 'static')
+      root: join(__dirname, 'static'),
+      wildcard: false
     })
 
     app.get('/graphiql', (req, reply) => {

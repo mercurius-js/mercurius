@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "fastify-plugin": "^1.2.0",
-    "fastify-static": "^1.0.0",
+    "fastify-static": "^1.1.0",
     "graphql": "^14.0.2",
     "graphql-jit": "0.0.6",
     "http-errors": "^1.7.1",
