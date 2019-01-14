@@ -183,7 +183,7 @@ module.exports = fp(async function (app, opts) {
     }
 
     // minJit is 0 by default
-    if (cached && ++cached.count === minJit) {
+    if (cached && cached.count++ === minJit) {
       cached.jit = compileQuery(schema, document, operationName)
     }
 
