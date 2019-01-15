@@ -655,3 +655,36 @@ test('GET graphql endpoint with prefixed wrapper', async (t) => {
 
   t.strictEqual(res.statusCode, 200)
 })
+
+test('Custom error handler', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  function errorHandler (error, req, reply) {
+    app.log.error(error)
+    reply.code(403)
+    reply.send()
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler
+  })
+
+  // Invalid query, should throw 400 from fastify-gql but catched by user handler and set to 403
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:,y:2)}'
+  })
+
+  t.strictEqual(res.statusCode, 403)
+})

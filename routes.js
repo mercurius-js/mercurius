@@ -17,21 +17,23 @@ const responseSchema = {
   }
 }
 
-module.exports = async function (app, opts) {
-  app.setErrorHandler(async function (err, request, reply) {
-    if (!err.statusCode) {
-      throw err
-    }
+async function defaultErrorHandler (err, request, reply) {
+  if (!err.statusCode) {
+    throw err
+  }
 
-    reply.code(err.statusCode)
-    if (err.errors) {
-      return { errors: err.errors }
-    } else {
-      return {
-        message: err.message
-      }
+  reply.code(err.statusCode)
+  if (err.errors) {
+    return { errors: err.errors }
+  } else {
+    return {
+      message: err.message
     }
-  })
+  }
+}
+
+module.exports = async function (app, opts) {
+  app.setErrorHandler(opts.errorHandler || defaultErrorHandler)
 
   app.get('/graphql', {
     schema: {
