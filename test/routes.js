@@ -690,3 +690,32 @@ test('Custom error handler', async (t) => {
 
   t.strictEqual(res.statusCode, 403)
 })
+
+test('route validation is catched and parsed to graphql error', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // Invalid query, should throw
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql'
+  })
+
+  const expectedResult = { errors: [{ message: 'body should be object' }] }
+
+  t.strictEqual(res.statusCode, 400)
+  t.strictDeepEqual(JSON.parse(res.body), expectedResult)
+})

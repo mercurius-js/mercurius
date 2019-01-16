@@ -58,6 +58,14 @@ async function defaultErrorHandler (err, request, reply) {
   }
 }
 
+function validationHandler (validationError) {
+  if (validationError) {
+    const err = new BadRequest()
+    err.errors = [validationError]
+    throw err
+  }
+}
+
 module.exports = async function (app, opts) {
   app.setErrorHandler(opts.errorHandler || defaultErrorHandler)
 
@@ -78,8 +86,11 @@ module.exports = async function (app, opts) {
         }
       },
       response: responseSchema
-    }
+    },
+    attachValidation: true
   }, function (request, reply) {
+    validationHandler(request.validationError)
+
     let {
       query,
       variables,
@@ -118,8 +129,11 @@ module.exports = async function (app, opts) {
         }
       },
       response: responseSchema
-    }
-  }, function (request, reply) {
+    },
+    attachValidation: true
+  }, async function (request, reply) {
+    validationHandler(request.validationError)
+
     const {
       query,
       variables,
