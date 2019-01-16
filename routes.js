@@ -3,6 +3,7 @@
 const { join } = require('path')
 const Static = require('fastify-static')
 const { BadRequest } = require('http-errors')
+const { formatError, GraphQLError } = require('graphql')
 
 const responseSchema = {
   '2xx': {
@@ -11,8 +12,27 @@ const responseSchema = {
       data: {
         type: 'object',
         additionalProperties: true
+      },
+      errors: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          locations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                line: { type: 'integer' },
+                column: { type: 'integer' }
+              }
+            }
+          },
+          path: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        }
       }
-      // TODO make this include errors
     }
   }
 }
@@ -24,10 +44,16 @@ async function defaultErrorHandler (err, request, reply) {
 
   reply.code(err.statusCode)
   if (err.errors) {
-    return { errors: err.errors }
+    const errors = err.errors.map(error => {
+      return error instanceof GraphQLError ? formatError(error) : { message: error.message }
+    })
+
+    return { errors }
   } else {
     return {
-      message: err.message
+      errors: [
+        { message: err.message }
+      ]
     }
   }
 }

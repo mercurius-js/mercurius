@@ -178,7 +178,7 @@ module.exports = fp(async function (app, opts) {
       const operationAST = getOperationAST(document, operationName)
       if (operationAST.operation !== 'query') {
         const err = new MethodNotAllowed()
-        err.errors = { errors: ['Operation cannot be perfomed via a GET request'] }
+        err.errors = [ new Error('Operation cannot be perfomed via a GET request') ]
         throw err
       }
     }

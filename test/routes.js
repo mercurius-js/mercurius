@@ -665,7 +665,9 @@ test('Custom error handler', async (t) => {
   `
 
   const resolvers = {
-    add: async ({ x, y }) => x + y
+    add: async ({ x, y }) => {
+      throw new Error('dummy error')
+    }
   }
 
   function errorHandler (error, req, reply) {
