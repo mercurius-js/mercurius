@@ -67,7 +67,11 @@ function validationHandler (validationError) {
 }
 
 module.exports = async function (app, opts) {
-  app.setErrorHandler(opts.errorHandler || defaultErrorHandler)
+  if (typeof opts.errorHandler === 'function') {
+    app.setErrorHandler(opts.errorHandler)
+  } else if (opts.errorHandler === true || opts.errorHandler === undefined) {
+    app.setErrorHandler(defaultErrorHandler)
+  }
 
   app.get('/graphql', {
     schema: {

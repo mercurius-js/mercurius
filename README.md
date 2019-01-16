@@ -105,7 +105,7 @@ __fastify-gql__ supports the following options:
   exposed at `/graphql`.
 * `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
-* `errorHandler`: Function. Change the default error handler (Default: `false`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
+* `errorHandler`: Function. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 
 ### HTTP endpoints
 

@@ -665,9 +665,7 @@ test('Custom error handler', async (t) => {
   `
 
   const resolvers = {
-    add: async ({ x, y }) => {
-      throw new Error('dummy error')
-    }
+    add: async ({ x, y }) => t.fail('should never get called')
   }
 
   function errorHandler (error, req, reply) {
@@ -685,7 +683,78 @@ test('Custom error handler', async (t) => {
   // Invalid query, should throw 400 from fastify-gql but catched by user handler and set to 403
   const res = await app.inject({
     method: 'GET',
-    url: '/graphql?query={add(x:,y:2)}'
+    url: '/graphql?query={add(x:"2",y:2)}'
+  })
+
+  t.strictEqual(res.statusCode, 403)
+})
+
+test('Error handler set to true should not change default behavior', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => t.fail('should never get called')
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler: true
+  })
+
+  // Invalid query
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:"2",y:2)}'
+  })
+
+  const expectedResult = {
+    errors: [{
+      message: 'Expected type Int, found "2".',
+      locations: [{
+        line: 1,
+        column: 8
+      }]
+    }]
+  }
+
+  t.strictEqual(res.statusCode, 400)
+  t.strictDeepEqual(JSON.parse(res.body), expectedResult)
+})
+
+test('Error handler set to false should pass error to higher handler', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => t.fail('should never get called')
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler: false
+  })
+
+  app.setErrorHandler((error, req, reply) => {
+    app.log.error(error)
+    reply.code(403)
+    reply.send()
+  })
+
+  // Invalid query
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:"2",y:2)}'
   })
 
   t.strictEqual(res.statusCode, 403)
@@ -708,7 +777,7 @@ test('route validation is catched and parsed to graphql error', async (t) => {
     resolvers
   })
 
-  // Invalid query, should throw
+  // Invalid query
   const res = await app.inject({
     method: 'POST',
     url: '/graphql'
