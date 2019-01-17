@@ -61,10 +61,10 @@ exports[`test/routes.js TAP POST return 400 on error > undefined 1`] = `
 
 exports[`test/routes.js TAP mutation with GET errors > undefined 1`] = `
 {
-  "errors": {
-    "errors": [
-      "Operation cannot be perfomed via a GET request"
-    ]
-  }
+  "errors": [
+    {
+      "message": "Operation cannot be perfomed via a GET request"
+    }
+  ]
 }
 `

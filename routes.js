@@ -3,6 +3,7 @@
 const { join } = require('path')
 const Static = require('fastify-static')
 const { BadRequest } = require('http-errors')
+const { formatError, GraphQLError } = require('graphql')
 
 const responseSchema = {
   '2xx': {
@@ -11,27 +12,66 @@ const responseSchema = {
       data: {
         type: 'object',
         additionalProperties: true
+      },
+      errors: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          locations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                line: { type: 'integer' },
+                column: { type: 'integer' }
+              }
+            }
+          },
+          path: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        }
       }
-      // TODO make this include errors
     }
   }
 }
 
-module.exports = async function (app, opts) {
-  app.setErrorHandler(async function (err, request, reply) {
-    if (!err.statusCode) {
-      throw err
-    }
+async function defaultErrorHandler (err, request, reply) {
+  if (!err.statusCode) {
+    throw err
+  }
 
-    reply.code(err.statusCode)
-    if (err.errors) {
-      return { errors: err.errors }
-    } else {
-      return {
-        message: err.message
-      }
+  reply.code(err.statusCode)
+  if (err.errors) {
+    const errors = err.errors.map(error => {
+      return error instanceof GraphQLError ? formatError(error) : { message: error.message }
+    })
+
+    return { errors }
+  } else {
+    return {
+      errors: [
+        { message: err.message }
+      ]
     }
-  })
+  }
+}
+
+function validationHandler (validationError) {
+  if (validationError) {
+    const err = new BadRequest()
+    err.errors = [validationError]
+    throw err
+  }
+}
+
+module.exports = async function (app, opts) {
+  if (typeof opts.errorHandler === 'function') {
+    app.setErrorHandler(opts.errorHandler)
+  } else if (opts.errorHandler === true || opts.errorHandler === undefined) {
+    app.setErrorHandler(defaultErrorHandler)
+  }
 
   app.get('/graphql', {
     schema: {
@@ -50,8 +90,11 @@ module.exports = async function (app, opts) {
         }
       },
       response: responseSchema
-    }
+    },
+    attachValidation: true
   }, function (request, reply) {
+    validationHandler(request.validationError)
+
     let {
       query,
       variables,
@@ -90,8 +133,11 @@ module.exports = async function (app, opts) {
         }
       },
       response: responseSchema
-    }
-  }, function (request, reply) {
+    },
+    attachValidation: true
+  }, async function (request, reply) {
+    validationHandler(request.validationError)
+
     const {
       query,
       variables,
