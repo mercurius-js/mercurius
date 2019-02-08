@@ -464,3 +464,282 @@ test('enum should be supported', async (t) => {
     }
   })
 })
+
+test('interfaces should be supported with isTypeOf', async (t) => {
+  const app = Fastify()
+  const schema = `
+    interface Geometry {
+      type: String!
+    }
+
+    type Polygon implements Geometry {
+      type: String!
+      coordinates: String
+    }
+
+    type MultiPolygon implements Geometry {
+      type: String!
+      coordinates: Int
+    }
+
+    type Query {
+      getGeometryPolygon: Geometry
+      getGeometryMultiPolygon: Geometry
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      getGeometryPolygon: async () => {
+        return {
+          type: 'Polygon',
+          coordinates: 'test'
+        }
+      },
+      getGeometryMultiPolygon: async () => {
+        return {
+          type: 'MultiPolygon',
+          coordinates: 1
+        }
+      }
+    },
+    Polygon: {
+      __isTypeOf (geometry) {
+        return geometry.type === 'Polygon'
+      }
+    },
+    MultiPolygon: {
+      __isTypeOf (geometry) {
+        return geometry.type === 'MultiPolygon'
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const queryPoly = `{
+    getGeometryPolygon {
+      type
+      ... on Polygon {
+        coordinates
+      }
+    }
+  }`
+  const resPoly = await app.graphql(queryPoly)
+
+  t.deepEqual(resPoly, {
+    data: {
+      getGeometryPolygon: {
+        type: 'Polygon',
+        coordinates: 'test'
+      }
+    }
+  })
+
+  const queryMultiPoly = `{
+    getGeometryMultiPolygon {
+      type
+      ... on MultiPolygon {
+        coordinates
+      }
+    }
+  }`
+  const resMultiPoly = await app.graphql(queryMultiPoly)
+
+  t.deepEqual(resMultiPoly, {
+    data: {
+      getGeometryMultiPolygon: {
+        type: 'MultiPolygon',
+        coordinates: 1
+      }
+    }
+  })
+})
+
+test('interfaces should be supported with resolveType', async (t) => {
+  const app = Fastify()
+  const schema = `
+    interface Geometry {
+      type: String!
+    }
+
+    type Polygon implements Geometry {
+      type: String!
+      coordinates: String
+    }
+
+    type MultiPolygon implements Geometry {
+      type: String!
+      coordinates: Int
+    }
+
+    type Query {
+      getGeometryPolygon: Geometry
+      getGeometryMultiPolygon: Geometry
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      getGeometryPolygon: async () => {
+        return {
+          type: 'Polygon',
+          coordinates: 'test'
+        }
+      },
+      getGeometryMultiPolygon: async () => {
+        return {
+          type: 'MultiPolygon',
+          coordinates: 1
+        }
+      }
+    },
+    Geometry: {
+      __resolveType (geometry) {
+        return geometry.type
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const queryPoly = `{
+    getGeometryPolygon {
+      type
+      ... on Polygon {
+        coordinates
+      }
+    }
+  }`
+  const resPoly = await app.graphql(queryPoly)
+
+  t.deepEqual(resPoly, {
+    data: {
+      getGeometryPolygon: {
+        type: 'Polygon',
+        coordinates: 'test'
+      }
+    }
+  })
+
+  const queryMultiPoly = `{
+    getGeometryMultiPolygon {
+      type
+      ... on MultiPolygon {
+        coordinates
+      }
+    }
+  }`
+  const resMultiPoly = await app.graphql(queryMultiPoly)
+
+  t.deepEqual(resMultiPoly, {
+    data: {
+      getGeometryMultiPolygon: {
+        type: 'MultiPolygon',
+        coordinates: 1
+      }
+    }
+  })
+})
+
+test('union should be supported with resolveType', async (t) => {
+  const app = Fastify()
+  const schema = `
+    union Geometry = Polygon | MultiPolygon
+
+    type Polygon {
+      type: String!
+      coordinates: String
+    }
+
+    type MultiPolygon {
+      type: String!
+      coordinates: Int
+    }
+
+    type Query {
+      getGeometryPolygon: Geometry
+      getGeometryMultiPolygon: Geometry
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      getGeometryPolygon: async () => {
+        return {
+          type: 'Polygon',
+          coordinates: 'test'
+        }
+      },
+      getGeometryMultiPolygon: async () => {
+        return {
+          type: 'MultiPolygon',
+          coordinates: 1
+        }
+      }
+    },
+    Geometry: {
+      __resolveType (geometry) {
+        return geometry.type
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const queryPoly = `{
+    getGeometryPolygon {
+      ... on Polygon {
+        type
+        coordinates
+      }
+    }
+  }`
+  const resPoly = await app.graphql(queryPoly)
+
+  t.deepEqual(resPoly, {
+    data: {
+      getGeometryPolygon: {
+        type: 'Polygon',
+        coordinates: 'test'
+      }
+    }
+  })
+
+  const queryMultiPoly = `{
+    getGeometryMultiPolygon {
+      ... on MultiPolygon {
+        type
+        coordinates
+      }
+    }
+  }`
+  const resMultiPoly = await app.graphql(queryMultiPoly)
+
+  t.deepEqual(resMultiPoly, {
+    data: {
+      getGeometryMultiPolygon: {
+        type: 'MultiPolygon',
+        coordinates: 1
+      }
+    }
+  })
+})

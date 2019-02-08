@@ -12,6 +12,8 @@ const {
   GraphQLObjectType,
   GraphQLScalarType,
   GraphQLEnumType,
+  GraphQLInterfaceType,
+  GraphQLUnionType,
   GraphQLSchema,
   extendSchema,
   validate,
@@ -108,6 +110,10 @@ module.exports = fp(async function (app, opts) {
       } else if (type instanceof GraphQLObjectType) {
         const fields = type.getFields()
         const resolver = resolvers[name]
+        if (resolver.__isTypeOf) {
+          type.isTypeOf = resolver.__isTypeOf
+          delete resolver.__isTypeOf
+        }
         for (const prop of Object.keys(resolver)) {
           fields[prop].resolve = resolver[prop]
         }
@@ -116,6 +122,9 @@ module.exports = fp(async function (app, opts) {
         for (const prop of Object.keys(resolver)) {
           type[prop] = resolver[prop]
         }
+      } else if (type instanceof GraphQLInterfaceType || type instanceof GraphQLUnionType) {
+        const resolver = resolvers[name]
+        type.resolveType = resolver.__resolveType
       } else {
         throw new Error(`Cannot find type ${name}`)
       }
