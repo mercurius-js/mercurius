@@ -110,9 +110,9 @@ module.exports = fp(async function (app, opts) {
       } else if (type instanceof GraphQLObjectType) {
         const fields = type.getFields()
         const resolver = resolvers[name]
-        if (resolver.__isTypeOf) {
-          type.isTypeOf = resolver.__isTypeOf
-          delete resolver.__isTypeOf
+        if (resolver.isTypeOf) {
+          type.isTypeOf = resolver.isTypeOf
+          delete resolver.isTypeOf
         }
         for (const prop of Object.keys(resolver)) {
           fields[prop].resolve = resolver[prop]
@@ -124,7 +124,7 @@ module.exports = fp(async function (app, opts) {
         }
       } else if (type instanceof GraphQLInterfaceType || type instanceof GraphQLUnionType) {
         const resolver = resolvers[name]
-        type.resolveType = resolver.__resolveType
+        type.resolveType = resolver.resolveType
       } else {
         throw new Error(`Cannot find type ${name}`)
       }

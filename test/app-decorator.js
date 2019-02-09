@@ -504,12 +504,12 @@ test('interfaces should be supported with isTypeOf', async (t) => {
       }
     },
     Polygon: {
-      __isTypeOf (geometry) {
+      isTypeOf (geometry) {
         return geometry.type === 'Polygon'
       }
     },
     MultiPolygon: {
-      __isTypeOf (geometry) {
+      isTypeOf (geometry) {
         return geometry.type === 'MultiPolygon'
       }
     }
@@ -601,7 +601,7 @@ test('interfaces should be supported with resolveType', async (t) => {
       }
     },
     Geometry: {
-      __resolveType (geometry) {
+      resolveType (geometry) {
         return geometry.type
       }
     }
@@ -691,7 +691,7 @@ test('union should be supported with resolveType', async (t) => {
       }
     },
     Geometry: {
-      __resolveType (geometry) {
+      resolveType (geometry) {
         return geometry.type
       }
     }
