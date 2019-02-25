@@ -18,7 +18,7 @@
   "homepage": "https://github.com/mcollina/fastify-gql#readme",
   "devDependencies": {
     "autocannon": "^3.2.0",
-    "fastify": "^1.14.1",
+    "fastify": "^2.0.0",
     "graphql-tools": "^4.0.4",
     "pre-commit": "^1.2.2",
     "snazzy": "^8.0.0",
