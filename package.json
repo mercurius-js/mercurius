@@ -1,6 +1,6 @@
 {
   "name": "fastify-gql",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Fastify barebone GraphQL adapter",
   "main": "index.js",
   "scripts": {
@@ -23,14 +23,14 @@
     "pre-commit": "^1.2.2",
     "snazzy": "^8.0.0",
     "standard": "^12.0.1",
-    "tap": "^12.5.2"
+    "tap": "^12.5.3"
   },
   "dependencies": {
     "fastify-plugin": "^1.5.0",
     "fastify-static": "^2.3.2",
     "graphql": "^14.1.1",
-    "graphql-jit": "0.0.8",
-    "http-errors": "^1.7.1",
+    "graphql-jit": "0.0.9",
+    "http-errors": "^1.7.2",
     "tiny-lru": "^6.0.0"
   }
 }
