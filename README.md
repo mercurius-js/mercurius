@@ -58,7 +58,7 @@ See test.js for more examples, docs are coming.
 
 const Fastify = require('fastify')
 const GQL = require('fastify-gql')
-const { makeExecutableSchema } = require('graphq-tools')
+const { makeExecutableSchema } = require('graphql-tools')
 
 const app = Fastify()
 
