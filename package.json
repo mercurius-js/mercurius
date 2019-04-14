@@ -29,7 +29,7 @@
     "fastify-plugin": "^1.5.0",
     "fastify-static": "^2.3.2",
     "graphql": "^14.1.1",
-    "graphql-jit": "0.1.1",
+    "graphql-jit": "0.1.2",
     "http-errors": "^1.7.2",
     "tiny-lru": "^6.0.0"
   }
