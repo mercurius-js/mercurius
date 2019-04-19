@@ -1,7 +1,7 @@
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('.')
+const GQL = require('..')
 
 const app = Fastify()
 
