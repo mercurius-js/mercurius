@@ -1,12 +1,14 @@
 # fastify-gql
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/mcollina/fastify-gql.svg)](https://greenkeeper.io/)
+[![Greenkeeper badge](https://badges.greenkeeper.io/mcollina/fastify-gql.svg)](https://greenkeeper.io/) [![Build Status](https://travis-ci.com/mcollina/fastify-gql.svg?branch=master)](https://travis-ci.com/mcollina/fastify-gql)
 
 Fastify barebone GraphQL adapter.
-Queries are cached on reuse to reduce the overhead of query parsing and
-validation.
-fastify-gql supports a Just-In-Time compiler via
-[graphql-jit](http://npm.im/graphql-jit).
+
+Features:
+
+* Caching of query parsing and validation.
+* Automatic loader integration to avoid 1 + N queries.
+* Just-In-Time compiler via [graphql-jit](http://npm.im/graphql-jit).
 
 ## Install
 
@@ -96,6 +98,8 @@ __fastify-gql__ supports the following options:
   definition](https://graphql.org/graphql-js/type/#graphqlschema). The graphql schema.
   The string will be parsed.
 * `resolvers`: Object. The graphql resolvers.
+* `loaders`: Object. See [defineLoaders](#defineLoaders) for more
+  details.
 * `graphiql`: boolean. Serve
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if
   `routes` is `true`.
@@ -247,6 +251,70 @@ async function run () {
 
 run()
 ```
+
+<a name="loaders"></a>
+#### app.graphql.defineLoaders(loaders)
+
+A loader is an utility to avoid the 1 + N query problem of GraphQL.
+Each defined loader will register a resolver that coalesces each of the
+request and combines them into a single, bulk query. Morever, it can
+also cache the results, so that other parts of the GraphQL do not have
+to fetch the same data.
+
+Each loader function has the signature `loader(queries, context)`.
+`queries` is an array of objects defined as `{ obj, params }` where
+`obj` is the current object and `params` are the GraphQL params (those
+are the first two parameters of a normal resolver). The `context` is the
+GraphQL context, and it includes a `reply` object.
+
+Example:
+
+
+```js
+const loaders = {
+  Dog: {
+    async owner (queries, { reply }) {
+      return queries.map(({ obj }) => owners[obj.name])
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  loaders
+})
+```
+
+It is also possible disable caching with:
+
+```js
+const loaders = {
+  Dog: {
+    owner: {
+      async loader (queries, { reply }) {
+        return queries.map(({ obj }) => owners[obj.name])
+      },
+      opts: {
+        cache: false
+      }
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  loaders
+})
+```
+
+Disabling caching has the advantage to avoid the serialization at
+the cost of more objects to fetch in the resolvers.
+
+
+Internally, it uses
+[single-user-cache](http://npm.im/single-user-cache).
 
 #### reply.graphql(source, context, variables, operationName)
 

@@ -5,6 +5,7 @@ const LRU = require('tiny-lru')
 const routes = require('./routes')
 const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
 const { compileQuery } = require('graphql-jit')
+const { Factory } = require('single-user-cache')
 const {
   parse,
   buildSchema,
@@ -20,6 +21,8 @@ const {
   validateSchema,
   execute
 } = require('graphql')
+
+const kLoaders = Symbol('fastify-gql.loaders')
 
 function buildCache (opts) {
   if (opts.hasOwnProperty('cache')) {
@@ -132,8 +135,51 @@ module.exports = fp(async function (app, opts) {
     }
   }
 
+  let factory
+
+  fastifyGraphQl.defineLoaders = function (loaders) {
+    // set up the loaders factory
+    if (!factory) {
+      factory = new Factory()
+      app.decorateReply(kLoaders)
+      app.addHook('onRequest', async function (req, reply) {
+        reply[kLoaders] = factory.create({ req, reply })
+      })
+    }
+
+    function defineLoader (name) {
+      // async needed because of throw
+      return async function (obj, params, { reply }) {
+        if (!reply) {
+          throw new Error('loaders only work via reply.graphql()')
+        }
+        return reply[kLoaders][name]({ obj, params })
+      }
+    }
+
+    const resolvers = {}
+    for (const typeKey of Object.keys(loaders)) {
+      const type = loaders[typeKey]
+      resolvers[typeKey] = {}
+      for (const prop of Object.keys(type)) {
+        const name = typeKey + '-' + prop
+        resolvers[typeKey][prop] = defineLoader(name)
+        if (typeof type[prop] === 'function') {
+          factory.add(name, type[prop])
+        } else {
+          factory.add(name, type[prop].opts, type[prop].loader)
+        }
+      }
+    }
+    fastifyGraphQl.defineResolvers(resolvers)
+  }
+
   if (opts.resolvers) {
     fastifyGraphQl.defineResolvers(opts.resolvers)
+  }
+
+  if (opts.loaders) {
+    fastifyGraphQl.defineLoaders(opts.loaders)
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
