@@ -1,0 +1,23 @@
+{
+  "files": ["./index.d.ts"],
+  "compilerOptions": {
+    "target": "es2018",
+    "lib": ["es2018"],
+    "skipLibCheck": false,
+    "baseUrl": "./",
+    "moduleResolution": "node",
+    "skipDefaultLibCheck": false,
+    "resolveJsonModule": true,
+    "checkJs": true,
+    "module": "commonjs",
+    "allowJs": true,
+    "noEmit": true,
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "exclude": ["node_modules", "**/node_modules/*"],
+  "typeAcquisition": {
+    "enable": true
+  }
+}

@@ -3,8 +3,12 @@
   "version": "1.1.0",
   "description": "Fastify barebone GraphQL adapter",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
-    "test": "standard | snazzy && tap -J test/*.js"
+    "test-types": "tsc && tsd",
+    "lint": "standard | snazzy",
+    "unit": "tap -J test/*.js",
+    "test": "npm run lint && npm run unit"
   },
   "repository": {
     "type": "git",
@@ -17,13 +21,17 @@
   },
   "homepage": "https://github.com/mcollina/fastify-gql#readme",
   "devDependencies": {
+    "@types/graphql": "^14.2.0",
+    "@types/node": "^11.13.9",
     "autocannon": "^3.2.0",
     "fastify": "^2.0.0",
     "graphql-tools": "^4.0.4",
     "pre-commit": "^1.2.2",
     "snazzy": "^8.0.0",
     "standard": "^12.0.1",
-    "tap": "^12.5.3"
+    "tap": "^12.5.3",
+    "tsd": "^0.7.2",
+    "typescript": "^3.4.5"
   },
   "dependencies": {
     "fastify-plugin": "^1.5.0",
