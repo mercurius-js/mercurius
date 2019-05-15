@@ -101,8 +101,9 @@ __fastify-gql__ supports the following options:
 * `loaders`: Object. See [defineLoaders](#defineLoaders) for more
   details.
 * `graphiql`: boolean. Serve
-  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if
-  `routes` is `true`.
+  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` and 
+  [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground`
+  if `routes` is `true`.
 * `jit`: Intenger. The minimum number of execution a query needs to be
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -150,6 +151,12 @@ payload must conform to the following JSON schema:
 
 Serves [GraphiQL](https://www.npmjs.com/package/graphiql) if enabled by
 the options.
+
+#### GET /playground
+
+Serves [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) if enabled by
+the options.
+
 
 ### decorators
 

@@ -156,5 +156,9 @@ module.exports = async function (app, opts) {
     app.get('/graphiql', (req, reply) => {
       reply.redirect(`${app.prefix}/graphiql.html`)
     })
+
+    app.get('/playground', (req, reply) => {
+      reply.redirect(`${app.prefix}/playground.html`)
+    })
   }
 }

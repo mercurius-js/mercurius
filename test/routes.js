@@ -603,6 +603,53 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
   t.strictEqual(res.headers.location, '/test-wrapper-prefix/graphiql.html')
 })
 
+test('GET graphql playground endpoint', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    graphiql: true
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground'
+  })
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/playground.html')
+})
+
+test('GET graphql playground endpoint with prefix', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    graphiql: true,
+    prefix: '/test-prefix'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-prefix/playground'
+  })
+
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/test-prefix/playground.html')
+})
+
+test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
+  const app = Fastify()
+  app.register(async function (app, opts) {
+    app.register(GQL, {
+      graphiql: true
+    })
+  }, { prefix: '/test-wrapper-prefix' })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/test-wrapper-prefix/playground'
+  })
+
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/test-wrapper-prefix/playground.html')
+})
+
 test('GET graphql endpoint with prefix', async (t) => {
   const app = Fastify()
   const schema = `
