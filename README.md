@@ -100,9 +100,9 @@ __fastify-gql__ supports the following options:
 * `resolvers`: Object. The graphql resolvers.
 * `loaders`: Object. See [defineLoaders](#defineLoaders) for more
   details.
-* `graphiql`: boolean. Serve
-  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` and 
-  [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground`
+* `graphiql`: boolean | string. Serve
+  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or 
+  [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
   if `routes` is `true`.
 * `jit`: Intenger. The minimum number of execution a query needs to be
   executed before being jit'ed.

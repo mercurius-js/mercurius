@@ -152,13 +152,15 @@ module.exports = async function (app, opts) {
       root: join(__dirname, 'static'),
       wildcard: false
     })
-
-    app.get('/graphiql', (req, reply) => {
-      reply.redirect(`${app.prefix}/graphiql.html`)
-    })
-
-    app.get('/playground', (req, reply) => {
-      reply.redirect(`${app.prefix}/playground.html`)
-    })
+    if (opts.graphiql === true || opts.graphiql === 'graphiql') {
+      app.get('/graphiql', (req, reply) => {
+        reply.redirect(`${app.prefix}/graphiql.html`)
+      })
+    }
+    if (opts.graphiql === 'playground') {
+      app.get('/playground', (req, reply) => {
+        reply.redirect(`${app.prefix}/playground.html`)
+      })
+    }
   }
 }
