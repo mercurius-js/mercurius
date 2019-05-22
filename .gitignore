@@ -62,3 +62,4 @@ typings/
 
 # clinic
 *clinic*
+package-lock.json
