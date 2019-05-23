@@ -1,6 +1,6 @@
 {
   "name": "fastify-gql",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Fastify barebone GraphQL adapter",
   "main": "index.js",
   "scripts": {
