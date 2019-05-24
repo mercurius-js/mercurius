@@ -111,6 +111,7 @@ __fastify-gql__ supports the following options:
 * `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
+* `queryFilters`: boolean. Query filters will provide helper methods attached to resolver context object that can be used to determine what fields are requested to avoid overfetching from database and REST API. For more information see queryFilters.js example.
 
 ### HTTP endpoints
 
