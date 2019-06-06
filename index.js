@@ -6,7 +6,7 @@ const routes = require('./routes')
 const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
 const { compileQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
-const { getQueryFields } = require('./queryFields');
+const { getQueryFields, buildQueryObject } = require('./queryFields');
 const {
   parse,
   buildSchema,
@@ -188,6 +188,7 @@ module.exports = fp(async function (app, opts) {
     const reply = context.reply
     if(opts.queryFilters) {
       context.getQueryFields = getQueryFields;
+      context.buildQueryObject = buildQueryObject;
     }
 
     // Parse, with a little lru
