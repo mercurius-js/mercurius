@@ -4,19 +4,6 @@ const Fastify = require('fastify')
 const GQL = require('..')
 const app = Fastify()
 
-const gql = require('graphql-tag')
-
-const basicQuery = gql`
-query {
-  dogs(limit:4) {
-     name
-  mother{
-     name 
-  }
-  }
-}
-`
-
 const dogs = [{
   name: 'Max',
   type: 'Husky'
@@ -66,7 +53,6 @@ const resolvers = {
   Query: {
     dogs (_, params, context, info) {
       const queryData = context.buildQueryObject(info)
-      console.log(basicQuery)
       // Example database queries
       console.log(`SQL ROOT QUERY: select ${queryData.getRootFields()} from Dog`)
       if (queryData.hasRelation('mother')) {

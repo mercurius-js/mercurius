@@ -372,6 +372,34 @@ async function run () {
 run()
 ```
 
+## Query Filtering
+
+Query filtering will prevent from server side database overfetching by 
+providing list of the fields that were requested in the query.
+Developers can use them to perform targeted queries against their database and rest endpoints.
+
+When query filtering is enabled context will contain following methods:
+-  getQueryFields - provides list of fields that user queried
+-  buildQueryObject - provides additional helpers for database access
+
+Example:
+```javascript
+const resolvers = {
+  Query: {
+    dogs (_, params, context, info) {
+      const queryData = context.buildQueryObject(info)
+      // Example database queries
+      console.log(`SQL ROOT QUERY: 
+                   select ${queryData.getRootFields()} from Dog`)
+      if (queryData.hasRelation('mother')) {
+        console.log(`SQL RELATION QUERY: 
+                    select ${queryData.getRelationFields('mother')} from DoggyParents`)
+      }
+      // return results of 2 db queries
+    }
+  }
+}
+
 ## License
 
 MIT
