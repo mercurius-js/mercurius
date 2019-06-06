@@ -6,7 +6,7 @@ const routes = require('./routes')
 const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
 const { compileQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
-const { getQueryFields, buildQueryObject } = require('./queryFields');
+const { getQueryFields, buildQueryObject } = require('./queryFields')
 const {
   parse,
   buildSchema,
@@ -186,9 +186,9 @@ module.exports = fp(async function (app, opts) {
   async function fastifyGraphQl (source, context, variables, operationName) {
     context = Object.assign({ app: this }, context)
     const reply = context.reply
-    if(opts.queryFilters) {
-      context.getQueryFields = getQueryFields;
-      context.buildQueryObject = buildQueryObject;
+    if (opts.queryFilters) {
+      context.getQueryFields = getQueryFields
+      context.buildQueryObject = buildQueryObject
     }
 
     // Parse, with a little lru

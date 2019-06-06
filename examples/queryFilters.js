@@ -43,41 +43,37 @@ const schema = `
   }
 `
 
-
-
 // Helper to filter data
 var pick = function (obj, props) {
-
-  'use strict';
+  'use strict'
 
   // Make sure object and properties are provided
-  if (!obj || !props) return;
+  if (!obj || !props) return
 
   // Create new object
-  var picked = {};
+  var picked = {}
 
   // Loop through props and push to new object
   props.forEach(function (prop) {
-    picked[prop] = obj[prop];
-  });
+    picked[prop] = obj[prop]
+  })
 
   // Return new object
-  return picked;
-
-};
+  return picked
+}
 
 const resolvers = {
   Query: {
-    dogs(_, params, context, info) {
+    dogs (_, params, context, info) {
       const queryData = context.buildQueryObject(info)
-      console.log(basicQuery);
+      console.log(basicQuery)
       // Example database queries
-      console.log(`SQL ROOT QUERY: select ${queryData.getRootFields()} from Dog`);
-      if(queryData.hasRelation('mother')){
-        console.log(`SQL RELATION QUERY: select ${queryData.getRelationFields('mother')} from DoggyParents`);
+      console.log(`SQL ROOT QUERY: select ${queryData.getRootFields()} from Dog`)
+      if (queryData.hasRelation('mother')) {
+        console.log(`SQL RELATION QUERY: select ${queryData.getRelationFields('mother')} from DoggyParents`)
       }
       // Execute without database
-      const newDogs = [];
+      const newDogs = []
       for (const dog of dogs) {
         newDogs.push(pick(dog, queryData.fields))
       }
