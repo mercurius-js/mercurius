@@ -120,6 +120,9 @@ module.exports = fp(async function (app, opts) {
           delete resolver.isTypeOf
         }
         for (const prop of Object.keys(resolver)) {
+          if (!fields[prop]) {
+            throw new Error(`Defined resolver do not have repesentation in schema: ${prop}`)
+          }
           fields[prop].resolve = resolver[prop]
         }
       } else if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
