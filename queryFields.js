@@ -1,13 +1,3 @@
-// @ts-check
-
-/**
- * Imports:
- * @typedef {import('graphql').FieldNode} FieldNode
- * @typedef {import('graphql').GraphQLResolveInfo} GraphQLResolveInfo
- * @typedef {import('graphql').SelectionSetNode} SelectionSetNode
- * @typedef {Object<string, any>} QueryObject
- */
-
 /**
  * Get field name from node
  * @param {FieldNode} node
