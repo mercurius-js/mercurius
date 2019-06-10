@@ -34,7 +34,19 @@ const resolvers = {
     posts: async (_, params, context, info) => {
       const queryData = context.buildQueryObject(info)
       const db = await dbPromise
-      const posts = await db.all(`SELECT ${queryData.getRootFields()} FROM Post`)
+      let posts
+      let relation = 'category'
+
+      if (queryData.hasRelation(relation)) {
+        // Select with relation
+        posts = await db.all(
+          `SELECT  ${queryData.getRootFields()}, ${queryData.getRelationFields(relation)} 
+          FROM Post INNER JOIN Category ON Category.id = Post.categoryId`)
+        // Transform from flatten structure to graph
+        posts = queryData.expandToGraph(posts, [relation])
+      } else {
+        posts = await db.all(`SELECT ${queryData.getRootFields()} FROM Post`)
+      }
       return posts
     }
   }

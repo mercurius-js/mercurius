@@ -19,6 +19,6 @@ test('test getQueryFields with relationships', async (t) => {
 test('test buildQueryObject', async (t) => {
   const query = buildQueryObject(info)
   t.strictEqual(query.hasRelation('mother'), true)
-  t.deepEqual(query.getRelationFields('mother'), '"name"')
+  t.deepEqual(query.getRelationFields('mother'), '"name" as "mother__name"')
   t.deepEqual(query.getRootFields(), '"name"')
 })

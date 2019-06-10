@@ -114,10 +114,29 @@ const buildQueryObject = (info) => {
         separator = ','
       }
       return fields.relations[relation].map((field) => {
-        return `${wrapper}${field}${wrapper}`
+        return `${wrapper}${field}${wrapper} as ${wrapper}${relation}__${field}${wrapper}`
       }).join(separator)
     }
-    return ''
+  }
+
+  /**
+   * Expands single key structure returned from database to graph that can
+   * be returned by resolver. Method pics all fields that starts with relation name.
+   * For example 'relation__field' and puts them into nested relation structure.
+   */
+  queryObject.expandToGraph = (data, relations) => {
+    for (const relation of relations) {
+      for (const element of data) {
+        element[relation] = {}
+        for (const key in element) {
+          if (key.startsWith(`${relation}__`)) {
+            const originalKey = key.replace(`${relation}__`, '')
+            element[relation][originalKey] = element[key]
+          }
+        }
+      }
+    }
+    return data
   }
 
   return Object.assign(fields, queryObject)
