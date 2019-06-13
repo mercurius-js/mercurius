@@ -85,36 +85,35 @@ const buildQueryObject = (info) => {
   }
   /**
      * Returns root fields in format acceptable for most of the sql queries
-     * @param wrapper - wraps variable name (default ")
      * @param separator - separates variables (default ,)
      */
-  queryObject.getRootFields = (wrapper, separator) => {
-    if (!wrapper) {
-      wrapper = '"'
-    }
+  queryObject.getRootFields = (separator) => {
     if (!separator) {
       separator = ','
     }
     return fields.fields.map((field) => {
-      return `${wrapper}${field}${wrapper}`
+      return `${field}`
     }).join(separator)
   }
   /**
-     * Returns relation fields in format acceptable for most of the sql queries
+     * Returns relation fields in format acceptable for most of the sql queries.
+     * Method works with PostgresDB, MySQL and any other database that supports
+     * this syntax.
      *
-     * @param wrapper - wraps variable name (default ")
+     * @param mapper - argument that maps composite field to single one.
+     * By default `as` for PostgreSQL. Use `on`for mysql.
      * @param separator - separates variables (default ,)
      */
-  queryObject.getRelationFields = (relation, wrapper, separator) => {
+  queryObject.getRelationFields = (relation, mapper, separator) => {
     if (fields.relations[relation]) {
-      if (!wrapper) {
-        wrapper = '"'
+      if (!mapper) {
+        mapper = 'as'
       }
       if (!separator) {
         separator = ','
       }
       return fields.relations[relation].map((field) => {
-        return `${wrapper}${field}${wrapper} as ${wrapper}${relation}__${field}${wrapper}`
+        return `${field} ${mapper} ${relation}__${field}`
       }).join(separator)
     }
   }

@@ -45,8 +45,8 @@ test('test getQueryFields with relationship on fragment', async (t) => {
 test('test buildQueryObject', async (t) => {
   const query = buildQueryObject(info)
   t.strictEqual(query.hasRelation('category'), true)
-  t.deepEqual(query.getRelationFields('category'), '"name" as "category__name"')
-  t.deepEqual(query.getRootFields(), '"title"')
+  t.deepEqual(query.getRelationFields('category'), 'name as category__name')
+  t.deepEqual(query.getRootFields(), 'title')
 })
 
 test('test expandToGraph', async (t) => {

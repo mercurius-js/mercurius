@@ -1,1 +1,233 @@
-{"fieldName":"posts","fieldNodes":[{"kind":"Field","name":{"kind":"Name","value":"posts","loc":{"start":149,"end":154}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title","loc":{"start":160,"end":165}},"arguments":[],"directives":[],"loc":{"start":160,"end":165}},{"kind":"Field","name":{"kind":"Name","value":"category","loc":{"start":168,"end":176}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name","loc":{"start":183,"end":187}},"arguments":[],"directives":[],"loc":{"start":183,"end":187}}],"loc":{"start":177,"end":191}},"loc":{"start":168,"end":191}}],"loc":{"start":154,"end":195}},"loc":{"start":149,"end":195}}],"returnType":"[Post]","parentType":"Query","path":{"key":"posts"},"schema":{"__validationErrors":[],"__allowedLegacyNames":[],"_queryType":"Query","_directives":["@skip","@include","@deprecated"],"_typeMap":{"Query":"Query","Int":"Int","Post":"Post","ID":"ID","String":"String","Category":"Category","__Schema":"__Schema","__Type":"__Type","__TypeKind":"__TypeKind","Boolean":"Boolean","__Field":"__Field","__InputValue":"__InputValue","__EnumValue":"__EnumValue","__Directive":"__Directive","__DirectiveLocation":"__DirectiveLocation"},"_possibleTypeMap":{},"_implementations":{}},"fragments":{},"rootValue":{},"operation":{"kind":"OperationDefinition","operation":"query","variableDefinitions":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"posts","loc":{"start":149,"end":154}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title","loc":{"start":160,"end":165}},"arguments":[],"directives":[],"loc":{"start":160,"end":165}},{"kind":"Field","name":{"kind":"Name","value":"category","loc":{"start":168,"end":176}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name","loc":{"start":183,"end":187}},"arguments":[],"directives":[],"loc":{"start":183,"end":187}}],"loc":{"start":177,"end":191}},"loc":{"start":168,"end":191}}],"loc":{"start":154,"end":195}},"loc":{"start":149,"end":195}}],"loc":{"start":145,"end":197}},"loc":{"start":139,"end":197}},"variableValues":{}}
+{
+  "fieldName": "posts",
+  "fieldNodes": [
+    {
+      "kind": "Field",
+      "name": {
+        "kind": "Name",
+        "value": "posts",
+        "loc": {
+          "start": 149,
+          "end": 154
+        }
+      },
+      "arguments": [],
+      "directives": [],
+      "selectionSet": {
+        "kind": "SelectionSet",
+        "selections": [
+          {
+            "kind": "Field",
+            "name": {
+              "kind": "Name",
+              "value": "title",
+              "loc": {
+                "start": 160,
+                "end": 165
+              }
+            },
+            "arguments": [],
+            "directives": [],
+            "loc": {
+              "start": 160,
+              "end": 165
+            }
+          },
+          {
+            "kind": "Field",
+            "name": {
+              "kind": "Name",
+              "value": "category",
+              "loc": {
+                "start": 168,
+                "end": 176
+              }
+            },
+            "arguments": [],
+            "directives": [],
+            "selectionSet": {
+              "kind": "SelectionSet",
+              "selections": [
+                {
+                  "kind": "Field",
+                  "name": {
+                    "kind": "Name",
+                    "value": "name",
+                    "loc": {
+                      "start": 183,
+                      "end": 187
+                    }
+                  },
+                  "arguments": [],
+                  "directives": [],
+                  "loc": {
+                    "start": 183,
+                    "end": 187
+                  }
+                }
+              ],
+              "loc": {
+                "start": 177,
+                "end": 191
+              }
+            },
+            "loc": {
+              "start": 168,
+              "end": 191
+            }
+          }
+        ],
+        "loc": {
+          "start": 154,
+          "end": 195
+        }
+      },
+      "loc": {
+        "start": 149,
+        "end": 195
+      }
+    }
+  ],
+  "returnType": "[Post]",
+  "parentType": "Query",
+  "path": {
+    "key": "posts"
+  },
+  "schema": {
+    "__validationErrors": [],
+    "__allowedLegacyNames": [],
+    "_queryType": "Query",
+    "_directives": [
+      "@skip",
+      "@include",
+      "@deprecated"
+    ],
+    "_typeMap": {
+      "Query": "Query",
+      "Int": "Int",
+      "Post": "Post",
+      "ID": "ID",
+      "String": "String",
+      "Category": "Category",
+      "__Schema": "__Schema",
+      "__Type": "__Type",
+      "__TypeKind": "__TypeKind",
+      "Boolean": "Boolean",
+      "__Field": "__Field",
+      "__InputValue": "__InputValue",
+      "__EnumValue": "__EnumValue",
+      "__Directive": "__Directive",
+      "__DirectiveLocation": "__DirectiveLocation"
+    },
+    "_possibleTypeMap": {},
+    "_implementations": {}
+  },
+  "fragments": {},
+  "rootValue": {},
+  "operation": {
+    "kind": "OperationDefinition",
+    "operation": "query",
+    "variableDefinitions": [],
+    "directives": [],
+    "selectionSet": {
+      "kind": "SelectionSet",
+      "selections": [
+        {
+          "kind": "Field",
+          "name": {
+            "kind": "Name",
+            "value": "posts",
+            "loc": {
+              "start": 149,
+              "end": 154
+            }
+          },
+          "arguments": [],
+          "directives": [],
+          "selectionSet": {
+            "kind": "SelectionSet",
+            "selections": [
+              {
+                "kind": "Field",
+                "name": {
+                  "kind": "Name",
+                  "value": "title",
+                  "loc": {
+                    "start": 160,
+                    "end": 165
+                  }
+                },
+                "arguments": [],
+                "directives": [],
+                "loc": {
+                  "start": 160,
+                  "end": 165
+                }
+              },
+              {
+                "kind": "Field",
+                "name": {
+                  "kind": "Name",
+                  "value": "category",
+                  "loc": {
+                    "start": 168,
+                    "end": 176
+                  }
+                },
+                "arguments": [],
+                "directives": [],
+                "selectionSet": {
+                  "kind": "SelectionSet",
+                  "selections": [
+                    {
+                      "kind": "Field",
+                      "name": {
+                        "kind": "Name",
+                        "value": "name",
+                        "loc": {
+                          "start": 183,
+                          "end": 187
+                        }
+                      },
+                      "arguments": [],
+                      "directives": [],
+                      "loc": {
+                        "start": 183,
+                        "end": 187
+                      }
+                    }
+                  ],
+                  "loc": {
+                    "start": 177,
+                    "end": 191
+                  }
+                },
+                "loc": {
+                  "start": 168,
+                  "end": 191
+                }
+              }
+            ],
+            "loc": {
+              "start": 154,
+              "end": 195
+            }
+          },
+          "loc": {
+            "start": 149,
+            "end": 195
+          }
+        }
+      ],
+      "loc": {
+        "start": 145,
+        "end": 197
+      }
+    },
+    "loc": {
+      "start": 139,
+      "end": 197
+    }
+  },
+  "variableValues": {}
+}

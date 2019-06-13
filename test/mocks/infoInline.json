@@ -1,1 +1,297 @@
-{"fieldName":"posts","fieldNodes":[{"kind":"Field","name":{"kind":"Name","value":"posts","loc":{"start":95,"end":100}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post","loc":{"start":112,"end":116}},"loc":{"start":112,"end":116}},"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title","loc":{"start":120,"end":125}},"arguments":[],"directives":[],"loc":{"start":120,"end":125}},{"kind":"Field","name":{"kind":"Name","value":"category","loc":{"start":128,"end":136}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name","loc":{"start":143,"end":147}},"arguments":[],"directives":[],"loc":{"start":143,"end":147}}],"loc":{"start":137,"end":151}},"loc":{"start":128,"end":151}}],"loc":{"start":116,"end":153}},"loc":{"start":105,"end":153}}],"loc":{"start":100,"end":157}},"loc":{"start":95,"end":157}}],"returnType":"[Post]","parentType":"Query","path":{"key":"posts"},"schema":{"__validationErrors":[],"__allowedLegacyNames":[],"_queryType":"Query","_directives":["@skip","@include","@deprecated"],"_typeMap":{"Query":"Query","Int":"Int","Post":"Post","ID":"ID","String":"String","Category":"Category","__Schema":"__Schema","__Type":"__Type","__TypeKind":"__TypeKind","Boolean":"Boolean","__Field":"__Field","__InputValue":"__InputValue","__EnumValue":"__EnumValue","__Directive":"__Directive","__DirectiveLocation":"__DirectiveLocation"},"_possibleTypeMap":{},"_implementations":{}},"fragments":{},"rootValue":{},"operation":{"kind":"OperationDefinition","operation":"query","variableDefinitions":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"posts","loc":{"start":95,"end":100}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Post","loc":{"start":112,"end":116}},"loc":{"start":112,"end":116}},"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title","loc":{"start":120,"end":125}},"arguments":[],"directives":[],"loc":{"start":120,"end":125}},{"kind":"Field","name":{"kind":"Name","value":"category","loc":{"start":128,"end":136}},"arguments":[],"directives":[],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name","loc":{"start":143,"end":147}},"arguments":[],"directives":[],"loc":{"start":143,"end":147}}],"loc":{"start":137,"end":151}},"loc":{"start":128,"end":151}}],"loc":{"start":116,"end":153}},"loc":{"start":105,"end":153}}],"loc":{"start":100,"end":157}},"loc":{"start":95,"end":157}}],"loc":{"start":91,"end":159}},"loc":{"start":85,"end":159}},"variableValues":{}}
+{
+  "fieldName": "posts",
+  "fieldNodes": [
+    {
+      "kind": "Field",
+      "name": {
+        "kind": "Name",
+        "value": "posts",
+        "loc": {
+          "start": 95,
+          "end": 100
+        }
+      },
+      "arguments": [],
+      "directives": [],
+      "selectionSet": {
+        "kind": "SelectionSet",
+        "selections": [
+          {
+            "kind": "InlineFragment",
+            "typeCondition": {
+              "kind": "NamedType",
+              "name": {
+                "kind": "Name",
+                "value": "Post",
+                "loc": {
+                  "start": 112,
+                  "end": 116
+                }
+              },
+              "loc": {
+                "start": 112,
+                "end": 116
+              }
+            },
+            "directives": [],
+            "selectionSet": {
+              "kind": "SelectionSet",
+              "selections": [
+                {
+                  "kind": "Field",
+                  "name": {
+                    "kind": "Name",
+                    "value": "title",
+                    "loc": {
+                      "start": 120,
+                      "end": 125
+                    }
+                  },
+                  "arguments": [],
+                  "directives": [],
+                  "loc": {
+                    "start": 120,
+                    "end": 125
+                  }
+                },
+                {
+                  "kind": "Field",
+                  "name": {
+                    "kind": "Name",
+                    "value": "category",
+                    "loc": {
+                      "start": 128,
+                      "end": 136
+                    }
+                  },
+                  "arguments": [],
+                  "directives": [],
+                  "selectionSet": {
+                    "kind": "SelectionSet",
+                    "selections": [
+                      {
+                        "kind": "Field",
+                        "name": {
+                          "kind": "Name",
+                          "value": "name",
+                          "loc": {
+                            "start": 143,
+                            "end": 147
+                          }
+                        },
+                        "arguments": [],
+                        "directives": [],
+                        "loc": {
+                          "start": 143,
+                          "end": 147
+                        }
+                      }
+                    ],
+                    "loc": {
+                      "start": 137,
+                      "end": 151
+                    }
+                  },
+                  "loc": {
+                    "start": 128,
+                    "end": 151
+                  }
+                }
+              ],
+              "loc": {
+                "start": 116,
+                "end": 153
+              }
+            },
+            "loc": {
+              "start": 105,
+              "end": 153
+            }
+          }
+        ],
+        "loc": {
+          "start": 100,
+          "end": 157
+        }
+      },
+      "loc": {
+        "start": 95,
+        "end": 157
+      }
+    }
+  ],
+  "returnType": "[Post]",
+  "parentType": "Query",
+  "path": {
+    "key": "posts"
+  },
+  "schema": {
+    "__validationErrors": [],
+    "__allowedLegacyNames": [],
+    "_queryType": "Query",
+    "_directives": [
+      "@skip",
+      "@include",
+      "@deprecated"
+    ],
+    "_typeMap": {
+      "Query": "Query",
+      "Int": "Int",
+      "Post": "Post",
+      "ID": "ID",
+      "String": "String",
+      "Category": "Category",
+      "__Schema": "__Schema",
+      "__Type": "__Type",
+      "__TypeKind": "__TypeKind",
+      "Boolean": "Boolean",
+      "__Field": "__Field",
+      "__InputValue": "__InputValue",
+      "__EnumValue": "__EnumValue",
+      "__Directive": "__Directive",
+      "__DirectiveLocation": "__DirectiveLocation"
+    },
+    "_possibleTypeMap": {},
+    "_implementations": {}
+  },
+  "fragments": {},
+  "rootValue": {},
+  "operation": {
+    "kind": "OperationDefinition",
+    "operation": "query",
+    "variableDefinitions": [],
+    "directives": [],
+    "selectionSet": {
+      "kind": "SelectionSet",
+      "selections": [
+        {
+          "kind": "Field",
+          "name": {
+            "kind": "Name",
+            "value": "posts",
+            "loc": {
+              "start": 95,
+              "end": 100
+            }
+          },
+          "arguments": [],
+          "directives": [],
+          "selectionSet": {
+            "kind": "SelectionSet",
+            "selections": [
+              {
+                "kind": "InlineFragment",
+                "typeCondition": {
+                  "kind": "NamedType",
+                  "name": {
+                    "kind": "Name",
+                    "value": "Post",
+                    "loc": {
+                      "start": 112,
+                      "end": 116
+                    }
+                  },
+                  "loc": {
+                    "start": 112,
+                    "end": 116
+                  }
+                },
+                "directives": [],
+                "selectionSet": {
+                  "kind": "SelectionSet",
+                  "selections": [
+                    {
+                      "kind": "Field",
+                      "name": {
+                        "kind": "Name",
+                        "value": "title",
+                        "loc": {
+                          "start": 120,
+                          "end": 125
+                        }
+                      },
+                      "arguments": [],
+                      "directives": [],
+                      "loc": {
+                        "start": 120,
+                        "end": 125
+                      }
+                    },
+                    {
+                      "kind": "Field",
+                      "name": {
+                        "kind": "Name",
+                        "value": "category",
+                        "loc": {
+                          "start": 128,
+                          "end": 136
+                        }
+                      },
+                      "arguments": [],
+                      "directives": [],
+                      "selectionSet": {
+                        "kind": "SelectionSet",
+                        "selections": [
+                          {
+                            "kind": "Field",
+                            "name": {
+                              "kind": "Name",
+                              "value": "name",
+                              "loc": {
+                                "start": 143,
+                                "end": 147
+                              }
+                            },
+                            "arguments": [],
+                            "directives": [],
+                            "loc": {
+                              "start": 143,
+                              "end": 147
+                            }
+                          }
+                        ],
+                        "loc": {
+                          "start": 137,
+                          "end": 151
+                        }
+                      },
+                      "loc": {
+                        "start": 128,
+                        "end": 151
+                      }
+                    }
+                  ],
+                  "loc": {
+                    "start": 116,
+                    "end": 153
+                  }
+                },
+                "loc": {
+                  "start": 105,
+                  "end": 153
+                }
+              }
+            ],
+            "loc": {
+              "start": 100,
+              "end": 157
+            }
+          },
+          "loc": {
+            "start": 95,
+            "end": 157
+          }
+        }
+      ],
+      "loc": {
+        "start": 91,
+        "end": 159
+      }
+    },
+    "loc": {
+      "start": 85,
+      "end": 159
+    }
+  },
+  "variableValues": {}
+}
