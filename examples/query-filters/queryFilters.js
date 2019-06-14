@@ -39,12 +39,14 @@ const resolvers = {
 
       if (queryData.hasRelation(relation)) {
         // Select with relation
+        // Can cause SQL injection
         posts = await db.all(
           `SELECT  ${queryData.getRootFields()}, ${queryData.getRelationFields(relation)} 
           FROM Post INNER JOIN Category ON Category.id = Post.categoryId`)
         // Transform from flatten structure to graph
         posts = queryData.expandToGraph(posts, [relation])
       } else {
+        // Can cause SQL injection
         posts = await db.all(`SELECT ${queryData.getRootFields()} FROM Post`)
       }
       return posts

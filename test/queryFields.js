@@ -6,6 +6,9 @@ const fragment = require('./mocks/infoFragment.json')
 const inline = require('./mocks/infoInline.json')
 const { buildQueryObject, getQueryFields } = require('../queryFields')
 
+const Fastify = require('fastify')
+const GQL = require('..')
+
 test('test getQueryFields with relationship', async (t) => {
   const result = getQueryFields(info)
   t.deepEqual(result, {
@@ -56,4 +59,62 @@ test('test expandToGraph', async (t) => {
   }], ['category'])
 
   t.deepEqual(graph[0].category, { 'name': 'test' })
+})
+
+const dogs = [{
+  name: 'Max',
+  type: 'Husky'
+}]
+
+const schema = `
+  type Dog {
+    name: String!
+    type: String!
+  }
+  type Query {
+    dogs: [Dog]
+  }
+`
+
+const query = `{
+  dogs {
+    name
+  }
+}`
+
+test('Test resolvers', async (t) => {
+  const app = Fastify()
+  const resolvers = {
+    Query: {
+      dogs (_, params, { getQueryFields }, info) {
+        const fields = getQueryFields(info)
+        t.equal(fields.fields.length, 1)
+        t.equal(fields.fields[0], 'name')
+        return dogs
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    queryFilters: true
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      dogs: [{
+        name: 'Max'
+      }]
+    }
+  })
 })
