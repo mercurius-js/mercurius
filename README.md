@@ -88,6 +88,24 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
+### Access app context in resolver
+
+```js
+...
+
+const resolvers = {
+  Query: {
+    add: async (_, { x, y }, context) => {
+      // do you need the request object?
+      console.log(context.reply.request)
+      return x + y
+    }
+  }
+}
+
+...
+```
+
 ## API
 
 ### plugin options
