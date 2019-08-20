@@ -143,7 +143,7 @@ module.exports = fp(async function (app, opts) {
       factory = new Factory()
       app.decorateReply(kLoaders)
       app.addHook('onRequest', async function (req, reply) {
-        reply[kLoaders] = factory.create({ req, reply })
+        reply[kLoaders] = factory.create({ req, reply, app })
       })
     }
 
