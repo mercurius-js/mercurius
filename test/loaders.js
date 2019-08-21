@@ -262,3 +262,68 @@ test('defineLoaders method', async (t) => {
     }
   })
 })
+
+test('support context in loader', async (t) => {
+  const app = Fastify()
+
+  const resolvers = {
+    Query: {
+      dogs: (_, params, context) => {
+        return dogs
+      }
+    }
+  }
+
+  const loaders = {
+    Dog: {
+      async owner (queries, context) {
+        t.equal(context.app, app)
+        return queries.map(({ obj }) => owners[obj.name])
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = 'query { dogs { name owner { name } } }'
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      dogs: [{
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }, {
+        name: 'Charlie',
+        owner: {
+          name: 'Sarah'
+        }
+      }, {
+        name: 'Buddy',
+        owner: {
+          name: 'Tracy'
+        }
+      }, {
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }]
+    }
+  })
+})

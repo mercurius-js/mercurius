@@ -41,7 +41,7 @@ test('basic GQL', async (t) => {
   })
 })
 
-test('support context', async (t) => {
+test('support context in resolver', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
