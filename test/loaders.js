@@ -15,13 +15,13 @@ const dogs = [{
 }]
 
 const owners = {
-  'Max': {
+  Max: {
     name: 'Jennifer'
   },
-  'Charlie': {
+  Charlie: {
     name: 'Sarah'
   },
-  'Buddy': {
+  Buddy: {
     name: 'Tracy'
   }
 }

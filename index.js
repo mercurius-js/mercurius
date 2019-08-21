@@ -25,7 +25,7 @@ const {
 const kLoaders = Symbol('fastify-gql.loaders')
 
 function buildCache (opts) {
-  if (opts.hasOwnProperty('cache')) {
+  if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
     if (opts.cache === false) {
       // no cache
       return null
@@ -49,7 +49,7 @@ module.exports = fp(async function (app, opts) {
     throw new Error('the jit option must be a number')
   }
 
-  let root = {}
+  const root = {}
   let schema = opts.schema
 
   if (typeof schema === 'string') {
@@ -233,7 +233,7 @@ module.exports = fp(async function (app, opts) {
       const operationAST = getOperationAST(document, operationName)
       if (operationAST.operation !== 'query') {
         const err = new MethodNotAllowed()
-        err.errors = [ new Error('Operation cannot be perfomed via a GET request') ]
+        err.errors = [new Error('Operation cannot be perfomed via a GET request')]
         throw err
       }
     }

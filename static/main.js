@@ -3,7 +3,7 @@
 const importer = {
   url: (url) => {
     return new Promise((resolve, reject) => {
-      let script = document.createElement('script')
+      const script = document.createElement('script')
       script.type = 'text/javascript'
       script.src = url
       script.addEventListener('load', () => resolve(script), false)
@@ -21,7 +21,7 @@ function render () {
     const res = await fetch('graphql', {
       method: 'post',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(params),

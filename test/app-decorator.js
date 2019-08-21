@@ -441,8 +441,8 @@ test('enum should be supported', async (t) => {
       name: 'MyEnum',
       description: 'MyEnum custom scalar type',
       values: {
-        'YES': { value: 4 },
-        'NO': { value: 2 }
+        YES: { value: 4 },
+        NO: { value: 2 }
       }
     })
   }
