@@ -21,7 +21,7 @@ const {
   validateSchema,
   execute
 } = require('graphql')
-const queryDepths = require('./lib/queryDepths')
+// const queryDepths = require('./lib/queryDepths')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -222,11 +222,13 @@ module.exports = fp(async function (app, opts) {
         throw err
       }
 
-      console.log('check depth here')
+      // console.log('check depth here')
 
-      const queryDepthsResult = queryDepths(document.definitions)
+      // const queryDepthsResult = queryDepths(document.definitions)
+      // const totalDepth = Object.values(queryDepthsResult).reduce((total, depth) => total + depth, 0)
+      // console.log(totalDepth)
 
-      console.log('result:', queryDepthsResult)
+      // console.log('result:', queryDepthsResult)
 
       if (lru) {
         lru.set(source, { document, validationErrors, count: 1, jit: null })
