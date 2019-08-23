@@ -168,7 +168,7 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   await app.ready()
 
   const err = new BadRequest()
-  const queryDepthError = new Error(`unnamedQuery query exceeds the query depth limit of 5`)
+  const queryDepthError = new Error('unnamedQuery query exceeds the query depth limit of 5')
   err.errors = [queryDepthError]
 
   try {
