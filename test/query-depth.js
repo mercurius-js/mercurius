@@ -2,6 +2,7 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
+const { BadRequest } = require('http-errors')
 const GQL = require('..')
 
 const dogs = [{
@@ -85,12 +86,65 @@ const query = `{
   }
 }`
 
-test('queryDepth', async (t) => {
+const goodResponse = {
+  data: {
+    dogs: [
+      {
+        name: 'Max',
+        owner: {
+          name: 'Jennifer',
+          pet: {
+            name: 'Max',
+            owner: {
+              name: 'Jennifer',
+              pet: {
+                name: 'Max'
+              }
+            }
+          }
+        }
+      },
+      {
+        name: 'Charlie',
+        owner: {
+          name: 'Sarah',
+          pet: {
+            name: 'Charlie',
+            owner: {
+              name: 'Sarah',
+              pet: {
+                name: 'Charlie'
+              }
+            }
+          }
+        }
+      },
+      {
+        name: 'Buddy',
+        owner: {
+          name: 'Tracy',
+          pet: {
+            name: 'Buddy',
+            owner: {
+              name: 'Tracy',
+              pet: {
+                name: 'Buddy'
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
+
+test('queryDepth - test total depth is within queryDepth parameter', async (t) => {
   const app = Fastify()
 
   app.register(GQL, {
     schema,
-    resolvers
+    resolvers,
+    queryDepths: 6
   })
 
   // needed so that graphql is defined
@@ -98,55 +152,28 @@ test('queryDepth', async (t) => {
 
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
-    data: {
-      dogs: [
-        {
-          name: 'Max',
-          owner: {
-            name: 'Jennifer',
-            pet: {
-              name: 'Max',
-              owner: {
-                name: 'Jennifer',
-                pet: {
-                  name: 'Max'
-                }
-              }
-            }
-          }
-        },
-        {
-          name: 'Charlie',
-          owner: {
-            name: 'Sarah',
-            pet: {
-              name: 'Charlie',
-              owner: {
-                name: 'Sarah',
-                pet: {
-                  name: 'Charlie'
-                }
-              }
-            }
-          }
-        },
-        {
-          name: 'Buddy',
-          owner: {
-            name: 'Tracy',
-            pet: {
-              name: 'Buddy',
-              owner: {
-                name: 'Tracy',
-                pet: {
-                  name: 'Buddy'
-                }
-              }
-            }
-          }
-        }
-      ]
-    }
+  t.deepEqual(res, goodResponse)
+})
+
+test('queryDepth - test total depth is over queryDepth parameter', async (t) => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    queryDepths: 5
   })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const err = new BadRequest()
+  const queryDepthError = new Error(`unnamedQuery query exceeds the query depth limit of 5`)
+  err.errors = [queryDepthError]
+
+  try {
+    await app.graphql(query)
+  } catch (error) {
+    t.deepEqual(error, err)
+  }
 })
