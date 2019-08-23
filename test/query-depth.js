@@ -144,7 +144,7 @@ test('queryDepth - test total depth is within queryDepth parameter', async (t) =
   app.register(GQL, {
     schema,
     resolvers,
-    queryDepths: 6
+    queryDepth: 6
   })
 
   // needed so that graphql is defined
@@ -161,7 +161,7 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   app.register(GQL, {
     schema,
     resolvers,
-    queryDepths: 5
+    queryDepth: 5
   })
 
   // needed so that graphql is defined

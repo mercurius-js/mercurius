@@ -21,7 +21,7 @@ const {
   validateSchema,
   execute
 } = require('graphql')
-const queryDepths = require('./lib/queryDepths')
+const queryDepth = require('./lib/queryDepth')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -45,6 +45,7 @@ module.exports = fp(async function (app, opts) {
   const lruErrors = buildCache(opts)
 
   const minJit = opts.jit || 0
+  const queryDepthLimit = opts.queryDepth
 
   if (typeof minJit !== 'number') {
     throw new Error('the jit option must be a number')
@@ -222,12 +223,12 @@ module.exports = fp(async function (app, opts) {
         throw err
       }
 
-      if (opts.queryDepths) {
-        const queryDepthsErrors = queryDepths(document.definitions, opts.queryDepths)
+      if (queryDepthLimit) {
+        const queryDepthErrors = queryDepth(document.definitions, queryDepthLimit)
 
-        if (queryDepthsErrors.length > 0) {
+        if (queryDepthErrors.length > 0) {
           const err = new BadRequest()
-          err.errors = queryDepthsErrors
+          err.errors = queryDepthErrors
           throw err
         }
       }

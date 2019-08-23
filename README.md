@@ -104,13 +104,36 @@ __fastify-gql__ supports the following options:
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or 
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
   if `routes` is `true`.
-* `jit`: Intenger. The minimum number of execution a query needs to be
+* `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
 * `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
+* `queryDepth`: `Integer`. The maximum depth allowed for a single query.
+
+#### queryDepth example
+```
+query {
+  dogs {
+    name
+    owner {
+      name
+      pet {
+        name
+        owner {
+          name
+          pet {
+            name
+          }
+        }
+      }
+    }
+  }
+}
+```
+A `queryDepth` of `6` would allow this query. `5` or less would throw with the error - `unnamedQuery query exceeds the query depth limit of 5`
 
 ### HTTP endpoints
 
