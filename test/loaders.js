@@ -43,7 +43,7 @@ const schema = `
 
 const resolvers = {
   Query: {
-    dogs (_, params, { reply }) {
+    dogs () {
       return dogs
     }
   }
@@ -63,7 +63,7 @@ test('loaders create batching resolvers', async (t) => {
 
   const loaders = {
     Dog: {
-      async owner (queries, { reply }) {
+      async owner (queries) {
         // note that the second entry for max is cached
         t.deepEqual(queries, [{
           obj: {
@@ -89,7 +89,10 @@ test('loaders create batching resolvers', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    loaders
+    loaders,
+    context: (request, reply) => {
+      return { reply }
+    }
   })
 
   const res = await app.inject({
@@ -134,7 +137,7 @@ test('disable cache for each loader', async (t) => {
   const loaders = {
     Dog: {
       owner: {
-        async loader (queries, { reply }) {
+        async loader (queries) {
           // note that the second entry for max is NOT cached
           t.deepEqual(queries, [{
             obj: {
@@ -169,7 +172,10 @@ test('disable cache for each loader', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    loaders
+    loaders,
+    context: (request, reply) => {
+      return { reply }
+    }
   })
 
   const res = await app.inject({
@@ -213,7 +219,7 @@ test('defineLoaders method', async (t) => {
 
   const loaders = {
     Dog: {
-      async owner (queries, { reply }) {
+      async owner (queries) {
         return queries.map(({ obj }) => owners[obj.name])
       }
     }
@@ -221,8 +227,12 @@ test('defineLoaders method', async (t) => {
 
   app.register(GQL, {
     schema,
-    resolvers
+    resolvers,
+    context: (request, reply) => {
+      return { reply }
+    }
   })
+
   app.register(async function (app) {
     app.graphql.defineLoaders(loaders)
   })
@@ -277,7 +287,6 @@ test('support context in loader', async (t) => {
   const loaders = {
     Dog: {
       async owner (queries, context) {
-        t.equal(context.app, app)
         return queries.map(({ obj }) => owners[obj.name])
       }
     }
@@ -286,7 +295,10 @@ test('support context in loader', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    loaders
+    loaders,
+    context: (request, reply) => {
+      return { reply }
+    }
   })
 
   // needed so that graphql is defined

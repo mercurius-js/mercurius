@@ -52,17 +52,17 @@ const schema = `
 
 const resolvers = {
   Human: {
-    pet (human, params, { reply }) {
+    pet (human) {
       return dogs.find(dog => dog.name === human.pet)
     }
   },
   Dog: {
-    owner (dog, params, { reply }) {
+    owner (dog) {
       return owners.find(owner => owner.pet === dog.name)
     }
   },
   Query: {
-    dogs (_, params, { reply }) {
+    dogs () {
       return dogs
     }
   }

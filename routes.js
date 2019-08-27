@@ -151,7 +151,7 @@ module.exports = async function (app, opts) {
 
     let context = {}
     if (opts.context) {
-        context = await opts.context(request, reply)
+      context = await opts.context(request, reply)
     }
 
     return reply.graphql(query, context, variables, operationName)
