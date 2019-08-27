@@ -41,39 +41,6 @@ test('basic GQL', async (t) => {
   })
 })
 
-test('support context in resolver', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      ctx: Int
-    }
-  `
-
-  const resolvers = {
-    ctx: async (_, ctx) => {
-      t.equal(ctx.app, app)
-      return ctx.num
-    }
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers
-  })
-
-  // needed so that graphql is defined
-  await app.ready()
-
-  const query = '{ ctx }'
-  const res = await app.graphql(query, { num: 42 })
-
-  t.deepEqual(res, {
-    data: {
-      ctx: 42
-    }
-  })
-})
-
 test('variables', async (t) => {
   const app = Fastify()
   const schema = `

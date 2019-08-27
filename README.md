@@ -88,22 +88,40 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
-### Access app context in resolver
+### Provide custom context
 
 ```js
-...
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+
+const app = Fastify()
+
+const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+`
 
 const resolvers = {
   Query: {
-    add: async (_, { x, y }, context) => {
-      // do you need the request object?
-      console.log(context.reply.request)
-      return x + y
+    add: async (_, { x, y }, ctx) => {
+        console.log(ctx.start)
+        return x + y
     }
   }
 }
 
-...
+app.register(GQL, {
+  schema,
+  resolvers,
+  context: async (request, reply) => {
+    return { start: Date.now() }
+  }
+})
+
+app.listen(3000)
 ```
 
 ## API

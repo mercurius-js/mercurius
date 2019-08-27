@@ -86,6 +86,7 @@ module.exports = fp(async function (app, opts) {
 
   if (opts.routes !== false) {
     app.register(routes, {
+      context: opts.context,
       errorHandler: opts.errorHandler,
       graphiql: opts.graphiql,
       prefix: opts.prefix
@@ -95,7 +96,7 @@ module.exports = fp(async function (app, opts) {
   app.decorateReply(graphqlCtx, null)
 
   app.decorateReply('graphql', function (source, context, variables, operationName) {
-    return app.graphql(source, Object.assign({ reply: this }, context), variables, operationName)
+    return app.graphql(source, context, variables, operationName, this)
   })
 
   app.decorate('graphql', fastifyGraphQl)
@@ -184,10 +185,7 @@ module.exports = fp(async function (app, opts) {
     fastifyGraphQl.defineLoaders(opts.loaders)
   }
 
-  async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this }, context)
-    const reply = context.reply
-
+  async function fastifyGraphQl (source, context, variables, operationName, reply) {
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
     let document = null
