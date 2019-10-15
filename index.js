@@ -60,11 +60,11 @@ module.exports = fp(async function (app, opts) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
-        fields: { }
+        fields: {}
       }),
       mutation: opts.defineMutation ? new GraphQLObjectType({
         name: 'Mutation',
-        fields: { }
+        fields: {}
       }) : undefined
     })
   }
