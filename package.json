@@ -3,8 +3,14 @@
   "version": "1.5.0",
   "description": "Fastify barebone GraphQL adapter",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
-    "test": "standard | snazzy && tap -J test/*.js"
+    "unit": "tap -J test/*.js",
+    "lint": "npm run lint:standard && npm run lint:typescript",
+    "lint:standard": "standard | snazzy",
+    "lint:typescript": "standard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin test/types/*.ts",
+    "typescript": "tsc --project ./test/types/tsconfig.json",
+    "test": "npm run lint && npm run unit && npm run typescript"
   },
   "repository": {
     "type": "git",
@@ -17,18 +23,22 @@
   },
   "homepage": "https://github.com/mcollina/fastify-gql#readme",
   "devDependencies": {
+    "@types/node": "^12.7.12",
+    "@typescript-eslint/eslint-plugin": "^2.3.3",
+    "@typescript-eslint/parser": "^2.3.3",
     "autocannon": "^4.0.0",
     "fastify": "^2.7.1",
     "graphql-tools": "^4.0.5",
     "pre-commit": "^1.2.2",
     "snazzy": "^8.0.0",
     "standard": "^14.0.0",
-    "tap": "^14.6.1"
+    "tap": "^14.6.1",
+    "typescript": "^3.6.4"
   },
   "dependencies": {
     "fastify-plugin": "^1.6.0",
     "fastify-static": "^2.5.0",
-    "graphql": "^14.4.2",
+    "graphql": "^14.5.0",
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
     "single-user-cache": "^0.3.0",
