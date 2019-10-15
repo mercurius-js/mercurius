@@ -3,6 +3,28 @@ import GQL from '../..'
 
 const app = Fastify()
 
+const dogs = [{
+  name: 'Max'
+}, {
+  name: 'Charlie'
+}, {
+  name: 'Buddy'
+}, {
+  name: 'Max'
+}]
+
+const owners = {
+  Max: {
+    name: 'Jennifer'
+  },
+  Charlie: {
+    name: 'Sarah'
+  },
+  Buddy: {
+    name: 'Tracy'
+  }
+}
+
 const schema = `
   type Query {
     add(x: Int, y: Int): Int
@@ -16,17 +38,45 @@ const resolvers = {
 }
 
 app.register(GQL, {
-  schema,
-  resolvers
+  schema: schema,
+  resolvers,
+  loaders: {},
+  graphiqls: true,
+  jit: 1,
+  routes: true,
+  prefix: 'prefix',
+  defineMutation: false,
+  errorHandler: true,
+  queryDepth: 8
 })
 
 app.register(async function (app) {
-  app.graphql.extendSchema(`extend type Query {
-    subtract(x: Int, y: Int): Int
-  }`)
+  app.graphql.extendSchema(`
+  type Human {
+    name: String!
+  }
+
+  type Dog {
+    name: String!
+    owner: Human
+  }
+
+  type Query {
+    dogs: [Dog]
+  }
+  `)
   app.graphql.defineResolvers({
     Query: {
-      subtract: async (_: any, { x, y }: { x: number, y: number }) => x - y
+      dogs (_, params, { reply }) {
+        return dogs
+      }
+    }
+  })
+  app.graphql.defineLoaders({
+    Dog: {
+      async owner (queries: Array<{ obj: { name: keyof typeof owners } }>) {
+        return queries.map(({ obj }) => owners[obj.name])
+      }
     }
   })
 })

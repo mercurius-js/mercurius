@@ -6,11 +6,12 @@ import fastify, {
 } from "fastify"
 import { IResolvers } from "graphql-tools";
 import { Server, IncomingMessage, ServerResponse } from "http";
+import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
 import graphql, { GraphQLSchema, GraphQLError, Source, DocumentNode, ExecutionResult } from 'graphql';
 
 declare namespace FastifyGQL {
 
-  export interface Plugin {
+  export interface Plugin<HttpResponse> {
     /**
      * Extend existing schema
      * @param schema graphql schema
@@ -25,13 +26,24 @@ declare namespace FastifyGQL {
      * Define data loaders
      * @param loaders object with data loader functions
      */
-    defineLoaders(loaders: {[key: string]: Function}): void;
+    defineLoaders(loaders: {
+      [key: string]: {
+        [key: string]: (
+          queries: Array<{
+            obj: any,
+            params: any 
+          }>,
+          context: {
+            reply: FastifyReply<HttpResponse>
+          }) => any
+      }
+    }): void;
   }
 
   export interface Options<
-    HttpServer,
-    HttpRequest,
-    HttpResponse
+    HttpServer extends (Server | Http2Server),
+    HttpRequest extends (IncomingMessage | Http2ServerRequest),
+    HttpResponse extends (ServerResponse | Http2ServerResponse)
   > extends RegisterOptions<HttpServer, HttpRequest, HttpResponse> {
     /**
      * The GraphQL schema. String schema will be parsed
@@ -45,7 +57,16 @@ declare namespace FastifyGQL {
      * Object with data loader functions
      */
     loaders?: {
-      [key: string]: Function
+      [key: string]: {
+        [key: string]: (
+          queries: Array<{
+            obj: any,
+            params: any 
+          }>,
+          context: {
+            reply: FastifyReply<HttpResponse>
+          }) => any
+      }
     },
     /**
      * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' if routes is true
@@ -75,11 +96,11 @@ declare namespace FastifyGQL {
      * If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response).
      * @default true
      */
-    errorHandler?: (
+    errorHandler?: boolean | ((
       error: FastifyError,
       request: FastifyRequest<HttpRequest>,
       reply: FastifyReply<HttpResponse>
-    ) => ExecutionResult | boolean,
+    ) => ExecutionResult),
     /**
      * The maximum depth allowed for a single query.
      */
@@ -92,7 +113,7 @@ declare module "fastify" {
     /**
      * GraphQL plugin
      */
-    graphql: FastifyGQL.Plugin;
+    graphql: FastifyGQL.Plugin<HttpResponse>;
   }
 
   interface FastifyReply<HttpResponse> {
@@ -111,11 +132,13 @@ declare module "fastify" {
   }
 }
 
-declare const fastifyGQL: fastify.Plugin<
-  Server,
-  IncomingMessage,
-  ServerResponse, 
-  FastifyGQL.Options<Server, IncomingMessage, ServerResponse>
->;
+declare function fastifyGQL<
+  HttpServer extends (Server | Http2Server),
+  HttpRequest extends (IncomingMessage | Http2ServerRequest),
+  HttpResponse extends (ServerResponse | Http2ServerResponse), 
+  Options = FastifyGQL.Options<HttpServer, HttpRequest, HttpResponse>
+> (
+  fastify: fastify.FastifyInstance<HttpServer, HttpRequest, HttpResponse>,
+  opts: Options) : void;
 
 export = fastifyGQL;
