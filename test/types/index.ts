@@ -44,7 +44,7 @@ app.register(GQL, {
   graphiqls: true,
   jit: 1,
   routes: true,
-  prefix: 'prefix',
+  prefix: '/prefix',
   defineMutation: false,
   errorHandler: true,
   queryDepth: 8
