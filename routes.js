@@ -37,7 +37,7 @@ const responseSchema = {
   }
 }
 
-async function defaultErrorHandler (err, request, reply) {
+async function defaultErrorHandler(err, request, reply) {
   if (!err.statusCode) {
     throw err
   }
@@ -58,7 +58,7 @@ async function defaultErrorHandler (err, request, reply) {
   }
 }
 
-function validationHandler (validationError) {
+function validationHandler(validationError) {
   if (validationError) {
     const err = new BadRequest()
     err.errors = [validationError]
@@ -77,17 +77,19 @@ module.exports = async function (app, opts) {
 
   app.get('/graphql', {
     schema: {
-      querystring: {
+      body: {
         type: 'object',
         properties: {
           query: {
-            type: 'string'
+            type: 'string',
+            description: 'the GraphQL query'
           },
           operationName: {
             type: 'string'
           },
-          variables: { // this is a JSON
-            type: 'string'
+          variables: {
+            type: ['object', 'null'],
+            additionalProperties: true
           }
         }
       },
@@ -121,43 +123,44 @@ module.exports = async function (app, opts) {
     return reply.graphql(query, context, variables, operationName)
   })
 
-  app.post('/graphql', {
+  const getOptions = {
+    url: '/graphql',
+    method: 'GET',
     schema: {
-      body: {
+      querystring: {
         type: 'object',
         properties: {
           query: {
-            type: 'string',
-            description: 'the GraphQL query'
+            type: 'string'
           },
           operationName: {
             type: 'string'
           },
-          variables: {
-            type: ['object', 'null'],
-            additionalProperties: true
+          variables: { // this is a JSON
+            type: 'string'
           }
         }
       },
       response: responseSchema
     },
-    attachValidation: true
-  }, async function (request, reply) {
-    validationHandler(request.validationError)
+    attachValidation: true,
+    handler: async function (request, reply) {
+      validationHandler(request.validationError)
 
-    const {
-      query,
-      variables,
-      operationName
-    } = request.body
+      const {
+        query,
+        variables,
+        operationName
+      } = request.body
 
-    let context = {}
-    if (contextFn) {
-      context = await contextFn(request, reply)
+      let context = {}
+      if (contextFn) {
+        context = await contextFn(request, reply)
+      }
+
+      return reply.graphql(query, context, variables, operationName)
     }
-
-    return reply.graphql(query, context, variables, operationName)
-  })
+  }
 
   if (opts.graphiql) {
     app.register(Static, {

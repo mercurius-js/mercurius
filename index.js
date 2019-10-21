@@ -89,7 +89,9 @@ module.exports = fp(async function (app, opts) {
       errorHandler: opts.errorHandler,
       graphiql: opts.graphiql,
       prefix: opts.prefix,
-      context: opts.context
+      context: opts.context,
+      subscription: opts.subscription,
+      schema
     })
   }
 
@@ -112,6 +114,7 @@ module.exports = fp(async function (app, opts) {
   fastifyGraphQl.defineResolvers = function (resolvers) {
     for (const name of Object.keys(resolvers)) {
       const type = schema.getType(name)
+      console.log(type)
       if (typeof resolvers[name] === 'function') {
         root[name] = resolvers[name]
       } else if (type instanceof GraphQLObjectType) {
@@ -122,7 +125,14 @@ module.exports = fp(async function (app, opts) {
           delete resolver.isTypeOf
         }
         for (const prop of Object.keys(resolver)) {
-          fields[prop].resolve = resolver[prop]
+          if (name === 'Subscription') {
+            fields[prop] = {
+              ...fields[prop],
+              ...resolver[prop]
+            }
+          } else {
+            fields[prop].resolve = resolver[prop]
+          }
         }
       } else if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
         const resolver = resolvers[name]
