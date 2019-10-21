@@ -91,7 +91,8 @@ module.exports = fp(async function (app, opts) {
       prefix: opts.prefix,
       context: opts.context,
       subscription: opts.subscription,
-      schema
+      schema,
+      subscriber: opts.subscriber
     })
   }
 

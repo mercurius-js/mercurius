@@ -17,33 +17,60 @@ const GQL_ERROR = 'error' // Server -> Client
 const GQL_COMPLETE = 'complete' // Server -> Client
 const GQL_STOP = 'stop' // Client -> Server
 
+class SubscriptionContext {
+  constructor({ subscriber }) {
+    this.subscriber = subscriber
+    this.closes = []
+  }
+
+  subscribe(...args) {
+    const { iterator, close } = this.subscriber.subscribe(...args)
+    this.closes.push(close)
+
+    return iterator
+  }
+
+  async close() {
+    await Promise.all(this.closes.map(close => close()))
+  }
+}
+
 function handle(conn) {
   conn.pipe(conn) // creates an echo server
 }
 
-function handleMessage(context) {
-  return (message) => {
-    const { socket } = context
+function handleMessage(config) {
+  return async (message) => {
+    const { socket, schema, subscriptionContexts, subscriber, handleConnectionClose } = config
+
     // TODO add error handling
     const data = JSON.parse(message)
 
     switch (data.type) {
       case GQL_CONNECTION_INIT:
+        // initialise graphql subscription
         socket.send(JSON.stringify({
           type: GQL_CONNECTION_ACK
         }))
         break
       case GQL_CONNECTION_TERMINATE:
-        socket.close()
+        // TODO ??
+        handleConnectionClose()
         break
       case GQL_START:
+        // Starting GraphQL subscription
+        // eslint-disable-next-line
+        const sc = new SubscriptionContext({ subscriber })
+        subscriptionContexts.set(data.id, sc)
         // eslint-disable-next-line
         const params = {
           query: data.payload.query,
           variables: data.payload.variables,
           operationName: data.payload.operationName,
-          context: {},
-          schema: context.schema
+          context: {
+            pubsub: sc
+          },
+          schema
         }
         // eslint-disable-next-line
         const document = typeof params.query !== 'string' ? params.query : parse(params.query)
@@ -62,13 +89,17 @@ function handleMessage(context) {
               payload: value
             }))
           }
-        }).then(() => {
-          socket.send(JSON.stringify({
-            type: GQL_COMPLETE,
-            payload: null
-          }))
         })
       case GQL_STOP:
+        // TODO handle unsubscribe for a given subscription id
+        // eslint-disable-next-line
+        const subscriptionContextToRemove = subscriptionContexts.get(data.id)
+        if (!subscriptionContextToRemove) {
+          return
+        }
+
+        await subscriptionContextToRemove.close()
+        subscriptionContexts.delete(data.id)
         break
       default:
         socket.send(JSON.stringify({
@@ -79,8 +110,9 @@ function handleMessage(context) {
   }
 }
 
-function createWSHandler(schema) {
+function createWSHandler(schema, subscriber) {
   return (conn, req) => {
+    console.log('new connection')
     conn.setEncoding('utf8')
     const { socket } = conn
 
@@ -94,18 +126,24 @@ function createWSHandler(schema) {
 
       return
     }
-    const context = {
+
+    const subscriptionContexts = new Map()
+
+    const config = {
       socket: conn.socket,
-      schema
+      schema,
+      subscriber,
+      subscriptionContexts,
+      handleConnectionClose
     }
-    conn.socket.on('message', handleMessage(context))
 
-    function handleConnectionClose(error) {
-      if (error) {
-        setTimeout(() => conn.socket.close(1011), 10)
-      }
+    conn.socket.on('message', handleMessage(config))
 
-      // close socket & TODO: clean up subscriptions
+    async function handleConnectionClose() {
+      const a = Array.from(subscriptionContexts.values())
+      console.log(a)
+      await Promise.all(a.map(subscriptionContext =>
+        subscriptionContext.close()))
       conn.socket.close()
     }
 
@@ -117,7 +155,7 @@ function createWSHandler(schema) {
   }
 }
 
-module.exports = function (fastify, getOptions, schema) {
+module.exports = function (fastify, getOptions, schema, subscriber) {
   fastify.register(Websocket, {
     handle,
     options: { maxPayload: 1048576 }
@@ -125,6 +163,6 @@ module.exports = function (fastify, getOptions, schema) {
 
   fastify.route({
     ...getOptions,
-    wsHandler: createWSHandler(schema)
+    wsHandler: createWSHandler(schema, subscriber)
   })
 }

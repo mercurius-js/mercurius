@@ -37,7 +37,7 @@ const responseSchema = {
   }
 }
 
-async function defaultErrorHandler(err, request, reply) {
+async function defaultErrorHandler (err, request, reply) {
   if (!err.statusCode) {
     throw err
   }
@@ -58,7 +58,7 @@ async function defaultErrorHandler(err, request, reply) {
   }
 }
 
-function validationHandler(validationError) {
+function validationHandler (validationError) {
   if (validationError) {
     const err = new BadRequest()
     err.errors = [validationError]
@@ -160,6 +160,14 @@ module.exports = async function (app, opts) {
 
       return reply.graphql(query, context, variables, operationName)
     }
+  }
+
+  if (opts.subscription) {
+    console.log('adding subscription support')
+    require('./subscription')(app, getOptions, opts.schema, opts.subscriber)
+  } else {
+    console.log(opts)
+    app.route(getOptions)
   }
 
   if (opts.graphiql) {
