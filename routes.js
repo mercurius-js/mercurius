@@ -163,10 +163,11 @@ module.exports = async function (app, opts) {
   }
 
   if (opts.subscription) {
-    console.log('adding subscription support')
-    require('./subscription')(app, getOptions, opts.schema, opts.subscriber)
+    require('./subscription')(app, getOptions, {
+      schema: opts.schema,
+      subscriber: require('./subscriber')(opts.subscription.emitter)
+    })
   } else {
-    console.log(opts)
     app.route(getOptions)
   }
 

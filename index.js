@@ -90,9 +90,8 @@ module.exports = fp(async function (app, opts) {
       graphiql: opts.graphiql,
       prefix: opts.prefix,
       context: opts.context,
-      subscription: opts.subscription,
       schema,
-      subscriber: opts.subscriber
+      subscription: opts.subscription
     })
   }
 

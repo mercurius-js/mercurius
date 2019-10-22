@@ -18,28 +18,28 @@ const GQL_COMPLETE = 'complete' // Server -> Client
 const GQL_STOP = 'stop' // Client -> Server
 
 class SubscriptionContext {
-  constructor({ subscriber }) {
+  constructor ({ subscriber }) {
     this.subscriber = subscriber
     this.closes = []
   }
 
-  subscribe(...args) {
+  subscribe (...args) {
     const { iterator, close } = this.subscriber.subscribe(...args)
     this.closes.push(close)
 
     return iterator
   }
 
-  async close() {
+  async close () {
     await Promise.all(this.closes.map(close => close()))
   }
 }
 
-function handle(conn) {
+function handle (conn) {
   conn.pipe(conn) // creates an echo server
 }
 
-function handleMessage(config) {
+function handleMessage (config) {
   return async (message) => {
     const { socket, schema, subscriptionContexts, subscriber, handleConnectionClose } = config
 
@@ -110,9 +110,8 @@ function handleMessage(config) {
   }
 }
 
-function createWSHandler(schema, subscriber) {
+function createWSHandler (schema, subscriber) {
   return (conn, req) => {
-    console.log('new connection')
     conn.setEncoding('utf8')
     const { socket } = conn
 
@@ -121,7 +120,6 @@ function createWSHandler(schema, subscriber) {
       // Close the connection with an error code, ws v2 ensures that the
       // connection is cleaned up even when the closing handshake fails.
       // 1002: protocol error
-      console.log('closing socket because protocol mismatch', socket.protocol)
       socket.close(1002)
 
       return
@@ -139,9 +137,8 @@ function createWSHandler(schema, subscriber) {
 
     conn.socket.on('message', handleMessage(config))
 
-    async function handleConnectionClose() {
+    async function handleConnectionClose () {
       const a = Array.from(subscriptionContexts.values())
-      console.log(a)
       await Promise.all(a.map(subscriptionContext =>
         subscriptionContext.close()))
       conn.socket.close()
@@ -149,13 +146,11 @@ function createWSHandler(schema, subscriber) {
 
     conn.socket.on('error', handleConnectionClose)
     conn.socket.on('close', handleConnectionClose)
-    conn.on('error', (e) => {
-      // console.log('connection error', e)
-    })
+    conn.on('error', (e) => {})
   }
 }
 
-module.exports = function (fastify, getOptions, schema, subscriber) {
+module.exports = function (fastify, getOptions, { schema, subscriber }) {
   fastify.register(Websocket, {
     handle,
     options: { maxPayload: 1048576 }
