@@ -106,6 +106,30 @@ const resolvers = {
 ...
 ```
 
+### Build a custom GraphQL context object
+
+```js
+...
+const resolvers = {
+  Query: {
+    me: async (obj, args, ctx) => {
+      // access user_id in ctx
+      console.log(ctx.user_id)
+    }
+  }
+}
+app.register(GQL, {
+  schema: makeExecutableSchema({ typeDefs, resolvers }),
+  context: (request, reply) => {
+    // Return an object that will be available in your GraphQL resolvers
+    return {
+        user_id: 1234
+    }
+  }
+})
+...
+```
+
 ## API
 
 ### plugin options
@@ -126,6 +150,7 @@ __fastify-gql__ supports the following options:
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
+* `context`: `Function`. Result of function is passed to resolvers as a custom GraphQL context. The function receives the `request` and `reply` as parameters. It is only called when `routes` options is `true`
 * `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._

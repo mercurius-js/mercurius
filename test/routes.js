@@ -835,3 +835,60 @@ test('route validation is catched and parsed to graphql error', async (t) => {
   t.strictEqual(res.statusCode, 400)
   t.strictDeepEqual(JSON.parse(res.body), expectedResult)
 })
+
+test('routes with custom context', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+    type Query {
+      test: String
+    }
+  `
+
+  const resolvers = {
+    test: async (args, ctx) => {
+      t.type(ctx, 'object')
+      t.type(ctx.reply, 'object')
+      t.type(ctx.app, 'object')
+      t.equal(ctx.test, 'custom')
+      return ctx.test
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    context: (request, reply) => {
+      t.type(request, 'object')
+      t.type(reply, 'object')
+      return {
+        test: 'custom'
+      }
+    }
+  })
+
+  const get = await app.inject({
+    method: 'GET',
+    url: '/graphql?query=query { test }'
+  })
+
+  t.deepEqual(JSON.parse(get.body), {
+    data: {
+      test: 'custom'
+    }
+  })
+
+  const post = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: 'query { test }'
+    }
+  })
+
+  t.deepEqual(JSON.parse(post.body), {
+    data: {
+      test: 'custom'
+    }
+  })
+})
