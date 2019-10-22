@@ -4,6 +4,8 @@ const { join } = require('path')
 const Static = require('fastify-static')
 const { BadRequest } = require('http-errors')
 const { formatError, GraphQLError } = require('graphql')
+const Subscriber = require('./subscriber')
+const subscription = require('./subscription')
 
 const responseSchema = {
   '2xx': {
@@ -72,56 +74,7 @@ module.exports = async function (app, opts) {
   } else if (opts.errorHandler === true || opts.errorHandler === undefined) {
     app.setErrorHandler(defaultErrorHandler)
   }
-
   const contextFn = opts.context
-
-  app.get('/graphql', {
-    schema: {
-      body: {
-        type: 'object',
-        properties: {
-          query: {
-            type: 'string',
-            description: 'the GraphQL query'
-          },
-          operationName: {
-            type: 'string'
-          },
-          variables: {
-            type: ['object', 'null'],
-            additionalProperties: true
-          }
-        }
-      },
-      response: responseSchema
-    },
-    attachValidation: true
-  }, async function (request, reply) {
-    validationHandler(request.validationError)
-
-    let {
-      query,
-      variables,
-      operationName
-    } = request.query
-
-    let context = {}
-    if (contextFn) {
-      context = await contextFn(request, reply)
-    }
-
-    if (variables) {
-      try {
-        variables = JSON.parse(variables)
-      } catch (err) {
-        request.log.info({ err: err })
-        reply.send(new BadRequest(err.message))
-        return
-      }
-    }
-
-    return reply.graphql(query, context, variables, operationName)
-  })
 
   const getOptions = {
     url: '/graphql',
@@ -163,15 +116,46 @@ module.exports = async function (app, opts) {
   }
 
   if (opts.subscription) {
-    const Subscriber = require('./subscriber')
-
-    require('./subscription')(app, getOptions, {
+    subscription(app, getOptions, {
       schema: opts.schema,
       subscriber: new Subscriber(opts.subscription.emitter)
     })
   } else {
     app.route(getOptions)
   }
+
+  app.post('/graphql', {
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'the GraphQL query'
+          },
+          operationName: {
+            type: 'string'
+          },
+          variables: {
+            type: ['object', 'null'],
+            additionalProperties: true
+          }
+        }
+      },
+      response: responseSchema
+    },
+    attachValidation: true
+  }, async function (request, reply) {
+    validationHandler(request.validationError)
+
+    const {
+      query,
+      variables,
+      operationName
+    } = request.body
+
+    return reply.graphql(query, null, variables, operationName)
+  })
 
   if (opts.graphiql) {
     app.register(Static, {
