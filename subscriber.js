@@ -1,4 +1,4 @@
-const { Readable } = require('stream')
+const { Readable } = require('readable-stream')
 
 module.exports = class Subscriber {
   constructor (emitter) {
@@ -33,9 +33,6 @@ module.exports = class Subscriber {
     this._listeners.set(event, listener)
   }
 
-  /**
-   * @topic: string representing the subscription topic
-   */
   subscribe (topic) {
     let eventQueues = this._queues.get(topic)
 
@@ -53,6 +50,7 @@ module.exports = class Subscriber {
     eventQueues.add(queue)
     return {
       close: () => {
+        queue.push(null)
         const innerQueues = this._queues.get(topic)
         if (!innerQueues) return
 

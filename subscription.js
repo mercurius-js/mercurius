@@ -30,8 +30,8 @@ class SubscriptionContext {
     return iterator
   }
 
-  async close () {
-    await Promise.all(this.closes.map(close => close()))
+  close () {
+    this.closes.map(close => close())
   }
 }
 
@@ -39,81 +39,114 @@ function handle (conn) {
   conn.pipe(conn) // creates an echo server
 }
 
-function handleMessage (config) {
-  return async (message) => {
-    const { socket, schema, subscriptionContexts, subscriber, handleConnectionClose } = config
+class SubscriptionConnection {
+  constructor (socket, {
+    schema,
+    subscriber
+  }) {
+    this.socket = socket
+    this.schema = schema
+    this.subscriber = subscriber
+    this.subscriptionContexts = new Map()
 
-    // TODO add error handling
-    const data = JSON.parse(message)
+    this.socket.on('message', this.handleMessage.bind(this))
+    this.socket.on('error', this.handleConnectionClose.bind(this))
+  }
 
-    switch (data.type) {
+  async handleMessage (message) {
+    let data
+    try {
+      data = JSON.parse(message)
+    } catch (e) {
+      this.sendMessage(null, GQL_ERROR, 'Message must be a JSON string')
+      return
+    }
+
+    const { id, type } = data
+
+    switch (type) {
       case GQL_CONNECTION_INIT:
-        // initialise graphql subscription
-        socket.send(JSON.stringify({
-          type: GQL_CONNECTION_ACK
-        }))
+        this.sendMessage(GQL_CONNECTION_ACK)
         break
       case GQL_CONNECTION_TERMINATE:
-        // TODO ??
-        handleConnectionClose()
+        this.handleConnectionClose()
         break
       case GQL_START:
-        // Starting GraphQL subscription
-        // eslint-disable-next-line
-        const sc = new SubscriptionContext({ subscriber })
-        subscriptionContexts.set(data.id, sc)
-        // eslint-disable-next-line
-        const params = {
-          query: data.payload.query,
-          variables: data.payload.variables,
-          operationName: data.payload.operationName,
-          context: {
-            pubsub: sc
-          },
-          schema
+        try {
+          await this.handleGQLStart(data)
+        } catch (e) {
+          this.sendMessage(GQL_ERROR, id, e.message)
         }
-        // eslint-disable-next-line
-        const document = typeof params.query !== 'string' ? params.query : parse(params.query)
-        return subscribe(
-          params.schema,
-          document,
-          {}, // rootValue
-          params.context,
-          params.variables,
-          params.operationName
-        ).then(async result => {
-          for await (const value of result) {
-            socket.send(JSON.stringify({
-              type: GQL_DATA,
-              id: data.id,
-              payload: value
-            }))
-          }
-        })
+        break
       case GQL_STOP:
-        // TODO handle unsubscribe for a given subscription id
-        // eslint-disable-next-line
-        const subscriptionContextToRemove = subscriptionContexts.get(data.id)
-        if (!subscriptionContextToRemove) {
-          return
-        }
-
-        await subscriptionContextToRemove.close()
-        subscriptionContexts.delete(data.id)
+        this.handleGQLStop(data)
         break
       default:
-        socket.send(JSON.stringify({
-          type: GQL_ERROR,
-          payload: 'invalid type'
-        }))
+        this.sendMessage(GQL_ERROR, id, 'Invalid payload type')
     }
+  }
+
+  async handleGQLStart (data) {
+    // Starting a GraphQL subscription
+    const { id, payload } = data
+    const { query, variables, operationName } = payload
+
+    const sc = new SubscriptionContext({ subscriber: this.subscriber })
+    this.subscriptionContexts.set(id, sc)
+
+    const document = typeof query !== 'string' ? query : parse(query)
+
+    const result = await subscribe(
+      this.schema,
+      document,
+      {}, // rootValue
+      {
+        pubsub: sc
+      },
+      variables,
+      operationName
+    )
+
+    for await (const value of result) {
+      this.sendMessage(GQL_DATA, data.id, value)
+    }
+  }
+
+  handleGQLStop (data) {
+    const subscriptionContextToRemove = this.subscriptionContexts.get(data.id)
+    if (!subscriptionContextToRemove) {
+      return
+    }
+
+    subscriptionContextToRemove.close()
+    this.subscriptionContexts.delete(data.id)
+  }
+
+  handleConnectionClose () {
+    Array
+      .from(this.subscriptionContexts.values())
+      .map(subscriptionContext =>
+        subscriptionContext.close())
+    this.socket.close()
+  }
+
+  sendMessage (type, id, payload) {
+    this.socket.send(JSON.stringify({
+      type,
+      id,
+      payload
+    }))
+  }
+
+  close () {
+    this.handleConnectionClose()
   }
 }
 
-function createWSHandler (schema, subscriber) {
-  return (conn, req) => {
-    conn.setEncoding('utf8')
-    const { socket } = conn
+function createConnectionHandler (schema, subscriber) {
+  return (connection, request) => {
+    connection.setEncoding('utf8')
+    const { socket } = connection
 
     if (socket.protocol === undefined ||
       (socket.protocol.indexOf(GRAPHQL_WS) === -1)) {
@@ -125,28 +158,15 @@ function createWSHandler (schema, subscriber) {
       return
     }
 
-    const subscriptionContexts = new Map()
-
-    const config = {
-      socket: conn.socket,
+    const subscriptionConnection = new SubscriptionConnection(socket, {
       schema,
-      subscriber,
-      subscriptionContexts,
-      handleConnectionClose
-    }
+      subscriber
+    })
 
-    conn.socket.on('message', handleMessage(config))
-
-    async function handleConnectionClose () {
-      const a = Array.from(subscriptionContexts.values())
-      await Promise.all(a.map(subscriptionContext =>
-        subscriptionContext.close()))
-      conn.socket.close()
-    }
-
-    conn.socket.on('error', handleConnectionClose)
-    conn.socket.on('close', handleConnectionClose)
-    conn.on('error', (e) => {})
+    connection.on('error', (e) => {})
+    connection.on('close', () => {
+      subscriptionConnection.close()
+    })
   }
 }
 
@@ -158,6 +178,6 @@ module.exports = function (fastify, getOptions, { schema, subscriber }) {
 
   fastify.route({
     ...getOptions,
-    wsHandler: createWSHandler(schema, subscriber)
+    wsHandler: createConnectionHandler(schema, subscriber)
   })
 }

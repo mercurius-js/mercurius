@@ -41,9 +41,9 @@ declare namespace FastifyGQL {
   }
 
   export interface Options<
-    HttpServer extends (Server | Http2Server),
-    HttpRequest extends (IncomingMessage | Http2ServerRequest),
-    HttpResponse extends (ServerResponse | Http2ServerResponse)
+      HttpServer extends (Server | Http2Server),
+      HttpRequest extends (IncomingMessage | Http2ServerRequest),
+      HttpResponse extends (ServerResponse | Http2ServerResponse)
     > extends RegisterOptions<HttpServer, HttpRequest, HttpResponse> {
     /**
      * The GraphQL schema. String schema will be parsed
@@ -105,7 +105,13 @@ declare namespace FastifyGQL {
      * The maximum depth allowed for a single query.
      */
     queryDepth?: number,
-    context?: (request: FastifyRequest<HttpRequest>, reply: FastifyReply<HttpResponse>) => Promise<any>
+    context?: (request: FastifyRequest<HttpRequest>, reply: FastifyReply<HttpResponse>) => Promise<any>,
+    /**
+     * Enable subscription support when options are provided
+     */
+    subscriptions?: {
+      emitter: object
+    }
   }
 }
 

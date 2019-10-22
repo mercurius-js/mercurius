@@ -114,7 +114,7 @@ module.exports = fp(async function (app, opts) {
   fastifyGraphQl.defineResolvers = function (resolvers) {
     for (const name of Object.keys(resolvers)) {
       const type = schema.getType(name)
-      console.log(type)
+
       if (typeof resolvers[name] === 'function') {
         root[name] = resolvers[name]
       } else if (type instanceof GraphQLObjectType) {

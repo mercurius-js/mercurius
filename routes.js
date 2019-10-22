@@ -163,9 +163,11 @@ module.exports = async function (app, opts) {
   }
 
   if (opts.subscription) {
+    const Subscriber = require('./subscriber')
+
     require('./subscription')(app, getOptions, {
       schema: opts.schema,
-      subscriber: require('./subscriber')(opts.subscription.emitter)
+      subscriber: new Subscriber(opts.subscription.emitter)
     })
   } else {
     app.route(getOptions)
