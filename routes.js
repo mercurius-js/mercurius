@@ -165,7 +165,12 @@ module.exports = async function (app, opts) {
       operationName
     } = request.body
 
-    return reply.graphql(query, null, variables, operationName)
+    let context = {}
+    if (contextFn) {
+      context = await contextFn(request, reply)
+    }
+
+    return reply.graphql(query, context, variables, operationName)
   })
 
   if (opts.graphiql) {
