@@ -159,7 +159,9 @@ function createConnectionHandler (schema, subscriber) {
       subscriber
     })
 
-    connection.on('error', (e) => {})
+    connection.on('error', () => {
+      subscriptionConnection.close()
+    })
     connection.on('close', () => {
       subscriptionConnection.close()
     })
