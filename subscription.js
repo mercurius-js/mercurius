@@ -92,7 +92,7 @@ class SubscriptionConnection {
 
     const document = typeof query !== 'string' ? query : parse(query)
 
-    subscribe(
+    return subscribe(
       this.schema,
       document,
       {}, // rootValue
@@ -109,6 +109,9 @@ class SubscriptionConnection {
       })
       .then(() => {
         this.sendMessage(GQL_COMPLETE, data.id, null)
+      })
+      .catch(err => {
+        throw err
       })
   }
 
