@@ -54,7 +54,7 @@ class SubscriptionConnection {
     try {
       data = JSON.parse(message)
     } catch (e) {
-      this.sendMessage(null, GQL_ERROR, 'Message must be a JSON string')
+      this.sendMessage(GQL_ERROR, null, 'Message must be a JSON string')
       return
     }
 

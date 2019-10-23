@@ -68,5 +68,6 @@ module.exports = class Subscriber {
     this._listeners.forEach((fn, event) => {
       this.emitter.removeListener(event, fn)
     })
+    this._listeners = new Map()
   }
 }
