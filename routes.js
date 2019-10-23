@@ -73,6 +73,8 @@ module.exports = async function (app, opts) {
     app.setErrorHandler(defaultErrorHandler)
   }
 
+  const contextFn = opts.context
+
   app.get('/graphql', {
     schema: {
       querystring: {
@@ -92,7 +94,7 @@ module.exports = async function (app, opts) {
       response: responseSchema
     },
     attachValidation: true
-  }, function (request, reply) {
+  }, async function (request, reply) {
     validationHandler(request.validationError)
 
     let {
@@ -100,6 +102,11 @@ module.exports = async function (app, opts) {
       variables,
       operationName
     } = request.query
+
+    let context = {}
+    if (contextFn) {
+      context = await contextFn(request, reply)
+    }
 
     if (variables) {
       try {
@@ -111,7 +118,7 @@ module.exports = async function (app, opts) {
       }
     }
 
-    return reply.graphql(query, null, variables, operationName)
+    return reply.graphql(query, context, variables, operationName)
   })
 
   app.post('/graphql', {
@@ -144,7 +151,12 @@ module.exports = async function (app, opts) {
       operationName
     } = request.body
 
-    return reply.graphql(query, null, variables, operationName)
+    let context = {}
+    if (contextFn) {
+      context = await contextFn(request, reply)
+    }
+
+    return reply.graphql(query, context, variables, operationName)
   })
 
   if (opts.graphiql) {

@@ -31,7 +31,7 @@ declare namespace FastifyGQL {
         [key: string]: (
           queries: Array<{
             obj: any,
-            params: any 
+            params: any
           }>,
           context: {
             reply: FastifyReply<HttpResponse>
@@ -44,7 +44,7 @@ declare namespace FastifyGQL {
     HttpServer extends (Server | Http2Server),
     HttpRequest extends (IncomingMessage | Http2ServerRequest),
     HttpResponse extends (ServerResponse | Http2ServerResponse)
-  > extends RegisterOptions<HttpServer, HttpRequest, HttpResponse> {
+    > extends RegisterOptions<HttpServer, HttpRequest, HttpResponse> {
     /**
      * The GraphQL schema. String schema will be parsed
      */
@@ -61,7 +61,7 @@ declare namespace FastifyGQL {
         [key: string]: (
           queries: Array<{
             obj: any,
-            params: any 
+            params: any
           }>,
           context: {
             reply: FastifyReply<HttpResponse>
@@ -104,7 +104,8 @@ declare namespace FastifyGQL {
     /**
      * The maximum depth allowed for a single query.
      */
-    queryDepth?: number
+    queryDepth?: number,
+    context?: (request: FastifyRequest<HttpRequest>, reply: FastifyReply<HttpResponse>) => Promise<any>
   }
 }
 
@@ -123,22 +124,22 @@ declare module "fastify" {
      * @param variables request variables which will get passed to the executor
      * @param operationName specify which operation will be run
      */
-      graphql(
-        source: string,
-        context?: any,
-        variables?: { [key: string]: any },
-        operationName?: string
-      ): FastifyReply<HttpResponse>;
+    graphql(
+      source: string,
+      context?: any,
+      variables?: { [key: string]: any },
+      operationName?: string
+    ): FastifyReply<HttpResponse>;
   }
 }
 
 declare function fastifyGQL<
   HttpServer extends (Server | Http2Server),
   HttpRequest extends (IncomingMessage | Http2ServerRequest),
-  HttpResponse extends (ServerResponse | Http2ServerResponse), 
+  HttpResponse extends (ServerResponse | Http2ServerResponse),
   Options = FastifyGQL.Options<HttpServer, HttpRequest, HttpResponse>
-> (
+>(
   fastify: fastify.FastifyInstance<HttpServer, HttpRequest, HttpResponse>,
-  opts: Options) : void;
+  opts: Options): void;
 
 export = fastifyGQL;
