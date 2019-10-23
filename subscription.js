@@ -5,16 +5,12 @@ const { subscribe, parse } = require('graphql')
 const GRAPHQL_WS = 'graphql-ws'
 const GQL_CONNECTION_INIT = 'connection_init' // Client -> Server
 const GQL_CONNECTION_ACK = 'connection_ack' // Server -> Client
-const GQL_CONNECTION_ERROR = 'connection_error' // Server -> Client
-
-// NOTE: The keep alive message type does not follow the standard due to connection optimizations
-const GQL_CONNECTION_KEEP_ALIVE = 'ka' // Server -> Client
 
 const GQL_CONNECTION_TERMINATE = 'connection_terminate' // Client -> Server
 const GQL_START = 'start' // Client -> Server
 const GQL_DATA = 'data' // Server -> Client
 const GQL_ERROR = 'error' // Server -> Client
-const GQL_COMPLETE = 'complete' // Server -> Client
+// const GQL_COMPLETE = 'complete' // Server -> Client
 const GQL_STOP = 'stop' // Client -> Server
 
 class SubscriptionContext {
@@ -170,7 +166,7 @@ function createConnectionHandler (schema, subscriber) {
   }
 }
 
-module.exports = function (fastify, getOptions, { schema, subscriber }) {
+module.exports = function (fastify, { getOptions, schema, subscriber }, next) {
   fastify.register(Websocket, {
     handle,
     options: { maxPayload: 1048576 }
@@ -180,4 +176,6 @@ module.exports = function (fastify, getOptions, { schema, subscriber }) {
     ...getOptions,
     wsHandler: createConnectionHandler(schema, subscriber)
   })
+
+  next()
 }

@@ -100,11 +100,21 @@ module.exports = async function (app, opts) {
     handler: async function (request, reply) {
       validationHandler(request.validationError)
 
-      const {
+      let {
         query,
         variables,
         operationName
-      } = request.body
+      } = request.query
+
+      if (variables) {
+        try {
+          variables = JSON.parse(variables)
+        } catch (err) {
+          request.log.info({ err: err })
+          reply.send(new BadRequest(err.message))
+          return
+        }
+      }
 
       let context = {}
       if (contextFn) {
@@ -116,7 +126,8 @@ module.exports = async function (app, opts) {
   }
 
   if (opts.subscription) {
-    subscription(app, getOptions, {
+    app.register(subscription, {
+      getOptions,
       schema: opts.schema,
       subscriber: new Subscriber(opts.subscription.emitter)
     })
