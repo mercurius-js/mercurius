@@ -107,7 +107,7 @@ declare namespace FastifyGQL {
     queryDepth?: number,
     context?: (request: FastifyRequest<HttpRequest>, reply: FastifyReply<HttpResponse>) => Promise<any>,
     /**
-     * Enable subscription support when options are provided
+     * Enable subscription support when options are provided. `emitter` property is required
      */
     subscriptions?: {
       emitter: object

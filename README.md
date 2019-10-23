@@ -130,6 +130,75 @@ app.register(GQL, {
 ...
 ```
 
+### Subscription support
+
+```js
+const mq = require('emitter')
+
+const emitter = mq()
+const schema = `
+  type Notification {
+    id: ID!
+    message: String
+  }
+
+  type Query {
+    notifications: [Notification]
+  }
+
+  type Mutation {
+    addNotification(message: String): Notification
+  }
+
+  type Subscription {
+    notificationAdded: Notification
+  }
+`
+
+let idCount = 1
+const notifications = [{
+  id: idCount,
+  message: 'Notification message'
+}]
+
+const resolvers = {
+  Query: {
+    notifications: () => notifications
+  },
+  Mutation: {
+    addNotification: (_, { message }) => {
+      const id = idCount++
+      const notification = {
+        id,
+        message
+      }
+      notifications.push(notification)
+      emitter.emit({
+        topic: 'NOTIFICATION_ADDED',
+        payload: {
+          notificationAdded: notification
+        }
+      })
+
+      return notification
+    }
+  },
+  Subscription: {
+    notificationAdded: {
+      subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED')
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  subscription: {
+    emitter
+  }
+})
+```
+
 ## API
 
 ### plugin options
@@ -155,6 +224,7 @@ __fastify-gql__ supports the following options:
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 * `queryDepth`: `Integer`. The maximum depth allowed for a single query.
+* `subscription`: Object. Containing subscription configuration.
 
 #### queryDepth example
 ```
