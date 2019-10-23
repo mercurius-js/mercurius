@@ -10,7 +10,7 @@ const GQL_CONNECTION_TERMINATE = 'connection_terminate' // Client -> Server
 const GQL_START = 'start' // Client -> Server
 const GQL_DATA = 'data' // Server -> Client
 const GQL_ERROR = 'error' // Server -> Client
-// const GQL_COMPLETE = 'complete' // Server -> Client
+const GQL_COMPLETE = 'complete' // Server -> Client
 const GQL_STOP = 'stop' // Client -> Server
 
 class SubscriptionContext {
@@ -92,7 +92,7 @@ class SubscriptionConnection {
 
     const document = typeof query !== 'string' ? query : parse(query)
 
-    const result = await subscribe(
+    subscribe(
       this.schema,
       document,
       {}, // rootValue
@@ -102,10 +102,14 @@ class SubscriptionConnection {
       variables,
       operationName
     )
-
-    for await (const value of result) {
-      this.sendMessage(GQL_DATA, data.id, value)
-    }
+      .then(async (result) => {
+        for await (const value of result) {
+          this.sendMessage(GQL_DATA, data.id, value)
+        }
+      })
+      .then(() => {
+        this.sendMessage(GQL_COMPLETE, data.id, null)
+      })
   }
 
   handleGQLStop (data) {
