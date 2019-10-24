@@ -19,10 +19,11 @@ test('subscriber published an event', async (t) => {
   })
 })
 
-test('subscription context publish event returns a promise', async (t) => {
+test('subscription context publish event returns a promise', t => {
+  t.plan(1)
   const pubsub = new PubSub(mq())
 
-  const sc = new SubscriptionContext(pubsub)
+  const sc = new SubscriptionContext({ pubsub })
 
   sc.subscribe('TOPIC')
   sc.publish({

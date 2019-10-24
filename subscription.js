@@ -21,8 +21,10 @@ function handle (conn) {
 class SubscriptionConnection {
   constructor (socket, {
     schema,
-    subscriber
+    subscriber,
+    fastify
   }) {
+    this.fastify = fastify
     this.socket = socket
     this.schema = schema
     this.subscriber = subscriber
@@ -74,7 +76,10 @@ class SubscriptionConnection {
     const { id, payload } = data
     const { query, variables, operationName } = payload
 
-    const sc = new SubscriptionContext(this.subscriber)
+    const sc = new SubscriptionContext({
+      fastify: this.fastify,
+      pubsub: this.subscriber
+    })
     this.subscriptionContexts.set(id, sc)
 
     const document = typeof query !== 'string' ? query : parse(query)

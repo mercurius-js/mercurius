@@ -26,12 +26,13 @@ class PubSub {
 
 // One context - and  queue for each subscription
 class SubscriptionContext {
-  constructor (pubsub) {
+  constructor ({ pubsub, fastify }) {
+    this.fastify = fastify
+    this.pubsub = pubsub
     this.queue = new Readable({
       objectMode: true,
       read: () => {}
     })
-    this.pubsub = pubsub
   }
 
   subscribe (topic) {
@@ -48,6 +49,8 @@ class SubscriptionContext {
         }
         resolve()
       })
+    }).catch(err => {
+      this.fastify.log(err)
     })
   }
 
