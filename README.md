@@ -133,7 +133,7 @@ app.register(GQL, {
 ### Subscription support
 
 ```js
-const mq = require('emitter')
+const mq = require('mqemitter')
 
 const emitter = mq()
 const schema = `

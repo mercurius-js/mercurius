@@ -45,7 +45,13 @@ class SubscriptionConnection {
     this.subscriber = subscriber
     this.subscriptionContexts = new Map()
 
-    this.socket.on('message', this.handleMessage.bind(this))
+    this.socket.on('message', (message) => {
+      try {
+        this.handleMessage(message)
+      } catch (e) {
+        this.handleConnectionClose()
+      }
+    })
     this.socket.on('error', this.handleConnectionClose.bind(this))
   }
 
@@ -92,7 +98,7 @@ class SubscriptionConnection {
 
     const document = typeof query !== 'string' ? query : parse(query)
 
-    return subscribe(
+    const result = await subscribe(
       this.schema,
       document,
       {}, // rootValue
@@ -102,17 +108,12 @@ class SubscriptionConnection {
       variables,
       operationName
     )
-      .then(async (result) => {
-        for await (const value of result) {
-          this.sendMessage(GQL_DATA, data.id, value)
-        }
-      })
-      .then(() => {
-        this.sendMessage(GQL_COMPLETE, data.id, null)
-      })
-      .catch(err => {
-        throw err
-      })
+
+    for await (const value of result) {
+      this.sendMessage(GQL_DATA, data.id, value)
+    }
+
+    this.sendMessage(GQL_COMPLETE, data.id, null)
   }
 
   handleGQLStop (data) {
