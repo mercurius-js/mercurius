@@ -134,11 +134,15 @@ class SubscriptionConnection {
   }
 
   sendMessage (type, id, payload) {
-    this.socket.send(JSON.stringify({
-      type,
-      id,
-      payload
-    }))
+    try {
+      this.socket.send(JSON.stringify({
+        type,
+        id,
+        payload
+      }))
+    } catch (e) {
+      this.handleConnectionClose()
+    }
   }
 
   close () {
