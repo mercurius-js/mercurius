@@ -64,8 +64,10 @@ module.exports = class Subscriber {
     }
   }
 
-  publish (event, callback) {
-    this.emitter.emit(event, callback || (() => {}))
+  publish (event) {
+    return new Promise((resolve, reject) => {
+      this.emitter.emit(event, resolve, reject)
+    })
   }
 
   close () {
