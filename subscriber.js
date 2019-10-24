@@ -1,78 +1,62 @@
 const { Readable } = require('readable-stream')
 
-module.exports = class Subscriber {
+class PubSub {
   constructor (emitter) {
     this.emitter = emitter
-    this._queues = new Map()
-    this._listeners = new Map()
   }
 
-  _listen (event) {
-    if (this._listeners.has(event)) {
-      return
+  subscribe (topic, queue) {
+    function listener (value, cb) {
+      queue.push(value.payload)
+      cb()
     }
 
-    const listener = (message, callback) => {
-      const { topic, payload } = message
-      const queues = this._queues.get(topic)
-
-      if (!queues) {
-        return
-      }
-
-      for (const queue of queues) {
-        queue.push(payload)
-      }
-
-      if (callback) {
-        callback()
-      }
+    const close = () => {
+      this.emitter.removeListener(topic, listener)
     }
 
-    this.emitter.on(event, listener)
-    this._listeners.set(event, listener)
+    this.emitter.on(topic, listener)
+    queue.close = close
   }
 
-  subscribe (topic) {
-    let eventQueues = this._queues.get(topic)
+  publish (event, callback) {
+    this.emitter.emit(event, callback)
+  }
+}
 
-    if (!eventQueues) {
-      eventQueues = new Set()
-      this._queues.set(topic, eventQueues)
-    }
-
-    this._listen(topic)
-    const queue = new Readable({
+// One context - and  queue for each subscription
+class SubscriptionContext {
+  constructor (pubsub) {
+    this.queue = new Readable({
       objectMode: true,
       read: () => {}
     })
+    this.pubsub = pubsub
+  }
 
-    eventQueues.add(queue)
-    return {
-      close: () => {
-        queue.push(null)
-        const innerQueues = this._queues.get(topic)
-        if (!innerQueues) return
+  subscribe (topic) {
+    this.pubsub.subscribe(topic, this.queue)
 
-        innerQueues.delete(queue)
-
-        if (!innerQueues.size) {
-          this._queues.delete(topic)
-        }
-      },
-      iterator: queue
-    }
+    return this.queue
   }
 
   publish (event) {
     return new Promise((resolve, reject) => {
-      this.emitter.emit(event, resolve, reject)
+      this.pubsub.publish(event, (err) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve()
+      })
     })
   }
 
   close () {
-    for (const [fn, event] of this._listeners) {
-      this.emitter.removeListener(event, fn)
-    }
+    this.queue.close()
   }
+}
+
+module.exports = {
+  PubSub,
+  SubscriptionContext
 }

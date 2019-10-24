@@ -5,7 +5,7 @@ const Static = require('fastify-static')
 const { BadRequest } = require('http-errors')
 const { formatError, GraphQLError } = require('graphql')
 const mq = require('mqemitter')
-const Subscriber = require('./subscriber')
+const { PubSub } = require('./subscriber')
 const subscription = require('./subscription')
 
 const responseSchema = {
@@ -88,7 +88,7 @@ module.exports = async function (app, opts) {
   }
 
   if (subscriptionOpts) {
-    subscriber = new Subscriber(emitter)
+    subscriber = new PubSub(emitter)
   }
 
   const getOptions = {

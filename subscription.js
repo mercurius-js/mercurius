@@ -1,6 +1,7 @@
 'use strict'
 const Websocket = require('fastify-websocket')
 const { subscribe, parse } = require('graphql')
+const { SubscriptionContext } = require('./subscriber')
 
 const GRAPHQL_WS = 'graphql-ws'
 const GQL_CONNECTION_INIT = 'connection_init' // Client -> Server
@@ -12,24 +13,6 @@ const GQL_DATA = 'data' // Server -> Client
 const GQL_ERROR = 'error' // Server -> Client
 const GQL_COMPLETE = 'complete' // Server -> Client
 const GQL_STOP = 'stop' // Client -> Server
-
-class SubscriptionContext {
-  constructor ({ subscriber }) {
-    this.subscriber = subscriber
-    this.closes = []
-  }
-
-  subscribe (...args) {
-    const { iterator, close } = this.subscriber.subscribe(...args)
-    this.closes.push(close)
-
-    return iterator
-  }
-
-  close () {
-    this.closes.map(close => close())
-  }
-}
 
 function handle (conn) {
   conn.pipe(conn) // creates an echo server
@@ -91,7 +74,7 @@ class SubscriptionConnection {
     const { id, payload } = data
     const { query, variables, operationName } = payload
 
-    const sc = new SubscriptionContext({ subscriber: this.subscriber })
+    const sc = new SubscriptionContext(this.subscriber)
     this.subscriptionContexts.set(id, sc)
 
     const document = typeof query !== 'string' ? query : parse(query)
