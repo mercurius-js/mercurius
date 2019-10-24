@@ -133,9 +133,6 @@ app.register(GQL, {
 ### Subscription support
 
 ```js
-const mq = require('mqemitter')
-
-const emitter = mq()
 const schema = `
   type Notification {
     id: ID!
@@ -166,14 +163,14 @@ const resolvers = {
     notifications: () => notifications
   },
   Mutation: {
-    addNotification: (_, { message }) => {
+    addNotification: (_, { message }, { pubsub }) => {
       const id = idCount++
       const notification = {
         id,
         message
       }
       notifications.push(notification)
-      emitter.emit({
+      pubsub.publish({
         topic: 'NOTIFICATION_ADDED',
         payload: {
           notificationAdded: notification
@@ -193,9 +190,7 @@ const resolvers = {
 app.register(GQL, {
   schema,
   resolvers,
-  subscription: {
-    emitter
-  }
+  subscription: true
 })
 ```
 
@@ -224,7 +219,7 @@ __fastify-gql__ supports the following options:
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 * `queryDepth`: `Integer`. The maximum depth allowed for a single query.
-* `subscription`: Object. Containing subscription configuration.
+* `subscription`: boolean | object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter. (Add example)
 
 #### queryDepth example
 ```

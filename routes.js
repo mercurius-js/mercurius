@@ -4,6 +4,7 @@ const { join } = require('path')
 const Static = require('fastify-static')
 const { BadRequest } = require('http-errors')
 const { formatError, GraphQLError } = require('graphql')
+const mq = require('mqemitter')
 const Subscriber = require('./subscriber')
 const subscription = require('./subscription')
 
@@ -75,11 +76,19 @@ module.exports = async function (app, opts) {
     app.setErrorHandler(defaultErrorHandler)
   }
   const contextFn = opts.context
+
   const subscriptionOpts = opts.subscription
+  let emitter
   let subscriber
 
+  if (typeof subscriptionOpts === 'object') {
+    emitter = subscriptionOpts.emitter
+  } else if (subscriptionOpts === true) {
+    emitter = mq
+  }
+
   if (subscriptionOpts) {
-    subscriber = new Subscriber(subscriptionOpts.emitter)
+    subscriber = new Subscriber(emitter)
   }
 
   const getOptions = {

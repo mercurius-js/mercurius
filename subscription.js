@@ -46,11 +46,9 @@ class SubscriptionConnection {
     this.subscriptionContexts = new Map()
 
     this.socket.on('message', (message) => {
-      try {
-        this.handleMessage(message)
-      } catch (e) {
+      this.handleMessage(message).catch(e => {
         this.handleConnectionClose()
-      }
+      })
     })
     this.socket.on('error', this.handleConnectionClose.bind(this))
   }
@@ -109,6 +107,7 @@ class SubscriptionConnection {
       operationName
     )
 
+    // TODO implement backpressure
     for await (const value of result) {
       this.sendMessage(GQL_DATA, data.id, value)
     }

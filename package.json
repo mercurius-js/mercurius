@@ -43,6 +43,7 @@
     "graphql": "^14.5.0",
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
+    "mqemitter": "^3.0.0",
     "readable-stream": "^3.4.0",
     "single-user-cache": "^0.3.0",
     "tiny-lru": "^7.0.0"
