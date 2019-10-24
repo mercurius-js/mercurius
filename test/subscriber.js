@@ -22,3 +22,14 @@ test('when closing the subscriber the listeners are removed', async (t) => {
   s.subscribe('TOPIC')
   s.close()
 })
+
+test('subscriber published an event', async (t) => {
+  const s = new Subscriber(mq())
+  s.subscribe('TOPIC')
+  s.publish({
+    topic: 'TOPIC',
+    payload: 1
+  }, () => {
+    t.pass()
+  })
+})

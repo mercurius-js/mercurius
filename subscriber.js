@@ -64,8 +64,8 @@ module.exports = class Subscriber {
     }
   }
 
-  publish (event) {
-    this.emitter.emit(event)
+  publish (event, callback) {
+    this.emitter.emit(event, callback || (() => {}))
   }
 
   close () {
