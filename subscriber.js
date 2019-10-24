@@ -64,6 +64,10 @@ module.exports = class Subscriber {
     }
   }
 
+  publish (event) {
+    this.emitter.emit(event)
+  }
+
   close () {
     for (const [fn, event] of this._listeners) {
       this.emitter.removeListener(event, fn)

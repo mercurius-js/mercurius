@@ -75,6 +75,12 @@ module.exports = async function (app, opts) {
     app.setErrorHandler(defaultErrorHandler)
   }
   const contextFn = opts.context
+  const subscriptionOpts = opts.subscription
+  let subscriber
+
+  if (subscriptionOpts) {
+    subscriber = new Subscriber(subscriptionOpts.emitter)
+  }
 
   const getOptions = {
     url: '/graphql',
@@ -121,15 +127,15 @@ module.exports = async function (app, opts) {
         context = await contextFn(request, reply)
       }
 
-      return reply.graphql(query, context, variables, operationName)
+      return reply.graphql(query, { pubsub: subscriber, ...context }, variables, operationName)
     }
   }
 
-  if (opts.subscription) {
+  if (subscriptionOpts) {
     app.register(subscription, {
       getOptions,
       schema: opts.schema,
-      subscriber: new Subscriber(opts.subscription.emitter)
+      subscriber
     })
   } else {
     app.route(getOptions)
@@ -170,7 +176,7 @@ module.exports = async function (app, opts) {
       context = await contextFn(request, reply)
     }
 
-    return reply.graphql(query, context, variables, operationName)
+    return reply.graphql(query, { pubsub: subscriber, ...context }, variables, operationName)
   })
 
   if (opts.graphiql) {
