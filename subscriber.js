@@ -56,6 +56,7 @@ class SubscriptionContext {
 
   close () {
     this.queue.close()
+    this.queue.destroy()
   }
 }
 

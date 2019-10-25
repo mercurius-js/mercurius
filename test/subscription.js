@@ -32,7 +32,10 @@ test('subscription server replies with connection_ack', t => {
   app.listen(0, err => {
     t.error(err)
 
-    const client = websocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const client = websocket(url, 'graphql-ws', {
+      objectMode: true
+    })
     t.tearDown(client.destroy.bind(client))
 
     client.setEncoding('utf8')

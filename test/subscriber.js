@@ -33,3 +33,23 @@ test('subscription context publish event returns a promise', t => {
     t.pass()
   })
 })
+
+test('subscription context publish event errs, error is catched', t => {
+  t.plan(1)
+  const emitter = mq()
+  const pubsub = new PubSub(emitter)
+
+  const fastifyMock = {
+    log () {
+      t.pass()
+    }
+  }
+  const sc = new SubscriptionContext({ pubsub, fastify: fastifyMock })
+
+  sc.subscribe('TOPIC')
+  emitter.close(() => {})
+  sc.publish({
+    topic: 'TOPIC',
+    payload: 1
+  })
+})
