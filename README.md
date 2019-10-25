@@ -163,14 +163,14 @@ const resolvers = {
     notifications: () => notifications
   },
   Mutation: {
-    addNotification: (_, { message }, { pubsub }) => {
+    addNotification: async (_, { message }, { pubsub }) => {
       const id = idCount++
       const notification = {
         id,
         message
       }
       notifications.push(notification)
-      pubsub.publish({
+      await pubsub.publish({
         topic: 'NOTIFICATION_ADDED',
         payload: {
           notificationAdded: notification
@@ -182,7 +182,7 @@ const resolvers = {
   },
   Subscription: {
     notificationAdded: {
-      subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED')
+      subscribe: async (root, args, { pubsub }) => await pubsub.subscribe('NOTIFICATION_ADDED')
     }
   }
 }
