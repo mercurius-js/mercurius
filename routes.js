@@ -80,9 +80,11 @@ module.exports = async function (app, opts) {
   const subscriptionOpts = opts.subscription
   let emitter
   let subscriber
+  let verifyClient
 
   if (typeof subscriptionOpts === 'object') {
-    emitter = subscriptionOpts.emitter
+    emitter = subscriptionOpts.emitter || mq()
+    verifyClient = subscriptionOpts.verifyClient
   } else if (subscriptionOpts === true) {
     emitter = mq()
   }
@@ -144,7 +146,8 @@ module.exports = async function (app, opts) {
     app.register(subscription, {
       getOptions,
       schema: opts.schema,
-      subscriber
+      subscriber,
+      verifyClient
     })
   } else {
     app.route(getOptions)

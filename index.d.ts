@@ -110,7 +110,11 @@ declare namespace FastifyGQL {
      * Enable subscription support when options are provided. [`emitter`](https://github.com/mcollina/mqemitter) property is required when subscriptions is an object. (Default false)
      */
     subscription?: boolean | {
-      emitter: object
+      emitter?: object,
+      verifyClient?: (
+        info: object,
+        next: (result: boolean) => void
+      ) => void
     }
   }
 }

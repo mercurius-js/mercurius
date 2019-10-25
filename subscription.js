@@ -36,10 +36,13 @@ function createConnectionHandler (schema, subscriber) {
   }
 }
 
-module.exports = function (fastify, { getOptions, schema, subscriber }, next) {
+module.exports = function (fastify, { getOptions, schema, subscriber, verifyClient }, next) {
   fastify.register(Websocket, {
     handle,
-    options: { maxPayload: 1048576 }
+    options: {
+      maxPayload: 1048576,
+      verifyClient
+    }
   })
 
   fastify.route({
