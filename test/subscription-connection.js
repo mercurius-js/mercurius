@@ -60,3 +60,98 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     })
   })
 })
+
+test('subscripction connection sends error message when message is not json string', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    send (message) {
+      t.equal(JSON.stringify({
+        type: 'error',
+        id: null,
+        payload: 'Message must be a JSON string'
+      }), message)
+    }
+  }, {})
+
+  await sc.handleMessage('invalid json string')
+})
+
+test('subscription connection handles GQL_CONNECTION_TERMINATE message correctly', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () { t.pass() },
+    send (message) {}
+  }, {})
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'connection_terminate'
+  }))
+})
+
+test('subscription connection handles GQL_STOP message correctly', async (t) => {
+  t.plan(2)
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {}
+  }, {})
+
+  sc.subscriptionContexts = new Map()
+  sc.subscriptionContexts.set(1, {
+    close () {
+      t.pass()
+    }
+  })
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'stop'
+  }))
+
+  t.equal(sc.subscriptionContexts.size, 0)
+})
+
+test('subscription connection send error message when GQL_START handler errs', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {
+      t.equal(JSON.stringify({
+        id: 1,
+        type: 'error',
+        payload: 'handleGQLStart error'
+      }), '{"id":1,"type":"error","payload":"handleGQLStart error"}')
+    }
+  }, {})
+
+  sc.handleGQLStart = async (data) => {
+    throw new Error('handleGQLStart error')
+  }
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: { }
+  }))
+})
+
+test('subscription connection send error message when client message type is invalid', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {
+      t.equal(JSON.stringify({
+        id: 1,
+        type: 'error',
+        payload: 'Invalid payload type'
+      }), '{"id":1,"type":"error","payload":"Invalid payload type"}')
+    }
+  }, {})
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'invalid-type',
+    payload: { }
+  }))
+})

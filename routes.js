@@ -84,7 +84,7 @@ module.exports = async function (app, opts) {
   if (typeof subscriptionOpts === 'object') {
     emitter = subscriptionOpts.emitter
   } else if (subscriptionOpts === true) {
-    emitter = mq
+    emitter = mq()
   }
 
   if (subscriptionOpts) {

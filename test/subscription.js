@@ -8,7 +8,6 @@ test('subscription server replies with connection_ack', t => {
   const app = Fastify()
   t.tearDown(() => app.close())
 
-  const emitter = mq()
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -24,9 +23,7 @@ test('subscription server replies with connection_ack', t => {
   app.register(GQL, {
     schema,
     resolvers,
-    subscription: {
-      emitter
-    }
+    subscription: true
   })
 
   app.listen(0, err => {
