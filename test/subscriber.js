@@ -1,6 +1,6 @@
 const { test } = require('tap')
 const mq = require('mqemitter')
-const { PubSub, SubscriptionContext } = require('../subscriber')
+const { PubSub, SubscriptionContext } = require('../lib/subscriber')
 
 test('subscriber published an event', async (t) => {
   class MyQueue {

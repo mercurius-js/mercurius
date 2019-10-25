@@ -2,7 +2,7 @@
 
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
-const routes = require('./routes')
+const routes = require('./lib/routes')
 const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
 const { compileQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')

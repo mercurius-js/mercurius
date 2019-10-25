@@ -3,8 +3,8 @@ const proxyquire = require('proxyquire')
 const websocket = require('websocket-stream')
 const fastify = require('fastify')
 const mq = require('mqemitter')
-const SubscriptionConnection = require('../subscription-connection')
-const { PubSub } = require('../subscriber')
+const SubscriptionConnection = require('../lib/subscription-connection')
+const { PubSub } = require('../lib/subscriber')
 
 test('socket is closed on unhandled promise rejection in handleMessage', t => {
   t.plan(1)
@@ -21,7 +21,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     }
   }
 
-  const subscription = proxyquire('../subscription', {
+  const subscription = proxyquire('../lib/subscription', {
     './subscription-connection': MockSubscriptionConnection
   })
 
