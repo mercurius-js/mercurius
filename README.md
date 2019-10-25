@@ -130,7 +130,7 @@ app.register(GQL, {
 ...
 ```
 
-### Subscription support
+### Subscription support (simple)
 
 ```js
 const schema = `
@@ -194,6 +194,104 @@ app.register(GQL, {
 })
 ```
 
+### Subscription support (with redis)
+
+```js
+const redis = require('mqemitter-redis')
+const emitter = redis({
+  port: 6579,
+  host: '127.0.0.1'
+})
+
+const schema = `
+  type Vote {
+    id: ID!
+    title: String!
+    ayes: Int
+    noes: Int
+  }
+
+  type Query {
+    votes: [Vote]
+  }
+
+  type Mutation {
+    voteAye(voteId: ID!): Vote
+    voteNo(voteId: ID!): Vote
+  }
+
+  type Subscription {
+    voteAdded(voteId: ID!): Vote
+  }
+`
+const votes = []
+const VOTE_ADDED = 'VOTE_ADDED';
+
+const resolvers = {
+  Query: {
+    votes: async () => votes
+  },
+  Mutation: {
+    voteAye: async (_, { voteId }, { pubsub }) => {
+      if (voteId <= votes.length) {
+        votes[voteId - 1].ayes++;
+        await pubsub.publish(
+          {
+            topic: `VOTE_ADDED_${voteId}`,
+            payload: {
+              voteAdded: votes[voteId - 1]
+            }
+          }
+        );
+
+        return votes[voteId - 1];
+      }
+
+      throw new Error('Invalid vote id');
+    },
+    voteNo: async (_, { voteId }, { pubsub }) => {
+      if (voteId <= votes.length) {
+        votes[voteId - 1].noes++;
+        await pubsub.publish(
+          {
+            topic: `VOTE_ADDED_${voteId}`,
+            payload: {
+              voteAdded: votes[voteId - 1]
+            }
+          }
+        );
+
+        return votes[voteId - 1];
+      }
+
+      throw new Error('Invalid vote id');
+    }
+  },
+  Subscription: {
+    voteAdded: {
+      subscribe: async (root, { voteId }, { pubsub }) => {
+        // subscribe only for a vote with a given id
+        return await pubsub.subscribe(`VOTE_ADDED_${voteId}`);
+      }
+    }
+  }
+};
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  subscription: {
+    emitter,
+    verifyClient: (info, next) => {
+      if (info.req.headers['x-fastify-header'] !== 'fastify is awesome !') {
+        return next(false) // the connection is not allowed
+      }
+      next(true) // the connection is allowed
+    }
+  }
+})
+```
+
 ## API
 
 ### plugin options
@@ -219,7 +317,7 @@ __fastify-gql__ supports the following options:
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 * `queryDepth`: `Integer`. The maximum depth allowed for a single query.
-* `subscription`: boolean | object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
+* `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections. 
 
