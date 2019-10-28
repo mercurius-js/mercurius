@@ -53,6 +53,20 @@ test('subscription server sends update to subscriptions', t => {
   const app = Fastify()
   t.tearDown(() => app.close())
 
+  const sendTestMutation = () => app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: `
+        mutation {
+          addNotification(message: "Hello World") {
+            id
+          }
+        }
+      `
+    }
+  })
+
   const emitter = mq()
   const schema = `
     type Notification {
@@ -84,14 +98,14 @@ test('subscription server sends update to subscriptions', t => {
       notifications: () => notifications
     },
     Mutation: {
-      addNotification: (_, { message }) => {
+      addNotification: async (_, { message }) => {
         const id = idCount++
         const notification = {
           id,
           message
         }
         notifications.push(notification)
-        emitter.emit({
+        await emitter.emit({
           topic: 'NOTIFICATION_ADDED',
           payload: {
             notificationAdded: notification
@@ -103,7 +117,10 @@ test('subscription server sends update to subscriptions', t => {
     },
     Subscription: {
       notificationAdded: {
-        subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED')
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED').then((iterable) => {
+          sendTestMutation()
+          return iterable
+        })
       }
     }
   }
@@ -165,21 +182,5 @@ test('subscription server sends update to subscriptions', t => {
         t.end()
       }
     })
-
-    setTimeout(() => {
-      app.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
-            mutation {
-              addNotification(message: "Hello World") {
-                id
-              }
-            }
-          `
-        }
-      })
-    }, 1000)
   })
 })
