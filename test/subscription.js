@@ -53,19 +53,40 @@ test('subscription server sends update to subscriptions', t => {
   const app = Fastify()
   t.tearDown(() => app.close())
 
-  const sendTestMutation = () => app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query: `
-        mutation {
-          addNotification(message: "Hello World") {
-            id
+  const sendTestQuery = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          query {
+            notifications {
+              id
+              message
+            }
           }
-        }
-      `
-    }
-  })
+        `
+      }
+    }, () => {
+      sendTestMutation()
+    })
+  }
+
+  const sendTestMutation = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            addNotification(message: "Hello World") {
+              id
+            }
+          }
+        `
+      }
+    })
+  }
 
   const emitter = mq()
   const schema = `
@@ -118,7 +139,6 @@ test('subscription server sends update to subscriptions', t => {
     Subscription: {
       notificationAdded: {
         subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED').then((iterable) => {
-          sendTestMutation()
           return iterable
         })
       }
@@ -164,6 +184,9 @@ test('subscription server sends update to subscriptions', t => {
 
     client.on('data', chunk => {
       messageCount++
+      if (messageCount === 1) {
+        sendTestQuery()
+      }
       if (messageCount === 2) {
         t.equal(chunk, JSON.stringify({
           type: 'data',
