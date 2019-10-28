@@ -3,6 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const querystring = require('querystring')
+const websocket = require('websocket-stream')
 const GQL = require('..')
 
 test('POST route', async (t) => {
@@ -890,5 +891,72 @@ test('routes with custom context', async (t) => {
     data: {
       test: 'custom'
     }
+  })
+})
+
+test('connection is not allowed when verifyClient callback called with `false`', t => {
+  t.plan(2)
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      verifyClient (info, next) {
+        if (info.req.headers['x-custom-header'] === 'fastify is awesome !') {
+          return next(true)
+        }
+
+        next(false)
+      }
+    }
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const client = websocket(url, 'graphql-ws', {
+      objectMode: true,
+      headers: { 'x-custom-header': 'fastify is awesome !' }
+    })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client.on('data', chunk => {
+      t.equal(chunk, JSON.stringify({
+        type: 'connection_ack'
+      }))
+      client.end()
+    })
+
+    const client2 = websocket(url, 'graphql-ws', {
+      objectMode: true,
+      headers: { 'x-custom-header': 'other-value' }
+    })
+    t.tearDown(client2.destroy.bind(client2))
+
+    client2.setEncoding('utf8')
+    client2.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client2.on('error', (err) => {
+      t.equal('unexpected server response (401)', err.message)
+      client2.end()
+    })
   })
 })
