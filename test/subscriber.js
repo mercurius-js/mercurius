@@ -40,8 +40,10 @@ test('subscription context publish event errs, error is catched', t => {
   const pubsub = new PubSub(emitter)
 
   const fastifyMock = {
-    log () {
-      t.pass()
+    log: {
+      error () {
+        t.pass()
+      }
     }
   }
   const sc = new SubscriptionContext({ pubsub, fastify: fastifyMock })
