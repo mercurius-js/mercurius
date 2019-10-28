@@ -85,7 +85,7 @@ test('subscription server sends update to subscriptions', t => {
           }
         `
       }
-    })
+    }, () => {})
   }
 
   const emitter = mq()
@@ -138,9 +138,7 @@ test('subscription server sends update to subscriptions', t => {
     },
     Subscription: {
       notificationAdded: {
-        subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED').then((iterable) => {
-          return iterable
-        })
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED')
       }
     }
   }
@@ -155,7 +153,6 @@ test('subscription server sends update to subscriptions', t => {
 
   app.listen(0, err => {
     t.error(err)
-    let messageCount = 0
 
     const client = websocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws', {
       objectMode: true
@@ -182,12 +179,30 @@ test('subscription server sends update to subscriptions', t => {
       }
     }))
 
-    client.on('data', chunk => {
-      messageCount++
-      if (messageCount === 1) {
-        sendTestQuery()
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
       }
-      if (messageCount === 2) {
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
         t.equal(chunk, JSON.stringify({
           type: 'data',
           id: 1,
@@ -203,6 +218,8 @@ test('subscription server sends update to subscriptions', t => {
 
         client.end()
         t.end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        sendTestQuery()
       }
     })
   })
