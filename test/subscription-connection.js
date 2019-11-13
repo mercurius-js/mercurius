@@ -116,6 +116,21 @@ test('subscription connection handles GQL_STOP message correctly', async (t) => 
   t.equal(sc.subscriptionContexts.size, 0)
 })
 
+test('subscription connection handles GQL_STOP message correctly, with no data', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {}
+  }, {})
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'stop'
+  }))
+
+  t.notOk(sc.subscriptionContexts.get(0))
+})
+
 test('subscription connection send error message when GQL_START handler errs', async (t) => {
   const sc = new SubscriptionConnection({
     on () {},
