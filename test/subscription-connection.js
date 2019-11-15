@@ -175,7 +175,7 @@ test('subscription connection send error message when client message type is inv
   }))
 })
 
-test('subscription connection handles GQL_STAR message correctly, when payload.query is not defined', async (t) => {
+test('subscription connection handles GQL_START message correctly, when payload.query is not defined', async (t) => {
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
