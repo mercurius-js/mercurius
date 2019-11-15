@@ -224,3 +224,9 @@ test('subscription server sends update to subscriptions', t => {
     })
   })
 })
+
+test('subscription server register handle ', t => {
+  t.plan(1)
+  // some tests comes here
+  t.pass()
+})
