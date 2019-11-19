@@ -227,7 +227,7 @@ test('subscription server sends update to subscriptions', t => {
 
 test('subscription server register handle function arg is not empty', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.tearDown(app.close)
 
   app.register(GQL, {
     subscription: true
@@ -237,15 +237,35 @@ test('subscription server register handle function arg is not empty', t => {
     t.error(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/'
-    const client = websocket(url, 'ws', {
+    const client = websocket(url, {
       objectMode: true
     })
     t.tearDown(client.destroy.bind(client))
 
     client.setEncoding('utf8')
-    client.write('client write message')
     client.on('data', chunk => {
-      t.equal(chunk, 'client write message')
+      t.equal(chunk, '{"error":"unknown route"}')
+      client.end()
+      t.end()
+    })
+  })
+})
+
+test('subscription socket protocol different than graphql-ws, protocol = foobar', t => {
+  const app = Fastify()
+  t.tearDown(app.close)
+  app.register(GQL, {
+    subscription: true
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const client = websocket(url, 'foobar', {
+      objectMode: true
+    })
+
+    client.setEncoding('utf8')
+    client.on('close', () => {
       client.end()
       t.end()
     })
