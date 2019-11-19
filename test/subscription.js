@@ -3,7 +3,6 @@ const Fastify = require('fastify')
 const websocket = require('websocket-stream')
 const mq = require('mqemitter')
 const GQL = require('..')
-const { handle } = require('../lib/subscription')
 
 test('subscription server replies with connection_ack', t => {
   const app = Fastify()
@@ -226,8 +225,29 @@ test('subscription server sends update to subscriptions', t => {
   })
 })
 
-test('subscription server register handle function arg is empty', t => {
-  const error = t.throws(handle)
-  t.is(error.message, "Cannot read property 'pipe' of undefined")
-  t.end()
+test('subscription server register handle function arg is not empty', t => {
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  app.register(GQL, {
+    subscription: true
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const url = 'ws://localhost:' + (app.server.address()).port + '/'
+    const client = websocket(url, 'ws', {
+      objectMode: true
+    })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write('client write message')
+    client.on('data', chunk => {
+      t.equal(chunk, 'client write message')
+      client.end()
+      t.end()
+    })
+  })
 })
