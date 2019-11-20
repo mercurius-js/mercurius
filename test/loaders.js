@@ -327,3 +327,63 @@ test('support context in loader', async (t) => {
     }
   })
 })
+test('rersolver unknown type', async t => {
+  const app = Fastify()
+
+  const resolvers = {
+    test: 2
+  }
+
+  app.register(GQL, {
+    resolvers
+  })
+
+  const typeError = new Error('Cannot find type test')
+
+  try {
+    // needed so that graphql is defined
+    await app.ready()
+    app.graphql('query { test }')
+  } catch (error) {
+    t.deepEqual(error, typeError)
+  }
+})
+
+test('minJit is not a number, throw error', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    jit: '0'
+  })
+  const typeError = new Error('the jit option must be a number')
+
+  try {
+    // needed so that graphql is defined
+    await app.ready()
+  } catch (error) {
+    t.deepEqual(error, typeError)
+  }
+})
+
+test('options cache is type = number', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    cache: 256
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  // TODO: How to test if cache is sets properly ?
+})
+
+test('app is not ready, throw error', async t => {
+  const app = Fastify()
+
+  app.register(GQL)
+
+  // const typeError = () => new Error('Error in ready method')
+
+  // TODO: How to invoke this error above in app.ready() to test line 74 in index.js ?
+})
