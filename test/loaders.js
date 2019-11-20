@@ -327,6 +327,7 @@ test('support context in loader', async (t) => {
     }
   })
 })
+
 test('rersolver unknown type', async t => {
   const app = Fastify()
 
@@ -381,9 +382,40 @@ test('options cache is type = number', async t => {
 test('app is not ready, throw error', async t => {
   const app = Fastify()
 
+  // TODO: app.register(async () => { throw new Error('Kaboom') })
   app.register(GQL)
 
-  // const typeError = () => new Error('Error in ready method')
+  // needed so that graphql is defined
+  await app.ready()
+})
 
-  // TODO: How to invoke this error above in app.ready() to test line 74 in index.js ?
+test('reply is empty, throw error', async (t) => {
+  const app = Fastify()
+
+  const resolvers = {
+    Query: {
+      dogs: (_, params, context) => {
+        return dogs
+      }
+    }
+  }
+
+  const loaders = {
+    Dog: {
+      async owner (queries, context) {
+        t.equal(context.app, app)
+        return queries.map(({ obj }) => owners[obj.name])
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders
+  })
+  // needed so that graphql is defined
+  await app.ready()
+
+  app.graphql()
 })
