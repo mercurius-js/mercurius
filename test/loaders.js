@@ -339,14 +339,12 @@ test('rersolver unknown type', async t => {
     resolvers
   })
 
-  const typeError = new Error('Cannot find type test')
-
   try {
     // needed so that graphql is defined
     await app.ready()
     app.graphql('query { test }')
   } catch (error) {
-    t.deepEqual(error, typeError)
+    t.equal(error.message, 'Cannot find type test')
   }
 })
 
@@ -375,18 +373,19 @@ test('options cache is type = number', async t => {
 
   // needed so that graphql is defined
   await app.ready()
-
-  // TODO: How to test if cache is sets properly ?
 })
 
 test('app is not ready, throw error', async t => {
   const app = Fastify()
 
-  // TODO: app.register(async () => { throw new Error('Kaboom') })
+  app.register(async () => new Error('Kaboom'))
   app.register(GQL)
-
-  // needed so that graphql is defined
-  await app.ready()
+  try {
+    // needed so that graphql is defined
+    await app.ready()
+  } catch (e) {
+    console.log(e)
+  }
 })
 
 test('reply is empty, throw error', async (t) => {
@@ -394,16 +393,13 @@ test('reply is empty, throw error', async (t) => {
 
   const resolvers = {
     Query: {
-      dogs: (_, params, context) => {
-        return dogs
-      }
+      dogs: () => dogs
     }
   }
 
   const loaders = {
     Dog: {
-      async owner (queries, context) {
-        t.equal(context.app, app)
+      async owner (queries) {
         return queries.map(({ obj }) => owners[obj.name])
       }
     }
@@ -414,8 +410,15 @@ test('reply is empty, throw error', async (t) => {
     resolvers,
     loaders
   })
+
   // needed so that graphql is defined
   await app.ready()
 
-  app.graphql()
+  try {
+    await app.graphql(query)
+  } catch (error) {
+    t.equal(error.message, 'Internal Server Error')
+    t.equal(error.errors.length, 4)
+    t.equal(error.errors[0].message, 'loaders only work via reply.graphql()')
+  }
 })
