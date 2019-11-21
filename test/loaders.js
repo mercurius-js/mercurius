@@ -371,18 +371,35 @@ test('options cache is type = number', async t => {
     cache: 256
   })
 
-  // needed so that graphql is defined
   await app.ready()
 })
 
-test('options cache is type != number', async t => {
+test('options cache is boolean', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    cache: true
+  })
+
+  try {
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Cache type is not supported')
+  }
+})
+
+test('options cache is !number && !boolean', async t => {
   const app = Fastify()
 
   app.register(GQL, {
     cache: 'cache'
   })
 
-  await app.ready()
+  try {
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Cache type is not supported')
+  }
 })
 
 test('options cache is false and lruErrors exists', async t => {

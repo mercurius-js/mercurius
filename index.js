@@ -27,12 +27,17 @@ const kLoaders = Symbol('fastify-gql.loaders')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
-    if (opts.cache === false) {
+    const isBoolean = typeof opts.cache === 'boolean'
+    const isNumber = typeof opts.cache === 'number'
+
+    if (isBoolean && opts.cache === false) {
       // no cache
       return null
-    } else if (typeof opts.cache === 'number') {
+    } else if (isNumber) {
       // cache size as specified
       return LRU(opts.cache)
+    } else if (!isBoolean && !isNumber) {
+      throw new Error('Cache type is not supported')
     }
   }
 
