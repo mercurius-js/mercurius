@@ -208,7 +208,7 @@ test('disable cache for each loader', async (t) => {
   })
 })
 
-test('defineLoaders method', async (t) => {
+test('defineLoaders method, if factory exists', async (t) => {
   const app = Fastify()
 
   const loaders = {
@@ -224,6 +224,7 @@ test('defineLoaders method', async (t) => {
     resolvers
   })
   app.register(async function (app) {
+    app.graphql.defineLoaders(loaders)
     app.graphql.defineLoaders(loaders)
   })
 
@@ -375,16 +376,22 @@ test('options cache is type = number', async t => {
   await app.ready()
 })
 
-test('app is not ready, throw error', async t => {
+test('options cache is false and lruErrors exists', async t => {
   const app = Fastify()
 
-  app.register(async () => new Error('Kaboom'))
-  app.register(GQL)
+  app.register(GQL, {
+    schema,
+    cache: false
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
   try {
-    // needed so that graphql is defined
-    await app.ready()
-  } catch (e) {
-    console.log(e)
+    await app.graphql('{ dogs { name { owner } } }')
+  } catch (error) {
+    t.equal(error.message, 'Bad Request')
+    t.end()
   }
 })
 

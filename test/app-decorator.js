@@ -743,3 +743,20 @@ test('union should be supported with resolveType', async (t) => {
     }
   })
 })
+
+test('extended Schema is not string', async t => {
+  const app = Fastify()
+  const schema = 666
+
+  app.register(GQL)
+  app.register(async function (app) {
+    app.graphql.extendSchema(schema)
+  })
+
+  try {
+    // needed so that graphql is defined
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Must provide valid Document AST')
+  }
+})

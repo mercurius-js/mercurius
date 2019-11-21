@@ -69,11 +69,7 @@ module.exports = fp(async function (app, opts) {
     })
   }
 
-  app.ready(async function (err) {
-    if (err) {
-      throw err
-    }
-
+  app.ready(async function () {
     const schemaValidationErrors = validateSchema(schema)
     if (schemaValidationErrors.length > 0) {
       const err = new Error('schema issues')
@@ -106,6 +102,8 @@ module.exports = fp(async function (app, opts) {
   fastifyGraphQl.extendSchema = function (s) {
     if (typeof s === 'string') {
       s = parse(s)
+    } else {
+      throw new Error('Must provide valid Document AST')
     }
 
     schema = extendSchema(schema, s)
