@@ -358,7 +358,6 @@ test('minJit is not a number, throw error', async t => {
   const typeError = new Error('the jit option must be a number')
 
   try {
-    // needed so that graphql is defined
     await app.ready()
   } catch (error) {
     t.deepEqual(error, typeError)
@@ -383,7 +382,6 @@ test('options cache is type != number', async t => {
     cache: 'cache'
   })
 
-  // needed so that graphql is defined
   await app.ready()
 })
 

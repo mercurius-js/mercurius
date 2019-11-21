@@ -754,7 +754,6 @@ test('extended Schema is not string', async t => {
   })
 
   try {
-    // needed so that graphql is defined
     await app.ready()
   } catch (error) {
     t.equal(error.message, 'Must provide valid Document AST')
