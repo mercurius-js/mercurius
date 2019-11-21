@@ -107,7 +107,7 @@ module.exports = fp(async function (app, opts) {
   fastifyGraphQl.extendSchema = function (s) {
     if (typeof s === 'string') {
       s = parse(s)
-    } else {
+    } else if (!s || typeof s !== 'object') {
       throw new Error('Must provide valid Document AST')
     }
 

@@ -759,3 +759,57 @@ test('extended Schema is not string', async t => {
     t.equal(error.message, 'Must provide valid Document AST')
   }
 })
+
+test('extended Schema is undefined', async t => {
+  const app = Fastify()
+
+  app.register(GQL)
+  app.register(async function (app) {
+    app.graphql.extendSchema()
+  })
+
+  try {
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Must provide valid Document AST')
+  }
+})
+
+test('extended Schema is an object', async t => {
+  const app = Fastify()
+  const schemaObject = {
+    kind: 'Document',
+    definitions: [
+      {
+        kind: 'ObjectTypeExtension',
+        name: { kind: 'Name', value: 'Query' },
+        interfaces: [],
+        directives: [],
+        fields: [{
+          kind: 'FieldDefinition',
+          name: {
+            kind: 'Name',
+            value: 'title'
+          },
+          arguments: [],
+          type: {
+            kind: 'NamedType',
+            name: {
+              kind: 'Name',
+              value: 'String'
+            }
+          },
+          directives: []
+        }],
+        loc: { start: 5, end: 61 }
+      }
+    ]
+  }
+
+  app.register(GQL)
+  app.register(async function (app) {
+    app.graphql.extendSchema(schemaObject)
+  })
+
+  await app.ready()
+})
