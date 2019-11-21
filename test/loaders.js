@@ -376,6 +376,17 @@ test('options cache is type = number', async t => {
   await app.ready()
 })
 
+test('options cache is type != number', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    cache: 'cache'
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+})
+
 test('options cache is false and lruErrors exists', async t => {
   const app = Fastify()
 
