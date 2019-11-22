@@ -960,3 +960,58 @@ test('connection is not allowed when verifyClient callback called with `false`',
     })
   })
 })
+
+test('cached errors', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+    type Query {
+      name: String
+    }
+  `
+
+  app.register(GQL, {
+    schema
+  })
+
+  const get = await app.inject({
+    method: 'GET',
+    url: '/graphql?query=query { test }'
+  })
+
+  t.deepEqual(JSON.parse(get.body), {
+    errors: [
+      {
+        message: 'Cannot query field "test" on type "Query".',
+        locations: [
+          {
+            line: 1,
+            column: 9
+          }
+        ]
+      }
+    ]
+  })
+
+  const post = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: 'query { test }'
+    }
+  })
+
+  t.deepEqual(JSON.parse(post.body), {
+    errors: [
+      {
+        message: 'Cannot query field "test" on type "Query".',
+        locations: [
+          {
+            line: 1,
+            column: 9
+          }
+        ]
+      }
+    ]
+  })
+})

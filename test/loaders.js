@@ -208,7 +208,7 @@ test('disable cache for each loader', async (t) => {
   })
 })
 
-test('defineLoaders method', async (t) => {
+test('defineLoaders method, if factory exists', async (t) => {
   const app = Fastify()
 
   const loaders = {
@@ -224,6 +224,7 @@ test('defineLoaders method', async (t) => {
     resolvers
   })
   app.register(async function (app) {
+    app.graphql.defineLoaders(loaders)
     app.graphql.defineLoaders(loaders)
   })
 
@@ -326,4 +327,131 @@ test('support context in loader', async (t) => {
       }]
     }
   })
+})
+
+test('rersolver unknown type', async t => {
+  const app = Fastify()
+
+  const resolvers = {
+    test: 2
+  }
+
+  app.register(GQL, {
+    resolvers
+  })
+
+  try {
+    // needed so that graphql is defined
+    await app.ready()
+    app.graphql('query { test }')
+  } catch (error) {
+    t.equal(error.message, 'Cannot find type test')
+  }
+})
+
+test('minJit is not a number, throw error', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    jit: '0'
+  })
+  const typeError = new Error('the jit option must be a number')
+
+  try {
+    await app.ready()
+  } catch (error) {
+    t.deepEqual(error, typeError)
+  }
+})
+
+test('options cache is type = number', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    cache: 256
+  })
+
+  await app.ready()
+})
+
+test('options cache is boolean', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    cache: true
+  })
+
+  try {
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Cache type is not supported')
+  }
+})
+
+test('options cache is !number && !boolean', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    cache: 'cache'
+  })
+
+  try {
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Cache type is not supported')
+  }
+})
+
+test('options cache is false and lruErrors exists', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    cache: false
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  try {
+    await app.graphql('{ dogs { name { owner } } }')
+  } catch (error) {
+    t.equal(error.message, 'Bad Request')
+    t.end()
+  }
+})
+
+test('reply is empty, throw error', async (t) => {
+  const app = Fastify()
+
+  const resolvers = {
+    Query: {
+      dogs: () => dogs
+    }
+  }
+
+  const loaders = {
+    Dog: {
+      async owner (queries) {
+        return queries.map(({ obj }) => owners[obj.name])
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  try {
+    await app.graphql(query)
+  } catch (error) {
+    t.equal(error.message, 'Internal Server Error')
+    t.equal(error.errors.length, 4)
+    t.equal(error.errors[0].message, 'loaders only work via reply.graphql()')
+  }
 })

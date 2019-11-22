@@ -27,12 +27,17 @@ const kLoaders = Symbol('fastify-gql.loaders')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
-    if (opts.cache === false) {
+    const isBoolean = typeof opts.cache === 'boolean'
+    const isNumber = typeof opts.cache === 'number'
+
+    if (isBoolean && opts.cache === false) {
       // no cache
       return null
-    } else if (typeof opts.cache === 'number') {
+    } else if (isNumber) {
       // cache size as specified
       return LRU(opts.cache)
+    } else if (!isBoolean && !isNumber) {
+      throw new Error('Cache type is not supported')
     }
   }
 
@@ -69,11 +74,7 @@ module.exports = fp(async function (app, opts) {
     })
   }
 
-  app.ready(async function (err) {
-    if (err) {
-      throw err
-    }
-
+  app.ready(async function () {
     const schemaValidationErrors = validateSchema(schema)
     if (schemaValidationErrors.length > 0) {
       const err = new Error('schema issues')
@@ -106,6 +107,8 @@ module.exports = fp(async function (app, opts) {
   fastifyGraphQl.extendSchema = function (s) {
     if (typeof s === 'string') {
       s = parse(s)
+    } else if (!s || typeof s !== 'object') {
+      throw new Error('Must provide valid Document AST')
     }
 
     schema = extendSchema(schema, s)

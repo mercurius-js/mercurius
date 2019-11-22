@@ -177,3 +177,58 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
     t.deepEqual(error, err)
   }
 })
+
+test('queryDepth - queryDepth is not number', async (t) => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    queryDepth: '6'
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, goodResponse)
+})
+
+test('queryDepth - definition.kind and definition.name change', async (t) => {
+  const app = Fastify()
+  const localQuery = `query QueryName {
+    dogs {
+      name
+      owner {
+        ...OwnerName
+        pet {
+          name
+          owner {
+            ...OwnerName
+            pet {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+
+  fragment OwnerName on Human {
+    name
+  }`
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    queryDepth: 6
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const res = await app.graphql(localQuery)
+
+  t.deepEqual(res, goodResponse)
+})
