@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "unit": "tap -J test/*.js",
+    "unit": "tap --100 -J test/*.js",
     "cov": "tap --coverage-report=html -J test/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:standard": "standard | snazzy",
