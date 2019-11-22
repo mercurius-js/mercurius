@@ -6,6 +6,7 @@
   "types": "index.d.ts",
   "scripts": {
     "unit": "tap -J test/*.js",
+    "cov": "tap --coverage-report=html -J test/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:standard": "standard | snazzy",
     "lint:typescript": "standard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin test/types/*.ts",
