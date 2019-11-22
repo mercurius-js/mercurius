@@ -25,11 +25,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     './subscription-connection': MockSubscriptionConnection
   })
 
-  const app = fastify({
-    logger: {
-      level: 'info'
-    }
-  })
+  const app = fastify()
   t.tearDown(() => app.close())
   app.register(subscription, {
     getOptions: {
