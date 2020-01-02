@@ -111,6 +111,23 @@ test('subscription connection handles GQL_STOP message correctly', async (t) => 
   t.equal(sc.subscriptionContexts.size, 0)
 })
 
+test('handles error in send and closes connection', async t => {
+  const sc = new SubscriptionConnection(
+    {
+      send (message) {
+        throw new Error('Socket closed')
+      },
+      close () {
+        t.pass()
+      },
+      on () {}
+    },
+    {}
+  )
+
+  await sc.sendMessage('foo')
+})
+
 test('subscription connection handles GQL_STOP message correctly, with no data', async (t) => {
   const sc = new SubscriptionConnection({
     on () {},
