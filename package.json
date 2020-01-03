@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/mcollina/fastify-gql#readme",
   "devDependencies": {
-    "@types/node": "^12.7.12",
+    "@types/node": "^13.1.0",
     "@typescript-eslint/eslint-plugin": "^2.3.3",
     "@typescript-eslint/parser": "^2.3.3",
     "autocannon": "^4.0.0",
