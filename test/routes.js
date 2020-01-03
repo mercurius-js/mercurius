@@ -3,7 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const querystring = require('querystring')
-const websocket = require('websocket-stream')
+const WebSocket = require('ws')
 const GQL = require('..')
 
 test('POST route', async (t) => {
@@ -927,13 +927,12 @@ test('connection is not allowed when verifyClient callback called with `false`',
 
   app.listen(0, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
-    const client = websocket(url, 'graphql-ws', {
-      objectMode: true,
+    const ws = new WebSocket(url, 'graphql-ws', {
       headers: { 'x-custom-header': 'fastify is awesome !' }
     })
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
     t.tearDown(client.destroy.bind(client))
 
-    client.setEncoding('utf8')
     client.write(JSON.stringify({
       type: 'connection_init'
     }))
@@ -944,10 +943,10 @@ test('connection is not allowed when verifyClient callback called with `false`',
       client.end()
     })
 
-    const client2 = websocket(url, 'graphql-ws', {
-      objectMode: true,
+    const ws2 = new WebSocket(url, 'graphql-ws', {
       headers: { 'x-custom-header': 'other-value' }
     })
+    const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
     t.tearDown(client2.destroy.bind(client2))
 
     client2.setEncoding('utf8')
@@ -955,7 +954,7 @@ test('connection is not allowed when verifyClient callback called with `false`',
       type: 'connection_init'
     }))
     client2.on('error', (err) => {
-      t.equal('unexpected server response (401)', err.message)
+      t.equal('Unexpected server response: 401', err.message)
       client2.end()
     })
   })

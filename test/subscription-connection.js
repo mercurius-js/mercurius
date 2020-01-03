@@ -1,6 +1,6 @@
 const { test } = require('tap')
 const proxyquire = require('proxyquire')
-const websocket = require('websocket-stream')
+const WebSocket = require('ws')
 const fastify = require('fastify')
 const mq = require('mqemitter')
 const SubscriptionConnection = require('../lib/subscription-connection')
@@ -45,9 +45,8 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
 
   app.listen(0, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
-    const client = websocket(url, 'graphql-ws', {
-      objectMode: true
-    })
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
     t.tearDown(client.destroy.bind(client))
 
     client.on('error', () => {})
@@ -55,7 +54,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     client.write(JSON.stringify({
       type: 'connection_init_error'
     }))
-    client.on('close', () => {
+    ws.on('close', () => {
       t.is(handleConnectionCloseCalled, true)
     })
   })
@@ -110,6 +109,23 @@ test('subscription connection handles GQL_STOP message correctly', async (t) => 
   }))
 
   t.equal(sc.subscriptionContexts.size, 0)
+})
+
+test('handles error in send and closes connection', async t => {
+  const sc = new SubscriptionConnection(
+    {
+      send (message) {
+        throw new Error('Socket closed')
+      },
+      close () {
+        t.pass()
+      },
+      on () {}
+    },
+    {}
+  )
+
+  await sc.sendMessage('foo')
 })
 
 test('subscription connection handles GQL_STOP message correctly, with no data', async (t) => {

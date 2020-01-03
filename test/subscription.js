@@ -1,6 +1,6 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
-const websocket = require('websocket-stream')
+const WebSocket = require('ws')
 const mq = require('mqemitter')
 const GQL = require('..')
 
@@ -30,9 +30,8 @@ test('subscription server replies with connection_ack', t => {
     t.error(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
-    const client = websocket(url, 'graphql-ws', {
-      objectMode: true
-    })
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
     t.tearDown(client.destroy.bind(client))
 
     client.setEncoding('utf8')
@@ -154,9 +153,8 @@ test('subscription server sends update to subscriptions', t => {
   app.listen(0, err => {
     t.error(err)
 
-    const client = websocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws', {
-      objectMode: true
-    })
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
     t.tearDown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
@@ -237,9 +235,8 @@ test('subscription server register handle function arg is not empty', t => {
     t.error(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/'
-    const client = websocket(url, {
-      objectMode: true
-    })
+    const ws = new WebSocket(url)
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
     t.tearDown(client.destroy.bind(client))
 
     client.setEncoding('utf8')
@@ -260,12 +257,10 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
 
   app.listen(0, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
-    const client = websocket(url, 'foobar', {
-      objectMode: true
-    })
-
+    const ws = new WebSocket(url, 'foobar')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
     client.setEncoding('utf8')
-    client.on('close', () => {
+    ws.on('close', () => {
       client.end()
       t.end()
     })

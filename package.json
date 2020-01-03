@@ -6,6 +6,7 @@
   "types": "index.d.ts",
   "scripts": {
     "unit": "tap --100 -J test/*.js",
+    "unit2": "tap test/subscription-connection.js",
     "cov": "tap --coverage-report=html -J test/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:standard": "standard | snazzy",
@@ -35,12 +36,13 @@
     "snazzy": "^8.0.0",
     "standard": "^14.0.0",
     "tap": "^14.6.1",
-    "typescript": "^3.6.4"
+    "typescript": "^3.6.4",
+    "ws": "^7.2.1"
   },
   "dependencies": {
     "fastify-plugin": "^1.6.0",
     "fastify-static": "^2.5.0",
-    "fastify-websocket": "^0.6.0",
+    "fastify-websocket": "^1.0.0",
     "graphql": "^14.5.0",
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
