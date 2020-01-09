@@ -307,7 +307,7 @@ __fastify-gql__ supports the following options:
 * `graphiql`: boolean | string. Serve
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
-  if `routes` is `true`.
+  and if `routes` is `true`. Leave empty or `false` to disable.
 * `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is

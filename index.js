@@ -86,9 +86,10 @@ module.exports = fp(async function (app, opts) {
   const graphqlCtx = Symbol('ctx')
 
   if (opts.routes !== false) {
+    const optsIde = opts.graphiql || opts.ide
     app.register(routes, {
       errorHandler: opts.errorHandler,
-      graphiql: opts.graphiql,
+      ide: optsIde,
       prefix: opts.prefix,
       context: opts.context,
       schema,
