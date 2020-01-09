@@ -571,11 +571,69 @@ test('GET graphiql endpoint', async (t) => {
   t.strictEqual(res.headers.location, '/graphiql.html')
 })
 
+test('GET graphiql endpoint with boolean', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: true
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/graphiql.html')
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/playground'
+  })
+  t.strictEqual(res2.statusCode, 404)
+})
+
+test('GET graphiql endpoint with property priority', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: 'graphiql',
+    graphiql: 'playground',
+    routes: true
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground'
+  })
+  t.strictEqual(res.statusCode, 302)
+  t.strictEqual(res.headers.location, '/playground.html')
+
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.strictEqual(res2.statusCode, 404)
+  t.notStrictEqual(res2.headers.location, '/graphiql.html')
+})
+
 test('Disable ide endpoint', async (t) => {
   const app = Fastify()
   app.register(GQL, {
     ide: false
   })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/playground'
+  })
+  t.strictEqual(res.statusCode, 404)
+  t.strictEqual(res2.statusCode, 404)
+})
+
+test('Disable ide endpoint by leaving empty', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {})
 
   const res = await app.inject({
     method: 'GET',
