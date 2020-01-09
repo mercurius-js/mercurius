@@ -110,6 +110,9 @@ module.exports = fp(async function (app, opts) {
     }
 
     schema = s
+
+    lru.clear()
+    lruErrors.clear()
   }
 
   fastifyGraphQl.extendSchema = function (s) {
