@@ -495,6 +495,10 @@ run()
 It is possible to replace schema and resolvers using `makeSchemaExecutable` function in separate fastify plugins, like so:
 
 ```js
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+const { makeExecutableSchema } = require('graphql-tools')
+
 const app = Fastify()
 
 app.register(GQL, {

@@ -196,6 +196,66 @@ test('replaceSchema with makeSchemaExecutable', async (t) => {
   })
 })
 
+test('replaceSchema (clearing cache)', async (t) => {
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema: makeExecutableSchema({
+      typeDefs: `
+      type Query {
+        add(x: Int, y: Int): Int
+        subtract(x: Int, y: Int): Int
+      }
+    `,
+      resolvers: {
+        Query: {
+          add: async (_, { x, y }) => x + y,
+          subtract: async (_, { x, y }) => x - y
+        }
+      }
+    })
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  let query, res
+
+  query = '{ subtract(x: 4, y: 2) }'
+  res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      subtract: 2
+    }
+  })
+
+  app.graphql.replaceSchema(
+    makeExecutableSchema({
+      typeDefs: `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `,
+      resolvers: {
+        Query: {
+          add: async (_, { x, y }) => x + y,
+        }
+      }
+    })
+  );
+
+  query = '{ subtract(x: 4, y: 2) }'
+  try {
+    await app.graphql(query)
+  } catch (err) {
+    t.equal(err.errors[0].message, 'Cannot query field "subtract" on type "Query".')
+  }
+
+
+})
+
 test('replaceSchema with makeSchemaExecutable (schema should be provided)', async (t) => {
   const app = Fastify()
 
