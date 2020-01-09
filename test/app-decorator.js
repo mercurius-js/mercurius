@@ -148,6 +148,83 @@ test('operationName', async (t) => {
   })
 })
 
+test('replaceSchema with makeSchemaExecutable', async (t) => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema: makeExecutableSchema({
+      typeDefs: `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `,
+      resolvers: {
+        Query: {
+          add: async (_, { x, y }) => x + y
+        }
+      }
+    })
+  })
+
+  app.register(async function (app) {
+    app.graphql.replaceSchema(
+      makeExecutableSchema({
+        typeDefs: `
+        type Query {
+          add(x: Int, y: Int, z: Int): Int
+        }
+      `,
+        resolvers: {
+          Query: {
+            add: async (_, { x, y, z }) => x + y + z
+          }
+        }
+      })
+    )
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = '{ add(x: 2, y: 2, z: 2) }'
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      add: 6
+    }
+  })
+})
+
+test('replaceSchema with makeSchemaExecutable (schema should be provided)', async (t) => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema: makeExecutableSchema({
+      typeDefs: `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `,
+      resolvers: {
+        Query: {
+          add: async (_, { x, y }) => x + y
+        }
+      }
+    })
+  })
+
+  app.register(async function (app) {
+    app.graphql.replaceSchema()
+  })
+
+  try {
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Must provide valid Document AST')
+  }
+})
+
 test('extendSchema and defineResolvers for query', async (t) => {
   const app = Fastify()
   const schema = `
@@ -222,7 +299,7 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
     extend type Query {
       add(x: Int, y: Int): Int
     }
-    
+
     type Mutation {
       sub(x: Int, y: Int): Int
     }
