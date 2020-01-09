@@ -74,7 +74,7 @@ declare namespace FastifyGQL {
       }
     },
     /**
-     * Serve GraphiQL on /graphiql if 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
+     * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
      */
 		graphiql?: boolean | string,
 		ide?: boolean | string,
