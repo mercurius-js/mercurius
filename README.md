@@ -305,7 +305,7 @@ __fastify-gql__ supports the following options:
 * `loaders`: Object. See [defineLoaders](#defineLoaders) for more
   details.
 * `graphiql`: boolean | string. Serve
-  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or 
+  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
   and if `routes` is `true`. Leave empty or `false` to disable.
 * `jit`: Integer. The minimum number of execution a query needs to be
@@ -319,7 +319,7 @@ __fastify-gql__ supports the following options:
 * `queryDepth`: `Integer`. The maximum depth allowed for a single query.
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
-  * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections. 
+  * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
 
 #### queryDepth example
 ```
@@ -483,6 +483,70 @@ async function run () {
   // {
   //   data: {
   //      add: 4
+  //   }
+  // }
+}
+
+run()
+```
+
+#### app.graphql.replaceSchema(schema)
+
+It is possible to replace schema and resolvers using `makeSchemaExecutable` function in separate fastify plugins, like so:
+
+```js
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+const { makeExecutableSchema } = require('graphql-tools')
+
+const app = Fastify()
+
+app.register(GQL, {
+  schema: makeExecutableSchema({
+    typeDefs: `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `,
+    resolvers: {
+      Query: {
+        add: async (_, { x, y }) => x + y
+      }
+    }
+  })
+})
+
+app.register(async function (app) {
+  app.graphql.replaceSchema(
+    makeExecutableSchema({
+      typeDefs: `
+      type Query {
+        add(x: Int, y: Int, z: Int): Int
+      }
+    `,
+      resolvers: {
+        Query: {
+          add: async (_, { x, y, z }) => x + y + z
+        }
+      }
+    })
+  )
+})
+
+async function run () {
+  // needed so that graphql is defined
+
+  await app.ready()
+
+  const query = '{ add(x: 2, y: 2, z: 2) }'
+  const res = await app.graphql(query)
+
+  console.log(res)
+  // prints:
+  //
+  // {
+  //   data: {
+  //      add: 6
   //   }
   // }
 }

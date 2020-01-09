@@ -13,6 +13,11 @@ declare namespace FastifyGQL {
 
   export interface Plugin<HttpResponse> {
     /**
+     * Replace existing schema
+     * @param schema graphql schema
+     */
+    replaceSchema(schema: GraphQLSchema): void;
+    /**
      * Extend existing schema
      * @param schema graphql schema
      */

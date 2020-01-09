@@ -105,6 +105,17 @@ module.exports = fp(async function (app, opts) {
 
   app.decorate('graphql', fastifyGraphQl)
 
+  fastifyGraphQl.replaceSchema = function (s) {
+    if (!s || typeof s !== 'object') {
+      throw new Error('Must provide valid Document AST')
+    }
+
+    schema = s
+
+    lru.clear()
+    lruErrors.clear()
+  }
+
   fastifyGraphQl.extendSchema = function (s) {
     if (typeof s === 'string') {
       s = parse(s)
