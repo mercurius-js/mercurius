@@ -88,7 +88,7 @@ module.exports = fp(async function (app, opts) {
   if (opts.routes !== false) {
     app.register(routes, {
       errorHandler: opts.errorHandler,
-      graphiql: opts.graphiql,
+      ide: opts.ide,
       prefix: opts.prefix,
       context: opts.context,
       schema,

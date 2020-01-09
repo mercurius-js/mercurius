@@ -560,7 +560,7 @@ test('error if there are functions defined in the root object', async (t) => {
 test('GET graphiql endpoint', async (t) => {
   const app = Fastify()
   app.register(GQL, {
-    graphiql: true
+    ide: 'graphiql'
   })
 
   const res = await app.inject({
@@ -571,10 +571,28 @@ test('GET graphiql endpoint', async (t) => {
   t.strictEqual(res.headers.location, '/graphiql.html')
 })
 
+test('Disable ide endpoint', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: false
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/playground'
+  })
+  t.strictEqual(res.statusCode, 404)
+  t.strictEqual(res2.statusCode, 404)
+})
+
 test('GET graphiql endpoint with prefix', async (t) => {
   const app = Fastify()
   app.register(GQL, {
-    graphiql: 'graphiql',
+    ide: 'graphiql',
     prefix: '/test-prefix'
   })
 
@@ -591,7 +609,7 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
   const app = Fastify()
   app.register(async function (app, opts) {
     app.register(GQL, {
-      graphiql: true
+      ide: 'graphiql'
     })
   }, { prefix: '/test-wrapper-prefix' })
 
@@ -607,7 +625,7 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
 test('GET graphql playground endpoint', async (t) => {
   const app = Fastify()
   app.register(GQL, {
-    graphiql: 'playground'
+    ide: 'playground'
   })
 
   const res = await app.inject({
@@ -621,7 +639,7 @@ test('GET graphql playground endpoint', async (t) => {
 test('GET graphql playground endpoint with prefix', async (t) => {
   const app = Fastify()
   app.register(GQL, {
-    graphiql: 'playground',
+    ide: 'playground',
     prefix: '/test-prefix'
   })
 
@@ -638,7 +656,7 @@ test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
   const app = Fastify()
   app.register(async function (app, opts) {
     app.register(GQL, {
-      graphiql: 'playground'
+      ide: 'playground'
     })
   }, { prefix: '/test-wrapper-prefix' })
 

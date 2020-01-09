@@ -41,7 +41,7 @@ app.register(GQL, {
   schema: schema,
   resolvers,
   loaders: {},
-  graphiqls: true,
+  ide: false,
   jit: 1,
   routes: true,
   prefix: '/prefix',

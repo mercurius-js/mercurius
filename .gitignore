@@ -63,3 +63,6 @@ typings/
 # clinic
 *clinic*
 package-lock.json
+
+# vscode
+.vscode/
