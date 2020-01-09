@@ -76,7 +76,8 @@ declare namespace FastifyGQL {
     /**
      * Serve GraphiQL on /graphiql if 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
      */
-    ide?: boolean | string,
+		graphql?: boolean | string,
+		ide?: boolean | string,
     /**
      * The minimum number of execution a query needs to be executed before being jit'ed.
      * @default true
