@@ -41,6 +41,42 @@ test('POST route', async (t) => {
   })
 })
 
+test('custom route', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    path: '/custom'
+  })
+
+  const query = '{ add(x: 2, y: 2) }'
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/custom',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
+
 test('GET route', async (t) => {
   const app = Fastify()
   const schema = `

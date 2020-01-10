@@ -312,6 +312,7 @@ __fastify-gql__ supports the following options:
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
+* `path`: string. Change default graphql `/graphql` route to another one.
 * `context`: `Function`. Result of function is passed to resolvers as a custom GraphQL context. The function receives the `request` and `reply` as parameters. It is only called when `routes` options is `true`
 * `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
