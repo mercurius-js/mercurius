@@ -89,6 +89,11 @@ declare namespace FastifyGQL {
      */
     routes?: boolean,
     /**
+     * An endpoint for graphql if routes is true
+     * @default '/graphql'
+     */
+    path?: string,
+    /**
      * Change the route prefix of the graphql endpoint if set
      */
     prefix?: string,

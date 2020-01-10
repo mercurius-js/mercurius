@@ -91,6 +91,7 @@ module.exports = fp(async function (app, opts) {
       errorHandler: opts.errorHandler,
       ide: optsIde,
       prefix: opts.prefix,
+      path: opts.path,
       context: opts.context,
       schema,
       subscription: opts.subscription
