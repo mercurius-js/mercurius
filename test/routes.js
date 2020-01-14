@@ -4,6 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const querystring = require('querystring')
 const WebSocket = require('ws')
+const { GraphQLError } = require('graphql')
 const GQL = require('..')
 
 test('POST route', async (t) => {
@@ -847,6 +848,103 @@ test('Custom error handler', async (t) => {
   })
 
   t.strictEqual(res.statusCode, 403)
+})
+
+test('Graphql Error handling (without data)', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => { throw new GraphQLError('Graphql Error in resolver') }
+  }
+
+  function errorHandler (error, req, reply) {
+    reply.code(200)
+    reply.send({ errors: error.errors })
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.strictEqual(res.statusCode, 200)
+
+  const jsonResponse = res.json()
+
+  t.deepEqual(jsonResponse, {
+    errors: [
+      {
+        message: 'Graphql Error in resolver',
+        locations: [
+          {
+            line: 1,
+            column: 2
+          }
+        ],
+        path: ['add']
+      }
+    ]
+  })
+})
+
+test('Graphql Error handling (with data == null)', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => { throw new GraphQLError('Graphql Error in resolver') }
+  }
+
+  function errorHandler (error, req, reply) {
+    reply.code(200)
+    reply.send({ errors: error.errors, data: null })
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.strictEqual(res.statusCode, 200)
+
+  const jsonResponse = res.json()
+
+  t.deepEqual(jsonResponse, {
+    data: null,
+    errors: [
+      {
+        message: 'Graphql Error in resolver',
+        locations: [
+          {
+            line: 1,
+            column: 2
+          }
+        ],
+        path: ['add']
+      }
+    ]
+  })
 })
 
 test('Error handler set to true should not change default behavior', async (t) => {
