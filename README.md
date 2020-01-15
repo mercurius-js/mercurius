@@ -391,8 +391,10 @@ payload must conform to the following JSON schema:
 
 ```js
 {
-  type: 'string',
-  description: 'the GraphQL query'
+  query: {
+    type: 'string',
+    description: 'the GraphQL query'
+  }
 }
 ```
 
