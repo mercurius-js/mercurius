@@ -381,7 +381,7 @@ payload must conform to the following JSON schema:
 
 For code from [example](#example) use:
 ```sh
-curl -H "Content-Type:application/json" -XPOST -d '{"query": "{ add(x: 2, y: 2) }"}' http://localhost:3000/graphql
+curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, y: 2) }"}' http://localhost:3000/graphql
 ```
 
 #### POST /graphql with Content-type: application/graphql
@@ -391,16 +391,14 @@ payload must conform to the following JSON schema:
 
 ```js
 {
-  query: {
-    type: 'string',
-    description: 'the GraphQL query'
-  }
+  type: 'string',
+  description: 'the GraphQL query'
 }
 ```
 
 For code from [example](#example) use:
 ```sh
-curl -H "Content-Type:application/graphql" -XPOST -d "{ add(x: 2, y: 2) }" http://localhost:3000/graphql
+curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }" http://localhost:3000/graphql
 ```
 
 #### GET /graphiql
