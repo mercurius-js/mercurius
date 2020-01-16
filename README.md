@@ -387,14 +387,7 @@ curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, 
 #### POST /graphql with Content-type: application/graphql
 
 Executes the GraphQL query or mutation described in the body. `operationName` and `variables` can not be passed using this method. The
-payload must conform to the following JSON schema:
-
-```js
-{
-  type: 'string',
-  description: 'the GraphQL query'
-}
-```
+payload contains the GraphQL query.
 
 For code from [example](#example) use:
 ```sh
