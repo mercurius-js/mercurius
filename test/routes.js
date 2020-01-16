@@ -312,7 +312,7 @@ test('disable routes', async (t) => {
   t.deepEqual(res.statusCode, 404)
 })
 
-test('GET return 500 on resolver error', async (t) => {
+test('GET return 200 on resolver error', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -334,11 +334,11 @@ test('GET return 500 on resolver error', async (t) => {
     url: '/graphql?query={add(x:2,y:2)}'
   })
 
-  t.equal(res.statusCode, 500) // Internal Server Error
+  t.equal(res.statusCode, 200)
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
-test('POST return 500 on resolver error', async (t) => {
+test('POST return 200 on resolver error', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -364,7 +364,7 @@ test('POST return 500 on resolver error', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 500) // Internal Server Error
+  t.equal(res.statusCode, 200)
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
@@ -850,101 +850,70 @@ test('Custom error handler', async (t) => {
   t.strictEqual(res.statusCode, 403)
 })
 
-test('Graphql Error handling (without data)', async (t) => {
+test('server should return 200 on graphql errors (if field can be null)', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
-      add(x: Int, y: Int): Int
+      hello: String
     }
   `
 
-  const resolvers = {
-    add: async ({ x, y }) => { throw new GraphQLError('Graphql Error in resolver') }
-  }
-
-  function errorHandler (error, req, reply) {
-    reply.code(200)
-    reply.send({ errors: error.errors })
-  }
-
   app.register(GQL, {
     schema,
-    resolvers,
-    errorHandler
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={add(x:2,y:2)}'
-  })
-
-  t.strictEqual(res.statusCode, 200)
-
-  const jsonResponse = res.json()
-
-  t.deepEqual(jsonResponse, {
-    errors: [
-      {
-        message: 'Graphql Error in resolver',
-        locations: [
-          {
-            line: 1,
-            column: 2
-          }
-        ],
-        path: ['add']
+    resolvers: {
+      Query: {
+        hello: () => { throw new GraphQLError('Simple error') }
       }
-    ]
+    }
   })
+
+  const query = `
+    query {
+      hello
+    }
+  `
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
+
+  t.equal(response.statusCode, 200)
+  t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
-test('Graphql Error handling (with data == null)', async (t) => {
+test('server should return 500 on graphql errors (if field can not be null)', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
-      add(x: Int, y: Int): Int
+      hello: String!
     }
   `
 
-  const resolvers = {
-    add: async ({ x, y }) => { throw new GraphQLError('Graphql Error in resolver') }
-  }
-
-  function errorHandler (error, req, reply) {
-    reply.code(200)
-    reply.send({ errors: error.errors, data: null })
-  }
-
   app.register(GQL, {
     schema,
-    resolvers,
-    errorHandler
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={add(x:2,y:2)}'
-  })
-
-  t.strictEqual(res.statusCode, 200)
-
-  const jsonResponse = res.json()
-
-  t.deepEqual(jsonResponse, {
-    data: null,
-    errors: [
-      {
-        message: 'Graphql Error in resolver',
-        locations: [
-          {
-            line: 1,
-            column: 2
-          }
-        ],
-        path: ['add']
+    resolvers: {
+      Query: {
+        hello: () => { throw new GraphQLError('Simple error') }
       }
-    ]
+    }
   })
+
+  const query = `
+    query {
+      hello
+    }
+  `
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
+
+  t.equal(response.statusCode, 500)
+  t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
 test('Error handler set to true should not change default behavior', async (t) => {
@@ -978,7 +947,8 @@ test('Error handler set to true should not change default behavior', async (t) =
         line: 1,
         column: 8
       }]
-    }]
+    }],
+    data: null
   }
 
   t.strictEqual(res.statusCode, 400)
@@ -1041,7 +1011,7 @@ test('route validation is catched and parsed to graphql error', async (t) => {
     url: '/graphql'
   })
 
-  const expectedResult = { errors: [{ message: 'body should be object' }] }
+  const expectedResult = { errors: [{ message: 'body should be object' }], data: null }
 
   t.strictEqual(res.statusCode, 400)
   t.strictDeepEqual(JSON.parse(res.body), expectedResult)
@@ -1199,7 +1169,8 @@ test('cached errors', async (t) => {
           }
         ]
       }
-    ]
+    ],
+    data: null
   })
 
   const post = await app.inject({
@@ -1221,6 +1192,7 @@ test('cached errors', async (t) => {
           }
         ]
       }
-    ]
+    ],
+    data: null
   })
 })

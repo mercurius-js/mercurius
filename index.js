@@ -298,6 +298,7 @@ module.exports = fp(async function (app, opts) {
     if (execution.errors) {
       const err = new InternalServerError()
       err.errors = execution.errors
+      err.data = execution.data
       throw err
     }
 
