@@ -41,6 +41,40 @@ test('POST route', async (t) => {
   })
 })
 
+test('POST route application/graphql', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = '{ add(x: 2, y: 2) }'
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/graphql' },
+    url: '/graphql',
+    body: query
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
+
 test('custom route', async (t) => {
   const app = Fastify()
   const schema = `
@@ -432,6 +466,49 @@ test('mutation with POST', async (t) => {
     body: {
       query
     }
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      setMessage: 'hello world'
+    }
+  })
+  t.equal(msg, 'hello world')
+})
+
+test('mutation with POST application/graphql', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Mutation {
+      setMessage(message: String): String
+    }
+
+    type Query {
+      getMessage: String
+    }
+  `
+
+  let msg = 'hello'
+  const resolvers = {
+    setMessage: async ({ message }) => {
+      msg = message
+      return message
+    },
+    async getMessage () { return msg }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = 'mutation { setMessage(message: "hello world") }'
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/graphql' },
+    url: '/graphql',
+    body: query
   })
 
   t.deepEqual(JSON.parse(res.body), {
