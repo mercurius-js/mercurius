@@ -66,6 +66,17 @@ exports['test/routes.js TAP POST return 400 on error > must match snapshot 1'] =
 }
 `
 
+exports['test/routes.js TAP POST return 500 on error without statusCode > must match snapshot 1'] = `
+{
+  "errors": [
+    {
+      "message": "Interface field Event.Id expected but CustomEvent does not provide it."
+    }
+  ],
+  "data": null
+}
+`
+
 exports['test/routes.js TAP mutation with GET errors > must match snapshot 1'] = `
 {
   "errors": [
