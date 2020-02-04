@@ -433,6 +433,44 @@ test('POST return 400 on error', async (t) => {
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
+test('POST return 500 on error without statusCode', async (t) => {
+  const app = Fastify()
+  const schema = `
+    interface Event {
+      Id: Int!
+    }
+    type CustomEvent implements Event {
+      # Id needs to be specified here
+      Name: String!
+    }
+    type Query {
+      listEvent: [Event]
+    }
+  `
+
+  const resolvers = {
+    listEvent: async () => []
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = '{ listEvent { id } }'
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 500) // Internal error
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+})
+
 test('mutation with POST', async (t) => {
   const app = Fastify()
   const schema = `
