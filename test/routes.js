@@ -719,8 +719,7 @@ test('GET graphiql endpoint', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/graphiql.html')
+  t.strictEqual(res.statusCode, 200)
 })
 
 test('GET graphiql endpoint with boolean', async (t) => {
@@ -733,8 +732,8 @@ test('GET graphiql endpoint with boolean', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/graphiql.html')
+  t.strictEqual(res.statusCode, 200)
+
   const res2 = await app.inject({
     method: 'GET',
     url: '/playground'
@@ -754,8 +753,7 @@ test('GET graphiql endpoint with property priority', async (t) => {
     method: 'GET',
     url: '/playground'
   })
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/playground.html')
+  t.strictEqual(res.statusCode, 200)
 
   const res2 = await app.inject({
     method: 'GET',
@@ -811,8 +809,7 @@ test('GET graphiql endpoint with prefix', async (t) => {
     url: '/test-prefix/graphiql'
   })
 
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/test-prefix/graphiql.html')
+  t.strictEqual(res.statusCode, 200)
 })
 
 test('GET graphiql endpoint with prefixed wrapper', async (t) => {
@@ -828,8 +825,7 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
     url: '/test-wrapper-prefix/graphiql'
   })
 
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/test-wrapper-prefix/graphiql.html')
+  t.strictEqual(res.statusCode, 200)
 })
 
 test('GET graphql playground endpoint', async (t) => {
@@ -842,8 +838,7 @@ test('GET graphql playground endpoint', async (t) => {
     method: 'GET',
     url: '/playground'
   })
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/playground.html')
+  t.strictEqual(res.statusCode, 200)
 })
 
 test('GET graphql playground endpoint with prefix', async (t) => {
@@ -858,8 +853,7 @@ test('GET graphql playground endpoint with prefix', async (t) => {
     url: '/test-prefix/playground'
   })
 
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/test-prefix/playground.html')
+  t.strictEqual(res.statusCode, 200)
 })
 
 test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
@@ -875,8 +869,7 @@ test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
     url: '/test-wrapper-prefix/playground'
   })
 
-  t.strictEqual(res.statusCode, 302)
-  t.strictEqual(res.headers.location, '/test-wrapper-prefix/playground.html')
+  t.strictEqual(res.statusCode, 200)
 })
 
 test('GET graphql endpoint with prefix', async (t) => {
@@ -1310,4 +1303,23 @@ test('cached errors', async (t) => {
     ],
     data: null
   })
+})
+
+test('disable GET graphiql if ide is not "graphiql" or "playground"', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: 'not-graphiql'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.strictEqual(res.statusCode, 404)
+
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/playground'
+  })
+  t.strictEqual(res2.statusCode, 404)
 })
