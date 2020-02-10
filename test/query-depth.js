@@ -431,7 +431,6 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
       }
     })
   } catch (error) {
-    console.log(error)
     t.fail(error.message)
   }
 })
