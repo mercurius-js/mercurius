@@ -144,7 +144,7 @@ test('queryDepth - test total depth is within queryDepth parameter', async (t) =
   app.register(GQL, {
     schema,
     resolvers,
-    queryDepth: 6
+    queryDepth: 5
   })
 
   // needed so that graphql is defined
@@ -156,19 +156,20 @@ test('queryDepth - test total depth is within queryDepth parameter', async (t) =
 })
 
 test('queryDepth - test total depth is over queryDepth parameter', async (t) => {
+  t.plan(1)
   const app = Fastify()
 
   app.register(GQL, {
     schema,
     resolvers,
-    queryDepth: 5
+    queryDepth: 3
   })
 
   // needed so that graphql is defined
   await app.ready()
 
   const err = new BadRequest()
-  const queryDepthError = new Error('unnamedQuery query exceeds the query depth limit of 5')
+  const queryDepthError = new Error('unnamedQuery query exceeds the query depth limit of 3')
   err.errors = [queryDepthError]
 
   try {
@@ -231,4 +232,201 @@ test('queryDepth - definition.kind and definition.name change', async (t) => {
   const res = await app.graphql(localQuery)
 
   t.deepEqual(res, goodResponse)
+})
+
+test('queryDepth - ensure query depth is correctly calculated', async (t) => {
+  const schema = `
+  type Nutrition {
+      flavorId: ID
+      calories: Int
+      fat: Int
+      sodium: Int,
+      description: NutritionDescription
+    }
+
+  type NutritionDescription {
+    body: String
+    other: AnotherType
+  }
+  type AnotherType {
+    body: String
+  }
+
+  type Recipe {
+    name: String
+    ingredients: [Ingredient]
+  }
+
+  type Ingredient {
+    name: String,
+  }
+  type Flavor {
+    id: ID
+    name: String
+    description: String
+    nutrition: Nutrition
+    recipes: [Recipe]
+    seasons: [Season]
+  }
+
+  type Season {
+    name: String
+  }
+  type Query {
+    flavors: [Flavor],
+    otherFlavors: [Flavor]
+  }
+`
+  const resolvers = {
+    Query: {
+      otherFlavors (params, { reply }) {
+        return [
+          {
+            id: 2,
+            name: 'Blueberry',
+            seasons: [
+              { name: 'Spring' },
+              { name: 'Fall' }
+            ]
+          },
+          {
+            id: 3,
+            name: 'Blackberry',
+            seasons: [
+              { name: 'Winter' }
+            ]
+          }
+        ]
+      },
+      flavors (params, { reply }) {
+        return [
+          {
+            id: 1,
+            name: 'Strawberry',
+            seasons: [
+              { name: 'Spring' },
+              { name: 'Summer' }
+            ]
+          }
+        ]
+      }
+    },
+    Flavor: {
+      nutrition (params) {
+        return {
+          flavorId: 1,
+          calories: 123,
+          sodium: 10,
+          fat: 1
+        }
+      },
+      recipes (params) {
+        return [
+          { name: 'Strawberry Cake' },
+          { name: 'Strawberry Ice Cream' }
+        ]
+      }
+    },
+    Recipe: {
+      ingredients (params) {
+        return [
+          { name: 'milk' },
+          { name: 'sugar' },
+          { name: 'butter' }
+        ]
+      }
+    },
+    Nutrition: {
+      description (params) {
+        return {
+          body: 'lorem ipsum'
+        }
+      }
+    },
+    NutritionDescription: {
+      other (params) {
+        return {
+          body: 'another string'
+        }
+      }
+    }
+  }
+
+  const query = `{
+    flavors {
+      id
+      name
+      nutrition {
+        calories,
+        description {
+          body
+          other {
+            body
+          }
+        }
+      }
+      recipes {
+        name
+        ingredients {
+          name
+        }
+      }
+      seasons {
+        name
+      }
+    }
+  }`
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    queryDepth: 5
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const res = await app.graphql(query)
+  t.deepEqual(res, {
+    data: {
+      flavors: [
+        {
+          id: '1',
+          name: 'Strawberry',
+          nutrition: {
+            calories: 123,
+            description: {
+              body: 'lorem ipsum',
+              other: {
+                body: 'another string'
+              }
+            }
+          },
+          recipes: [
+            {
+              name: 'Strawberry Cake',
+              ingredients: [
+                { name: 'milk' },
+                { name: 'sugar' },
+                { name: 'butter' }
+              ]
+            },
+            {
+              name: 'Strawberry Ice Cream',
+              ingredients: [
+                { name: 'milk' },
+                { name: 'sugar' },
+                { name: 'butter' }
+              ]
+            }
+          ],
+          seasons: [
+            { name: 'Spring' },
+            { name: 'Summer' }
+          ]
+        }
+      ]
+    }
+  })
 })
