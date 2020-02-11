@@ -1323,3 +1323,22 @@ test('disable GET graphiql if ide is not "graphiql" or "playground"', async (t) 
   })
   t.strictEqual(res2.statusCode, 404)
 })
+
+test('render graphiql if graphiql: true', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    graphiql: true
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.strictEqual(res.statusCode, 200)
+
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/playground'
+  })
+  t.strictEqual(res2.statusCode, 404)
+})
