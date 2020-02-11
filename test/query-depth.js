@@ -264,7 +264,7 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
     id: ID
     name: String
     description: String
-    nutrition: Nutrition 
+    nutrition: Nutrition
     recipes: [Recipe]
     seasons: [Season]
   }
@@ -355,7 +355,7 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
   const query = `{
     flavors {
       id
-      name 
+      name
       nutrition {
         calories,
         description {
@@ -387,50 +387,46 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  try {
-    const res = await app.graphql(query)
-    t.deepEqual(res, {
-      data: {
-        flavors: [
-          {
-            id: '1',
-            name: 'Strawberry',
-            nutrition: {
-              calories: 123,
-              description: {
-                body: 'lorem ipsum',
-                other: {
-                  body: 'another string'
-                }
+  const res = await app.graphql(query)
+  t.deepEqual(res, {
+    data: {
+      flavors: [
+        {
+          id: '1',
+          name: 'Strawberry',
+          nutrition: {
+            calories: 123,
+            description: {
+              body: 'lorem ipsum',
+              other: {
+                body: 'another string'
               }
+            }
+          },
+          recipes: [
+            {
+              name: 'Strawberry Cake',
+              ingredients: [
+                { name: 'milk' },
+                { name: 'sugar' },
+                { name: 'butter' }
+              ]
             },
-            recipes: [
-              {
-                name: 'Strawberry Cake',
-                ingredients: [
-                  { name: 'milk' },
-                  { name: 'sugar' },
-                  { name: 'butter' }
-                ]
-              },
-              {
-                name: 'Strawberry Ice Cream',
-                ingredients: [
-                  { name: 'milk' },
-                  { name: 'sugar' },
-                  { name: 'butter' }
-                ]
-              }
-            ],
-            seasons: [
-              { name: 'Spring' },
-              { name: 'Summer' }
-            ]
-          }
-        ]
-      }
-    })
-  } catch (error) {
-    t.fail(error.message)
-  }
+            {
+              name: 'Strawberry Ice Cream',
+              ingredients: [
+                { name: 'milk' },
+                { name: 'sugar' },
+                { name: 'butter' }
+              ]
+            }
+          ],
+          seasons: [
+            { name: 'Spring' },
+            { name: 'Summer' }
+          ]
+        }
+      ]
+    }
+  })
 })
