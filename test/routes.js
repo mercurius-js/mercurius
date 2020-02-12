@@ -1342,3 +1342,41 @@ test('render graphiql if graphiql: true', async (t) => {
   })
   t.strictEqual(res2.statusCode, 404)
 })
+
+test('if ide is grpahiql, always serve main.js and sw.js', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: 'graphiql'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql/main.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/graphiql/sw.js'
+  })
+  t.strictEqual(res2.statusCode, 200)
+})
+
+test('if ide is playground, do not serve main.js and sw.js', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: 'playground'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql/main.js'
+  })
+  t.strictEqual(res.statusCode, 404)
+
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/graphiql/sw.js'
+  })
+  t.strictEqual(res2.statusCode, 404)
+})
