@@ -1342,3 +1342,22 @@ test('render graphiql if graphiql: true', async (t) => {
   })
   t.strictEqual(res2.statusCode, 404)
 })
+
+test('if ide is set, always serve main.js and sw.js', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: true
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/main.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/sw.js'
+  })
+  t.strictEqual(res2.statusCode, 200)
+})
