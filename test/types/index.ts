@@ -88,10 +88,12 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 
-function makeGraphqlServer(options: GQL.Options) {
+function makeGraphqlServer (options: GQL.Options) {
   const app = Fastify()
 
   app.register(GQL, options)
 
   return app
 }
+
+makeGraphqlServer({ schema, resolvers })
