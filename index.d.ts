@@ -41,9 +41,9 @@ declare namespace fastifyGQL {
   }
 
   export interface Options<
-      HttpServer extends (Server | Http2Server),
-      HttpRequest extends (IncomingMessage | Http2ServerRequest),
-      HttpResponse extends (ServerResponse | Http2ServerResponse)
+      HttpServer extends (Server | Http2Server) = Server,
+      HttpRequest extends (IncomingMessage | Http2ServerRequest) = IncomingMessage,
+      HttpResponse extends (ServerResponse | Http2ServerResponse) = ServerResponse
     > extends RegisterOptions<HttpServer, HttpRequest, HttpResponse> {
     /**
      * The GraphQL schema. String schema will be parsed
@@ -150,9 +150,9 @@ declare module "fastify" {
 }
 
 declare function fastifyGQL<
-  HttpServer extends (Server | Http2Server),
-  HttpRequest extends (IncomingMessage | Http2ServerRequest),
-  HttpResponse extends (ServerResponse | Http2ServerResponse),
+  HttpServer extends (Server | Http2Server) = Server,
+  HttpRequest extends (IncomingMessage | Http2ServerRequest) = IncomingMessage,
+  HttpResponse extends (ServerResponse | Http2ServerResponse) = ServerResponse,
   Options = fastifyGQL.Options<HttpServer, HttpRequest, HttpResponse>
 >(
   fastify: fastify.FastifyInstance<HttpServer, HttpRequest, HttpResponse>,
