@@ -145,7 +145,7 @@ declare module "fastify" {
       context?: any,
       variables?: { [key: string]: any },
       operationName?: string
-    ): FastifyReply<HttpResponse>;
+    ): Promise<ExecutionResult>;
   }
 }
 
