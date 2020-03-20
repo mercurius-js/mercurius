@@ -19,7 +19,8 @@ const {
   extendSchema,
   validate,
   validateSchema,
-  execute
+  execute,
+  print
 } = require('graphql')
 const queryDepth = require('./lib/queryDepth')
 const { buildFederationSchema } = require('./lib/federation')
@@ -136,7 +137,6 @@ module.exports = fp(async function (app, opts) {
   fastifyGraphQl.defineResolvers = function (resolvers) {
     for (const name of Object.keys(resolvers)) {
       const type = schema.getType(name)
-      console.log('Name: ', name, type)
 
       if (typeof resolvers[name] === 'function') {
         root[name] = resolvers[name]
@@ -154,9 +154,8 @@ module.exports = fp(async function (app, opts) {
               ...resolver[prop]
             }
           } else if (prop === '__resolveReference') {
-            type.__resolveReference = resolver[prop]
+            type.resolveReference = resolver[prop]
           } else {
-            console.log(prop)
             fields[prop].resolve = resolver[prop]
           }
         }
