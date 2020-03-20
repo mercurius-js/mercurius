@@ -19,8 +19,7 @@ const {
   extendSchema,
   validate,
   validateSchema,
-  execute,
-  print
+  execute
 } = require('graphql')
 const queryDepth = require('./lib/queryDepth')
 const { buildFederationSchema } = require('./lib/federation')
