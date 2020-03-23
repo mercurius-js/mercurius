@@ -22,7 +22,7 @@ const {
   execute
 } = require('graphql')
 const queryDepth = require('./lib/queryDepth')
-const { buildFederationSchema } = require('./lib/federation')
+const buildFederationSchema = require('./lib/federation/build-federation-schema')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -61,7 +61,7 @@ module.exports = fp(async function (app, opts) {
   let schema = opts.schema
 
   if (typeof schema === 'string') {
-    if (opts.enableFederation) {
+    if (opts.federationMetadata) {
       schema = buildFederationSchema(schema)
     } else {
       schema = buildSchema(schema)
@@ -100,7 +100,7 @@ module.exports = fp(async function (app, opts) {
       context: opts.context,
       schema,
       subscription: opts.subscription,
-      enableFederation: opts.enableFederation
+      federationMetadata: opts.federationMetadata
     })
   }
 

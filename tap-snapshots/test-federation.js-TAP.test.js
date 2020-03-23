@@ -31,9 +31,9 @@ type Product {
 }
 
 type Query {
-  _service: _Service!
   me: User
   _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
 }
 
 type User {

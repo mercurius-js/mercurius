@@ -4,7 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const { printSchema } = require('graphql')
 const GQL = require('..')
-const { buildFederationSchema } = require('../lib/federation')
+const buildFederationSchema = require('../lib/federation/build-federation-schema')
 
 test('basic federation support', async (t) => {
   const app = Fastify()
@@ -44,7 +44,56 @@ test('basic federation support', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    enableFederation: true
+    federationMetadata: true
+  })
+
+  await app.ready()
+
+  const query = '{ _service { sdl } }'
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}`
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      _service: {
+        sdl: schema
+      }
+    }
+  })
+})
+
+test('a normal schema can be run in federated mode', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      me: User
+    }
+
+    type User {
+      id: ID!
+      name: String
+      username: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      me: () => {
+        return {
+          id: '1',
+          name: 'John',
+          username: '@john'
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    federationMetadata: true
   })
 
   await app.ready()
@@ -102,7 +151,7 @@ test('entities resolver returns correct value', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    enableFederation: true
+    federationMetadata: true
   })
 
   await app.ready()
@@ -174,7 +223,7 @@ test('entities resolver returns correct value with async resolver', async (t) =>
   app.register(GQL, {
     schema,
     resolvers,
-    enableFederation: true
+    federationMetadata: true
   })
 
   await app.ready()
@@ -237,7 +286,7 @@ test('entities resolver returns user default resolver if resolveReference is not
   app.register(GQL, {
     schema,
     resolvers,
-    enableFederation: true
+    federationMetadata: true
   })
 
   await app.ready()
@@ -300,7 +349,7 @@ test('entities resolver throws an error if reference type name not in schema', a
   app.register(GQL, {
     schema,
     resolvers,
-    enableFederation: true
+    federationMetadata: true
   })
 
   await app.ready()

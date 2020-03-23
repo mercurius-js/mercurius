@@ -125,7 +125,7 @@ declare namespace fastifyGQL {
     /**
      * Enable federation support so the service can be deployed behind an Apollo Gateway
      */
-    enableFederation?: boolean
+    federationMetadata?: boolean
   }
 }
 
