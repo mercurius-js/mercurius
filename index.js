@@ -22,7 +22,7 @@ const {
   execute
 } = require('graphql')
 const queryDepth = require('./lib/queryDepth')
-const buildFederationSchema = require('./lib/federation/build-federation-schema')
+const buildFederationSchema = require('./lib/federation')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 

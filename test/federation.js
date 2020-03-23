@@ -4,7 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const { printSchema } = require('graphql')
 const GQL = require('..')
-const buildFederationSchema = require('../lib/federation/build-federation-schema')
+const buildFederationSchema = require('../lib/federation')
 
 test('basic federation support', async (t) => {
   const app = Fastify()
