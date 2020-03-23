@@ -113,6 +113,51 @@ test('a normal schema can be run in federated mode', async (t) => {
   })
 })
 
+test('a schema can be run in federated mode when Query is not defined', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+      username: String
+    }
+  `
+
+  const resolvers = {
+    User: {
+      __resolveReference: (object) => {
+        return {
+          id: object.id,
+          name: 'John',
+          username: '@john'
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    federationMetadata: true
+  })
+
+  await app.ready()
+
+  const query = '{ _service { sdl } }'
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}`
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      _service: {
+        sdl: schema
+      }
+    }
+  })
+})
+
 test('entities resolver returns correct value', async (t) => {
   const app = Fastify()
   const schema = `
