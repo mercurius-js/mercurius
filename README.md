@@ -292,6 +292,61 @@ app.register(GQL, {
 })
 ```
 
+### Federation metadata support
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+
+const app = Fastify()
+const schema = `
+  extend type Query {
+    me: User
+  }
+
+  type User @key(fields: "id") {
+    id: ID!
+    name: String
+    username: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    me: () => {
+      return {
+        id: '1',
+        name: 'John',
+        username: '@john'
+      }
+    }
+  },
+  User: {
+    __resolveReference: (object) => {
+      return {
+        id: object.id,
+        name: 'John',
+        username: '@john'
+      }
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  federationMetadata: true
+})
+
+app.get('/', async function (req, reply) {
+  const query = '{ _service { sdl } }'
+  return app.graphql(query)
+})
+
+app.listen(3000)
+```
+
 ## API
 
 ### plugin options
@@ -321,6 +376,7 @@ __fastify-gql__ supports the following options:
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
+* `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 
 #### queryDepth example
 ```
