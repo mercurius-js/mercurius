@@ -688,3 +688,112 @@ test('subscription server sends update to subscriptions', t => {
     })
   })
 })
+
+test('federation supports loader for __resolveReference function', async (t) => {
+  const app = Fastify()
+  const users = {
+    1: {
+      id: 1,
+      name: 'John',
+      username: '@john'
+    },
+    2: {
+      id: 2,
+      name: 'Jane',
+      username: '@jane'
+    }
+  }
+  const schema = `
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+      username: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      me: () => {
+        return users['1']
+      }
+    }
+  }
+
+  const loaders = {
+    User: {
+      __resolveReference: {
+        async loader (queries, { reply }) {
+          t.deepEqual(queries, [{
+            obj: {
+              __typename: 'User',
+              id: '1'
+            },
+            params: {}
+          }, {
+            obj: {
+              __typename: 'User',
+              id: '2'
+            },
+            params: {}
+          }])
+          return queries.map(({ obj }) => users[obj.id])
+        },
+        opts: {
+          cache: true
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders,
+    federationMetadata: true
+  })
+
+  await app.ready()
+
+  const query = `
+  {
+    _entities(representations: [{ __typename: "User", id: "1" }, { __typename: "User", id: "2" }, { __typename: "User", id: "1" }]) {
+      ... on User {
+        id
+        username
+        name
+      }
+    }
+  }
+  `
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      _entities: [{
+        id: '1',
+        username: '@john',
+        name: 'John'
+      },
+      {
+        id: '2',
+        username: '@jane',
+        name: 'Jane'
+      },
+      {
+        id: '1',
+        username: '@john',
+        name: 'John'
+      }]
+    }
+  })
+})
