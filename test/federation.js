@@ -442,3 +442,71 @@ test('buildFederationSchema function adds stub types', async (t) => {
 
   t.matchSnapshot(printSchema(federationSchema))
 })
+
+test('mutation works with federation support', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+      username: String
+    }
+
+    extend type Mutation {
+      add(a: Int, b: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      me: () => {
+        return {
+          id: '1',
+          name: 'John',
+          username: '@john'
+        }
+      }
+    },
+    Mutation: {
+      add: (root, { a, b }) => {
+        return a + b
+      }
+    },
+    User: {
+      __resolveReference: (object) => {
+        return {
+          id: object.id,
+          name: 'John',
+          username: '@john'
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    federationMetadata: true
+  })
+
+  await app.ready()
+
+  const query = 'mutation { add(a: 11 b: 19) }'
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 30
+    }
+  })
+})
