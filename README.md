@@ -293,11 +293,27 @@ app.register(GQL, {
 ```
 
 ### Federation metadata support
+
+The signature of the method is the same as a standard resolver: `__resolveReference(source, args, context, info)` where the `source` will contain the reference object that needs to be resolved.
+
 ```js
 'use strict'
 
 const Fastify = require('fastify')
 const GQL = require('fastify-gql')
+
+const users = {
+  1: {
+    id: '1',
+    name: 'John',
+    username: '@john'
+  },
+  2: {
+    id: '2',
+    name: 'Jane',
+    username: '@jane'
+  }
+}
 
 const app = Fastify()
 const schema = `
@@ -315,19 +331,82 @@ const schema = `
 const resolvers = {
   Query: {
     me: () => {
-      return {
-        id: '1',
-        name: 'John',
-        username: '@john'
-      }
+      return users['1']
     }
   },
   User: {
-    __resolveReference: (object) => {
-      return {
-        id: object.id,
-        name: 'John',
-        username: '@john'
+    __resolveReference: (source, args, context, info) => {
+      return users[source.id]
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  federationMetadata: true
+})
+
+app.get('/', async function (req, reply) {
+  const query = '{ _service { sdl } }'
+  return app.graphql(query)
+})
+
+app.listen(3000)
+```
+
+### Federation with __resolveReference caching
+
+Just like standard resolvers, the `__resolveReference` resolver can be a performance bottleneck. To avoid this, the it is strongly recommended to define the `__resolveReference` function for an entity as a [loader](#defineLoaders).
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+
+const users = {
+  1: {
+    id: '1',
+    name: 'John',
+    username: '@john'
+  },
+  2: {
+    id: '2',
+    name: 'Jane',
+    username: '@jane'
+  }
+}
+
+const app = Fastify()
+const schema = `
+  extend type Query {
+    me: User
+  }
+
+  type User @key(fields: "id") {
+    id: ID!
+    name: String
+    username: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    me: () => {
+      return users['1']
+    }
+  }
+}
+
+const loaders = {
+  User: {
+    __resolveReference: {
+      async loader(queries, context) {
+        return queries.map(({ obj }) => users[obj.id])
+      },
+      opts: {
+        cache: true
       }
     }
   }
@@ -626,7 +705,7 @@ async function run () {
 run()
 ```
 
-<a name="loaders"></a>
+<a name="defineLoaders"></a>
 #### app.graphql.defineLoaders(loaders)
 
 A loader is an utility to avoid the 1 + N query problem of GraphQL.
