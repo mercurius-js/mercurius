@@ -403,6 +403,7 @@ const loaders = {
   User: {
     __resolveReference: {
       async loader(queries, context) {
+        // This should be a bulk query to the database
         return queries.map(({ obj }) => users[obj.id])
       },
       opts: {
@@ -415,6 +416,7 @@ const loaders = {
 app.register(GQL, {
   schema,
   resolvers,
+  loaders,
   federationMetadata: true
 })
 
