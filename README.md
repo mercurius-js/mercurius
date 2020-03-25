@@ -401,14 +401,9 @@ const resolvers = {
 
 const loaders = {
   User: {
-    __resolveReference: {
-      async loader(queries, context) {
-        // This should be a bulk query to the database
-        return queries.map(({ obj }) => users[obj.id])
-      },
-      opts: {
-        cache: true
-      }
+    async __resolveReference(queries, context) {
+      // This should be a bulk query to the database
+      return queries.map(({ obj }) => users[obj.id])
     }
   }
 }

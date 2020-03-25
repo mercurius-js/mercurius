@@ -725,26 +725,21 @@ test('federation supports loader for __resolveReference function', async (t) => 
 
   const loaders = {
     User: {
-      __resolveReference: {
-        async loader (queries, { reply }) {
-          t.deepEqual(queries, [{
-            obj: {
-              __typename: 'User',
-              id: '1'
-            },
-            params: {}
-          }, {
-            obj: {
-              __typename: 'User',
-              id: '2'
-            },
-            params: {}
-          }])
-          return queries.map(({ obj }) => users[obj.id])
-        },
-        opts: {
-          cache: true
-        }
+      async __resolveReference (queries, { reply }) {
+        t.deepEqual(queries, [{
+          obj: {
+            __typename: 'User',
+            id: '1'
+          },
+          params: {}
+        }, {
+          obj: {
+            __typename: 'User',
+            id: '2'
+          },
+          params: {}
+        }])
+        return queries.map(({ obj }) => users[obj.id])
       }
     }
   }
