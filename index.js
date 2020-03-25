@@ -22,6 +22,7 @@ const {
   execute
 } = require('graphql')
 const queryDepth = require('./lib/queryDepth')
+const buildFederationSchema = require('./lib/federation')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -60,7 +61,11 @@ module.exports = fp(async function (app, opts) {
   let schema = opts.schema
 
   if (typeof schema === 'string') {
-    schema = buildSchema(schema)
+    if (opts.federationMetadata) {
+      schema = buildFederationSchema(schema)
+    } else {
+      schema = buildSchema(schema)
+    }
   } else if (!opts.schema) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
@@ -94,7 +99,8 @@ module.exports = fp(async function (app, opts) {
       path: opts.path,
       context: opts.context,
       schema,
-      subscription: opts.subscription
+      subscription: opts.subscription,
+      federationMetadata: opts.federationMetadata
     })
   }
 
@@ -146,6 +152,8 @@ module.exports = fp(async function (app, opts) {
               ...fields[prop],
               ...resolver[prop]
             }
+          } else if (prop === '__resolveReference') {
+            type.resolveReference = resolver[prop]
           } else {
             fields[prop].resolve = resolver[prop]
           }
