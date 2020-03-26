@@ -23,6 +23,7 @@ const {
 } = require('graphql')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
+const buildGateway = require('./lib/gateway')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -59,6 +60,11 @@ module.exports = fp(async function (app, opts) {
 
   const root = {}
   let schema = opts.schema
+  let gateway = opts.gateway
+
+  if (gateway && (schema || opts.resolvers || opts.loaders || opts.subscription)) {
+    throw new Error('Adding "schema", "resolvers", "loaders" or "subscription" to plugin options when plugin is running in gateway mode is not allowed')
+  }
 
   if (typeof schema === 'string') {
     if (opts.federationMetadata) {
@@ -66,7 +72,7 @@ module.exports = fp(async function (app, opts) {
     } else {
       schema = buildSchema(schema)
     }
-  } else if (!opts.schema) {
+  } else if (!opts.schema && !gateway) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
@@ -77,6 +83,12 @@ module.exports = fp(async function (app, opts) {
         fields: {}
       }) : undefined
     })
+  }
+
+  if (gateway) {
+    gateway = await buildGateway(gateway)
+
+    schema = gateway.schema
   }
 
   app.ready(async function () {
@@ -100,7 +112,8 @@ module.exports = fp(async function (app, opts) {
       context: opts.context,
       schema,
       subscription: opts.subscription,
-      federationMetadata: opts.federationMetadata
+      federationMetadata: opts.federationMetadata,
+      gateway
     })
   }
 
