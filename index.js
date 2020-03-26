@@ -324,14 +324,26 @@ module.exports = fp(async function (app, opts) {
       return res
     }
 
-    const execution = await execute(
-      schema,
-      document,
-      root,
-      context,
-      variables,
-      operationName
-    )
+    let execution
+    if (gateway) {
+      execution = await gateway.execute(
+        schema,
+        document,
+        root,
+        context,
+        variables,
+        operationName
+      )
+    } else {
+      execution = await execute(
+        schema,
+        document,
+        root,
+        context,
+        variables,
+        operationName
+      )
+    }
     if (execution.errors) {
       const err = new InternalServerError()
       err.errors = execution.errors
