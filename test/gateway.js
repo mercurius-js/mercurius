@@ -4,6 +4,16 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
 
+async function createService (t, port, schema) {
+  const service = Fastify()
+  t.tearDown(() => service.close())
+  service.register(GQL, {
+    schema,
+    federationMetadata: true
+  })
+  await service.listen(port)
+}
+
 test('"schema" option not allowed in gateway moode', async (t) => {
   const app = Fastify()
   const schema = `
@@ -14,10 +24,9 @@ test('"schema" option not allowed in gateway moode', async (t) => {
 
   app.register(GQL, {
     schema,
-    gateway: [{
-      name: 'service-1',
-      url: 'service.url'
-    }]
+    gateway: {
+      services: []
+    }
   })
 
   try {
@@ -32,10 +41,9 @@ test('"resolvers" option not allowed in gateway moode', async (t) => {
 
   app.register(GQL, {
     resolvers: {},
-    gateway: [{
-      name: 'service-1',
-      url: 'service.url'
-    }]
+    gateway: {
+      services: []
+    }
   })
 
   try {
@@ -50,10 +58,9 @@ test('"loaders" option not allowed in gateway moode', async (t) => {
 
   app.register(GQL, {
     loaders: {},
-    gateway: [{
-      name: 'service-1',
-      url: 'service.url'
-    }]
+    gateway: {
+      services: []
+    }
   })
 
   try {
@@ -68,10 +75,9 @@ test('"subscription" option not allowed in gateway moode', async (t) => {
 
   app.register(GQL, {
     subscription: true,
-    gateway: [{
-      name: 'service-1',
-      url: 'service.url'
-    }]
+    gateway: {
+      services: []
+    }
   })
 
   try {
@@ -81,48 +87,189 @@ test('"subscription" option not allowed in gateway moode', async (t) => {
   }
 })
 
-test('It builds the gateway schema correctly', async (t) => {
-  const service1 = Fastify()
-  service1.register(GQL, {
-    schema: `
+test('calling defineLoaders throws an error in gateway mode', async (t) => {
+  await createService(t, 3001, `
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `)
+
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  app.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'service-1',
+        url: 'http://localhost:3001/graphql'
+      }]
+    }
+  })
+
+  await app.ready()
+
+  try {
+    app.graphql.defineLoaders({
+      Query: {
+        field () {}
+      }
+    })
+  } catch (err) {
+    t.is(err.message, 'Calling defineLoaders method is not allowed when plugin is running in gateway mode is not allowed')
+  }
+})
+
+test('calling defineResolvers throws an error in gateway mode', async (t) => {
+  await createService(t, 3001, `
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `)
+
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  app.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'service-1',
+        url: 'http://localhost:3001/graphql'
+      }]
+    }
+  })
+
+  await app.ready()
+
+  try {
+    app.graphql.defineResolvers({
+      Query: {
+        field () {}
+      }
+    })
+  } catch (err) {
+    t.is(err.message, 'Calling defineResolvers method is not allowed when plugin is running in gateway mode is not allowed')
+  }
+})
+
+test('calling replaceSchema throws an error in gateway mode', async (t) => {
+  await createService(t, 3001, `
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `)
+
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  app.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'service-1',
+        url: 'http://localhost:3001/graphql'
+      }]
+    }
+  })
+
+  await app.ready()
+
+  try {
+    app.graphql.replaceSchema(`
+      type Query {
+        field: String!
+      }
+    `)
+  } catch (err) {
+    t.is(err.message, 'Calling replaceSchema method is not allowed when plugin is running in gateway mode is not allowed')
+  }
+})
+
+test('calling extendSchema throws an error in gateway mode', async (t) => {
+  await createService(t, 3001, `
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `)
+
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  app.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'service-1',
+        url: 'http://localhost:3001/graphql'
+      }]
+    }
+  })
+
+  await app.ready()
+
+  try {
+    app.graphql.extendSchema(`
       extend type Query {
-        me: User
+        field: String!
       }
+    `)
+  } catch (err) {
+    t.is(err.message, 'Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
+  }
+})
 
-      type User @key(fields: "id") {
-        id: ID!
-        name: String!
-      }
-    `,
-    federationMetadata: true
-  })
-  await service1.listen(3001)
+test('It builds the gateway schema correctly', async (t) => {
+  await createService(t, 3001, `
+    extend type Query {
+      me: User
+    }
 
-  const service2 = Fastify()
-  service2.register(GQL, {
-    schema: `
-      type Post @key(fields: "id") {
-        id: ID!
-        title: String
-        content: String
-        author: User
-      }
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `)
 
-      extend type User {
-        posts: [Post]
-      }
-    `,
-    federationMetadata: true
-  })
-  await service2.listen(3002)
+  await createService(t, 3002, `
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      author: User
+    }
+
+    extend type User {
+      posts: [Post]
+    }
+  `)
 
   const gateway = Fastify()
+  t.tearDown(() => gateway.close())
   gateway.register(GQL, {
     gateway: {
       services: [{
-        name: 'user', url: 'http://localhost:3001/graphql'
+        name: 'user',
+        url: 'http://localhost:3001/graphql'
       }, {
-        name: 'post', url: 'http://localhost:3002/graphql'
+        name: 'post',
+        url: 'http://localhost:3002/graphql'
       }]
     }
   })

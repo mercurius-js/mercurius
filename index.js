@@ -126,6 +126,10 @@ module.exports = fp(async function (app, opts) {
   app.decorate('graphql', fastifyGraphQl)
 
   fastifyGraphQl.replaceSchema = function (s) {
+    if (gateway) {
+      throw new Error('Calling replaceSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     if (!s || typeof s !== 'object') {
       throw new Error('Must provide valid Document AST')
     }
@@ -137,6 +141,10 @@ module.exports = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.extendSchema = function (s) {
+    if (gateway) {
+      throw new Error('Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     if (typeof s === 'string') {
       s = parse(s)
     } else if (!s || typeof s !== 'object') {
@@ -147,6 +155,10 @@ module.exports = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
+    if (gateway) {
+      throw new Error('Calling defineResolvers method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     for (const name of Object.keys(resolvers)) {
       const type = schema.getType(name)
 
@@ -188,6 +200,10 @@ module.exports = fp(async function (app, opts) {
   let factory
 
   fastifyGraphQl.defineLoaders = function (loaders) {
+    if (gateway) {
+      throw new Error('Calling defineLoaders method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     // set up the loaders factory
     if (!factory) {
       factory = new Factory()
