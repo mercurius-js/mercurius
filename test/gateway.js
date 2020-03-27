@@ -255,7 +255,8 @@ test('It builds the gateway schema correctly', async (t) => {
       author: User
     }
 
-    extend type User {
+    extend type User @key(fields: "id") {
+      id: ID! @external
       posts: [Post]
     }
   `)
@@ -276,7 +277,8 @@ test('It builds the gateway schema correctly', async (t) => {
 
   await gateway.listen(3000)
 
-  const query = '{ me { id } }'
+  // const query = '{ me { id name posts { id title content author { id } } } }'
+  const query = '{ me { id name } }'
   const res = await gateway.inject({
     method: 'GET',
     url: `/graphql?query=${query}`
@@ -288,3 +290,28 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   })
 })
+
+// const { buildSchema, printSchema } = require('graphql')
+
+// test('foo', t => {
+//   const schema = `
+//     type User {
+//       id: ID!
+//       name: String
+//     }
+
+//     type Post {
+//       id: ID!
+//       title: String
+//       author: User
+//     }
+
+//     extend type User {
+//       posts: [Post]
+//     }
+//   `
+//   const result = printSchema(buildSchema(schema))
+
+//   console.log(result)
+//   t.equal(result, schema)
+// })
