@@ -4,11 +4,12 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
 
-async function createService (t, port, schema) {
+async function createService (t, port, schema, resolvers = {}) {
   const service = Fastify()
   t.tearDown(() => service.close())
   service.register(GQL, {
     schema,
+    resolvers,
     federationMetadata: true
   })
   await service.listen(port)
@@ -236,6 +237,44 @@ test('calling extendSchema throws an error in gateway mode', async (t) => {
 })
 
 test('It builds the gateway schema correctly', async (t) => {
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const posts = {
+    p1: {
+      id: 'p1',
+      title: 'Post 1',
+      content: 'Content 1',
+      authorId: 'u1'
+    },
+    p2: {
+      id: 'p2',
+      title: 'Post 2',
+      content: 'Content 2',
+      authorId: 'u2'
+    },
+    p3: {
+      id: 'p3',
+      title: 'Post 3',
+      content: 'Content 3',
+      authorId: 'u1'
+    },
+    p4: {
+      id: 'p4',
+      title: 'Post 4',
+      content: 'Content 4',
+      authorId: 'u2'
+    }
+  }
+
   await createService(t, 3001, `
     extend type Query {
       me: User
@@ -245,7 +284,18 @@ test('It builds the gateway schema correctly', async (t) => {
       id: ID!
       name: String!
     }
-  `)
+  `, {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      __resolveReference: (parent, args, context, info) => {
+        return users[parent.author]
+      }
+    }
+  })
 
   await createService(t, 3002, `
     type Post @key(fields: "id") {
@@ -259,7 +309,19 @@ test('It builds the gateway schema correctly', async (t) => {
       id: ID! @external
       posts: [Post]
     }
-  `)
+  `, {
+    Post: {
+      __resolveReference: (parent, args, context, info) => {
+        return posts.filter(p => p.author === parent.id)
+      },
+      author: (post, args, context, info) => {
+        return {
+          __typename: 'User',
+          id: post.authorId
+        }
+      }
+    }
+  })
 
   const gateway = Fastify()
   t.tearDown(() => gateway.close())
@@ -277,8 +339,7 @@ test('It builds the gateway schema correctly', async (t) => {
 
   await gateway.listen(3000)
 
-  // const query = '{ me { id name posts { id title content author { id } } } }'
-  const query = '{ me { id name } }'
+  const query = '{ me { id name posts { id title content author { id } } } }'
   const res = await gateway.inject({
     method: 'GET',
     url: `/graphql?query=${query}`
@@ -286,32 +347,11 @@ test('It builds the gateway schema correctly', async (t) => {
 
   t.deepEqual(JSON.parse(res.body), {
     data: {
-      me: null
+      me: {
+        id: 'u1',
+        name: 'John',
+        posts: null
+      }
     }
   })
 })
-
-// const { buildSchema, printSchema } = require('graphql')
-
-// test('foo', t => {
-//   const schema = `
-//     type User {
-//       id: ID!
-//       name: String
-//     }
-
-//     type Post {
-//       id: ID!
-//       title: String
-//       author: User
-//     }
-
-//     extend type User {
-//       posts: [Post]
-//     }
-//   `
-//   const result = printSchema(buildSchema(schema))
-
-//   console.log(result)
-//   t.equal(result, schema)
-// })
