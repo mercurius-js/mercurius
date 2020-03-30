@@ -330,6 +330,9 @@ test('It builds the gateway schema correctly', async (t) => {
       posts: (user, args, context, info) => {
         return Object.values(posts).filter(p => p.authorId === user.id)
       }
+    },
+    Query: {
+      topPosts: () => Object.values(posts)
     }
   })
 
