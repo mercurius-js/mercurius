@@ -46,6 +46,7 @@
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
     "mqemitter": "^4.0.0",
+    "p-map": "^4.0.0",
     "pump": "^3.0.0",
     "readable-stream": "^3.5.0",
     "single-user-cache": "^0.3.0",
