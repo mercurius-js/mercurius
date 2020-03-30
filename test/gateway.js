@@ -292,8 +292,8 @@ test('It builds the gateway schema correctly', async (t) => {
       }
     },
     User: {
-      __resolveReference: (parent, args, context, info) => {
-        return users[parent.author]
+      __resolveReference: (user, args, context, info) => {
+        return users[user.id]
       }
     }
   })
@@ -306,6 +306,10 @@ test('It builds the gateway schema correctly', async (t) => {
       author: User
     }
 
+    extend type Query {
+      topPosts: [Post]
+    }
+
     extend type User @key(fields: "id") {
       id: ID! @external
       posts: [Post]
@@ -313,7 +317,6 @@ test('It builds the gateway schema correctly', async (t) => {
   `, {
     Post: {
       __resolveReference: (post, args, context, info) => {
-        console.log('resolvereference')
         return posts[post.id]
       },
       author: (post, args, context, info) => {
@@ -325,7 +328,6 @@ test('It builds the gateway schema correctly', async (t) => {
     },
     User: {
       posts: (user, args, context, info) => {
-        console.log('hello')
         return Object.values(posts).filter(p => p.authorId === user.id)
       }
     }
@@ -347,7 +349,7 @@ test('It builds the gateway schema correctly', async (t) => {
 
   await gateway.listen(3000)
 
-  const query = '{ me { id name posts { id title content } } }'
+  const query = '{ me { id name posts { id title content author { id name } } } }'
   const res = await gateway.inject({
     method: 'GET',
     url: `/graphql?query=${query}`
@@ -361,11 +363,19 @@ test('It builds the gateway schema correctly', async (t) => {
         posts: [{
           id: 'p1',
           title: 'Post 1',
-          content: 'Content 1'
+          content: 'Content 1',
+          author: {
+            id: 'u1',
+            name: 'John'
+          }
         }, {
           id: 'p3',
           title: 'Post 3',
-          content: 'Content 3'
+          content: 'Content 3',
+          author: {
+            id: 'u1',
+            name: 'John'
+          }
         }]
       }
     }
