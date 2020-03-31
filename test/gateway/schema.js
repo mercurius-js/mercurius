@@ -55,7 +55,7 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   }
 
-  await createService(t, 3001, `
+  await createService(t, 4001, `
     extend type Query {
       me: User
     }
@@ -77,7 +77,7 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   })
 
-  await createService(t, 3002, `
+  await createService(t, 4002, `
     type Post @key(fields: "id") {
       id: ID!
       title: String
@@ -121,15 +121,15 @@ test('It builds the gateway schema correctly', async (t) => {
     gateway: {
       services: [{
         name: 'user',
-        url: 'http://localhost:3001/graphql'
+        url: 'http://localhost:4001/graphql'
       }, {
         name: 'post',
-        url: 'http://localhost:3002/graphql'
+        url: 'http://localhost:4002/graphql'
       }]
     }
   })
 
-  await gateway.listen(3000)
+  await gateway.listen(4000)
 
   const query = '{ me { id name posts { id title content author { id name } } } }'
   const res = await gateway.inject({
