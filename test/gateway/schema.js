@@ -63,6 +63,13 @@ test('It builds the gateway schema correctly', async (t) => {
     type User @key(fields: "id") {
       id: ID!
       name: String!
+      avatar(size: AvatarSize): String
+    }
+
+    enum AvatarSize {
+      small
+      medium
+      large
     }
   `, {
     Query: {
@@ -73,7 +80,8 @@ test('It builds the gateway schema correctly', async (t) => {
     User: {
       __resolveReference: (user, args, context, info) => {
         return users[user.id]
-      }
+      },
+      avatar: (user, { size }) => `avatar-${size}.jpg`
     }
   })
 
@@ -86,7 +94,7 @@ test('It builds the gateway schema correctly', async (t) => {
     }
 
     extend type Query {
-      topPosts: [Post]
+      topPosts(count: Int): [Post]
     }
 
     extend type User @key(fields: "id") {
@@ -111,7 +119,7 @@ test('It builds the gateway schema correctly', async (t) => {
       }
     },
     Query: {
-      topPosts: () => Object.values(posts)
+      topPosts: (root, { count = 2 }) => Object.values(posts).slice(0, count)
     }
   })
 
@@ -131,10 +139,48 @@ test('It builds the gateway schema correctly', async (t) => {
 
   await gateway.listen(4000)
 
-  const query = '{ me { id name posts { id title content author { id name } } } }'
+  const query = `
+  query MainQuery(
+    $size: AvatarSize
+    $count: Int
+  ) {
+    me {
+      id
+      name
+      avatar(size: $size)
+      posts {
+        id
+        title
+        content
+        author {
+          id
+          name
+          avatar(size: $size)
+        }
+      }
+    }
+    topPosts(count: $count) {
+      id
+      title
+      author {
+        id
+        avatar(size: medium)
+      }
+    }
+  }`
   const res = await gateway.inject({
-    method: 'GET',
-    url: `/graphql?query=${query}`
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query,
+      variables: {
+        size: 'small',
+        count: 1
+      }
+    })
   })
 
   t.deepEqual(JSON.parse(res.body), {
@@ -142,13 +188,15 @@ test('It builds the gateway schema correctly', async (t) => {
       me: {
         id: 'u1',
         name: 'John',
+        avatar: 'avatar-small.jpg',
         posts: [{
           id: 'p1',
           title: 'Post 1',
           content: 'Content 1',
           author: {
             id: 'u1',
-            name: 'John'
+            name: 'John',
+            avatar: 'avatar-small.jpg'
           }
         }, {
           id: 'p3',
@@ -156,10 +204,19 @@ test('It builds the gateway schema correctly', async (t) => {
           content: 'Content 3',
           author: {
             id: 'u1',
-            name: 'John'
+            name: 'John',
+            avatar: 'avatar-small.jpg'
           }
         }]
-      }
+      },
+      topPosts: [{
+        id: 'p1',
+        title: 'Post 1',
+        author: {
+          id: 'u1',
+          avatar: 'avatar-medium.jpg'
+        }
+      }]
     }
   })
 })
