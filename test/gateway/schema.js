@@ -25,6 +25,10 @@ test('It builds the gateway schema correctly', async (t) => {
     u2: {
       id: 'u2',
       name: 'Jane'
+    },
+    u3: {
+      id: 'u3',
+      name: 'Jack'
     }
   }
 
@@ -64,6 +68,7 @@ test('It builds the gateway schema correctly', async (t) => {
       id: ID!
       name: String!
       avatar(size: AvatarSize): String
+      friends: [User]
     }
 
     enum AvatarSize {
@@ -81,7 +86,8 @@ test('It builds the gateway schema correctly', async (t) => {
       __resolveReference: (user, args, context, info) => {
         return users[user.id]
       },
-      avatar: (user, { size }) => `avatar-${size}.jpg`
+      avatar: (user, { size }) => `avatar-${size}.jpg`,
+      friends: (user) => Object.values(users).filter(u => u.id !== user.id)
     }
   })
 
@@ -148,6 +154,9 @@ test('It builds the gateway schema correctly', async (t) => {
       id
       name
       avatar(size: $size)
+      friends {
+        id
+      }
       posts {
         id
         title
@@ -189,6 +198,11 @@ test('It builds the gateway schema correctly', async (t) => {
         id: 'u1',
         name: 'John',
         avatar: 'avatar-small.jpg',
+        friends: [{
+          id: 'u2'
+        }, {
+          id: 'u3'
+        }],
         posts: [{
           id: 'p1',
           title: 'Post 1',
