@@ -155,17 +155,10 @@ test('It builds the gateway schema correctly', async (t) => {
       name
       avatar(size: $size)
       friends {
-        id
+        ...UserFragment
       }
       posts {
-        pid
-        title
-        content
-        author {
-          id
-          name
-          avatar(size: $size)
-        }
+        ...PostFragment
       }
     }
     topPosts(count: $count) {
@@ -175,12 +168,14 @@ test('It builds the gateway schema correctly', async (t) => {
   
   fragment UserFragment on User {
     id
+    name
     avatar(size: medium)
   }
   
   fragment PostFragment on Post {
     pid
     title
+    content
     author {
       ...UserFragment
     }
@@ -207,9 +202,13 @@ test('It builds the gateway schema correctly', async (t) => {
         name: 'John',
         avatar: 'avatar-small.jpg',
         friends: [{
-          id: 'u2'
+          id: 'u2',
+          name: 'Jane',
+          avatar: 'avatar-medium.jpg'
         }, {
-          id: 'u3'
+          id: 'u3',
+          name: 'Jack',
+          avatar: 'avatar-medium.jpg'
         }],
         posts: [{
           pid: 'p1',
@@ -218,7 +217,7 @@ test('It builds the gateway schema correctly', async (t) => {
           author: {
             id: 'u1',
             name: 'John',
-            avatar: 'avatar-small.jpg'
+            avatar: 'avatar-medium.jpg'
           }
         }, {
           pid: 'p3',
@@ -227,15 +226,17 @@ test('It builds the gateway schema correctly', async (t) => {
           author: {
             id: 'u1',
             name: 'John',
-            avatar: 'avatar-small.jpg'
+            avatar: 'avatar-medium.jpg'
           }
         }]
       },
       topPosts: [{
         pid: 'p1',
         title: 'Post 1',
+        content: 'Content 1',
         author: {
           id: 'u1',
+          name: 'John',
           avatar: 'avatar-medium.jpg'
         }
       }]
