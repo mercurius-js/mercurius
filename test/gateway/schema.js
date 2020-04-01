@@ -34,25 +34,25 @@ test('It builds the gateway schema correctly', async (t) => {
 
   const posts = {
     p1: {
-      id: 'p1',
+      pid: 'p1',
       title: 'Post 1',
       content: 'Content 1',
       authorId: 'u1'
     },
     p2: {
-      id: 'p2',
+      pid: 'p2',
       title: 'Post 2',
       content: 'Content 2',
       authorId: 'u2'
     },
     p3: {
-      id: 'p3',
+      pid: 'p3',
       title: 'Post 3',
       content: 'Content 3',
       authorId: 'u1'
     },
     p4: {
-      id: 'p4',
+      pid: 'p4',
       title: 'Post 4',
       content: 'Content 4',
       authorId: 'u2'
@@ -92,8 +92,8 @@ test('It builds the gateway schema correctly', async (t) => {
   })
 
   await createService(t, 4002, `
-    type Post @key(fields: "id") {
-      id: ID!
+    type Post @key(fields: "pid") {
+      pid: ID!
       title: String
       content: String
       author: User
@@ -110,7 +110,7 @@ test('It builds the gateway schema correctly', async (t) => {
   `, {
     Post: {
       __resolveReference: (post, args, context, info) => {
-        return posts[post.id]
+        return posts[post.pid]
       },
       author: (post, args, context, info) => {
         return {
@@ -158,7 +158,7 @@ test('It builds the gateway schema correctly', async (t) => {
         id
       }
       posts {
-        id
+        pid
         title
         content
         author {
@@ -169,12 +169,20 @@ test('It builds the gateway schema correctly', async (t) => {
       }
     }
     topPosts(count: $count) {
-      id
-      title
-      author {
-        id
-        avatar(size: medium)
-      }
+      ...PostFragment
+    }
+  }
+  
+  fragment UserFragment on User {
+    id
+    avatar(size: medium)
+  }
+  
+  fragment PostFragment on Post {
+    pid
+    title
+    author {
+      ...UserFragment
     }
   }`
   const res = await gateway.inject({
@@ -204,7 +212,7 @@ test('It builds the gateway schema correctly', async (t) => {
           id: 'u3'
         }],
         posts: [{
-          id: 'p1',
+          pid: 'p1',
           title: 'Post 1',
           content: 'Content 1',
           author: {
@@ -213,7 +221,7 @@ test('It builds the gateway schema correctly', async (t) => {
             avatar: 'avatar-small.jpg'
           }
         }, {
-          id: 'p3',
+          pid: 'p3',
           title: 'Post 3',
           content: 'Content 3',
           author: {
@@ -224,7 +232,7 @@ test('It builds the gateway schema correctly', async (t) => {
         }]
       },
       topPosts: [{
-        id: 'p1',
+        pid: 'p1',
         title: 'Post 1',
         author: {
           id: 'u1',
