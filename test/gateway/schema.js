@@ -10,8 +10,7 @@ async function createService (t, port, schema, resolvers = {}) {
   service.register(GQL, {
     schema,
     resolvers,
-    federationMetadata: true,
-    graphiql: true
+    federationMetadata: true
   })
   await service.listen(port)
 }

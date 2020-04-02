@@ -89,6 +89,11 @@ module.exports = fp(async function (app, opts) {
     gateway = await buildGateway(gateway)
 
     schema = gateway.schema
+
+    app.onClose((fastify, next) => {
+      gateway.close()
+      setImmediate(next)
+    })
   }
 
   app.ready(async function () {
