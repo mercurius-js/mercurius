@@ -1050,7 +1050,7 @@ test('Error handler set to true should not change default behavior', async (t) =
 
   const expectedResult = {
     errors: [{
-      message: 'Expected type Int, found "2".',
+      message: 'Int cannot represent non-integer value: "2"',
       locations: [{
         line: 1,
         column: 8

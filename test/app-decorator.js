@@ -379,7 +379,12 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
 
   const mutation = 'mutation { sub(x: 2, y: 2) }'
 
-  t.rejects(app.graphql(mutation), GraphQLError)
+  try {
+    await app.graphql(mutation)
+  } catch (e) {
+    t.is(e instanceof GraphQLError, true)
+    t.end()
+  }
 })
 
 test('basic GQL no cache', async (t) => {
