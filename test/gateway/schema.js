@@ -155,6 +155,9 @@ test('It builds the gateway schema correctly', async (t) => {
       avatar(size: $size)
       friends {
         ...UserFragment
+        friends {
+          ...UserFragment
+        }
       }
       posts {
         ...PostFragment
@@ -203,11 +206,29 @@ test('It builds the gateway schema correctly', async (t) => {
         friends: [{
           id: 'u2',
           name: 'Jane',
-          avatar: 'avatar-medium.jpg'
+          avatar: 'avatar-medium.jpg',
+          friends: [{
+            id: 'u1',
+            name: 'John',
+            avatar: 'avatar-medium.jpg'
+          }, {
+            id: 'u3',
+            name: 'Jack',
+            avatar: 'avatar-medium.jpg'
+          }]
         }, {
           id: 'u3',
           name: 'Jack',
-          avatar: 'avatar-medium.jpg'
+          avatar: 'avatar-medium.jpg',
+          friends: [{
+            id: 'u1',
+            name: 'John',
+            avatar: 'avatar-medium.jpg'
+          }, {
+            id: 'u2',
+            name: 'Jane',
+            avatar: 'avatar-medium.jpg'
+          }]
         }],
         posts: [{
           pid: 'p1',
