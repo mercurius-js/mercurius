@@ -94,7 +94,7 @@ async function start () {
       pid: ID!
       title: String
       content: String
-      author: User
+      author: User @requires(fields: "pid title")
     }
 
     extend type Query {

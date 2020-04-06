@@ -95,7 +95,7 @@ test('It builds the gateway schema correctly', async (t) => {
       pid: ID!
       title: String
       content: String
-      author: User
+      author: User @requires(fields: "title")
     }
 
     extend type Query {
