@@ -107,6 +107,7 @@ test('It builds the gateway schema correctly', async (t) => {
     extend type User @key(fields: "id") {
       id: ID! @external
       posts: [Post]
+      numberOfPosts: Int
     }
   `, {
     Post: {
@@ -123,6 +124,9 @@ test('It builds the gateway schema correctly', async (t) => {
     User: {
       posts: (user, args, context, info) => {
         return Object.values(posts).filter(p => p.authorId === user.id)
+      },
+      numberOfPosts: (user) => {
+        return Object.values(posts).filter(p => p.authorId === user.id).length
       }
     },
     Query: {
@@ -164,6 +168,7 @@ test('It builds the gateway schema correctly', async (t) => {
       posts {
         ...PostFragment
       }
+      numberOfPosts
     }
     topPosts(count: $count) {
       ...PostFragment
@@ -250,7 +255,8 @@ test('It builds the gateway schema correctly', async (t) => {
             name: 'John',
             avatar: 'avatar-medium.jpg'
           }
-        }]
+        }],
+        numberOfPosts: 2
       },
       topPosts: [{
         pid: 'p1',

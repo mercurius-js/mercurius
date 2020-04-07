@@ -9,7 +9,8 @@ async function createService (port, schema, resolvers = {}) {
     schema,
     resolvers,
     federationMetadata: true,
-    graphiql: true
+    graphiql: true,
+    jit: 1
   })
   await service.listen(port)
 }
@@ -65,6 +66,7 @@ async function start () {
     type User @key(fields: "id") {
       id: ID!
       name: String!
+      fullName: String
       avatar(size: AvatarSize): String
       friends: [User]
     }
@@ -85,7 +87,8 @@ async function start () {
         return users[user.id]
       },
       avatar: (user, { size }) => `avatar-${size}.jpg`,
-      friends: (user) => Object.values(users).filter(u => u.id !== user.id)
+      friends: (user) => Object.values(users).filter(u => u.id !== user.id),
+      fullName: (user) => user.name + ' Doe'
     }
   })
 
@@ -104,6 +107,7 @@ async function start () {
     extend type User @key(fields: "id") {
       id: ID! @external
       posts: [Post]
+      numberOfPosts: Int
     }
 
     extend type Mutation {
@@ -130,6 +134,9 @@ async function start () {
     User: {
       posts: (user, args, context, info) => {
         return Object.values(posts).filter(p => p.authorId === user.id)
+      },
+      numberOfPosts: (user) => {
+        return Object.values(posts).filter(p => p.authorId === user.id).length
       }
     },
     Query: {
