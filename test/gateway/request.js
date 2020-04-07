@@ -27,8 +27,8 @@ test('sendRequest method rejects when request errs', t => {
   })
   t.tearDown(() => app.close())
 
-  app.listen(3001).then(() => {
-    const url = new URL('http://localhost:3001')
+  app.listen(3002).then(() => {
+    const url = new URL('http://localhost:3002')
     const { request } = buildRequest({})
     t.rejects(sendRequest(request, url)({
       method: 'POST',
