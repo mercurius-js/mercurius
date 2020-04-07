@@ -153,6 +153,7 @@ async function start () {
   const gateway = Fastify()
   gateway.register(GQL, {
     graphiql: true,
+    jit: 1,
     gateway: {
       services: [{
         name: 'user',

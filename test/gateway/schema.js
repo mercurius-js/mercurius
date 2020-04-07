@@ -4,7 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
 
-async function createService (t, port, schema, resolvers = {}) {
+async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
   t.tearDown(() => service.close())
   service.register(GQL, {
@@ -12,7 +12,9 @@ async function createService (t, port, schema, resolvers = {}) {
     resolvers,
     federationMetadata: true
   })
-  await service.listen(port)
+  await service.listen(0)
+
+  return service.server.address().port
 }
 
 test('It builds the gateway schema correctly', async (t) => {
@@ -58,7 +60,7 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   }
 
-  await createService(t, 4001, `
+  const userServicePort = await createService(t, `
     extend type Query {
       me: User
     }
@@ -90,7 +92,7 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   })
 
-  await createService(t, 4002, `
+  const postServicePort = await createService(t, `
     type Post @key(fields: "pid") {
       pid: ID!
       title: String
@@ -134,15 +136,15 @@ test('It builds the gateway schema correctly', async (t) => {
     gateway: {
       services: [{
         name: 'user',
-        url: 'http://localhost:4001/graphql'
+        url: `http://localhost:${userServicePort}/graphql`
       }, {
         name: 'post',
-        url: 'http://localhost:4002/graphql'
+        url: `http://localhost:${postServicePort}/graphql`
       }]
     }
   })
 
-  await gateway.listen(4000)
+  await gateway.listen(0)
 
   const query = `
   query MainQuery(

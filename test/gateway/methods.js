@@ -4,7 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
 
-async function createService (t, port, schema, resolvers = {}) {
+async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
   t.tearDown(() => service.close())
   service.register(GQL, {
@@ -12,11 +12,13 @@ async function createService (t, port, schema, resolvers = {}) {
     resolvers,
     federationMetadata: true
   })
-  await service.listen(port)
+  await service.listen(0)
+
+  return service.server.address().port
 }
 
 test('calling defineLoaders throws an error in gateway mode', async (t) => {
-  await createService(t, 3001, `
+  const port = await createService(t, `
     extend type Query {
       me: User
     }
@@ -34,7 +36,7 @@ test('calling defineLoaders throws an error in gateway mode', async (t) => {
     gateway: {
       services: [{
         name: 'service-1',
-        url: 'http://localhost:3001/graphql'
+        url: `http://localhost:${port}/graphql`
       }]
     }
   })
@@ -53,7 +55,7 @@ test('calling defineLoaders throws an error in gateway mode', async (t) => {
 })
 
 test('calling defineResolvers throws an error in gateway mode', async (t) => {
-  await createService(t, 3002, `
+  const port = await createService(t, `
     extend type Query {
       me: User
     }
@@ -71,7 +73,7 @@ test('calling defineResolvers throws an error in gateway mode', async (t) => {
     gateway: {
       services: [{
         name: 'service-1',
-        url: 'http://localhost:3002/graphql'
+        url: `http://localhost:${port}/graphql`
       }]
     }
   })
@@ -90,7 +92,7 @@ test('calling defineResolvers throws an error in gateway mode', async (t) => {
 })
 
 test('calling replaceSchema throws an error in gateway mode', async (t) => {
-  await createService(t, 3003, `
+  const port = await createService(t, `
     extend type Query {
       me: User
     }
@@ -108,7 +110,7 @@ test('calling replaceSchema throws an error in gateway mode', async (t) => {
     gateway: {
       services: [{
         name: 'service-1',
-        url: 'http://localhost:3003/graphql'
+        url: `http://localhost:${port}/graphql`
       }]
     }
   })
@@ -127,7 +129,7 @@ test('calling replaceSchema throws an error in gateway mode', async (t) => {
 })
 
 test('calling extendSchema throws an error in gateway mode', async (t) => {
-  await createService(t, 3004, `
+  const port = await createService(t, `
     extend type Query {
       me: User
     }
@@ -145,7 +147,7 @@ test('calling extendSchema throws an error in gateway mode', async (t) => {
     gateway: {
       services: [{
         name: 'service-1',
-        url: 'http://localhost:3004/graphql'
+        url: `http://localhost:${port}/graphql`
       }]
     }
   })

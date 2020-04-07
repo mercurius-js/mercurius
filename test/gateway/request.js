@@ -20,29 +20,29 @@ test('sendRequest method rejects when request errs', t => {
   t.end()
 })
 
-test('sendRequest method rejects when request errs', t => {
+test('sendRequest method rejects when response is not valid json', async (t) => {
   const app = fastify()
   app.post('/', async (request, reply) => {
     return 'response'
   })
   t.tearDown(() => app.close())
 
-  app.listen(3002).then(() => {
-    const url = new URL('http://localhost:3002')
-    const { request } = buildRequest({})
-    t.rejects(sendRequest(request, url)({
-      method: 'POST',
-      body: JSON.stringify({
-        query: `
-        query ServiceInfo {
-          _service {
-            sdl
-          }
-        }
-        `
-      })
-    }))
+  await app.listen(0)
 
-    t.end()
-  })
+  const url = new URL(`http://localhost:${app.server.address().port}`)
+  const { request } = buildRequest({})
+  t.rejects(sendRequest(request, url)({
+    method: 'POST',
+    body: JSON.stringify({
+      query: `
+      query ServiceInfo {
+        _service {
+          sdl
+        }
+      }
+      `
+    })
+  }))
+
+  t.end()
 })
