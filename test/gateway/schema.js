@@ -180,6 +180,7 @@ test('It builds the gateway schema correctly', async (t) => {
     id
     name
     avatar(size: medium)
+    numberOfPosts
   }
   
   fragment PostFragment on Post {
@@ -215,27 +216,33 @@ test('It builds the gateway schema correctly', async (t) => {
           id: 'u2',
           name: 'Jane',
           avatar: 'avatar-medium.jpg',
+          numberOfPosts: 2,
           friends: [{
             id: 'u1',
             name: 'John',
-            avatar: 'avatar-medium.jpg'
+            avatar: 'avatar-medium.jpg',
+            numberOfPosts: 2
           }, {
             id: 'u3',
             name: 'Jack',
-            avatar: 'avatar-medium.jpg'
+            avatar: 'avatar-medium.jpg',
+            numberOfPosts: 0
           }]
         }, {
           id: 'u3',
           name: 'Jack',
           avatar: 'avatar-medium.jpg',
+          numberOfPosts: 0,
           friends: [{
             id: 'u1',
             name: 'John',
-            avatar: 'avatar-medium.jpg'
+            avatar: 'avatar-medium.jpg',
+            numberOfPosts: 2
           }, {
             id: 'u2',
             name: 'Jane',
-            avatar: 'avatar-medium.jpg'
+            avatar: 'avatar-medium.jpg',
+            numberOfPosts: 2
           }]
         }],
         posts: [{
@@ -245,7 +252,8 @@ test('It builds the gateway schema correctly', async (t) => {
           author: {
             id: 'u1',
             name: 'John',
-            avatar: 'avatar-medium.jpg'
+            avatar: 'avatar-medium.jpg',
+            numberOfPosts: 2
           }
         }, {
           pid: 'p3',
@@ -254,7 +262,8 @@ test('It builds the gateway schema correctly', async (t) => {
           author: {
             id: 'u1',
             name: 'John',
-            avatar: 'avatar-medium.jpg'
+            avatar: 'avatar-medium.jpg',
+            numberOfPosts: 2
           }
         }],
         numberOfPosts: 2
@@ -266,7 +275,8 @@ test('It builds the gateway schema correctly', async (t) => {
         author: {
           id: 'u1',
           name: 'John',
-          avatar: 'avatar-medium.jpg'
+          avatar: 'avatar-medium.jpg',
+          numberOfPosts: 2
         }
       }]
     }
