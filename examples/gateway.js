@@ -106,8 +106,9 @@ async function start () {
 
     extend type User @key(fields: "id") {
       id: ID! @external
+      name: String @external
       posts: [Post]
-      numberOfPosts: Int
+      numberOfPosts: Int @requires(fields: "id name")
     }
 
     extend type Mutation {

@@ -86,7 +86,7 @@ module.exports = fp(async function (app, opts) {
   }
 
   if (gateway) {
-    gateway = await buildGateway(gateway)
+    gateway = await buildGateway(gateway, app)
 
     schema = gateway.schema
 
