@@ -141,7 +141,16 @@ test('It builds the gateway schema correctly', async (t) => {
     gateway: {
       services: [{
         name: 'user',
-        url: `http://localhost:${userServicePort}/graphql`
+        url: `http://localhost:${userServicePort}/graphql`,
+        rewriteHeaders: (headers) => {
+          // console.log('rewrite headers', headers)
+
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+        }
       }, {
         name: 'post',
         url: `http://localhost:${postServicePort}/graphql`
@@ -194,7 +203,8 @@ test('It builds the gateway schema correctly', async (t) => {
   const res = await gateway.inject({
     method: 'POST',
     headers: {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
+      authorization: 'bearer supersecret'
     },
     url: '/graphql',
     body: JSON.stringify({

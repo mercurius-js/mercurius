@@ -446,7 +446,18 @@ gateway.register(GQL, {
   gateway: {
     services: [{
       name: 'user',
-      url: 'http://localhost:4001/graphql'
+      url: 'http://localhost:4001/graphql',
+      rewriteHeaders: (headers) => {
+        if (headers.authorization) {
+          return {
+            authorization: headers.authorization
+          }
+        }
+
+        return {
+          x-api-key: 'secret-api-key'
+        }
+      }
     }, {
       name: 'post',
       url: 'http://localhost:4002/graphql'
