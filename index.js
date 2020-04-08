@@ -50,6 +50,7 @@ function buildCache (opts) {
 module.exports = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
+  const lruGatewayResolvers = buildCache(opts)
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
@@ -254,7 +255,7 @@ module.exports = fp(async function (app, opts) {
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this }, context)
+    context = Object.assign({ app: this, lruGatewayResolvers }, context)
     const reply = context.reply
 
     // Parse, with a little lru
