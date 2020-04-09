@@ -501,7 +501,8 @@ __fastify-gql__ supports the following options:
 * `gateway`: Object. Run the GraphQL server in gateway mode.
   * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
     * `service.name`: A unique name for the service. Required.
-    * `service.url` The url of the service endpoint. Required
+    * `service.url`: The url of the service endpoint. Required
+    * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
 
 #### queryDepth example
 ```
