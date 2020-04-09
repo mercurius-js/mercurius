@@ -5,8 +5,8 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "unit": "tap --no-esm --no-jsx --100 -J test/*.js",
-    "cov": "tap  --no-esm --no-jsx --coverage-report=html -J test/*.js",
+    "unit": "tap --no-esm --no-jsx --100 -J test/*.js test/gateway/*.js",
+    "cov": "tap  --no-esm --no-jsx --coverage-report=html -J test/*.js test/gateway/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:standard": "standard | snazzy",
     "lint:typescript": "standard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin test/types/*.ts",
@@ -39,6 +39,7 @@
     "ws": "^7.2.1"
   },
   "dependencies": {
+    "end-of-stream": "^1.4.4",
     "fastify-plugin": "^1.6.0",
     "fastify-static": "^2.6.0",
     "fastify-websocket": "^1.0.0",
@@ -46,6 +47,7 @@
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
     "mqemitter": "^4.0.0",
+    "p-map": "^4.0.0",
     "readable-stream": "^3.5.0",
     "single-user-cache": "^0.3.0",
     "tiny-lru": "^7.0.2"

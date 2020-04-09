@@ -423,6 +423,51 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
+### Use GraphQL server as a Gateway for federated schemas
+
+A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that supports the federation.
+
+In Gateway mode the following options are not allowed (the plugin will throw an error if any of them are defined):
+* `schema`
+* `resolvers`
+* `loaders`
+* `subscription`
+
+Also, using the following decorator methods will throw:
+* `app.graphql.defineResolvers`
+* `app.graphql.defineLoaders`
+* `app.graphql.replaceSchema`
+* `app.graphql.extendSchema`
+
+```js
+const gateway = Fastify()
+
+gateway.register(GQL, {
+  gateway: {
+    services: [{
+      name: 'user',
+      url: 'http://localhost:4001/graphql',
+      rewriteHeaders: (headers) => {
+        if (headers.authorization) {
+          return {
+            authorization: headers.authorization
+          }
+        }
+
+        return {
+          x-api-key: 'secret-api-key'
+        }
+      }
+    }, {
+      name: 'post',
+      url: 'http://localhost:4002/graphql'
+    }]
+  }
+})
+
+await gateway.listen(4000)
+```
+
 ## API
 
 ### plugin options
@@ -453,6 +498,11 @@ __fastify-gql__ supports the following options:
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
 * `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
+* `gateway`: Object. Run the GraphQL server in gateway mode.
+  * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
+    * `service.name`: A unique name for the service. Required.
+    * `service.url`: The url of the service endpoint. Required
+    * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
 
 #### queryDepth example
 ```

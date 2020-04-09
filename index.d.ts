@@ -126,6 +126,15 @@ declare namespace fastifyGQL {
      * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
      */
     federationMetadata?: boolean
+    /**
+     * A list of GraphQL services to be combined into the gateway schema
+     */
+    gateway?: {
+      services: Array<{
+        name: string
+        url: string
+      }>
+    }
   }
 }
 

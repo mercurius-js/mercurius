@@ -792,3 +792,43 @@ test('federation supports loader for __resolveReference function', async (t) => 
     }
   })
 })
+
+test('federation schema is built correctly with type extension', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      author: User
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      posts: [Post]
+    }
+  `
+
+  app.register(GQL, {
+    schema,
+    federationMetadata: true
+  })
+
+  await app.ready()
+
+  const query = '{ topPosts { id author { id posts { id } } } }'
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}`
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      topPosts: null
+    }
+  })
+})

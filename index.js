@@ -23,6 +23,7 @@ const {
 } = require('graphql')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
+const buildGateway = require('./lib/gateway')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -49,6 +50,7 @@ function buildCache (opts) {
 module.exports = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
+  const lruGatewayResolvers = buildCache(opts)
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
@@ -59,6 +61,11 @@ module.exports = fp(async function (app, opts) {
 
   const root = {}
   let schema = opts.schema
+  let gateway = opts.gateway
+
+  if (gateway && (schema || opts.resolvers || opts.loaders || opts.subscription)) {
+    throw new Error('Adding "schema", "resolvers", "loaders" or "subscription" to plugin options when plugin is running in gateway mode is not allowed')
+  }
 
   if (typeof schema === 'string') {
     if (opts.federationMetadata) {
@@ -66,7 +73,7 @@ module.exports = fp(async function (app, opts) {
     } else {
       schema = buildSchema(schema)
     }
-  } else if (!opts.schema) {
+  } else if (!opts.schema && !gateway) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
@@ -76,6 +83,17 @@ module.exports = fp(async function (app, opts) {
         name: 'Mutation',
         fields: {}
       }) : undefined
+    })
+  }
+
+  if (gateway) {
+    gateway = await buildGateway(gateway, app)
+
+    schema = gateway.schema
+
+    app.onClose((fastify, next) => {
+      gateway.close()
+      setImmediate(next)
     })
   }
 
@@ -100,7 +118,8 @@ module.exports = fp(async function (app, opts) {
       context: opts.context,
       schema,
       subscription: opts.subscription,
-      federationMetadata: opts.federationMetadata
+      federationMetadata: opts.federationMetadata,
+      gateway
     })
   }
 
@@ -113,6 +132,10 @@ module.exports = fp(async function (app, opts) {
   app.decorate('graphql', fastifyGraphQl)
 
   fastifyGraphQl.replaceSchema = function (s) {
+    if (gateway) {
+      throw new Error('Calling replaceSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     if (!s || typeof s !== 'object') {
       throw new Error('Must provide valid Document AST')
     }
@@ -124,6 +147,10 @@ module.exports = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.extendSchema = function (s) {
+    if (gateway) {
+      throw new Error('Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     if (typeof s === 'string') {
       s = parse(s)
     } else if (!s || typeof s !== 'object') {
@@ -134,6 +161,10 @@ module.exports = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
+    if (gateway) {
+      throw new Error('Calling defineResolvers method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     for (const name of Object.keys(resolvers)) {
       const type = schema.getType(name)
 
@@ -175,6 +206,10 @@ module.exports = fp(async function (app, opts) {
   let factory
 
   fastifyGraphQl.defineLoaders = function (loaders) {
+    if (gateway) {
+      throw new Error('Calling defineLoaders method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     // set up the loaders factory
     if (!factory) {
       factory = new Factory()
@@ -220,7 +255,7 @@ module.exports = fp(async function (app, opts) {
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this }, context)
+    context = Object.assign({ app: this, lruGatewayResolvers }, context)
     const reply = context.reply
 
     // Parse, with a little lru
@@ -303,6 +338,7 @@ module.exports = fp(async function (app, opts) {
       variables,
       operationName
     )
+
     if (execution.errors) {
       const err = new InternalServerError()
       err.errors = execution.errors
