@@ -9,8 +9,10 @@ async function createService (port, schema, resolvers = {}) {
     schema,
     resolvers,
     federationMetadata: true,
-    graphiql: true,
-    jit: 1
+    ide: 'playground',
+    routes: true,
+    jit: 1,
+    subscription: true
   })
   await service.listen(port)
 }
@@ -218,12 +220,43 @@ async function start () {
       comments: (user) => {
         return Object.values(comments).filter(c => user.id === c.authorId)
       }
+    },
+    Mutation: {
+      async addComment (parent, { comment }, { pubsub }) {
+        const cid = `p${Object.values(comments).length + 1}`
+
+        const result = {
+          cid,
+          ...comment
+        }
+        posts[cid] = result
+
+        await pubsub.publish({
+          topic: 'COMMENT_ADDED',
+          payload: {
+            commentAdded: result
+          }
+        })
+        return result
+      }
+    },
+    Subscription: {
+      commentAdded: {
+        subscribe: async (root, { postId }, { pubsub }) => {
+          // subscribe only for a vote with a given id
+          const subscription = await pubsub.subscribe('COMMENT_ADDED')
+
+          return subscription
+        }
+      }
     }
   })
 
   const gateway = Fastify()
   gateway.register(GQL, {
-    graphiql: true,
+    routes: true,
+    ide: 'playground',
+    subscription: true,
     jit: 1,
     gateway: {
       services: [{
@@ -234,7 +267,8 @@ async function start () {
         url: 'http://localhost:4002/graphql'
       }, {
         name: 'comment',
-        url: 'http://localhost:4003/graphql'
+        url: 'http://localhost:4003/graphql',
+        wsUrl: 'ws://localhost:4003/graphql'
       }]
     }
   })

@@ -24,6 +24,8 @@ const {
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
+const mq = require('mqemitter')
+const { PubSub } = require('./lib/subscriber')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -62,9 +64,25 @@ module.exports = fp(async function (app, opts) {
   const root = {}
   let schema = opts.schema
   let gateway = opts.gateway
+  const subscriptionOpts = opts.subscription
+  let emitter
 
-  if (gateway && (schema || opts.resolvers || opts.loaders || opts.subscription)) {
-    throw new Error('Adding "schema", "resolvers", "loaders" or "subscription" to plugin options when plugin is running in gateway mode is not allowed')
+  let subscriber
+  let verifyClient
+
+  if (typeof subscriptionOpts === 'object') {
+    emitter = subscriptionOpts.emitter || mq()
+    verifyClient = subscriptionOpts.verifyClient
+  } else if (subscriptionOpts === true) {
+    emitter = mq()
+  }
+
+  if (subscriptionOpts) {
+    subscriber = new PubSub(emitter)
+  }
+
+  if (gateway && (schema || opts.resolvers || opts.loaders)) {
+    throw new Error('Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
   }
 
   if (typeof schema === 'string') {
@@ -87,7 +105,7 @@ module.exports = fp(async function (app, opts) {
   }
 
   if (gateway) {
-    gateway = await buildGateway(gateway, app)
+    gateway = await buildGateway(gateway, app, subscriber)
 
     schema = gateway.schema
 
@@ -117,9 +135,8 @@ module.exports = fp(async function (app, opts) {
       path: opts.path,
       context: opts.context,
       schema,
-      subscription: opts.subscription,
-      federationMetadata: opts.federationMetadata,
-      gateway
+      subscriber,
+      verifyClient
     })
   }
 
