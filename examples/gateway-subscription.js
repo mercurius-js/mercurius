@@ -243,7 +243,6 @@ async function start () {
     Subscription: {
       commentAdded: {
         subscribe: async (root, { postId }, { pubsub }) => {
-          // subscribe only for a vote with a given id
           const subscription = await pubsub.subscribe(`COMMENT_ADDED_${postId}`)
 
           return subscription
