@@ -223,7 +223,7 @@ async function start () {
     },
     Mutation: {
       async addComment (parent, { comment }, { pubsub }) {
-        const cid = `p${Object.values(comments).length + 1}`
+        const cid = `c${Object.values(comments).length + 1}`
 
         const result = {
           cid,
@@ -232,7 +232,7 @@ async function start () {
         comments[cid] = result
 
         await pubsub.publish({
-          topic: 'COMMENT_ADDED',
+          topic: `COMMENT_ADDED_${comment.postId}`,
           payload: {
             commentAdded: result
           }
@@ -244,7 +244,7 @@ async function start () {
       commentAdded: {
         subscribe: async (root, { postId }, { pubsub }) => {
           // subscribe only for a vote with a given id
-          const subscription = await pubsub.subscribe('COMMENT_ADDED')
+          const subscription = await pubsub.subscribe(`COMMENT_ADDED_${postId}`)
 
           return subscription
         }
