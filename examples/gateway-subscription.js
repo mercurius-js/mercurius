@@ -229,7 +229,7 @@ async function start () {
           cid,
           ...comment
         }
-        posts[cid] = result
+        comments[cid] = result
 
         await pubsub.publish({
           topic: 'COMMENT_ADDED',

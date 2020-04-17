@@ -104,10 +104,12 @@ module.exports = fp(async function (app, opts) {
     })
   }
 
+  let entityResolversFactory
   if (gateway) {
     gateway = await buildGateway(gateway, app, subscriber)
 
     schema = gateway.schema
+    entityResolversFactory = gateway.entityResolversFactory
 
     app.onClose((fastify, next) => {
       gateway.close()
@@ -136,7 +138,9 @@ module.exports = fp(async function (app, opts) {
       context: opts.context,
       schema,
       subscriber,
-      verifyClient
+      verifyClient,
+      lruGatewayResolvers,
+      entityResolversFactory
     })
   }
 
