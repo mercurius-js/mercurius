@@ -171,6 +171,62 @@ test('GET route with variables', async (t) => {
   })
 })
 
+test('GET route with persistedQuery & variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQueries: {
+      1111: '{ add(x: 1, y: 1) }',
+      2222: 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
+      3333: '{ add(x: 3, y: 3) }'
+    }
+  })
+
+  const res1 = await app.inject({
+    method: 'GET',
+    url: '/graphql?persistedQuery=1111'
+  })
+
+  t.deepEqual(JSON.parse(res1.body), {
+    data: {
+      add: 2
+    }
+  })
+
+  const res2 = await app.inject({
+    method: 'GET',
+    url: '/graphql?persistedQuery=2222&variables={"x":2,"y":2}'
+  })
+
+  t.deepEqual(JSON.parse(res2.body), {
+    data: {
+      add: 4
+    }
+  })
+
+  const res3 = await app.inject({
+    method: 'GET',
+    url: '/graphql?persistedQuery=3333'
+  })
+
+  t.deepEqual(JSON.parse(res3.body), {
+    data: {
+      add: 6
+    }
+  })
+})
+
 test('GET route with bad JSON variables', async (t) => {
   const app = Fastify()
   const schema = `

@@ -136,6 +136,7 @@ module.exports = fp(async function (app, opts) {
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
+      persistedQueries: opts.persistedQueries,
       schema,
       subscriber,
       verifyClient,
