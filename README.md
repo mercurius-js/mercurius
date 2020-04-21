@@ -91,6 +91,39 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
+### persistedQueries support
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+
+const app = Fastify()
+
+const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+`
+
+const resolvers = {
+  Query: {
+    add: async (_, { x, y }) => x + y
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  persistedQueries: {
+    '<unique-hash>': '{ add(x: 1, y: 1) }'
+  }
+})
+
+app.listen(3000)
+```
+
 ### Access app context in resolver
 
 ```js
@@ -507,6 +540,7 @@ __fastify-gql__ supports the following options:
     * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
     * `service.wsUrl`: The url of the websocket endpoint
     * `service.wsConnectionParams`: `Function` or `Object`
+* `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash.
 
 #### queryDepth example
 ```

@@ -171,7 +171,7 @@ test('GET route with variables', async (t) => {
   })
 })
 
-test('GET route with persistedQuery & variables', async (t) => {
+test('GET route with queryHash & variables', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -187,15 +187,15 @@ test('GET route with persistedQuery & variables', async (t) => {
     schema,
     resolvers,
     persistedQueries: {
-      1111: '{ add(x: 1, y: 1) }',
-      2222: 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
-      3333: '{ add(x: 3, y: 3) }'
+      '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
+      '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
+      '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
     }
   })
 
   const res1 = await app.inject({
     method: 'GET',
-    url: '/graphql?persistedQuery=1111'
+    url: '/graphql?queryHash=248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602'
   })
 
   t.deepEqual(JSON.parse(res1.body), {
@@ -206,7 +206,7 @@ test('GET route with persistedQuery & variables', async (t) => {
 
   const res2 = await app.inject({
     method: 'GET',
-    url: '/graphql?persistedQuery=2222&variables={"x":2,"y":2}'
+    url: '/graphql?queryHash=495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf&variables={"x":2,"y":2}'
   })
 
   t.deepEqual(JSON.parse(res2.body), {
@@ -217,7 +217,7 @@ test('GET route with persistedQuery & variables', async (t) => {
 
   const res3 = await app.inject({
     method: 'GET',
-    url: '/graphql?persistedQuery=3333'
+    url: '/graphql?queryHash=03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e'
   })
 
   t.deepEqual(JSON.parse(res3.body), {
