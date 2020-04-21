@@ -501,8 +501,9 @@ __fastify-gql__ supports the following options:
   * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
     * `service.name`: A unique name for the service. Required.
     * `service.url`: The url of the service endpoint. Required
-    * `service.wsUrl`: The url of the websocket endpoint
     * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
+    * `service.wsUrl`: The url of the websocket endpoint
+    * `service.wsConnectionParams`: `Function` or `Object`
 
 #### queryDepth example
 ```
