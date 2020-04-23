@@ -106,7 +106,7 @@ module.exports = fp(async function (app, opts) {
 
   let entityResolversFactory
   if (gateway) {
-    gateway = await buildGateway(gateway, app, subscriber)
+    gateway = await buildGateway(gateway, app)
 
     schema = gateway.schema
     entityResolversFactory = gateway.entityResolversFactory
