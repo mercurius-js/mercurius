@@ -120,17 +120,24 @@ const messageResolvers = {
 
 test('gateway subscription handling works correctly', t => {
   t.plan(1)
-  const userService = Fastify()
-  userService.register(GQL, {
-    schema: userSchema,
-    resolvers: userResolvers,
-    federationMetadata: true,
-    subscription: true,
-    ide: 'playground'
-  })
+  let userService
+  let messageService
+  let gateway
 
-  userService.listen(0, () => {
-    const messageService = Fastify()
+  function createUserService (callback) {
+    userService = Fastify()
+    userService.register(GQL, {
+      schema: userSchema,
+      resolvers: userResolvers,
+      federationMetadata: true,
+      subscription: true,
+      ide: 'playground'
+    })
+    userService.listen(0, callback)
+  }
+
+  function createMessageService (callback) {
+    messageService = Fastify()
     messageService.register(GQL, {
       schema: messageSchema,
       resolvers: messageResolvers,
@@ -138,135 +145,143 @@ test('gateway subscription handling works correctly', t => {
       subscription: true,
       ide: 'playground'
     })
+    messageService.listen(0, callback)
+  }
 
-    messageService.listen(0, () => {
-      const userServicePort = userService.server.address().port
-      const messageServicePort = messageService.server.address().port
+  function createGateway (callback) {
+    const userServicePort = userService.server.address().port
+    const messageServicePort = messageService.server.address().port
 
-      const gateway = Fastify()
-      gateway.register(GQL, {
-        subscription: true,
-        ide: 'playground',
-        jit: 1,
-        gateway: {
-          services: [{
-            name: 'user',
-            url: `http://localhost:${userServicePort}/graphql`,
-            wsUrl: `ws://localhost:${userServicePort}/graphql`
-          }, {
-            name: 'message',
-            url: `http://localhost:${messageServicePort}/graphql`,
-            wsUrl: `ws://localhost:${messageServicePort}/graphql`
-          }]
-        }
-      })
-
-      gateway.listen(0, () => {
-        const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
-        const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-        t.tearDown(() => {
-          client.destroy()
-          messageService.close()
-          userService.close()
-          gateway.close()
-          process.exit(0)
-        })
-        client.setEncoding('utf8')
-
-        client.write(JSON.stringify({
-          type: 'connection_init'
-        }))
-
-        client.write(JSON.stringify({
-          id: 1,
-          type: 'start',
-          payload: {
-            query: `
-              subscription {
-                newMessage(toUser: "u1") {
-                  id
-                  text
-                  from {
-                    id
-                    name
-                  }
-                  to {
-                    id
-                    name
-                  }
-                }
-              }
-            `
-          }
-        }))
-
-        client.write(JSON.stringify({
-          id: 2,
-          type: 'start',
-          payload: {
-            query: `
-              subscription {
-                newMessage(toUser: "u2") {
-                  id
-                }
-              }
-            `
-          }
-        }))
-
-        client.write(JSON.stringify({
-          id: 2,
-          type: 'stop'
-        }))
-
-        client.on('data', (chunk) => {
-          const data = JSON.parse(chunk)
-
-          if (data.id === 1 && data.type === 'data') {
-            t.equal(chunk, JSON.stringify({
-              type: 'data',
-              id: 1,
-              payload: {
-                data: {
-                  newMessage: {
-                    id: '1',
-                    text: 'Hi there',
-                    from: {
-                      id: 'u2',
-                      name: 'Jane'
-                    },
-                    to: {
-                      id: 'u1',
-                      name: 'John'
-                    }
-                  }
-                }
-              }
-            }))
-
-            client.end()
-            t.end()
-          } else if (data.id === 2 && data.type === 'complete') {
-            gateway.inject({
-              method: 'POST',
-              url: '/graphql',
-              body: {
-                query: `
-                  mutation {
-                    sendMessage(message: {
-                      text: "Hi there",
-                      fromUserId: "u2",
-                      toUserId: "u1"
-                    }) {
-                      id
-                    }
-                  }
-                `
-              }
-            })
-          }
-        })
-      })
+    gateway = Fastify()
+    gateway.register(GQL, {
+      subscription: true,
+      ide: 'playground',
+      jit: 1,
+      gateway: {
+        services: [{
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`,
+          wsUrl: `ws://localhost:${userServicePort}/graphql`
+        }, {
+          name: 'message',
+          url: `http://localhost:${messageServicePort}/graphql`,
+          wsUrl: `ws://localhost:${messageServicePort}/graphql`
+        }]
+      }
     })
-  })
+
+    gateway.listen(0, callback)
+  }
+
+  function runSubscription () {
+    const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(() => {
+      client.destroy()
+      messageService.close()
+      userService.close()
+      gateway.close()
+      process.exit(0)
+    })
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            newMessage(toUser: "u1") {
+              id
+              text
+              from {
+                id
+                name
+              }
+              to {
+                id
+                name
+              }
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            newMessage(toUser: "u2") {
+              id
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    client.on('data', (chunk) => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              newMessage: {
+                id: '1',
+                text: 'Hi there',
+                from: {
+                  id: 'u2',
+                  name: 'Jane'
+                },
+                to: {
+                  id: 'u1',
+                  name: 'John'
+                }
+              }
+            }
+          }
+        }))
+
+        client.end()
+        t.end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        gateway.inject({
+          method: 'POST',
+          url: '/graphql',
+          body: {
+            query: `
+              mutation {
+                sendMessage(message: {
+                  text: "Hi there",
+                  fromUserId: "u2",
+                  toUserId: "u1"
+                }) {
+                  id
+                }
+              }
+            `
+          }
+        })
+      }
+    })
+  }
+
+  const startGateway = createGateway.bind(null, runSubscription)
+  const startMessageService = createMessageService.bind(null, startGateway)
+
+  createUserService(startMessageService)
 })
