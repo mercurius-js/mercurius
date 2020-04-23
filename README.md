@@ -2,13 +2,16 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/mcollina/fastify-gql.svg)](https://greenkeeper.io/) [![Build Status](https://travis-ci.com/mcollina/fastify-gql.svg?branch=master)](https://travis-ci.com/mcollina/fastify-gql)
 
-Fastify barebone GraphQL adapter.
+Fastify GraphQL adapter.
 
 Features:
 
 * Caching of query parsing and validation.
 * Automatic loader integration to avoid 1 + N queries.
 * Just-In-Time compiler via [graphql-jit](http://npm.im/graphql-jit).
+* Subscriptions.
+* Federation support.
+* Gateway implementation, including Subscriptions.
 
 ## Install
 
