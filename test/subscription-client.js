@@ -4,7 +4,9 @@ const SubscriptionClient = require('../lib/subscription-client')
 const WS = require('ws')
 
 test('subscription client calls the publish method with the correct payload', (t) => {
-  const server = new WS.Server({ port: 8888 })
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
       const data = JSON.parse(message)
@@ -16,7 +18,7 @@ test('subscription client calls the publish method with the correct payload', (t
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
   })
 
-  const client = new SubscriptionClient('ws://localhost:8888', {
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: true,
     maxReconnectAttempts: 10,
     serviceName: 'test-service'
@@ -36,7 +38,9 @@ test('subscription client calls the publish method with the correct payload', (t
 })
 
 test('subscription client calls the publish method with null after GQL_COMPLETE type payload received', (t) => {
-  const server = new WS.Server({ port: 8889 })
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
       const data = JSON.parse(message)
@@ -48,7 +52,7 @@ test('subscription client calls the publish method with null after GQL_COMPLETE 
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
   })
 
-  const client = new SubscriptionClient('ws://localhost:8889', {
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: true,
     maxReconnectAttempts: 10,
     serviceName: 'test-service'
@@ -66,53 +70,72 @@ test('subscription client calls the publish method with null after GQL_COMPLETE 
 })
 
 test('subscription client tries to reconnect when server closes', (t) => {
-  let server = new WS.Server({ port: 8890 })
+  let server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
   server.on('connection', function connection (ws) {
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
   })
 
-  const client = new SubscriptionClient('ws://localhost:8890', {
+  function createSubscription () {
+    client.createSubscription('query', {}, (data) => {
+      t.deepEqual(data, {
+        topic: 'test-service_1',
+        payload: null
+      })
+      client.close()
+      server.close()
+      t.end()
+    })
+  }
+
+  let shouldCloseServer = true
+
+  function connectionCallback () {
+    if (shouldCloseServer) {
+      server.close()
+      shouldCloseServer = false
+      server = new WS.Server({ port }, () => {
+        createSubscription()
+      })
+      server.on('connection', function connection (ws) {
+        ws.on('message', (message) => {
+          const data = JSON.parse(message)
+          if (data.type === 'connection_init') {
+            ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+          } else if (data.type === 'start') {
+            ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+          }
+        })
+      })
+    }
+  }
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: true,
     maxReconnectAttempts: 10,
-    serviceName: 'test-service'
+    serviceName: 'test-service',
+    connectionCallback
   })
-  server.close()
-
-  client.createSubscription('query', {}, (data) => {
-    t.deepEqual(data, {
-      topic: 'test-service_1',
-      payload: null
-    })
-    client.close()
-    server.close()
-    t.end()
-  })
-
-  setTimeout(() => {
-    server = new WS.Server({ port: 8890 })
-    server.on('connection', function connection (ws) {
-      ws.on('message', function incoming (message) {
-        const data = JSON.parse(message)
-        if (data.type === 'start') {
-          ws.send(JSON.stringify({ id: '1', type: 'complete' }))
-        }
-      })
-
-      ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-    })
-  }, 2000)
 })
 
 test('subscription client stops trying reconnecting after maxReconnectAttempts', (t) => {
-  let server = new WS.Server({ port: 8891 })
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
   server.on('connection', function connection (ws) {
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
   })
 
-  const client = new SubscriptionClient('ws://localhost:8891', {
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: true,
-    maxReconnectAttempts: 2,
-    serviceName: 'test-service'
+    maxReconnectAttempts: 1,
+    serviceName: 'test-service',
+    failedReconnectCallback: () => {
+      client.close()
+      server.close()
+      t.end()
+    }
   })
   server.close()
 
@@ -122,20 +145,12 @@ test('subscription client stops trying reconnecting after maxReconnectAttempts',
       payload: null
     })
   })
-
-  setTimeout(() => {
-    server = new WS.Server({ port: 8891 })
-    server.on('connection', function connection (ws) {
-      throw new Error('Client connected when it should not!')
-    })
-    client.close()
-    server.close()
-    t.end()
-  }, 2000)
 })
 
 test('subscription client multiple subscriptions is handled by one operation', t => {
-  const server = new WS.Server({ port: 8892 })
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
       const data = JSON.parse(message)
@@ -147,7 +162,7 @@ test('subscription client multiple subscriptions is handled by one operation', t
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
   })
 
-  const client = new SubscriptionClient('ws://localhost:8892', {
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: true,
     maxReconnectAttempts: 10,
     serviceName: 'test-service'
@@ -163,8 +178,10 @@ test('subscription client multiple subscriptions is handled by one operation', t
   client.createSubscription('query', {}, publish)
 })
 
-test('subscription client multiple subscriptions unsubscribe removes only ', t => {
-  const server = new WS.Server({ port: 8893 })
+test('subscription client multiple subscriptions unsubscribe removes only one subscription', t => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
       const data = JSON.parse(message)
@@ -176,7 +193,7 @@ test('subscription client multiple subscriptions unsubscribe removes only ', t =
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
   })
 
-  const client = new SubscriptionClient('ws://localhost:8893', {
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: true,
     maxReconnectAttempts: 10,
     serviceName: 'test-service',
