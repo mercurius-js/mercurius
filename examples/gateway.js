@@ -160,9 +160,8 @@ async function start () {
 
   const gateway = Fastify()
   gateway.register(GQL, {
-    ide: 'playground',
+    graphiql: true,
     jit: 1,
-    path: '/fargate/graphql',
     gateway: {
       services: [{
         name: 'user',
