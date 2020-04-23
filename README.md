@@ -519,6 +519,7 @@ __fastify-gql__ supports the following options:
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
   and if `routes` is `true`. Leave empty or `false` to disable.
+  _only applies if `onlyPersisted` option is not `true`_
 * `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -541,6 +542,7 @@ __fastify-gql__ supports the following options:
     * `service.wsUrl`: The url of the websocket endpoint
     * `service.wsConnectionParams`: `Function` or `Object`
 * `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash.
+* `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql).
 
 #### queryDepth example
 ```

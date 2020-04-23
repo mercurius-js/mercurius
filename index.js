@@ -56,6 +56,9 @@ module.exports = fp(async function (app, opts) {
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
+  const onlyPersisted = !!opts.onlyPersisted
+  opts.graphiql = onlyPersisted ? false : opts.graphiql
+  opts.ide = onlyPersisted ? false : opts.ide
 
   if (typeof minJit !== 'number') {
     throw new Error('the jit option must be a number')

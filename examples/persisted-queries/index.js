@@ -25,6 +25,7 @@ app.register(GQL, {
   schema,
   resolvers,
   persistedQueries,
+  onlyPersisted: true, // will nullify the effect of the option below (graphiql)
   graphiql: true
 })
 
