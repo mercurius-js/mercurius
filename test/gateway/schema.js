@@ -143,8 +143,6 @@ test('It builds the gateway schema correctly', async (t) => {
         name: 'user',
         url: `http://localhost:${userServicePort}/graphql`,
         rewriteHeaders: (headers) => {
-          // console.log('rewrite headers', headers)
-
           if (headers.authorization) {
             return {
               authorization: headers.authorization

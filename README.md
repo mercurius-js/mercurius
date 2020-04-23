@@ -431,7 +431,6 @@ In Gateway mode the following options are not allowed (the plugin will throw an 
 * `schema`
 * `resolvers`
 * `loaders`
-* `subscription`
 
 Also, using the following decorator methods will throw:
 * `app.graphql.defineResolvers`
@@ -503,6 +502,8 @@ __fastify-gql__ supports the following options:
     * `service.name`: A unique name for the service. Required.
     * `service.url`: The url of the service endpoint. Required
     * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
+    * `service.wsUrl`: The url of the websocket endpoint
+    * `service.wsConnectionParams`: `Function` or `Object`
 
 #### queryDepth example
 ```

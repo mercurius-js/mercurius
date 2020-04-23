@@ -22,7 +22,7 @@ test('"schema" option not allowed in gateway moode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or "subscription" to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
   }
 })
 
@@ -39,7 +39,7 @@ test('"resolvers" option not allowed in gateway moode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or "subscription" to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
   }
 })
 
@@ -56,23 +56,6 @@ test('"loaders" option not allowed in gateway moode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or "subscription" to plugin options when plugin is running in gateway mode is not allowed')
-  }
-})
-
-test('"subscription" option not allowed in gateway moode', async (t) => {
-  const app = Fastify()
-
-  app.register(GQL, {
-    subscription: true,
-    gateway: {
-      services: []
-    }
-  })
-
-  try {
-    await app.ready()
-  } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or "subscription" to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
   }
 })
