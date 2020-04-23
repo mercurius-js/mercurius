@@ -60,6 +60,10 @@ module.exports = fp(async function (app, opts) {
   opts.graphiql = onlyPersisted ? false : opts.graphiql
   opts.ide = onlyPersisted ? false : opts.ide
 
+  if (onlyPersisted && !opts.persistedQueries) {
+    throw new Error('onlyPersisted is true but there are no persistedQueries')
+  }
+
   if (typeof minJit !== 'number') {
     throw new Error('the jit option must be a number')
   }

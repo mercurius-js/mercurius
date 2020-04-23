@@ -1441,7 +1441,10 @@ test('if onlyPersisted then nullify graphiql option', async (t) => {
   const app = Fastify()
   app.register(GQL, {
     graphiql: true,
-    onlyPersisted: true
+    onlyPersisted: true,
+    persistedQueries: {
+      '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
+    }
   })
 
   const res = await app.inject({
