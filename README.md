@@ -93,6 +93,12 @@ app.listen(3000)
 
 ### persistedQueries support
 
+Unlike REST APIs that use a fixed URL to load data, GraphQL queries are often much longer than that, in some cases by many kilobytes. This is actually significant overhead. When paired with the fact that the uplink speed from the client is typically the most bandwidth-constrained part of the chain, large queries can become bottlenecks for client performance.
+
+Persisted Queries solves this problem by sending a generated ID instead of the query text as the request. This smaller signature reduces bandwidth utilization and speeds up client loading times.
+
+See the example below, we're supplying an object containing hash of each query to the server. This object will be used to lookup actual query texts when server recieves a request containing hash of the query.
+
 ```js
 'use strict'
 
@@ -123,6 +129,13 @@ app.register(GQL, {
 
 app.listen(3000)
 ```
+
+### Disallowing unknown queries
+
+In addition to the `persistedQueries` above, which let's client request for either query text OR a hash (if pre-fed), there's another option available called `onlyPersisted`. This is useful when you want to secure the server by disallowing any unknown requests. It will ensure the server never responds to any query except what it already knows (form the `persistedQueries`).
+
+Note: `onlyPersisted` disables all IDEs (graphiql/playground) so typically you'd want to use it in production.
+
 
 ### Access app context in resolver
 
