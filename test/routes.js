@@ -1395,3 +1395,18 @@ test('if ide is playground, serve init.js with the correct endpoint', async (t) 
   t.strictEqual(res.statusCode, 200)
   t.matchSnapshot(res.body)
 })
+
+test('if ide is graphiql, serve config.js with the correct endpoint', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    ide: 'graphiql',
+    path: '/app/graphql'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql/config.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.matchSnapshot(res.body)
+})

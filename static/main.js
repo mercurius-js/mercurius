@@ -18,7 +18,7 @@ const importer = {
 
 function render () {
   async function fetcher (params) {
-    const res = await fetch('graphql', {
+    const res = await fetch(window.GRAPHQL_ENDPOINT, {
       method: 'post',
       headers: {
         Accept: 'application/json',
