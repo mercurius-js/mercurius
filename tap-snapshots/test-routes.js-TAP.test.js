@@ -77,6 +77,19 @@ exports['test/routes.js TAP POST return 500 on error without statusCode > must m
 }
 `
 
+exports['test/routes.js TAP if ide is graphiql, serve config.js with the correct endpoint > must match snapshot 1'] = `
+window.GRAPHQL_ENDPOINT = '/app/graphql'
+`
+
+exports['test/routes.js TAP if ide is playground, serve init.js with the correct endpoint > must match snapshot 1'] = `
+window.addEventListener('load', function(event) {
+          GraphQLPlayground.init(document.getElementById('root'), {
+            subscriptionEndpoint: '/app/graphql',
+            endpoint: '/app/graphql',
+          });
+        });
+`
+
 exports['test/routes.js TAP mutation with GET errors > must match snapshot 1'] = `
 {
   "errors": [
