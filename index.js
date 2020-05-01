@@ -10,6 +10,7 @@ const {
   parse,
   buildSchema,
   getOperationAST,
+  GraphQLError,
   GraphQLObjectType,
   GraphQLScalarType,
   GraphQLEnumType,
@@ -26,6 +27,7 @@ const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
+const { FastifyGraphQLError } = require('./lib/errors')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -361,6 +363,15 @@ module.exports = fp(async function (app, opts) {
     )
 
     if (execution.errors) {
+      execution.errors = execution.errors.map(e => {
+        if (e.originalError instanceof FastifyGraphQLError) {
+          return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, {
+            code: e.originalError.code,
+            ...e.originalError.additionalProperties
+          })
+        }
+        return e
+      })
       const err = new InternalServerError()
       err.errors = execution.errors
       err.data = execution.data
