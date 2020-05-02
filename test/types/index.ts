@@ -1,5 +1,5 @@
 import Fastify from 'fastify'
-import GQL from '../..'
+import GQL, { ErrorWithProps } from '../..'
 
 const app = Fastify()
 
@@ -52,18 +52,18 @@ app.register(GQL, {
 
 app.register(async function (app) {
   app.graphql.extendSchema(`
-  type Human {
-    name: String!
-  }
+    type Human {
+      name: String!
+    }
 
-  type Dog {
-    name: String!
-    owner: Human
-  }
+    type Dog {
+      name: String!
+      owner: Human
+    }
 
-  type Query {
-    dogs: [Dog]
-  }
+    type Query {
+      dogs: [Dog]
+    }
   `)
   app.graphql.defineResolvers({
     Query: {
@@ -77,6 +77,19 @@ app.register(async function (app) {
       async owner (queries: Array<{ obj: { name: keyof typeof owners } }>) {
         return queries.map(({ obj }) => owners[obj.name])
       }
+    }
+  })
+})
+
+app.register(async function (app) {
+  app.graphql.extendSchema(`
+    type Query {
+      willThrow: String
+    }
+  `)
+  app.graphql.defineResolvers({
+    Query: {
+      willThrow: async () => { throw new ErrorWithProps('Extended Error', 'EXTENDED_ERROR', { reason: 'some reason', other: 32 }) }
     }
   })
 })
