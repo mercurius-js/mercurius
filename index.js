@@ -51,7 +51,7 @@ function buildCache (opts) {
   return LRU(1024)
 }
 
-module.exports = fp(async function (app, opts) {
+const plugin = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
   const lruGatewayResolvers = buildCache(opts)
@@ -383,3 +383,7 @@ module.exports = fp(async function (app, opts) {
 }, {
   name: 'fastify-gql'
 })
+
+plugin.FastifyGraphQLError = FastifyGraphQLError
+
+module.exports = plugin

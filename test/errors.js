@@ -3,7 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
-const { FastifyGraphQLError } = require('../lib/errors')
+const { FastifyGraphQLError } = GQL
 
 test('errors - multiple extended errors', async (t) => {
   const schema = `
@@ -35,7 +35,6 @@ test('errors - multiple extended errors', async (t) => {
     resolvers
   })
 
-  // needed so that graphql is defined
   await app.ready()
 
   const res = await app.inject({
@@ -95,7 +94,7 @@ test('errors - extended errors with number additionalProperties', async (t) => {
   const resolvers = {
     Query: {
       willThrow () {
-        throw new FastifyGraphQLError('extended Error', 'extended_ERROR', { floating: 3.14, timestamp: 1324356 })
+        throw new FastifyGraphQLError('Extended Error', 'EXTENDED_ERROR', { floating: 3.14, timestamp: 1324356, reason: 'some reason' })
       }
     }
   }
@@ -107,7 +106,6 @@ test('errors - extended errors with number additionalProperties', async (t) => {
     resolvers
   })
 
-  // needed so that graphql is defined
   await app.ready()
 
   const res = await app.inject({
@@ -122,7 +120,7 @@ test('errors - extended errors with number additionalProperties', async (t) => {
     },
     errors: [
       {
-        message: 'extended Error',
+        message: 'Extended Error',
         locations: [
           {
             line: 1,
@@ -131,9 +129,115 @@ test('errors - extended errors with number additionalProperties', async (t) => {
         ],
         path: ['willThrow'],
         extensions: {
-          code: 'extended_ERROR',
+          code: 'EXTENDED_ERROR',
           floating: 3.14,
-          timestamp: 1324356
+          timestamp: 1324356,
+          reason: 'some reason'
+        }
+      }
+    ]
+  })
+})
+
+test('errors - extended errors optionals parameters', async (t) => {
+  const schema = `
+    type Query {
+      one: String
+      two: String
+      three: String
+      four: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      one () {
+        throw new FastifyGraphQLError('Extended Error')
+      },
+      two () {
+        throw new FastifyGraphQLError('Extended Error', 'ERROR_TWO')
+      },
+      three () {
+        throw new FastifyGraphQLError('Extended Error', 'ERROR_THREE', { reason: 'some reason' })
+      },
+      four () {
+        throw new FastifyGraphQLError('Extended Error', undefined, { reason: 'some reason' })
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={one,two,three,four}'
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.payload), {
+    data: {
+      one: null,
+      two: null,
+      three: null,
+      four: null
+    },
+    errors: [
+      {
+        message: 'Extended Error',
+        locations: [
+          {
+            line: 1,
+            column: 2
+          }
+        ],
+        path: ['one'],
+        extensions: {}
+      },
+      {
+        message: 'Extended Error',
+        locations: [
+          {
+            line: 1,
+            column: 6
+          }
+        ],
+        path: ['two'],
+        extensions: {
+          code: 'ERROR_TWO'
+        }
+      },
+      {
+        message: 'Extended Error',
+        locations: [
+          {
+            line: 1,
+            column: 10
+          }
+        ],
+        path: ['three'],
+        extensions: {
+          code: 'ERROR_THREE',
+          reason: 'some reason'
+        }
+      },
+      {
+        message: 'Extended Error',
+        locations: [
+          {
+            line: 1,
+            column: 16
+          }
+        ],
+        path: ['four'],
+        extensions: {
+          reason: 'some reason'
         }
       }
     ]
