@@ -27,7 +27,7 @@ const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
-const { FastifyGraphQLError } = require('./lib/errors')
+const { ErrorWithProps } = require('./lib/errors')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -364,7 +364,7 @@ const plugin = fp(async function (app, opts) {
 
     if (execution.errors) {
       execution.errors = execution.errors.map(e => {
-        if (e.originalError instanceof FastifyGraphQLError) {
+        if (e.originalError instanceof ErrorWithProps) {
           return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, {
             code: e.originalError.code,
             ...e.originalError.additionalProperties
@@ -384,6 +384,6 @@ const plugin = fp(async function (app, opts) {
   name: 'fastify-gql'
 })
 
-plugin.FastifyGraphQLError = FastifyGraphQLError
+plugin.ErrorWithProps = ErrorWithProps
 
 module.exports = plugin

@@ -3,7 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
-const { FastifyGraphQLError } = GQL
+const { ErrorWithProps } = GQL
 
 test('errors - multiple extended errors', async (t) => {
   const schema = `
@@ -17,10 +17,10 @@ test('errors - multiple extended errors', async (t) => {
   const resolvers = {
     Query: {
       errorOne () {
-        throw new FastifyGraphQLError('Error One', 'ERROR_ONE', { additional: 'information one', other: 'data one' })
+        throw new ErrorWithProps('Error One', 'ERROR_ONE', { additional: 'information one', other: 'data one' })
       },
       errorTwo () {
-        throw new FastifyGraphQLError('Error Two', 'ERROR_TWO', { additional: 'information two', other: 'data two' })
+        throw new ErrorWithProps('Error Two', 'ERROR_TWO', { additional: 'information two', other: 'data two' })
       },
       successful () {
         return 'Runs OK'
@@ -94,7 +94,7 @@ test('errors - extended errors with number additionalProperties', async (t) => {
   const resolvers = {
     Query: {
       willThrow () {
-        throw new FastifyGraphQLError('Extended Error', 'EXTENDED_ERROR', { floating: 3.14, timestamp: 1324356, reason: 'some reason' })
+        throw new ErrorWithProps('Extended Error', 'EXTENDED_ERROR', { floating: 3.14, timestamp: 1324356, reason: 'some reason' })
       }
     }
   }
@@ -152,16 +152,16 @@ test('errors - extended errors optionals parameters', async (t) => {
   const resolvers = {
     Query: {
       one () {
-        throw new FastifyGraphQLError('Extended Error')
+        throw new ErrorWithProps('Extended Error')
       },
       two () {
-        throw new FastifyGraphQLError('Extended Error', 'ERROR_TWO')
+        throw new ErrorWithProps('Extended Error', 'ERROR_TWO')
       },
       three () {
-        throw new FastifyGraphQLError('Extended Error', 'ERROR_THREE', { reason: 'some reason' })
+        throw new ErrorWithProps('Extended Error', 'ERROR_THREE', { reason: 'some reason' })
       },
       four () {
-        throw new FastifyGraphQLError('Extended Error', undefined, { reason: 'some reason' })
+        throw new ErrorWithProps('Extended Error', undefined, { reason: 'some reason' })
       }
     }
   }
