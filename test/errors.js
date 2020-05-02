@@ -5,11 +5,12 @@ const Fastify = require('fastify')
 const GQL = require('..')
 const { FastifyGraphQLError } = require('../lib/errors')
 
-test('errors - multiple custom errors', async (t) => {
+test('errors - multiple extended errors', async (t) => {
   const schema = `
     type Query {
       errorOne: String
       errorTwo: String
+      successful: String
     }
   `
 
@@ -20,6 +21,9 @@ test('errors - multiple custom errors', async (t) => {
       },
       errorTwo () {
         throw new FastifyGraphQLError('Error Two', 'ERROR_TWO', { additional: 'information two', other: 'data two' })
+      },
+      successful () {
+        return 'Runs OK'
       }
     }
   }
@@ -36,14 +40,15 @@ test('errors - multiple custom errors', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphql?query={errorOne,errorTwo}'
+    url: '/graphql?query={errorOne,errorTwo, successful}'
   })
 
   t.equal(res.statusCode, 200)
   t.deepEqual(JSON.parse(res.payload), {
     data: {
       errorOne: null,
-      errorTwo: null
+      errorTwo: null,
+      successful: 'Runs OK'
     },
     errors: [
       {
@@ -80,7 +85,7 @@ test('errors - multiple custom errors', async (t) => {
   })
 })
 
-test('errors - custom errors with number additionalProperties', async (t) => {
+test('errors - extended errors with number additionalProperties', async (t) => {
   const schema = `
     type Query {
       willThrow: String
@@ -90,7 +95,7 @@ test('errors - custom errors with number additionalProperties', async (t) => {
   const resolvers = {
     Query: {
       willThrow () {
-        throw new FastifyGraphQLError('Custom Error', 'CUSTOM_ERROR', { floating: 3.14, timestamp: 1324356 })
+        throw new FastifyGraphQLError('extended Error', 'extended_ERROR', { floating: 3.14, timestamp: 1324356 })
       }
     }
   }
@@ -117,7 +122,7 @@ test('errors - custom errors with number additionalProperties', async (t) => {
     },
     errors: [
       {
-        message: 'Custom Error',
+        message: 'extended Error',
         locations: [
           {
             line: 1,
@@ -126,7 +131,7 @@ test('errors - custom errors with number additionalProperties', async (t) => {
         ],
         path: ['willThrow'],
         extensions: {
-          code: 'CUSTOM_ERROR',
+          code: 'extended_ERROR',
           floating: 3.14,
           timestamp: 1324356
         }
