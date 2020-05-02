@@ -364,7 +364,7 @@ const plugin = fp(async function (app, opts) {
 
     if (execution.errors) {
       execution.errors = execution.errors.map(e => {
-        if (e.originalError instanceof ErrorWithProps) {
+        if (Object.prototype.hasOwnProperty.call(e.originalError, 'code') || Object.prototype.hasOwnProperty.call(e.originalError, 'additionalProperties')) {
           return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, {
             code: e.originalError.code,
             ...e.originalError.additionalProperties

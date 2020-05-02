@@ -139,7 +139,7 @@ test('errors - extended errors with number additionalProperties', async (t) => {
   })
 })
 
-test('errors - extended errors optionals parameters', async (t) => {
+test('errors - extended errors optional parameters', async (t) => {
   const schema = `
     type Query {
       one: String
