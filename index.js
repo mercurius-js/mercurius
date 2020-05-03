@@ -10,6 +10,7 @@ const {
   parse,
   buildSchema,
   getOperationAST,
+  GraphQLError,
   GraphQLObjectType,
   GraphQLScalarType,
   GraphQLEnumType,
@@ -26,6 +27,7 @@ const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
+const { ErrorWithProps } = require('./lib/errors')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -49,7 +51,7 @@ function buildCache (opts) {
   return LRU(1024)
 }
 
-module.exports = fp(async function (app, opts) {
+const plugin = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
   const lruGatewayResolvers = buildCache(opts)
@@ -361,6 +363,15 @@ module.exports = fp(async function (app, opts) {
     )
 
     if (execution.errors) {
+      execution.errors = execution.errors.map(e => {
+        if (Object.prototype.hasOwnProperty.call(e.originalError, 'code') || Object.prototype.hasOwnProperty.call(e.originalError, 'additionalProperties')) {
+          return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, {
+            code: e.originalError.code,
+            ...e.originalError.additionalProperties
+          })
+        }
+        return e
+      })
       const err = new InternalServerError()
       err.errors = execution.errors
       err.data = execution.data
@@ -372,3 +383,7 @@ module.exports = fp(async function (app, opts) {
 }, {
   name: 'fastify-gql'
 })
+
+plugin.ErrorWithProps = ErrorWithProps
+
+module.exports = plugin

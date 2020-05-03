@@ -470,6 +470,58 @@ gateway.register(GQL, {
 await gateway.listen(4000)
 ```
 
+### Use errors extension to provide additional information to query errors
+
+GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('./index')
+const { ErrorWithProps } = GQL
+
+const users = {
+  1: {
+    id: '1',
+    name: 'John'
+  },
+  2: {
+    id: '2',
+    name: 'Jane'
+  }
+}
+
+const app = Fastify()
+const schema = `
+  type Query {
+    findUser(id: String!): User
+  }
+
+  type User {
+    id: ID!
+    name: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    findUser: (_, { id }) => {
+      const user = users[id]
+      if (user) return users[id]
+      else throw new ErrorWithProps('Invalid User ID', "USER_ID_INVALID", { id, timestamp: Math.round(new Date().getTime()/1000) })
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers
+})
+
+app.listen(3000)
+```
+
 ## API
 
 ### plugin options
