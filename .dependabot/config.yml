@@ -1,0 +1,5 @@
+version: 1
+update_conigs:
+  package_manager: "javascript"
+  directory: "/"
+  update_schedule: "daily"
