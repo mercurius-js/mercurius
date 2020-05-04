@@ -6,7 +6,9 @@ const GQL = require('../..')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
-  t.tearDown(() => service.close())
+  t.tearDown(() => {
+    service.close()
+  })
   service.register(GQL, {
     schema,
     resolvers,
@@ -136,7 +138,9 @@ test('It builds the gateway schema correctly', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => gateway.close())
+  t.tearDown(() => {
+    gateway.close()
+  })
   gateway.register(GQL, {
     gateway: {
       services: [{
