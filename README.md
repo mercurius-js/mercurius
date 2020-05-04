@@ -91,6 +91,52 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
+### persistedQueries support
+
+Unlike REST APIs that use a fixed URL to load data, GraphQL queries are often much longer than that, in some cases by many kilobytes. This is actually significant overhead. When paired with the fact that the uplink speed from the client is typically the most bandwidth-constrained part of the chain, large queries can become bottlenecks for client performance.
+
+Persisted Queries solves this problem by sending a generated ID instead of the query text as the request. This smaller signature reduces bandwidth utilization and speeds up client loading times.
+
+See the example below, we're supplying an object containing hash of each query to the server. This object will be used to lookup actual query texts when server recieves a request containing hash of the query.
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+
+const app = Fastify()
+
+const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+`
+
+const resolvers = {
+  Query: {
+    add: async (_, { x, y }) => x + y
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  persistedQueries: {
+    '<unique-hash>': '{ add(x: 1, y: 1) }'
+  }
+})
+
+app.listen(3000)
+```
+
+### Disallowing unknown queries
+
+In addition to the `persistedQueries` above, which let's client request for either query text OR a hash (if pre-fed), there's another option available called `onlyPersisted`. This is useful when you want to secure the server by disallowing any unknown requests. It will ensure the server never responds to any query except what it already knows (form the `persistedQueries`).
+
+Note: `onlyPersisted` disables all IDEs (graphiql/playground) so typically you'd want to use it in production.
+
+
 ### Access app context in resolver
 
 ```js
@@ -538,6 +584,7 @@ __fastify-gql__ supports the following options:
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
   and if `routes` is `true`. Leave empty or `false` to disable.
+  _only applies if `onlyPersisted` option is not `true`_
 * `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -559,6 +606,8 @@ __fastify-gql__ supports the following options:
     * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
     * `service.wsUrl`: The url of the websocket endpoint
     * `service.wsConnectionParams`: `Function` or `Object`
+* `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash.
+* `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql).
 
 #### queryDepth example
 ```

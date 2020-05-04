@@ -58,6 +58,13 @@ const plugin = fp(async function (app, opts) {
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
+  const onlyPersisted = !!opts.onlyPersisted
+  opts.graphiql = onlyPersisted ? false : opts.graphiql
+  opts.ide = onlyPersisted ? false : opts.ide
+
+  if (onlyPersisted && !opts.persistedQueries) {
+    throw new Error('onlyPersisted is true but there are no persistedQueries')
+  }
 
   if (typeof minJit !== 'number') {
     throw new Error('the jit option must be a number')
@@ -138,6 +145,8 @@ const plugin = fp(async function (app, opts) {
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
+      onlyPersisted: onlyPersisted,
+      persistedQueries: opts.persistedQueries,
       schema,
       subscriber,
       verifyClient,
