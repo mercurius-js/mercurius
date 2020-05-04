@@ -1,5 +1,5 @@
 import Fastify from 'fastify'
-import GQL, { ErrorWithProps } from '../..'
+import * as GQL from '../..'
 
 const app = Fastify()
 
@@ -89,7 +89,7 @@ app.register(async function (app) {
   `)
   app.graphql.defineResolvers({
     Query: {
-      willThrow: async () => { throw new ErrorWithProps('Extended Error', 'EXTENDED_ERROR', { reason: 'some reason', other: 32 }) }
+      willThrow: async () => { throw new GQL.ErrorWithProps('Extended Error', 'EXTENDED_ERROR', { reason: 'some reason', other: 32 }) }
     }
   })
 })
