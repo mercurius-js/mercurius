@@ -223,7 +223,7 @@ test('subscription server sends update to subscriptions', t => {
   })
 })
 
-test('subscription server sends update to subscriptions - 2', t => {
+test('subscription server sends update to subscriptions with custom context', t => {
   const app = Fastify()
   t.tearDown(() => app.close())
 
