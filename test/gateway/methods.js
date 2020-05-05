@@ -6,7 +6,9 @@ const GQL = require('../..')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
-  t.tearDown(() => service.close())
+  t.tearDown(() => {
+    service.close()
+  })
   service.register(GQL, {
     schema,
     resolvers,
@@ -30,7 +32,9 @@ test('calling defineLoaders throws an error in gateway mode', async (t) => {
   `)
 
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.tearDown(() => {
+    app.close()
+  })
 
   app.register(GQL, {
     gateway: {
@@ -67,7 +71,9 @@ test('calling defineResolvers throws an error in gateway mode', async (t) => {
   `)
 
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.tearDown(() => {
+    app.close()
+  })
 
   app.register(GQL, {
     gateway: {
@@ -104,7 +110,9 @@ test('calling replaceSchema throws an error in gateway mode', async (t) => {
   `)
 
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.tearDown(() => {
+    app.close()
+  })
 
   app.register(GQL, {
     gateway: {
@@ -141,7 +149,9 @@ test('calling extendSchema throws an error in gateway mode', async (t) => {
   `)
 
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.tearDown(() => {
+    app.close()
+  })
 
   app.register(GQL, {
     gateway: {
@@ -162,5 +172,6 @@ test('calling extendSchema throws an error in gateway mode', async (t) => {
     `)
   } catch (err) {
     t.is(err.message, 'Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    t.end()
   }
 })
