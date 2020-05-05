@@ -42,7 +42,7 @@
     "end-of-stream": "^1.4.4",
     "fastify-plugin": "^2.0.0",
     "fastify-static": "^3.0.0",
-    "fastify-websocket": "github:frikille/fastify-websocket#v3-upgrade",
+    "fastify-websocket": "^2.0.0",
     "graphql": "^14.6.0",
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
