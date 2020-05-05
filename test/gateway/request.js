@@ -25,12 +25,15 @@ test('sendRequest method rejects when response is not valid json', async (t) => 
   app.post('/', async (request, reply) => {
     return 'response'
   })
-  t.tearDown(() => app.close())
 
   await app.listen(0)
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
-  const { request } = buildRequest({})
+  const { request, close } = buildRequest({})
+  t.tearDown(() => {
+    close()
+    app.close()
+  })
   t.rejects(sendRequest(request, url)({
     method: 'POST',
     body: JSON.stringify({

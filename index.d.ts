@@ -1,6 +1,5 @@
 import fastify, { FastifyError, FastifyReply, FastifyRequest, RegisterOptions } from "fastify";
-import { DocumentNode, ExecutionResult, GraphQLSchema, Source } from 'graphql';
-import { IResolvers } from "graphql-tools";
+import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType } from 'graphql';
 import { IncomingMessage, Server, ServerResponse } from "http";
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
 
@@ -188,3 +187,71 @@ declare function fastifyGQL<
 
 
 export = fastifyGQL;
+
+interface IResolvers<TSource = any, TContext = any> {
+  [key: string]: (() => any) | IResolverObject<TSource, TContext> | IResolverOptions<TSource, TContext> | GraphQLScalarType | IEnumResolver;
+}
+
+type IResolverObject<TSource = any, TContext = any, TArgs = any> = {
+  [key: string]: IFieldResolver<TSource, TContext, TArgs> | IResolverOptions<TSource, TContext> | IResolverObject<TSource, TContext>;
+};
+
+interface IResolverOptions<TSource = any, TContext = any, TArgs = any> {
+  fragment?: string;
+  resolve?: IFieldResolver<TSource, TContext, TArgs>;
+  subscribe?: IFieldResolver<TSource, TContext, TArgs>;
+  __resolveType?: GraphQLTypeResolver<TSource, TContext>;
+  __isTypeOf?: GraphQLIsTypeOfFn<TSource, TContext>;
+}
+
+type IEnumResolver = {
+  [key: string]: string | number;
+};
+
+type IFieldResolver<TSource, TContext, TArgs = Record<string, any>> = (source: TSource, args: TArgs, context: TContext, info: GraphQLResolveInfo & {
+  mergeInfo: MergeInfo;
+}) => any;
+
+type MergeInfo = {
+  delegate: (type: 'query' | 'mutation' | 'subscription', fieldName: string, args: {
+      [key: string]: any;
+  }, context: {
+      [key: string]: any;
+  }, info: GraphQLResolveInfo, transforms?: Array<Transform>) => any;
+  delegateToSchema<TContext>(options: IDelegateToSchemaOptions<TContext>): any;
+  fragments: Array<{
+      field: string;
+      fragment: string;
+  }>;
+};
+
+type Transform = {
+  transformSchema?: (schema: GraphQLSchema) => GraphQLSchema;
+  transformRequest?: (originalRequest: Request) => Request;
+  transformResult?: (result: Result) => Result;
+};
+
+interface IDelegateToSchemaOptions<TContext = {
+  [key: string]: any;
+}> {
+  schema: GraphQLSchema;
+  operation: Operation;
+  fieldName: string;
+  args?: {
+      [key: string]: any;
+  };
+  context: TContext;
+  info: IGraphQLToolsResolveInfo;
+  transforms?: Array<Transform>;
+  skipValidation?: boolean;
+}
+
+type Operation = 'query' | 'mutation' | 'subscription';
+
+type Result = ExecutionResult & {
+  extensions?: Record<string, any>;
+};
+
+interface IGraphQLToolsResolveInfo extends GraphQLResolveInfo {
+  mergeInfo?: MergeInfo;
+}
