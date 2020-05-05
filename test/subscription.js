@@ -223,6 +223,182 @@ test('subscription server sends update to subscriptions', t => {
   })
 })
 
+test('subscription server sends update to subscriptions - 2', t => {
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const sendTestQuery = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          query {
+            notifications {
+              id
+              message
+            }
+          }
+        `
+      }
+    }, () => {
+      sendTestMutation()
+    })
+  }
+
+  const sendTestMutation = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            addNotification(message: "Hello World") {
+              id
+            }
+          }
+        `
+      }
+    }, () => {})
+  }
+
+  const emitter = mq()
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Mutation {
+      addNotification(message: String): Notification
+    }
+
+    type Subscription {
+      notificationAdded: Notification
+    }
+  `
+
+  let idCount = 1
+  const notifications = [{
+    id: idCount,
+    message: 'Notification message'
+  }]
+
+  const resolvers = {
+    Query: {
+      notifications: () => notifications
+    },
+    Mutation: {
+      addNotification: async (_, { message }) => {
+        const id = idCount++
+        const notification = {
+          id,
+          message
+        }
+        notifications.push(notification)
+        await emitter.emit({
+          topic: 'NOTIFICATION_ADDED',
+          payload: {
+            notificationAdded: notification
+          }
+        })
+
+        return notification
+      }
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe(pubsub.context.topic)
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      emitter,
+      context: () => ({ topic: 'NOTIFICATION_ADDED' })
+    }
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              notificationAdded: {
+                id: '1',
+                message: 'Hello World'
+              }
+            }
+          }
+        }))
+
+        client.end()
+        t.end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        sendTestQuery()
+      }
+    })
+  })
+})
+
 test('subscription server register handle function arg is not empty', t => {
   const app = Fastify()
   const schema = `
