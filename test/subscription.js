@@ -312,7 +312,7 @@ test('subscription server sends update to subscriptions with custom context', t 
     },
     Subscription: {
       notificationAdded: {
-        subscribe: (root, args, { pubsub }) => pubsub.subscribe(pubsub.context.topic)
+        subscribe: (root, args, { pubsub, topic }) => pubsub.subscribe(topic)
       }
     }
   }
