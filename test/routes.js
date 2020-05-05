@@ -198,7 +198,7 @@ test('GET route with bad JSON variables', async (t) => {
   t.is(res.statusCode, 400)
 })
 
-test('GET route with insufficient variables', async (t) => {
+test('GET route with missing variables', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
