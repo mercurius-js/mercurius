@@ -1,4 +1,5 @@
 import { FastifyError, FastifyReply, FastifyRequest, FastifyInstance, RawServerBase, RawRequestDefaultExpression, RawReplyDefaultExpression, RegisterOptions  } from "fastify";
+import { SocketStream } from "fastify-websocket"
 import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType, ValidationRule  } from 'graphql';
 
 declare namespace fastifyGQL {
@@ -122,7 +123,8 @@ declare namespace fastifyGQL {
       verifyClient?: (
         info: object,
         next: (result: boolean) => void
-      ) => void
+      ) => void,
+      context?: (connection: SocketStream, request: FastifyRequest) => object | Promise<object>
     },
     /**
      * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
