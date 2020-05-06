@@ -255,3 +255,9 @@ type Result = ExecutionResult & {
 interface IGraphQLToolsResolveInfo extends GraphQLResolveInfo {
   mergeInfo?: MergeInfo;
 }
+
+type Request = {
+  document: DocumentNode;
+  variables: Record<string, any>;
+  extensions?: Record<string, any>;
+}; 
