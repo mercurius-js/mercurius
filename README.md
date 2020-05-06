@@ -677,8 +677,8 @@ __fastify-gql__ supports the following options:
 * `validationRules`: `Function` or `Function[]`. Optional additional validation rules that the queries must satisfy in addition to those defined by the GraphQL specification. When using `Function`, arguments include additional data from graphql request and the return value must be validation rules `Function[]`.
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
-  * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
-  * `subscription.context`: A function that can be used to build a custom GraphQL context for subscriptions.
+  * `subscription.verifyClient`: `Function` Result of function is passed to subscription resolvers as a custom GraphQL context. The function receives the `connection` and `request` as parameters.
+  * `subscription.context`: `Function` A function that can be used to build a custom GraphQL context for subscriptions.
 * `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 * `gateway`: Object. Run the GraphQL server in gateway mode.
   * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
