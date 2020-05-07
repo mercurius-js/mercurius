@@ -326,16 +326,6 @@ const plugin = fp(async function (app, opts) {
         throw err
       }
 
-      // Validate variables
-      if (variables !== undefined) {
-        const executionContext = buildExecutionContext(schema, document, root, context, variables, operationName)
-        if (Array.isArray(executionContext)) {
-          const err = new BadRequest()
-          err.errors = executionContext
-          throw err
-        }
-      }
-
       if (queryDepthLimit) {
         const queryDepthErrors = queryDepth(document.definitions, queryDepthLimit)
 
@@ -371,6 +361,16 @@ const plugin = fp(async function (app, opts) {
     if (cached && cached.jit !== null) {
       const res = await cached.jit.query(root, context, variables || {})
       return res
+    }
+
+    // Validate variables
+    if (variables !== undefined) {
+      const executionContext = buildExecutionContext(schema, document, root, context, variables, operationName)
+      if (Array.isArray(executionContext)) {
+        const err = new BadRequest()
+        err.errors = executionContext
+        throw err
+      }
     }
 
     const execution = await execute(
