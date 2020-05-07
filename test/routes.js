@@ -198,6 +198,60 @@ test('GET route with bad JSON variables', async (t) => {
   t.is(res.statusCode, 400)
 })
 
+test('GET route with missing variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
+
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}&variables=${JSON.stringify({ x: 5 })}`
+  })
+
+  t.is(res.statusCode, 400)
+})
+
+test('GET route with mistyped variables', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
+
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}&variables=${JSON.stringify({ x: 5, y: 'wrong data' })}`
+  })
+
+  t.is(res.statusCode, 400)
+})
+
 test('POST route variables', async (t) => {
   const app = Fastify()
   const schema = `
