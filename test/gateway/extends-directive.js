@@ -1,18 +1,22 @@
 'use strict'
+
+const { test } = require('tap')
 const Fastify = require('fastify')
-const GQL = require('..')
+const GQL = require('../..')
 
-async function createService (port, schema, resolvers = {}) {
+async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
-
+  t.tearDown(() => {
+    service.close()
+  })
   service.register(GQL, {
     schema,
     resolvers,
-    federationMetadata: true,
-    graphiql: true,
-    jit: 1
+    federationMetadata: true
   })
-  await service.listen(port)
+  await service.listen(0)
+
+  return service.server.address().port
 }
 
 const users = {
@@ -23,10 +27,6 @@ const users = {
   u2: {
     id: 'u2',
     name: 'Jane'
-  },
-  u3: {
-    id: 'u3',
-    name: 'Jack'
   }
 }
 
@@ -42,64 +42,38 @@ const posts = {
     title: 'Post 2',
     content: 'Content 2',
     authorId: 'u2'
-  },
-  p3: {
-    pid: 'p3',
-    title: 'Post 3',
-    content: 'Content 3',
-    authorId: 'u1'
-  },
-  p4: {
-    pid: 'p4',
-    title: 'Post 4',
-    content: 'Content 4',
-    authorId: 'u2'
   }
 }
 
-async function start () {
-  await createService(4001, `
-    extend type Query {
+test('gateway handles @extends directive correctly', async (t) => {
+  const userServicePort = await createService(t, `
+    type Query @extends {
       me: User
-      hello: String
     }
 
     type User @key(fields: "id") {
       id: ID!
       name: String!
-      fullName: String
-      avatar(size: AvatarSize): String
-      friends: [User]
-    }
-
-    enum AvatarSize {
-      small
-      medium
-      large
     }
   `, {
     Query: {
       me: (root, args, context, info) => {
         return users.u1
-      },
-      hello: () => 'world'
+      }
     },
     User: {
       __resolveReference: (user, args, context, info) => {
         return users[user.id]
-      },
-      avatar: (user, { size }) => `avatar-${size}.jpg`,
-      friends: (user) => Object.values(users).filter(u => u.id !== user.id),
-      fullName: (user) => user.name + ' Doe'
+      }
     }
   })
 
-  await createService(4002, `
+  const postServicePort = await createService(t, `
     type Post @key(fields: "pid") {
       pid: ID!
       title: String
       content: String
-      author: User @requires(fields: "pid title")
+      author: User @requires(fields: "title")
     }
 
     type Query @extends {
@@ -108,20 +82,8 @@ async function start () {
 
     type User @key(fields: "id") @extends {
       id: ID! @external
-      name: String @external
       posts: [Post]
-      numberOfPosts: Int @requires(fields: "id name")
-    }
-
-    extend type Mutation {
-      createPost(post: PostInput!): Post
-      updateHello: String
-    }
-
-    input PostInput {
-      title: String!
-      content: String!
-      authorId: String!
+      numberOfPosts: Int
     }
   `, {
     Post: {
@@ -145,39 +107,55 @@ async function start () {
     },
     Query: {
       topPosts: (root, { count = 2 }) => Object.values(posts).slice(0, count)
-    },
-    Mutation: {
-      createPost: (root, { post }) => {
-        const pid = `p${Object.values(posts).length + 1}`
-
-        const result = {
-          pid,
-          ...post
-        }
-        posts[pid] = result
-
-        return result
-      },
-      updateHello: () => 'World'
     }
   })
 
   const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
   gateway.register(GQL, {
-    graphiql: true,
-    jit: 1,
     gateway: {
       services: [{
         name: 'user',
-        url: 'http://localhost:4001/graphql'
+        url: `http://localhost:${userServicePort}/graphql`
       }, {
         name: 'post',
-        url: 'http://localhost:4002/graphql'
+        url: `http://localhost:${postServicePort}/graphql`
       }]
     }
   })
 
-  await gateway.listen(4000)
-}
+  await gateway.listen(0)
 
-start()
+  const query = `
+    query {
+      me {
+        id
+        name
+        numberOfPosts
+      }
+    }
+  `
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query
+    })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        numberOfPosts: 1
+      }
+    }
+  })
+})

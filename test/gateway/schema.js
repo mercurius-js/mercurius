@@ -108,7 +108,7 @@ test('It builds the gateway schema correctly', async (t) => {
       topPosts(count: Int): [Post]
     }
 
-    extend type User @key(fields: "id") {
+    type User @key(fields: "id") @extends {
       id: ID! @external
       name: String @external
       posts: [Post]
