@@ -14,6 +14,8 @@ directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
 
 directive @key(fields: _FieldSet!) on OBJECT | INTERFACE
 
+directive @extends on OBJECT | INTERFACE
+
 directive @customdir on FIELD_DEFINITION
 
 scalar _Any

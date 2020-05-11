@@ -100,11 +100,11 @@ async function start () {
       author: User @requires(fields: "pid title")
     }
 
-    extend type Query {
+    type Query @extends {
       topPosts(count: Int): [Post]
     }
 
-    extend type User @key(fields: "id") {
+    type User @key(fields: "id") @extends {
       id: ID! @external
       name: String @external
       posts: [Post]
