@@ -61,6 +61,7 @@ async function start () {
   await createService(4001, `
     extend type Query {
       me: User
+      hello: String
     }
 
     type User @key(fields: "id") {
@@ -80,7 +81,8 @@ async function start () {
     Query: {
       me: (root, args, context, info) => {
         return users.u1
-      }
+      },
+      hello: () => 'world'
     },
     User: {
       __resolveReference: (user, args, context, info) => {
@@ -113,6 +115,7 @@ async function start () {
 
     extend type Mutation {
       createPost(post: PostInput!): Post
+      updateHello: String
     }
 
     input PostInput {
@@ -154,7 +157,8 @@ async function start () {
         posts[pid] = result
 
         return result
-      }
+      },
+      updateHello: () => 'World'
     }
   })
 
