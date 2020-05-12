@@ -2,13 +2,16 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/mcollina/fastify-gql.svg)](https://greenkeeper.io/) [![Build Status](https://travis-ci.com/mcollina/fastify-gql.svg?branch=master)](https://travis-ci.com/mcollina/fastify-gql)
 
-Fastify barebone GraphQL adapter.
+Fastify GraphQL adapter.
 
 Features:
 
 * Caching of query parsing and validation.
 * Automatic loader integration to avoid 1 + N queries.
 * Just-In-Time compiler via [graphql-jit](http://npm.im/graphql-jit).
+* Subscriptions.
+* Federation support.
+* Gateway implementation, including Subscriptions.
 
 ## Install
 
@@ -87,6 +90,52 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 ```
+
+### persistedQueries support
+
+Unlike REST APIs that use a fixed URL to load data, GraphQL queries are often much longer than that, in some cases by many kilobytes. This is actually significant overhead. When paired with the fact that the uplink speed from the client is typically the most bandwidth-constrained part of the chain, large queries can become bottlenecks for client performance.
+
+Persisted Queries solves this problem by sending a generated ID instead of the query text as the request. This smaller signature reduces bandwidth utilization and speeds up client loading times.
+
+See the example below, we're supplying an object containing hash of each query to the server. This object will be used to lookup actual query texts when server recieves a request containing hash of the query.
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('fastify-gql')
+
+const app = Fastify()
+
+const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+`
+
+const resolvers = {
+  Query: {
+    add: async (_, { x, y }) => x + y
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  persistedQueries: {
+    '<unique-hash>': '{ add(x: 1, y: 1) }'
+  }
+})
+
+app.listen(3000)
+```
+
+### Disallowing unknown queries
+
+In addition to the `persistedQueries` above, which let's client request for either query text OR a hash (if pre-fed), there's another option available called `onlyPersisted`. This is useful when you want to secure the server by disallowing any unknown requests. It will ensure the server never responds to any query except what it already knows (form the `persistedQueries`).
+
+Note: `onlyPersisted` disables all IDEs (graphiql/playground) so typically you'd want to use it in production.
+
 
 ### Access app context in resolver
 
@@ -423,6 +472,102 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
+### Use GraphQL server as a Gateway for federated schemas
+
+A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that supports the federation.
+
+In Gateway mode the following options are not allowed (the plugin will throw an error if any of them are defined):
+* `schema`
+* `resolvers`
+* `loaders`
+
+Also, using the following decorator methods will throw:
+* `app.graphql.defineResolvers`
+* `app.graphql.defineLoaders`
+* `app.graphql.replaceSchema`
+* `app.graphql.extendSchema`
+
+```js
+const gateway = Fastify()
+
+gateway.register(GQL, {
+  gateway: {
+    services: [{
+      name: 'user',
+      url: 'http://localhost:4001/graphql',
+      rewriteHeaders: (headers) => {
+        if (headers.authorization) {
+          return {
+            authorization: headers.authorization
+          }
+        }
+
+        return {
+          x-api-key: 'secret-api-key'
+        }
+      }
+    }, {
+      name: 'post',
+      url: 'http://localhost:4002/graphql'
+    }]
+  }
+})
+
+await gateway.listen(4000)
+```
+
+### Use errors extension to provide additional information to query errors
+
+GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const GQL = require('./index')
+const { ErrorWithProps } = GQL
+
+const users = {
+  1: {
+    id: '1',
+    name: 'John'
+  },
+  2: {
+    id: '2',
+    name: 'Jane'
+  }
+}
+
+const app = Fastify()
+const schema = `
+  type Query {
+    findUser(id: String!): User
+  }
+
+  type User {
+    id: ID!
+    name: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    findUser: (_, { id }) => {
+      const user = users[id]
+      if (user) return users[id]
+      else throw new ErrorWithProps('Invalid User ID', "USER_ID_INVALID", { id, timestamp: Math.round(new Date().getTime()/1000) })
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers
+})
+
+app.listen(3000)
+```
+
 ## API
 
 ### plugin options
@@ -439,6 +584,7 @@ __fastify-gql__ supports the following options:
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
   and if `routes` is `true`. Leave empty or `false` to disable.
+  _only applies if `onlyPersisted` option is not `true`_
 * `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -448,11 +594,20 @@ __fastify-gql__ supports the following options:
 * `prefix`: String. Change the route prefix of the graphql endpoint if enabled.
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
-* `queryDepth`: `Integer`. The maximum depth allowed for a single query.
+* `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE (or Playground IDE) sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
 * `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
+* `gateway`: Object. Run the GraphQL server in gateway mode.
+  * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
+    * `service.name`: A unique name for the service. Required.
+    * `service.url`: The url of the service endpoint. Required
+    * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
+    * `service.wsUrl`: The url of the websocket endpoint
+    * `service.wsConnectionParams`: `Function` or `Object`
+* `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash.
+* `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql).
 
 #### queryDepth example
 ```

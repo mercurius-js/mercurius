@@ -125,7 +125,31 @@ declare namespace fastifyGQL {
      * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
      */
     federationMetadata?: boolean
+    /**
+     * A list of GraphQL services to be combined into the gateway schema
+     */
+    gateway?: {
+      services: Array<{
+        name: string
+        url: string
+      }>
+    }
   }
+
+  /**
+   * Extended errors for adding additional information in error responses
+   */
+  export class ErrorWithProps extends Error {
+    constructor (message: string, code?: string, additionalProperties?: object)
+    /**
+     * Custom error code of this error
+     */
+    code?: string
+    /**
+     * Custom additional properties of this error
+     */
+    additionalProperties?: object
+  } 
 }
 
 declare module "fastify" {
@@ -160,6 +184,7 @@ declare function fastifyGQL<
 >(
   fastify: fastify.FastifyInstance<HttpServer, HttpRequest, HttpResponse>,
   opts: Options): void;
+
 
 export = fastifyGQL;
 
@@ -230,3 +255,9 @@ type Result = ExecutionResult & {
 interface IGraphQLToolsResolveInfo extends GraphQLResolveInfo {
   mergeInfo?: MergeInfo;
 }
+
+type Request = {
+  document: DocumentNode;
+  variables: Record<string, any>;
+  extensions?: Record<string, any>;
+}; 

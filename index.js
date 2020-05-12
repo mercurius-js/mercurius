@@ -10,6 +10,7 @@ const {
   parse,
   buildSchema,
   getOperationAST,
+  GraphQLError,
   GraphQLObjectType,
   GraphQLScalarType,
   GraphQLEnumType,
@@ -21,8 +22,13 @@ const {
   validateSchema,
   execute
 } = require('graphql')
+const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
+const buildGateway = require('./lib/gateway')
+const mq = require('mqemitter')
+const { PubSub } = require('./lib/subscriber')
+const { ErrorWithProps } = require('./lib/errors')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -46,12 +52,20 @@ function buildCache (opts) {
   return LRU(1024)
 }
 
-module.exports = fp(async function (app, opts) {
+const plugin = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
+  const lruGatewayResolvers = buildCache(opts)
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
+  const onlyPersisted = !!opts.onlyPersisted
+  opts.graphiql = onlyPersisted ? false : opts.graphiql
+  opts.ide = onlyPersisted ? false : opts.ide
+
+  if (onlyPersisted && !opts.persistedQueries) {
+    throw new Error('onlyPersisted is true but there are no persistedQueries')
+  }
 
   if (typeof minJit !== 'number') {
     throw new Error('the jit option must be a number')
@@ -59,6 +73,27 @@ module.exports = fp(async function (app, opts) {
 
   const root = {}
   let schema = opts.schema
+  let gateway = opts.gateway
+  const subscriptionOpts = opts.subscription
+  let emitter
+
+  let subscriber
+  let verifyClient
+
+  if (typeof subscriptionOpts === 'object') {
+    emitter = subscriptionOpts.emitter || mq()
+    verifyClient = subscriptionOpts.verifyClient
+  } else if (subscriptionOpts === true) {
+    emitter = mq()
+  }
+
+  if (subscriptionOpts) {
+    subscriber = new PubSub(emitter)
+  }
+
+  if (gateway && (schema || opts.resolvers || opts.loaders)) {
+    throw new Error('Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
+  }
 
   if (typeof schema === 'string') {
     if (opts.federationMetadata) {
@@ -66,7 +101,7 @@ module.exports = fp(async function (app, opts) {
     } else {
       schema = buildSchema(schema)
     }
-  } else if (!opts.schema) {
+  } else if (!opts.schema && !gateway) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
@@ -76,6 +111,19 @@ module.exports = fp(async function (app, opts) {
         name: 'Mutation',
         fields: {}
       }) : undefined
+    })
+  }
+
+  let entityResolversFactory
+  if (gateway) {
+    gateway = await buildGateway(gateway, app)
+
+    schema = gateway.schema
+    entityResolversFactory = gateway.entityResolversFactory
+
+    app.onClose((fastify, next) => {
+      gateway.close()
+      setImmediate(next)
     })
   }
 
@@ -98,9 +146,13 @@ module.exports = fp(async function (app, opts) {
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
+      onlyPersisted: onlyPersisted,
+      persistedQueries: opts.persistedQueries,
       schema,
-      subscription: opts.subscription,
-      federationMetadata: opts.federationMetadata
+      subscriber,
+      verifyClient,
+      lruGatewayResolvers,
+      entityResolversFactory
     })
   }
 
@@ -113,6 +165,10 @@ module.exports = fp(async function (app, opts) {
   app.decorate('graphql', fastifyGraphQl)
 
   fastifyGraphQl.replaceSchema = function (s) {
+    if (gateway) {
+      throw new Error('Calling replaceSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     if (!s || typeof s !== 'object') {
       throw new Error('Must provide valid Document AST')
     }
@@ -124,6 +180,10 @@ module.exports = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.extendSchema = function (s) {
+    if (gateway) {
+      throw new Error('Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     if (typeof s === 'string') {
       s = parse(s)
     } else if (!s || typeof s !== 'object') {
@@ -134,6 +194,10 @@ module.exports = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
+    if (gateway) {
+      throw new Error('Calling defineResolvers method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     for (const name of Object.keys(resolvers)) {
       const type = schema.getType(name)
 
@@ -175,6 +239,10 @@ module.exports = fp(async function (app, opts) {
   let factory
 
   fastifyGraphQl.defineLoaders = function (loaders) {
+    if (gateway) {
+      throw new Error('Calling defineLoaders method is not allowed when plugin is running in gateway mode is not allowed')
+    }
+
     // set up the loaders factory
     if (!factory) {
       factory = new Factory()
@@ -220,7 +288,7 @@ module.exports = fp(async function (app, opts) {
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this }, context)
+    context = Object.assign({ app: this, lruGatewayResolvers }, context)
     const reply = context.reply
 
     // Parse, with a little lru
@@ -295,6 +363,16 @@ module.exports = fp(async function (app, opts) {
       return res
     }
 
+    // Validate variables
+    if (variables !== undefined) {
+      const executionContext = buildExecutionContext(schema, document, root, context, variables, operationName)
+      if (Array.isArray(executionContext)) {
+        const err = new BadRequest()
+        err.errors = executionContext
+        throw err
+      }
+    }
+
     const execution = await execute(
       schema,
       document,
@@ -303,7 +381,17 @@ module.exports = fp(async function (app, opts) {
       variables,
       operationName
     )
+
     if (execution.errors) {
+      execution.errors = execution.errors.map(e => {
+        if (e.originalError && (Object.prototype.hasOwnProperty.call(e.originalError, 'code') || Object.prototype.hasOwnProperty.call(e.originalError, 'additionalProperties'))) {
+          return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, {
+            code: e.originalError.code,
+            ...e.originalError.additionalProperties
+          })
+        }
+        return e
+      })
       const err = new InternalServerError()
       err.errors = execution.errors
       err.data = execution.data
@@ -315,3 +403,7 @@ module.exports = fp(async function (app, opts) {
 }, {
   name: 'fastify-gql'
 })
+
+plugin.ErrorWithProps = ErrorWithProps
+
+module.exports = plugin

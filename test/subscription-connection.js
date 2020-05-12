@@ -1,3 +1,4 @@
+'use strict'
 const { test } = require('tap')
 const proxyquire = require('proxyquire')
 const WebSocket = require('ws')
