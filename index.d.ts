@@ -140,15 +140,11 @@ declare namespace fastifyGQL {
    * Extended errors for adding additional information in error responses
    */
   export class ErrorWithProps extends Error {
-    constructor (message: string, code?: string, additionalProperties?: object)
-    /**
-     * Custom error code of this error
-     */
-    code?: string
+    constructor (message: string, extensions?: object)
     /**
      * Custom additional properties of this error
      */
-    additionalProperties?: object
+    extensions?: object
   } 
 }
 
