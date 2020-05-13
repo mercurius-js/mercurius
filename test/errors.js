@@ -17,10 +17,10 @@ test('errors - multiple extended errors', async (t) => {
   const resolvers = {
     Query: {
       errorOne () {
-        throw new ErrorWithProps('Error One', 'ERROR_ONE', { additional: 'information one', other: 'data one' })
+        throw new ErrorWithProps('Error One', { code: 'ERROR_ONE', additional: 'information one', other: 'data one' })
       },
       errorTwo () {
-        throw new ErrorWithProps('Error Two', 'ERROR_TWO', { additional: 'information two', other: 'data two' })
+        throw new ErrorWithProps('Error Two', { code: 'ERROR_TWO', additional: 'information two', other: 'data two' })
       },
       successful () {
         return 'Runs OK'
@@ -84,7 +84,7 @@ test('errors - multiple extended errors', async (t) => {
   })
 })
 
-test('errors - extended errors with number additionalProperties', async (t) => {
+test('errors - extended errors with number extensions', async (t) => {
   const schema = `
     type Query {
       willThrow: String
@@ -94,7 +94,7 @@ test('errors - extended errors with number additionalProperties', async (t) => {
   const resolvers = {
     Query: {
       willThrow () {
-        throw new ErrorWithProps('Extended Error', 'EXTENDED_ERROR', { floating: 3.14, timestamp: 1324356, reason: 'some reason' })
+        throw new ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', floating: 3.14, timestamp: 1324356, reason: 'some reason' })
       }
     }
   }
@@ -155,13 +155,7 @@ test('errors - extended errors optional parameters', async (t) => {
         throw new ErrorWithProps('Extended Error')
       },
       two () {
-        throw new ErrorWithProps('Extended Error', 'ERROR_TWO')
-      },
-      three () {
-        throw new ErrorWithProps('Extended Error', 'ERROR_THREE', { reason: 'some reason' })
-      },
-      four () {
-        throw new ErrorWithProps('Extended Error', undefined, { reason: 'some reason' })
+        throw new ErrorWithProps('Extended Error', { code: 'ERROR_TWO', reason: 'some reason' })
       }
     }
   }
@@ -177,16 +171,14 @@ test('errors - extended errors optional parameters', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphql?query={one,two,three,four}'
+    url: '/graphql?query={one,two}'
   })
 
   t.equal(res.statusCode, 200)
   t.deepEqual(JSON.parse(res.payload), {
     data: {
       one: null,
-      two: null,
-      three: null,
-      four: null
+      two: null
     },
     errors: [
       {
@@ -197,8 +189,7 @@ test('errors - extended errors optional parameters', async (t) => {
             column: 2
           }
         ],
-        path: ['one'],
-        extensions: {}
+        path: ['one']
       },
       {
         message: 'Extended Error',
@@ -210,33 +201,7 @@ test('errors - extended errors optional parameters', async (t) => {
         ],
         path: ['two'],
         extensions: {
-          code: 'ERROR_TWO'
-        }
-      },
-      {
-        message: 'Extended Error',
-        locations: [
-          {
-            line: 1,
-            column: 10
-          }
-        ],
-        path: ['three'],
-        extensions: {
-          code: 'ERROR_THREE',
-          reason: 'some reason'
-        }
-      },
-      {
-        message: 'Extended Error',
-        locations: [
-          {
-            line: 1,
-            column: 16
-          }
-        ],
-        path: ['four'],
-        extensions: {
+          code: 'ERROR_TWO',
           reason: 'some reason'
         }
       }

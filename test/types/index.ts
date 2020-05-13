@@ -89,7 +89,7 @@ app.register(async function (app) {
   `)
   app.graphql.defineResolvers({
     Query: {
-      willThrow: async () => { throw new ErrorWithProps('Extended Error', 'EXTENDED_ERROR', { reason: 'some reason', other: 32 }) }
+      willThrow: async () => { throw new ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
     }
   })
 })
