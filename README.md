@@ -555,7 +555,7 @@ const resolvers = {
     findUser: (_, { id }) => {
       const user = users[id]
       if (user) return users[id]
-      else throw new ErrorWithProps('Invalid User ID', "USER_ID_INVALID", { id, timestamp: Math.round(new Date().getTime()/1000) })
+      else throw new ErrorWithProps('Invalid User ID', { id, code: "USER_ID_INVALID", timestamp: Math.round(new Date().getTime()/1000) })
     }
   }
 }
