@@ -8,19 +8,15 @@ const { ErrorWithProps } = GQL
 test('errors - multiple extended errors', async (t) => {
   const schema = `
     type Query {
-      errorOne: String
-      errorTwo: String
+      error: String
       successful: String
     }
   `
 
   const resolvers = {
     Query: {
-      errorOne () {
-        throw new ErrorWithProps('Error One', { code: 'ERROR_ONE', additional: 'information one', other: 'data one' })
-      },
-      errorTwo () {
-        throw new ErrorWithProps('Error Two', { code: 'ERROR_TWO', additional: 'information two', other: 'data two' })
+      error () {
+        throw new ErrorWithProps('Error', { code: 'ERROR', additional: 'information', other: 'data' })
       },
       successful () {
         return 'Runs OK'
@@ -39,45 +35,29 @@ test('errors - multiple extended errors', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphql?query={errorOne,errorTwo, successful}'
+    url: '/graphql?query={error,successful}'
   })
 
   t.equal(res.statusCode, 200)
   t.deepEqual(JSON.parse(res.payload), {
     data: {
-      errorOne: null,
-      errorTwo: null,
+      error: null,
       successful: 'Runs OK'
     },
     errors: [
       {
-        message: 'Error One',
+        message: 'Error',
         locations: [
           {
             line: 1,
             column: 2
           }
         ],
-        path: ['errorOne'],
+        path: ['error'],
         extensions: {
-          code: 'ERROR_ONE',
-          additional: 'information one',
-          other: 'data one'
-        }
-      },
-      {
-        message: 'Error Two',
-        locations: [
-          {
-            line: 1,
-            column: 11
-          }
-        ],
-        path: ['errorTwo'],
-        extensions: {
-          code: 'ERROR_TWO',
-          additional: 'information two',
-          other: 'data two'
+          code: 'ERROR',
+          additional: 'information',
+          other: 'data'
         }
       }
     ]
@@ -203,6 +183,71 @@ test('errors - extended errors optional parameters', async (t) => {
         extensions: {
           code: 'ERROR_TWO',
           reason: 'some reason'
+        }
+      }
+    ]
+  })
+})
+
+test('errors - errors with jit enabled', async (t) => {
+  const schema = `
+    type Query {
+      error: String
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error () {
+        throw new ErrorWithProps('Error', { code: 'ERROR', additional: 'information', other: 'data' })
+      },
+      successful () {
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    jit: 1
+  })
+
+  await app.ready()
+
+  await app.inject({
+    method: 'GET',
+    url: '/graphql?query={error,successful}'
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={error,successful}'
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.payload), {
+    data: {
+      error: null,
+      successful: 'Runs OK'
+    },
+    errors: [
+      {
+        message: 'Error',
+        locations: [
+          {
+            line: 1,
+            column: 2
+          }
+        ],
+        path: ['error'],
+        extensions: {
+          code: 'ERROR',
+          additional: 'information',
+          other: 'data'
         }
       }
     ]
