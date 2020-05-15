@@ -598,6 +598,7 @@ __fastify-gql__ supports the following options:
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
+  * `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. 
 * `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 * `gateway`: Object. Run the GraphQL server in gateway mode.
   * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
