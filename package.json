@@ -36,8 +36,7 @@
     "snazzy": "^8.0.0",
     "standard": "^14.0.0",
     "tap": "^14.10.6",
-    "typescript": "^3.7.5",
-    "ws": "^7.2.1"
+    "typescript": "^3.7.5"
   },
   "dependencies": {
     "@apollographql/graphql-playground-html": "^1.6.24",
@@ -52,6 +51,7 @@
     "p-map": "^4.0.0",
     "readable-stream": "^3.5.0",
     "single-user-cache": "^0.3.0",
-    "tiny-lru": "^7.0.2"
+    "tiny-lru": "^7.0.2",
+    "ws": "^7.2.1"
   }
 }
