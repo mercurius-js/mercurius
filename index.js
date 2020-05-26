@@ -3,7 +3,7 @@
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./lib/routes')
-const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
+const { BadRequest, MethodNotAllowed } = require('http-errors')
 const { compileQuery, isCompiledQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
 const {
@@ -389,10 +389,6 @@ const plugin = fp(async function (app, opts) {
         }
         return e
       })
-      const err = new InternalServerError()
-      err.errors = execution.errors
-      err.data = execution.data
-      throw err
     }
 
     return execution
