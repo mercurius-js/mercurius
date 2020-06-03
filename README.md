@@ -1,6 +1,6 @@
 # fastify-gql
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/mcollina/fastify-gql.svg)](https://greenkeeper.io/) [![Build Status](https://travis-ci.com/mcollina/fastify-gql.svg?branch=master)](https://travis-ci.com/mcollina/fastify-gql)
+[![Build Status](https://travis-ci.com/mcollina/fastify-gql.svg?branch=master)](https://travis-ci.com/mcollina/fastify-gql)
 
 Fastify GraphQL adapter.
 
