@@ -76,7 +76,7 @@ test('gateway handles @extends directive correctly', async (t) => {
       author: User @requires(fields: "title")
     }
 
-    type Query @extends {
+    extend type Query {
       topPosts(count: Int): [Post]
     }
 

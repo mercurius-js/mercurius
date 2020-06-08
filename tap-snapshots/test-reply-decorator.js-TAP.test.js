@@ -6,5 +6,5 @@
  */
 'use strict'
 exports['test/reply-decorator.js TAP reply decorator set status code to 400 with bad query > must match snapshot 1'] = `
-{"errors":[{"message":"Syntax Error: Expected Name, found <EOF>","locations":[{"line":1,"column":18}]}]}
+{"errors":[{"message":"Syntax Error: Expected Name, found <EOF>.","locations":[{"line":1,"column":18}]}]}
 `
