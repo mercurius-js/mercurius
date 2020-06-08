@@ -27,7 +27,7 @@
     "@types/node": "^14.0.1",
     "@typescript-eslint/eslint-plugin": "^2.19.2",
     "@typescript-eslint/parser": "^2.19.2",
-    "autocannon": "^4.5.1",
+    "autocannon": "^5.0.0",
     "fastify": "^2.12.0",
     "graphql-tools": "^4.0.6",
     "pre-commit": "^1.2.2",
