@@ -42,7 +42,7 @@
     "fastify-plugin": "^1.6.0",
     "fastify-static": "^2.6.0",
     "fastify-websocket": "^1.0.0",
-    "graphql": "^14.6.0",
+    "graphql": "^15.1.0",
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
     "mqemitter": "^4.0.0",
