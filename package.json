@@ -5,8 +5,8 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "unit": "tap --no-esm --no-jsx --100 -J test/*.js test/gateway/*.js",
-    "cov": "tap  --no-esm --no-jsx --coverage-report=html -J test/*.js test/gateway/*.js",
+    "unit": "tap --100 test/*.js test/gateway/*.js",
+    "cov": "tap  --coverage-report=html -J test/*.js test/gateway/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:standard": "standard | snazzy",
     "lint:typescript": "standard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin test/types/*.ts",
@@ -25,8 +25,8 @@
   "homepage": "https://github.com/mcollina/fastify-gql#readme",
   "devDependencies": {
     "@types/node": "^14.0.1",
-    "@typescript-eslint/eslint-plugin": "^2.19.2",
-    "@typescript-eslint/parser": "^2.19.2",
+    "@typescript-eslint/eslint-plugin": "^3.0.0",
+    "@typescript-eslint/parser": "^3.0.0",
     "autocannon": "^5.0.0",
     "fastify": "^2.12.0",
     "graphql-tools": "^6.0.8",
