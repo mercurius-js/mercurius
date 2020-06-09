@@ -53,7 +53,7 @@ exports['test/routes.js TAP POST return 400 on error > must match snapshot 1'] =
 {
   "errors": [
     {
-      "message": "Syntax Error: Expected Name, found <EOF>",
+      "message": "Syntax Error: Expected Name, found <EOF>.",
       "locations": [
         {
           "line": 1,
