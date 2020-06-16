@@ -141,9 +141,31 @@ declare namespace fastifyGQL {
      */
     allowBatchedQueries?: boolean
     /**
-     * Enable support for Automatic Persisted Queries, compatible with apollo-client
+     * Enable support for Automatic Persisted Queries.
      */
-    enableApolloAPQ?: boolean
+    enableAPQ?: boolean
+    /**
+     * Custom options for APQ.
+     * Defaults are compatible with Apollo Client.
+     */
+    apqSettings?: {
+      /**
+       * Getter for provided hash from 
+       */
+      getHash: (extensions: object) => string
+      /**
+       * Hash function for query strings
+       */
+      hashQuery: (query: string) => string
+      /**
+       * Error message for persisted query not found
+       */
+      notFoundError: string
+      /**
+       * Error message for persisted query not supported
+       */
+      notSupportedError: string
+    }
   }
 
   /**

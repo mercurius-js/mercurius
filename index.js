@@ -1,5 +1,6 @@
 'use strict'
 
+const crypto = require('crypto')
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./lib/routes')
@@ -31,6 +32,18 @@ const { PubSub } = require('./lib/subscriber')
 const { ErrorWithProps, FEDERATED_ERROR } = require('./lib/errors')
 
 const kLoaders = Symbol('fastify-gql.loaders')
+
+const DEFAULT_APQ_SETTINGS = {
+  getHash: (extensions) => {
+    const { version, sha256Hash } = (extensions || {}).persistedQuery || {}
+    if (version === 1) {
+      return sha256Hash
+    }
+  },
+  hashQuery: (query) => crypto.createHash('sha256').update(query, 'utf8').digest('hex'),
+  notFoundError: 'PersistedQueryNotFound',
+  notSupportedError: 'PersistedQueryNotSupported'
+}
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -149,7 +162,8 @@ const plugin = fp(async function (app, opts) {
       onlyPersisted: onlyPersisted,
       persistedQueries: opts.persistedQueries,
       allowBatchedQueries: opts.allowBatchedQueries,
-      enableApolloAPQ: opts.enableApolloAPQ,
+      enableAPQ: opts.enableAPQ,
+      apqSettings: opts.apqSettings || DEFAULT_APQ_SETTINGS,
       schema,
       subscriber,
       verifyClient,

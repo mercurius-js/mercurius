@@ -20,7 +20,7 @@ test('POST new query', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    enableApolloAPQ: true
+    enableAPQ: true
   })
 
   const res = await app.inject({
@@ -55,7 +55,7 @@ test('POST new persisted query and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    enableApolloAPQ: true
+    enableAPQ: true
   })
 
   const res = await app.inject({
@@ -92,7 +92,7 @@ test('POST invalid version persisted query and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    enableApolloAPQ: true
+    enableAPQ: true
   })
 
   const res = await app.inject({
@@ -110,7 +110,7 @@ test('POST invalid version persisted query and error', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Persisted Query Version Not Supported' }] })
+  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
 test('POST invalid persisted query and error', async (t) => {
@@ -129,7 +129,7 @@ test('POST invalid persisted query and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    enableApolloAPQ: true
+    enableAPQ: true
   })
 
   const res = await app.inject({
@@ -141,7 +141,7 @@ test('POST invalid persisted query and error', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Persisted Query Version Not Supported' }] })
+  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
 test('POST persisted query after priming', async (t) => {
@@ -160,7 +160,7 @@ test('POST persisted query after priming', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    enableApolloAPQ: true
+    enableAPQ: true
   })
 
   let res = await app.inject({
