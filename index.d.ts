@@ -140,6 +140,10 @@ declare namespace fastifyGQL {
      * receive an array of responses within a single request.
      */
     allowBatchedQueries?: boolean
+    /**
+     * Enable support for Automatic Persisted Queries, compatible with apollo-client
+     */
+    enableApolloAPQ?: boolean
   }
 
   /**
