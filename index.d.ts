@@ -39,6 +39,45 @@ declare namespace fastifyGQL {
     }): void;
   }
 
+  export interface QueryRequest {
+      operationName?: string
+      query: string
+      variables?: object
+      extensions?: object
+  }
+
+  export interface PeristedQuerySettings {
+      /**
+       *  Return true if the query is a persisted query.
+       */
+      isPersistedQuery: (r: QueryRequest) => boolean
+      /**
+       *  Get the hash from the request. Return falsy if this request format is not supported.
+       */
+      getHash: (r: QueryRequest) => string
+      /**
+       *  Look up a query, given its hash.
+       */
+      getQueryFromHash: (hash: string) => Promise<string>
+      /**
+       *  Get the hash for a given query (optional). Return falsy or do not provide if 
+       *  caching of new queries is unsupported.
+       */
+      getHashForQuery?: (query: string) => string
+      /**
+       *  Save a query, given its hash (optional).
+       */
+      saveQuery?: (hash: string, query: string) => Promise<void>
+      /**
+       * Error message for persisted query not found. Defaults to 'Bad Request'.
+       */
+      notFoundError?: string
+      /**
+       * Error message for persisted query not supported. Defaults to 'Bad Request'.
+       */
+      notSupportedError?: string
+  }
+
   export interface Options<
       HttpServer extends (Server | Http2Server) = Server,
       HttpRequest extends (IncomingMessage | Http2ServerRequest) = IncomingMessage,
@@ -135,37 +174,15 @@ declare namespace fastifyGQL {
       }>
     }
     /**
+     * Settings for enabling persisted queries.
+     */
+    persistedQuerySettings?: PeristedQuerySettings
+    /**
      * Enable support for batched queries (POST requests only).
      * Batched query support allows clients to send an array of queries and
      * receive an array of responses within a single request.
      */
     allowBatchedQueries?: boolean
-    /**
-     * Enable support for Automatic Persisted Queries.
-     */
-    enableAPQ?: boolean
-    /**
-     * Custom options for APQ.
-     * Defaults are compatible with Apollo Client.
-     */
-    apqSettings?: {
-      /**
-       * Getter for provided hash from 
-       */
-      getHash: (extensions: object) => string
-      /**
-       * Hash function for query strings
-       */
-      hashQuery: (query: string) => string
-      /**
-       * Error message for persisted query not found
-       */
-      notFoundError: string
-      /**
-       * Error message for persisted query not supported
-       */
-      notSupportedError: string
-    }
   }
 
   /**
@@ -177,7 +194,16 @@ declare namespace fastifyGQL {
      * Custom additional properties of this error
      */
     extensions?: object
-  } 
+  }
+
+  /**
+   * Default options for persisted queries.
+   */
+  export const PersistedQueryDefaults: { 
+    Prepared: (persistedQueries: object) => PeristedQuerySettings
+    PreparedOnly: (persistedQueries: object) => PeristedQuerySettings
+    ApolloAutomatic: PeristedQuerySettings
+   };
 }
 
 declare module "fastify" {

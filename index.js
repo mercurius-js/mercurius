@@ -33,16 +33,33 @@ const { ErrorWithProps, FEDERATED_ERROR } = require('./lib/errors')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
-const DEFAULT_APQ_SETTINGS = {
-  getHash: (extensions) => {
-    const { version, sha256Hash } = (extensions || {}).persistedQuery || {}
-    if (version === 1) {
-      return sha256Hash
-    }
-  },
-  hashQuery: (query) => crypto.createHash('sha256').update(query, 'utf8').digest('hex'),
-  notFoundError: 'PersistedQueryNotFound',
-  notSupportedError: 'PersistedQueryNotSupported'
+const PersistedQueryDefaults = {
+  Prepared: (persistedQueries) => ({
+    isPersistedQuery: (r) => r.persisted,
+    getHash: (r) => r.query,
+    getQueryFromHash: async (hash) => persistedQueries[hash]
+  }),
+  PreparedOnly: (persistedQueries) => ({
+    isPersistedQuery: (r) => true,
+    getHash: (r) => r.persisted ? r.query : false, // Only support persisted queries
+    getQueryFromHash: async (hash) => persistedQueries[hash]
+  }),
+  ApolloAutomatic: () => {
+    // Initialize only in the scope of this server instance
+    const AUTOMATIC_PERSISTED_QUERIES = {}
+    return ({
+      isPersistedQuery: (r) => (r.extensions || {}).persistedQuery,
+      getHash: (r) => {
+        const { version, sha256Hash } = r.extensions.persistedQuery
+        return version === 1 ? sha256Hash : false
+      },
+      getQueryFromHash: async (hash) => AUTOMATIC_PERSISTED_QUERIES[hash],
+      getHashForQuery: (query) => crypto.createHash('sha256').update(query, 'utf8').digest('hex'),
+      saveQuery: async (hash, query) => { AUTOMATIC_PERSISTED_QUERIES[hash] = query },
+      notFoundError: 'PersistedQueryNotFound',
+      notSupportedError: 'PersistedQueryNotSupported'
+    })
+  }
 }
 
 function buildCache (opts) {
@@ -72,12 +89,9 @@ const plugin = fp(async function (app, opts) {
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
-  const onlyPersisted = !!opts.onlyPersisted
-  opts.graphiql = onlyPersisted ? false : opts.graphiql
-  opts.ide = onlyPersisted ? false : opts.ide
 
-  if (onlyPersisted && !opts.persistedQueries) {
-    throw new Error('onlyPersisted is true but there are no persistedQueries')
+  if (opts.persistedQueries) {
+    throw new Error('Please update from persistedQueries to persistedQuerySettings, using PersistedQueryDefaults.')
   }
 
   if (typeof minJit !== 'number') {
@@ -159,11 +173,8 @@ const plugin = fp(async function (app, opts) {
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
-      onlyPersisted: onlyPersisted,
-      persistedQueries: opts.persistedQueries,
+      persistedQuerySettings: opts.persistedQuerySettings,
       allowBatchedQueries: opts.allowBatchedQueries,
-      enableAPQ: opts.enableAPQ,
-      apqSettings: opts.apqSettings || DEFAULT_APQ_SETTINGS,
       schema,
       subscriber,
       verifyClient,
@@ -432,5 +443,6 @@ const plugin = fp(async function (app, opts) {
 })
 
 plugin.ErrorWithProps = ErrorWithProps
+plugin.PersistedQueryDefaults = PersistedQueryDefaults
 
 module.exports = plugin

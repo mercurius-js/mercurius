@@ -455,13 +455,3 @@ test('reply is empty, throw error', async (t) => {
     t.equal(error.errors[0].message, 'loaders only work via reply.graphql()')
   }
 })
-
-test('throw when persistedQueries is empty but onlyPersisted is true', async t => {
-  const app = Fastify()
-
-  app.register(GQL, {
-    onlyPersisted: true
-  })
-
-  t.rejects(app.ready(), 'onlyPersisted is true but there are no persistedQueries')
-})
