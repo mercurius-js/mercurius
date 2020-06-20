@@ -143,9 +143,9 @@ When the server initially starts, no queries will be cached and additional laten
 
 #### Custom Persisted Queries
 
-It is also possible to extend or modify these persisted query implementations for custom cases, such as Automatic Persisted Queries, but with a share common cache.
+It is also possible to extend or modify these persisted query implementations for custom cases, such as Automatic Persisted Queries, but with a shared cache between servers.
 
-This would enable all persisted queries to be shared between all server instances in a cache which is dynamically populated. The lookup time from the cache is an additional overhead for each request, but a higher rate of persisted query matches would be achieved. This may be beneficial, for example, in a public facing API which supports persisted queries and uses cloud functions (short lived server instances).
+This would enable all persisted queries to be shared between all server instances in a cache which is dynamically populated. The lookup time from the cache is an additional overhead for each request, but a higher rate of persisted query matches would be achieved. This may be beneficial, for example, in a public facing API which supports persisted queries and uses cloud functions (short lived server instances). *Note the performance impacts of this need to be considered thoroughly: the latency added to each request must be less than the savings from smaller requests.*
 
 A example of using this with Redis would be:
 
