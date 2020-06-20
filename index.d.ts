@@ -48,32 +48,31 @@ declare namespace fastifyGQL {
 
   export interface PeristedQuerySettings {
       /**
-       *  Return true if the query is a persisted query.
+       *  Return true if a given request matches the desired persisted query format.
        */
       isPersistedQuery: (r: QueryRequest) => boolean
       /**
-       *  Get the hash from the request. Return falsy if this request format is not supported.
+       *  Return the hash from a given request, or falsy if this request format is not supported.
        */
       getHash: (r: QueryRequest) => string
       /**
-       *  Look up a query, given its hash.
+       *  Return the query for a given hash.
        */
       getQueryFromHash: (hash: string) => Promise<string>
       /**
-       *  Get the hash for a given query (optional). Return falsy or do not provide if 
-       *  caching of new queries is unsupported.
+       *  Return the hash for a given query string. Do not provide if you want to skip saving new queries.
        */
       getHashForQuery?: (query: string) => string
       /**
-       *  Save a query, given its hash (optional).
+       *  Save a query, given its hash.
        */
       saveQuery?: (hash: string, query: string) => Promise<void>
       /**
-       * Error message for persisted query not found. Defaults to 'Bad Request'.
+       * An error message to return when getQueryFromHash returns a falsy result. Defaults to 'Bad Request'.
        */
       notFoundError?: string
       /**
-       * Error message for persisted query not supported. Defaults to 'Bad Request'.
+       * An error message to return when a query matches isPersistedQuery, but fasly from getHash. Defaults to 'Bad Request'.
        */
       notSupportedError?: string
   }
