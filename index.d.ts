@@ -134,6 +134,12 @@ declare namespace fastifyGQL {
         url: string
       }>
     }
+    /**
+     * Enable support for batched queries (POST requests only).
+     * Batched query support allows clients to send an array of queries and
+     * receive an array of responses within a single request.
+     */
+    allowBatchedQueries?: boolean
   }
 
   /**
