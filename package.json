@@ -1,6 +1,6 @@
 {
-  "name": "fastify-gql-fork",
-  "version": "4.0.0",
+  "name": "fastify-gql",
+  "version": "4.1.0",
   "description": "Fastify GraphQL adapter",
   "main": "index.js",
   "types": "index.d.ts",

@@ -148,6 +148,7 @@ const plugin = fp(async function (app, opts) {
       context: opts.context,
       onlyPersisted: onlyPersisted,
       persistedQueries: opts.persistedQueries,
+      allowBatchedQueries: opts.allowBatchedQueries,
       schema,
       subscriber,
       verifyClient,

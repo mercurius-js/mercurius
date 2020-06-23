@@ -12,6 +12,7 @@ Features:
 * Subscriptions.
 * Federation support.
 * Gateway implementation, including Subscriptions.
+* Batched query support.
 
 ## Install
 
@@ -136,6 +137,47 @@ In addition to the `persistedQueries` above, which let's client request for eith
 
 Note: `onlyPersisted` disables all IDEs (graphiql/playground) so typically you'd want to use it in production.
 
+
+### Batched Queries
+
+Batched queries, like those sent by `apollo-link-batch-http` are supported by enabling the `allowBatchedQueries` option.
+
+Instead a single query object, an array of queries is accepted, and the response is returned as an array of results. Errors are returned on a per query basis. Note that the response will not be returned until the slowest query has been executed.
+
+Request:
+```js
+[
+  {
+    operationName: 'AddQuery',
+    variables: { x: 1, y: 2 },
+    query: 'query AddQuery ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
+  },
+  {
+    operationName: 'DoubleQuery',
+    variables: { x: 1 },
+    query: 'query DoubleQuery ($x: Int!) { add(x: $x, y: $x) }'
+  },
+  {
+    operationName: 'BadQuery',
+    query: 'query DoubleQuery ($x: Int!) {---' // Malformed Query
+  }
+]
+```
+
+Response:
+```js
+[
+  {
+    data: { add: 3 }
+  },
+  {
+    data: { add: 2 }
+  },
+  {
+    errors: [{ message: 'Bad Request' }]
+  }
+]
+```
 
 ### Access app context in resolver
 
@@ -608,6 +650,7 @@ __fastify-gql__ supports the following options:
     * `service.wsConnectionParams`: `Function` or `Object`
 * `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash.
 * `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql).
+* `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
 #### queryDepth example
 ```
