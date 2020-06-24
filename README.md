@@ -13,10 +13,7 @@ Features:
 * Federation support.
 * Gateway implementation, including Subscriptions.
 * Batched query support.
-<<<<<<< HEAD
 * Customisable persisted queries.
-=======
->>>>>>> master
 
 ## Install
 
