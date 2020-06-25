@@ -1,5 +1,5 @@
 import fastify, { FastifyError, FastifyReply, FastifyRequest, RegisterOptions } from "fastify";
-import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType } from 'graphql';
+import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType, ValidationRule } from 'graphql';
 import { IncomingMessage, Server, ServerResponse } from "http";
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
 
@@ -110,6 +110,11 @@ declare namespace fastifyGQL {
      * The maximum depth allowed for a single query.
      */
     queryDepth?: number,
+    /**
+     * Optional additional validation rules.
+     * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
+     */
+    validationRules?: ValidationRule[],
     context?: (request: FastifyRequest<HttpRequest>, reply: FastifyReply<HttpResponse>) => Promise<any>,
     /**
      * Enable subscription support when options are provided. [`emitter`](https://github.com/mcollina/mqemitter) property is required when subscriptions is an object. (Default false)
@@ -151,7 +156,7 @@ declare namespace fastifyGQL {
      * Custom additional properties of this error
      */
     extensions?: object
-  } 
+  }
 }
 
 declare module "fastify" {
@@ -262,4 +267,4 @@ type Request = {
   document: DocumentNode;
   variables: Record<string, any>;
   extensions?: Record<string, any>;
-}; 
+};
