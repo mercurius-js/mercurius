@@ -62,7 +62,16 @@ const plugin = fp(async function (app, opts) {
   const queryDepthLimit = opts.queryDepth
 
   if (opts.persistedQueries) {
-    throw new Error('Please update from persistedQueries to persistedQuerySettings, using PersistedQueryDefaults.')
+    if (opts.onlyPersisted) {
+      opts.persistedQuerySettings = PersistedQueryDefaults.PreparedOnly(opts.persistedQueries)
+
+      // Disable GraphiQL and GraphQL Playground
+      opts.graphiql = false
+    } else {
+      opts.persistedQuerySettings = PersistedQueryDefaults.Prepared(opts.persistedQueries)
+    }
+  } else if (opts.onlyPersisted) {
+    throw new Error('onlyPersisted is true but there are no persistedQueries')
   }
 
   if (typeof minJit !== 'number') {

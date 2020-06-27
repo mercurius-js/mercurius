@@ -173,9 +173,18 @@ declare namespace fastifyGQL {
       }>
     }
     /**
+     * Persisted queries, overrides persistedQuerySettings.
+     */
+    persistedQueries?: object
+    /**
+     * Only allow persisted queries. Required persistedQueries, overrides persistedQuerySettings.
+     */
+    onlyPersisted?: boolean
+    /**
      * Settings for enabling persisted queries.
      */
     persistedQuerySettings?: PeristedQuerySettings
+    
     /**
      * Enable support for batched queries (POST requests only).
      * Batched query support allows clients to send an array of queries and

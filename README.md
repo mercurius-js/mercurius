@@ -127,11 +127,36 @@ app.register(GQL, {
 })
 ```
 
+Alternatively the `peristedQueries` option may be used directly, which will be internally mapped to the `Prepared` default:
+```js
+const GQL = require('fastify-gql')
+
+app.register(GQL, {
+  ...
+  persistedQueries: {
+    '<hash>':  '{ add(x: 1, y: 1) }'
+  }
+})
+```
+
 #### PreparedOnly
 
 This offers similar performance and considerations to the `Prepared` queries, but only allows persisted queries. This provides additional secuirity benefits, but means that the server **must** know all queries ahead of time or will reject the request.
 
 The API is the same as the `Prepared` default.
+
+Alternatively the `peristedQueries` and `onlyPrepared` options may be used directly, which will be internally mapped to the `PreparedOnly` default:
+```js
+const GQL = require('fastify-gql')
+
+app.register(GQL, {
+  ...
+  persistedQueries: {
+    '<hash>':  '{ add(x: 1, y: 1) }'
+  },
+  onlyPrepared: true
+})
+```
 
 #### Automatic
 
@@ -674,6 +699,8 @@ __fastify-gql__ supports the following options:
     * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
     * `service.wsUrl`: The url of the websocket endpoint
     * `service.wsConnectionParams`: `Function` or `Object`
+* `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash. Overrides `persistedQuerySettings`.
+* `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql). Requires `persistedQueries` to be set, and overrides `persistedQuerySettings`.
 * `persistedQuerySettings`
   * `isPersistedQuery: (request: object) => boolean`: Return true if a given request matches the desired persisted query format.
   * `getHash: (request: object) => string`: Return the hash from a given request, or falsy if this request format is not supported.
