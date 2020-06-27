@@ -20,6 +20,7 @@ const {
   extendSchema,
   validate,
   validateSchema,
+  specifiedRules,
   execute
 } = require('graphql')
 const { buildExecutionContext } = require('graphql/execution/execute')
@@ -87,6 +88,8 @@ const plugin = fp(async function (app, opts) {
 
   let subscriber
   let verifyClient
+
+  const validationRules = [...specifiedRules, ...(opts.validationRules || [])]
 
   if (typeof subscriptionOpts === 'object') {
     emitter = subscriptionOpts.emitter || mq()
@@ -323,7 +326,7 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Validate
-      const validationErrors = validate(schema, document)
+      const validationErrors = validate(schema, document, validationRules)
 
       if (validationErrors.length > 0) {
         if (lruErrors) {
