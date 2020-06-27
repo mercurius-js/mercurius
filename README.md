@@ -179,6 +179,8 @@ This would enable all persisted queries to be shared between all server instance
 A example of using this with Redis would be:
 
 ```js
+const GQL = require('fastify-gql')
+
 const persistedQuerySettings = {
   ...GQL.PersistedQueryDefaults.Automatic(),
   getQueryFromHash: async (hash) => redis.get(hash),
