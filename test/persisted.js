@@ -4,7 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
 
-test('ApolloAutomatic POST new query', async (t) => {
+test('Automatic POST new query', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -20,7 +20,7 @@ test('ApolloAutomatic POST new query', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.ApolloAutomatic()
+    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -39,7 +39,7 @@ test('ApolloAutomatic POST new query', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
-test('ApolloAutomatic POST new query, error on saveQuery is handled', async (t) => {
+test('Automatic POST new query, error on saveQuery is handled', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -56,7 +56,7 @@ test('ApolloAutomatic POST new query, error on saveQuery is handled', async (t) 
     schema,
     resolvers,
     persistedQuerySettings: {
-      ...GQL.PersistedQueryDefaults.ApolloAutomatic(),
+      ...GQL.PersistedQueryDefaults.Automatic(),
       saveQuery: async (hash, query) => { throw new Error('Failed to save somewhere.') }
     }
   })
@@ -77,7 +77,7 @@ test('ApolloAutomatic POST new query, error on saveQuery is handled', async (t) 
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
-test('ApolloAutomatic POST new query, only one of hash or saveQuery is required', async (t) => {
+test('Automatic POST new query, only one of hash or saveQuery is required', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -94,7 +94,7 @@ test('ApolloAutomatic POST new query, only one of hash or saveQuery is required'
     schema,
     resolvers,
     persistedQuerySettings: {
-      ...GQL.PersistedQueryDefaults.ApolloAutomatic(),
+      ...GQL.PersistedQueryDefaults.Automatic(),
       saveQuery: null
     }
   })
@@ -115,7 +115,7 @@ test('ApolloAutomatic POST new query, only one of hash or saveQuery is required'
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
-test('ApolloAutomatic POST new persisted query and error', async (t) => {
+test('Automatic POST new persisted query and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -131,7 +131,7 @@ test('ApolloAutomatic POST new persisted query and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.ApolloAutomatic()
+    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -152,7 +152,7 @@ test('ApolloAutomatic POST new persisted query and error', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotFound' }] })
 })
 
-test('ApolloAutomatic POST invalid version persisted query and error', async (t) => {
+test('Automatic POST invalid version persisted query and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -168,7 +168,7 @@ test('ApolloAutomatic POST invalid version persisted query and error', async (t)
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.ApolloAutomatic()
+    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -189,7 +189,7 @@ test('ApolloAutomatic POST invalid version persisted query and error', async (t)
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
-test('ApolloAutomatic POST invalid extension and error', async (t) => {
+test('Automatic POST invalid extension and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -205,7 +205,7 @@ test('ApolloAutomatic POST invalid extension and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.ApolloAutomatic()
+    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -220,7 +220,7 @@ test('ApolloAutomatic POST invalid extension and error', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'QueryNotFound' }] })
 })
 
-test('ApolloAutomatic POST invalid extension without persistedQueries and error', async (t) => {
+test('Automatic POST invalid extension without persistedQueries and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -236,7 +236,7 @@ test('ApolloAutomatic POST invalid extension without persistedQueries and error'
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.ApolloAutomatic()
+    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -254,7 +254,7 @@ test('ApolloAutomatic POST invalid extension without persistedQueries and error'
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
-test('ApolloAutomatic POST persisted query after priming', async (t) => {
+test('Automatic POST persisted query after priming', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -270,7 +270,7 @@ test('ApolloAutomatic POST persisted query after priming', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.ApolloAutomatic()
+    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
   })
 
   let res = await app.inject({

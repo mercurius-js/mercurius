@@ -44,7 +44,7 @@ const PersistedQueryDefaults = {
     getHash: (r) => r.persisted ? r.query : false, // Only support persisted queries
     getQueryFromHash: async (hash) => persistedQueries[hash]
   }),
-  ApolloAutomatic: () => {
+  Automatic: () => {
     // Initialize only in the scope of this server instance
     const AUTOMATIC_PERSISTED_QUERIES = {}
     return ({

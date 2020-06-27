@@ -131,7 +131,7 @@ This offers similar performance and considerations to the `Prepared` queries, bu
 
 The API is the same as the `Prepared` default.
 
-#### ApolloAutomatic
+#### Automatic
 
 This default is compatible with `apollo-client`, and requires no additional tooling to set up at the cost of some performance. In order for this mode to be effective, you must have long lived server instances (i.e *not* cloud functions). This mode is also appropriate for public APIs where queries are not known ahead of time.
 
@@ -151,7 +151,7 @@ A example of using this with Redis would be:
 
 ```js
 const persistedQuerySettings = {
-  ...GQL.PersistedQueryDefaults.ApolloAutomatic(),
+  ...GQL.PersistedQueryDefaults.Automatic(),
   getQueryFromHash: async (hash) => redis.get(hash),
   saveQuery: async (hash, query) => redis.set(hash, query),
 }

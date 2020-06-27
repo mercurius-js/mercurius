@@ -201,7 +201,7 @@ declare namespace fastifyGQL {
   export const PersistedQueryDefaults: { 
     Prepared: (persistedQueries: object) => PeristedQuerySettings
     PreparedOnly: (persistedQueries: object) => PeristedQuerySettings
-    ApolloAutomatic: PeristedQuerySettings
+    Automatic: PeristedQuerySettings
    };
 }
 
