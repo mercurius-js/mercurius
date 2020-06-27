@@ -207,7 +207,7 @@ declare namespace fastifyGQL {
   /**
    * Default options for persisted queries.
    */
-  export const PersistedQueryDefaults: { 
+  export const persistedQueryDefaults: { 
     Prepared: (persistedQueries: object) => PeristedQuerySettings
     PreparedOnly: (persistedQueries: object) => PeristedQuerySettings
     Automatic: PeristedQuerySettings

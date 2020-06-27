@@ -20,7 +20,7 @@ test('Automatic POST new query', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
+    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -56,7 +56,7 @@ test('Automatic POST new query, error on saveQuery is handled', async (t) => {
     schema,
     resolvers,
     persistedQuerySettings: {
-      ...GQL.PersistedQueryDefaults.Automatic(),
+      ...GQL.persistedQueryDefaults.Automatic(),
       saveQuery: async (hash, query) => { throw new Error('Failed to save somewhere.') }
     }
   })
@@ -94,7 +94,7 @@ test('Automatic POST new query, only one of hash or saveQuery is required', asyn
     schema,
     resolvers,
     persistedQuerySettings: {
-      ...GQL.PersistedQueryDefaults.Automatic(),
+      ...GQL.persistedQueryDefaults.Automatic(),
       saveQuery: null
     }
   })
@@ -131,7 +131,7 @@ test('Automatic POST new persisted query and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
+    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -168,7 +168,7 @@ test('Automatic POST invalid version persisted query and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
+    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -205,7 +205,7 @@ test('Automatic POST invalid extension and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
+    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -236,7 +236,7 @@ test('Automatic POST invalid extension without persistedQueries and error', asyn
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
+    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
   })
 
   const res = await app.inject({
@@ -270,7 +270,7 @@ test('Automatic POST persisted query after priming', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Automatic()
+    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
   })
 
   let res = await app.inject({
@@ -323,7 +323,7 @@ test('GET route with query, variables & persisted', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Prepared({
+    persistedQuerySettings: GQL.persistedQueryDefaults.Prepared({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
       '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
       '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
@@ -379,7 +379,7 @@ test('POST route with query, variables & persisted', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.Prepared({
+    persistedQuerySettings: GQL.persistedQueryDefaults.Prepared({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
       '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
       '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
@@ -448,7 +448,7 @@ test('PreparedOnly POST route with query, variables & persisted', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.PreparedOnly({
+    persistedQuerySettings: GQL.persistedQueryDefaults.PreparedOnly({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
       '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
       '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
@@ -518,7 +518,7 @@ test('PreparedOnly reject unknown queries with 400 for GET route', async (t) => 
     schema,
     resolvers,
     graphiql: true,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.PreparedOnly({
+    persistedQuerySettings: GQL.persistedQueryDefaults.PreparedOnly({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
     })
   })
@@ -546,7 +546,7 @@ test('PreparedOnly reject unknown queries with 400 for POST route', async (t) =>
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.PersistedQueryDefaults.PreparedOnly({
+    persistedQuerySettings: GQL.persistedQueryDefaults.PreparedOnly({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
     })
   })

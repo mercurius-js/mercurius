@@ -29,7 +29,7 @@ const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
 const { ErrorWithProps, FEDERATED_ERROR } = require('./lib/errors')
-const PersistedQueryDefaults = require('./lib/persistedQueryDefaults')
+const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -63,13 +63,13 @@ const plugin = fp(async function (app, opts) {
 
   if (opts.persistedQueries) {
     if (opts.onlyPersisted) {
-      opts.persistedQuerySettings = PersistedQueryDefaults.PreparedOnly(opts.persistedQueries)
+      opts.persistedQuerySettings = persistedQueryDefaults.PreparedOnly(opts.persistedQueries)
 
       // Disable GraphiQL and GraphQL Playground
       opts.graphiql = false
       opts.ide = false
     } else {
-      opts.persistedQuerySettings = PersistedQueryDefaults.Prepared(opts.persistedQueries)
+      opts.persistedQuerySettings = persistedQueryDefaults.Prepared(opts.persistedQueries)
     }
   } else if (opts.onlyPersisted) {
     throw new Error('onlyPersisted is true but there are no persistedQueries')
@@ -424,6 +424,6 @@ const plugin = fp(async function (app, opts) {
 })
 
 plugin.ErrorWithProps = ErrorWithProps
-plugin.PersistedQueryDefaults = PersistedQueryDefaults
+plugin.persistedQueryDefaults = persistedQueryDefaults
 
 module.exports = plugin

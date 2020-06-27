@@ -101,7 +101,7 @@ Depending on the client, this can be a significant overhead for each request, es
 
 Persisted Queries solve this problem by having the client send a generated ID, instead of the full query string, resulting in a smaller request. The server can use an internal lookup to turn this back into a full query and return the result.
 
-The `persistedQuerySettings` option lets you configure this for Fastify GQL. There are a few default options available, included in `GQL.PersistedQueryDefaults`.
+The `persistedQuerySettings` option lets you configure this for Fastify GQL. There are a few default options available, included in `GQL.persistedQueryDefaults`.
 
 #### Prepared
 
@@ -121,7 +121,7 @@ const GQL = require('fastify-gql')
 
 app.register(GQL, {
   ...
-  persistedQuerySettings: GQL.PersistedQueryDefaults.Prepared({
+  persistedQuerySettings: GQL.persistedQueryDefaults.Prepared({
     '<hash>':  '{ add(x: 1, y: 1) }'
   })
 })
@@ -182,7 +182,7 @@ A example of using this with Redis would be:
 const GQL = require('fastify-gql')
 
 const persistedQuerySettings = {
-  ...GQL.PersistedQueryDefaults.Automatic(),
+  ...GQL.persistedQueryDefaults.Automatic(),
   getQueryFromHash: async (hash) => redis.get(hash),
   saveQuery: async (hash, query) => redis.set(hash, query),
 }
