@@ -67,6 +67,7 @@ const plugin = fp(async function (app, opts) {
 
       // Disable GraphiQL and GraphQL Playground
       opts.graphiql = false
+      opts.ide = false
     } else {
       opts.persistedQuerySettings = PersistedQueryDefaults.Prepared(opts.persistedQueries)
     }
