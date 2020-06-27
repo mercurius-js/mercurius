@@ -117,6 +117,8 @@ Clients can provide a full query string, or set the `persisted` flag to true and
 
 A map of hashes to queries must be provided to the server at startup:
 ```js
+const GQL = require('fastify-gql')
+
 app.register(GQL, {
   ...
   persistedQuerySettings: GQL.PersistedQueryDefaults.Prepared({
