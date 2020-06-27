@@ -145,16 +145,16 @@ This offers similar performance and considerations to the `Prepared` queries, bu
 
 The API is the same as the `Prepared` default.
 
-Alternatively the `peristedQueries` and `onlyPrepared` options may be used directly, which will be internally mapped to the `PreparedOnly` default:
+Alternatively the `peristedQueries` and `onlyPersisted` options may be used directly, which will be internally mapped to the `PreparedOnly` default:
 ```js
 const GQL = require('fastify-gql')
 
 app.register(GQL, {
   ...
   persistedQueries: {
-    '<hash>':  '{ add(x: 1, y: 1) }'
+    '<hash>': '{ add(x: 1, y: 1) }'
   },
-  onlyPrepared: true
+  onlyPersisted: true
 })
 ```
 
