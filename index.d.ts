@@ -215,7 +215,7 @@ declare namespace fastifyGQL {
   export const persistedQueryDefaults: { 
     Prepared: (persistedQueries: object) => PeristedQuerySettings
     PreparedOnly: (persistedQueries: object) => PeristedQuerySettings
-    Automatic: PeristedQuerySettings
+    Automatic: (maxSize?: number) => PeristedQuerySettings
    };
 }
 

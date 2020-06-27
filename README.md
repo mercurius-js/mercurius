@@ -170,6 +170,28 @@ When the server initially starts, no queries will be cached and additional laten
 
 Additional documentation on Apollo's Automatic persisted queries implementation can be found [here](https://www.apollographql.com/docs/apollo-server/performance/apq/).
 
+Example:
+```js
+const GQL = require('fastify-gql')
+
+app.register(GQL, {
+  ...
+  persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+})
+```
+
+An LRU cache is used to prevent DoS attacks on the storage of hashes & queries. The maximum size of this cache (maximum number of cached queries) can be adjusted by passing a value to the constructor, for example:
+
+```js
+const GQL = require('fastify-gql')
+
+app.register(GQL, {
+  ...
+  persistedQuerySettings: GQL.persistedQueryDefaults.Automatic(5000)
+})
+```
+
+
 #### Custom Persisted Queries
 
 It is also possible to extend or modify these persisted query implementations for custom cases, such as Automatic Persisted Queries, but with a shared cache between servers.
