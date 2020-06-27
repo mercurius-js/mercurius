@@ -168,6 +168,8 @@ The next request for that query (from the same or a different client) will alrea
 
 When the server initially starts, no queries will be cached and additional latency will be added to the first requests recieved (due to the client re-sending the full query). However, the most common queries will rapidly be cached by the server. After a warmup (length dependent on the number of queries clients might send and how frequent they are) performance will match that of the `Prepared` query option.
 
+Additional documentation on Apollo's Automatic persisted queries implementation can be found [here](https://www.apollographql.com/docs/apollo-server/performance/apq/).
+
 #### Custom Persisted Queries
 
 It is also possible to extend or modify these persisted query implementations for custom cases, such as Automatic Persisted Queries, but with a shared cache between servers.
