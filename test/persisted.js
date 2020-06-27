@@ -217,7 +217,7 @@ test('Automatic POST invalid extension and error', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'QueryNotFound' }] })
+  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Unknown query' }] })
 })
 
 test('Automatic POST invalid extension without persistedQueries and error', async (t) => {

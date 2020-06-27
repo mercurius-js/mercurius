@@ -68,7 +68,7 @@ test('POST route, no query error', async (t) => {
 
   t.equal(res.statusCode, 400)
   t.deepEqual(JSON.parse(res.body), {
-    errors: [{ message: 'QueryNotFound' }],
+    errors: [{ message: 'Unknown query' }],
     data: null
   })
 })
