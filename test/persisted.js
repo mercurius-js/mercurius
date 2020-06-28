@@ -306,6 +306,64 @@ test('Automatic POST persisted query after priming', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
+test('Automatic POST persisted query after priming, with extension set in both payloads', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+  })
+
+  let res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'AddQuery',
+      variables: { x: 1, y: 2 },
+      query: `
+        query AddQuery ($x: Int!, $y: Int!) {
+            add(x: $x, y: $y)
+        }`,
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: '14b859faf7e656329f24f7fdc7a33a3402dbd8b43f4f57364e15e096143927a9'
+        }
+      }
+    }
+  })
+
+  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+
+  res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'AddQuery',
+      variables: { x: 1, y: 2 },
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: '14b859faf7e656329f24f7fdc7a33a3402dbd8b43f4f57364e15e096143927a9'
+        }
+      }
+    }
+  })
+
+  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+})
+
 // persistedQuerySettings
 
 test('GET route with query, variables & persisted', async (t) => {
