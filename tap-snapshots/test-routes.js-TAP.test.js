@@ -5,7 +5,7 @@
  * Make sure to inspect the output below.  Do not ignore changes!
  */
 'use strict'
-exports[`test/routes.js TAP GET return 200 on resolver error > must match snapshot 1`] = `
+exports['test/routes.js TAP GET return 200 on resolver error > must match snapshot 1'] = `
 {
   "data": {
     "add": null
@@ -27,7 +27,7 @@ exports[`test/routes.js TAP GET return 200 on resolver error > must match snapsh
 }
 `
 
-exports[`test/routes.js TAP POST return 200 on resolver error > must match snapshot 1`] = `
+exports['test/routes.js TAP POST return 200 on resolver error > must match snapshot 1'] = `
 {
   "data": {
     "add": null
@@ -49,7 +49,7 @@ exports[`test/routes.js TAP POST return 200 on resolver error > must match snaps
 }
 `
 
-exports[`test/routes.js TAP POST return 400 on error > must match snapshot 1`] = `
+exports['test/routes.js TAP POST return 400 on error > must match snapshot 1'] = `
 {
   "data": null,
   "errors": [
@@ -66,7 +66,7 @@ exports[`test/routes.js TAP POST return 400 on error > must match snapshot 1`] =
 }
 `
 
-exports[`test/routes.js TAP POST return 500 on error without statusCode > must match snapshot 1`] = `
+exports['test/routes.js TAP POST return 500 on error without statusCode > must match snapshot 1'] = `
 {
   "data": null,
   "errors": [
@@ -77,11 +77,11 @@ exports[`test/routes.js TAP POST return 500 on error without statusCode > must m
 }
 `
 
-exports[`test/routes.js TAP if ide is graphiql, serve config.js with the correct endpoint > must match snapshot 1`] = `
+exports['test/routes.js TAP if ide is graphiql, serve config.js with the correct endpoint > must match snapshot 1'] = `
 window.GRAPHQL_ENDPOINT = '/app/graphql'
 `
 
-exports[`test/routes.js TAP if ide is playground, serve init.js with the correct endpoint > must match snapshot 1`] = `
+exports['test/routes.js TAP if ide is playground, serve init.js with the correct endpoint > must match snapshot 1'] = `
 window.addEventListener('load', function(event) {
           GraphQLPlayground.init(document.getElementById('root'), {
             subscriptionEndpoint: '/app/graphql',
@@ -90,7 +90,7 @@ window.addEventListener('load', function(event) {
         });
 `
 
-exports[`test/routes.js TAP mutation with GET errors > must match snapshot 1`] = `
+exports['test/routes.js TAP mutation with GET errors > must match snapshot 1'] = `
 {
   "data": null,
   "errors": [
@@ -101,7 +101,7 @@ exports[`test/routes.js TAP mutation with GET errors > must match snapshot 1`] =
 }
 `
 
-exports[`test/routes.js TAP server should return 200 on graphql errors (if field can be null) > must match snapshot 1`] = `
+exports['test/routes.js TAP server should return 200 on graphql errors (if field can be null) > must match snapshot 1'] = `
 {
   "data": {
     "hello": null
@@ -123,7 +123,7 @@ exports[`test/routes.js TAP server should return 200 on graphql errors (if field
 }
 `
 
-exports[`test/routes.js TAP server should return 500 on graphql errors (if field can not be null) > must match snapshot 1`] = `
+exports['test/routes.js TAP server should return 500 on graphql errors (if field can not be null) > must match snapshot 1'] = `
 {
   "data": null,
   "errors": [
