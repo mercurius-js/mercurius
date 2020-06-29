@@ -5,7 +5,7 @@
  * Make sure to inspect the output below.  Do not ignore changes!
  */
 'use strict'
-exports['test/federation.js TAP buildFederationSchema function adds stub types > must match snapshot 1'] = `
+exports[`test/federation.js TAP buildFederationSchema function adds stub types > must match snapshot 1`] = `
 directive @external on FIELD_DEFINITION
 
 directive @requires(fields: _FieldSet!) on FIELD_DEFINITION

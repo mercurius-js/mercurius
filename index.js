@@ -153,6 +153,7 @@ const plugin = fp(async function (app, opts) {
     const optsIde = opts.graphiql || opts.ide
     app.register(routes, {
       errorHandler: opts.errorHandler,
+      errorFormatter: opts.errorFormatter,
       ide: optsIde,
       prefix: opts.prefix,
       path: opts.path,
