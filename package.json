@@ -38,7 +38,7 @@
     "typescript": "^3.7.5"
   },
   "dependencies": {
-    "@apollographql/graphql-playground-html": "^1.6.24",
+    "@apollographql/graphql-playground-html": "1.6.24",
     "end-of-stream": "^1.4.4",
     "fastify-plugin": "^1.6.0",
     "fastify-static": "^2.6.0",
