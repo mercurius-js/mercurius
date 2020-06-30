@@ -108,7 +108,7 @@ test('POST single bad batched query', async (t) => {
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Syntax Error: Expected \"$\", found <EOF>.', locations: [{ line: 2, column: 37 }] }] }])
+  t.deepEqual(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 2, column: 37 }] }] }])
 })
 
 test('POST batched query', async (t) => {
@@ -195,7 +195,7 @@ test('POST good and bad batched query', async (t) => {
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Syntax Error: Expected \"$\", found <EOF>.', locations: [{ line: 1, column: 20 }] }] }])
+  t.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 1, column: 20 }] }] }])
 })
 
 test('POST batched query with a resolver which succeeds and a resolver which throws', async (t) => {
