@@ -225,9 +225,21 @@ test('subscription server sends update to subscriptions', t => {
 
 test('subscription server register handle function arg is not empty', t => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
   t.tearDown(app.close)
 
   app.register(GQL, {
+    schema,
+    resolvers,
     subscription: true
   })
 
@@ -250,8 +262,20 @@ test('subscription server register handle function arg is not empty', t => {
 
 test('subscription socket protocol different than graphql-ws, protocol = foobar', t => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
   t.tearDown(app.close)
   app.register(GQL, {
+    schema,
+    resolvers,
     subscription: true
   })
 
