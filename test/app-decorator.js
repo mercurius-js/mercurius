@@ -314,6 +314,35 @@ test('extendSchema and defineResolvers for query', async (t) => {
   })
 })
 
+test('extendSchema changes reflected in schema access', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL)
+
+  let beforeSchema
+  app.register(async function (app) {
+    beforeSchema = app.graphql.schema
+
+    app.graphql.extendSchema(schema)
+    app.graphql.defineResolvers(resolvers)
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  t.notEqual(beforeSchema, app.graphql.schema)
+  t.end()
+})
+
 test('extendSchema and defineResolvers with mutation definition', async (t) => {
   const app = Fastify()
   const schema = `
