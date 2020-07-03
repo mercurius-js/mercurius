@@ -29,16 +29,18 @@ test('validationRules - reports an error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    validationRules: [
-      // validation rule that reports an error
-      function (context) {
-        return {
-          Document () {
-            context.reportError(new GraphQLError('Validation rule error'))
+    validationRules: function () {
+      return [
+        // validation rule that reports an error
+        function (context) {
+          return {
+            Document () {
+              context.reportError(new GraphQLError('Validation rule error'))
+            }
           }
         }
-      }
-    ]
+      ]
+    }
   })
 
   // needed so that graphql is defined
@@ -59,16 +61,18 @@ test('validationRules - passes when no errors', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    validationRules: [
-      // validation rule that reports no errors
-      function (_context) {
-        return {
-          Document () {
-            return false
+    validationRules: function () {
+      return [
+        // validation rule that reports no errors
+        function (_context) {
+          return {
+            Document () {
+              return false
+            }
           }
         }
-      }
-    ]
+      ]
+    }
   })
 
   // needed so that graphql is defined
@@ -85,7 +89,7 @@ test('validationRules - works with empty validationRules', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    validationRules: []
+    validationRules: () => []
   })
 
   // needed so that graphql is defined
@@ -109,5 +113,42 @@ test('validationRules - works with missing validationRules', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
+  t.deepEqual(res, { data: { add: 4 } })
+})
+
+test('validationRules - includes graphql request metadata', async (t) => {
+  t.plan(4)
+  const app = Fastify()
+
+  const query = `
+    query Add ($x: Int!, $y: Int!) {
+      add(x: $x, y: $y)
+    }
+  `
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    validationRules: function ({ source, variables, operationName }) {
+      t.equal(source, query)
+      t.deepEqual(variables, { x: 2, y: 2 })
+      t.deepEqual(operationName, 'Add')
+      return [
+        // validation rule that reports no errors
+        function (_context) {
+          return {
+            Document () {
+              return false
+            }
+          }
+        }
+      ]
+    }
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const res = await app.graphql(query, null, { x: 2, y: 2 }, 'Add')
   t.deepEqual(res, { data: { add: 4 } })
 })
