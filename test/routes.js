@@ -869,8 +869,20 @@ test('GET graphiql endpoint with prefix', async (t) => {
 
 test('GET graphiql endpoint with prefixed wrapper', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
   app.register(async function (app, opts) {
     app.register(GQL, {
+      schema,
+      resolvers,
       ide: 'graphiql'
     })
   }, { prefix: '/test-wrapper-prefix' })
@@ -913,8 +925,20 @@ test('GET graphql playground endpoint with prefix', async (t) => {
 
 test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
   app.register(async function (app, opts) {
     app.register(GQL, {
+      schema,
+      resolvers,
       ide: 'playground'
     })
   }, { prefix: '/test-wrapper-prefix' })

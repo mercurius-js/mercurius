@@ -37,6 +37,10 @@ declare namespace fastifyGQL {
           }) => any
       }
     }): void;
+    /**
+     * Managed GraphQL schema object for doing custom execution with. Will reflect changes made via `extendSchema`, `defineResolvers`, etc.
+     */
+    schema: GraphQLSchema;
   }
 
   export interface Options<

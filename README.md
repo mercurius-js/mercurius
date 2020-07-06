@@ -901,7 +901,10 @@ async function run () {
 run()
 ```
 
-<a name="defineLoaders"></a>
+#### app.graphql.schema
+
+Provides access to the built `GraphQLSchema` object that `fastify-gql` will use to execute queries. This property will reflect any updates made by `extendSchema` or `replaceSchema` as well.
+
 #### app.graphql.defineLoaders(loaders)
 
 A loader is an utility to avoid the 1 + N query problem of GraphQL.
