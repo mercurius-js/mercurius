@@ -81,8 +81,6 @@ const plugin = fp(async function (app, opts) {
   let subscriber
   let verifyClient
 
-  const validationRules = [...specifiedRules, ...(opts.validationRules || [])]
-
   if (typeof subscriptionOpts === 'object') {
     emitter = subscriptionOpts.emitter || mq()
     verifyClient = subscriptionOpts.verifyClient
@@ -321,7 +319,15 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Validate
-      const validationErrors = validate(fastifyGraphQl.schema, document, validationRules)
+      let validationRules = []
+      if (opts.validationRules) {
+        if (Array.isArray(opts.validationRules)) {
+          validationRules = opts.validationRules
+        } else {
+          validationRules = opts.validationRules({ source, variables, operationName })
+        }
+      }
+      const validationErrors = validate(fastifyGraphQl.schema, document, [...specifiedRules, ...validationRules])
 
       if (validationErrors.length > 0) {
         if (lruErrors) {
