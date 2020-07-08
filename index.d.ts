@@ -1,5 +1,5 @@
 import fastify, { FastifyError, FastifyReply, FastifyRequest, RegisterOptions } from "fastify";
-import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType, ValidationRule } from 'graphql';
+import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType, ValidationRule, GraphQLError } from 'graphql';
 import { IncomingMessage, Server, ServerResponse } from "http";
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
 
@@ -148,6 +148,18 @@ declare namespace fastifyGQL {
       request: FastifyRequest<HttpRequest>,
       reply: FastifyReply<HttpResponse>
     ) => ExecutionResult),
+    /**
+     * Change the default error formatter.
+     */
+    errorFormatter?: ((
+      error: FastifyError | GraphQLError | Error
+    ) => {
+      statusCode?: number
+      response?: {
+        data?: object
+        errors: any[]
+      }
+    }),
     /**
      * The maximum depth allowed for a single query.
      */
