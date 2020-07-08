@@ -178,17 +178,17 @@ declare namespace fastifyGQL {
       }>
     }
     /**
-     * Persisted queries, overrides persistedQuerySettings.
+     * Persisted queries, overrides persistedQueryProvider.
      */
     persistedQueries?: object
     /**
-     * Only allow persisted queries. Required persistedQueries, overrides persistedQuerySettings.
+     * Only allow persisted queries. Required persistedQueries, overrides persistedQueryProvider.
      */
     onlyPersisted?: boolean
     /**
      * Settings for enabling persisted queries.
      */
-    persistedQuerySettings?: PeristedQuerySettings
+    persistedQueryProvider?: PeristedQuerySettings
     
     /**
      * Enable support for batched queries (POST requests only).
@@ -213,9 +213,9 @@ declare namespace fastifyGQL {
    * Default options for persisted queries.
    */
   export const persistedQueryDefaults: { 
-    Prepared: (persistedQueries: object) => PeristedQuerySettings
-    PreparedOnly: (persistedQueries: object) => PeristedQuerySettings
-    Automatic: (maxSize?: number) => PeristedQuerySettings
+    prepared: (persistedQueries: object) => PeristedQuerySettings
+    preparedOnly: (persistedQueries: object) => PeristedQuerySettings
+    automatic: (maxSize?: number) => PeristedQuerySettings
    };
 }
 
