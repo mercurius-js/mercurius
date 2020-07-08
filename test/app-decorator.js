@@ -314,6 +314,35 @@ test('extendSchema and defineResolvers for query', async (t) => {
   })
 })
 
+test('extendSchema changes reflected in schema access', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL)
+
+  let beforeSchema
+  app.register(async function (app) {
+    beforeSchema = app.graphql.schema
+
+    app.graphql.extendSchema(schema)
+    app.graphql.defineResolvers(resolvers)
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  t.notEqual(beforeSchema, app.graphql.schema)
+  t.end()
+})
+
 test('extendSchema and defineResolvers with mutation definition', async (t) => {
   const app = Fastify()
   const schema = `
@@ -379,7 +408,12 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
 
   const mutation = 'mutation { sub(x: 2, y: 2) }'
 
-  t.rejects(app.graphql(mutation), GraphQLError)
+  try {
+    await app.graphql(mutation)
+  } catch (e) {
+    t.is(e instanceof GraphQLError, true)
+    t.end()
+  }
 })
 
 test('basic GQL no cache', async (t) => {

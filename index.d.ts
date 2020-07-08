@@ -1,5 +1,5 @@
-import { FastifyError, FastifyReply, FastifyRequest, FastifyInstance, RawServerBase, RawRequestDefaultExpression, RawReplyDefaultExpression, } from "fastify";
-import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType } from 'graphql';
+import { FastifyError, FastifyReply, FastifyRequest, FastifyInstance, RawServerBase, RawRequestDefaultExpression, RawReplyDefaultExpression, RegisterOptions  } from "fastify";
+import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType, ValidationRule  } from 'graphql';
 
 declare namespace fastifyGQL {
 
@@ -35,6 +35,10 @@ declare namespace fastifyGQL {
           }) => any
       }
     }): void;
+    /**
+     * Managed GraphQL schema object for doing custom execution with. Will reflect changes made via `extendSchema`, `defineResolvers`, etc.
+     */
+    schema: GraphQLSchema;
   }
 
   export interface Options {
@@ -106,6 +110,11 @@ declare namespace fastifyGQL {
     queryDepth?: number,
     context?: (request: FastifyRequest, reply: FastifyReply) => Promise<any>,
     /**
+     * Optional additional validation rules.
+     * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
+     */
+    validationRules?: ValidationRules,
+    /**
      * Enable subscription support when options are provided. [`emitter`](https://github.com/mcollina/mqemitter) property is required when subscriptions is an object. (Default false)
      */
     subscription?: boolean | {
@@ -128,22 +137,24 @@ declare namespace fastifyGQL {
         url: string
       }>
     }
+    /**
+     * Enable support for batched queries (POST requests only).
+     * Batched query support allows clients to send an array of queries and
+     * receive an array of responses within a single request.
+     */
+    allowBatchedQueries?: boolean
   }
 
   /**
    * Extended errors for adding additional information in error responses
    */
   export class ErrorWithProps extends Error {
-    constructor (message: string, code?: string, additionalProperties?: object)
-    /**
-     * Custom error code of this error
-     */
-    code?: string
+    constructor (message: string, extensions?: object)
     /**
      * Custom additional properties of this error
      */
-    additionalProperties?: object
-  } 
+    extensions?: object
+  }
 }
 
 declare module "fastify" {
@@ -154,7 +165,7 @@ declare module "fastify" {
     graphql: fastifyGQL.Plugin;
   }
 
-  interface FastifyReplyInterface {
+  interface FastifyReply {
     /**
      * @param source GraphQL query string
      * @param context request context
@@ -250,3 +261,5 @@ type Request = {
   variables: Record<string, any>;
   extensions?: Record<string, any>;
 };
+
+type ValidationRules = ValidationRule[] | ((params: { source: string, variables?: Record<string, any>, operationName?: string }) => ValidationRule[])

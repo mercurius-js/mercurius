@@ -12,6 +12,7 @@ Features:
 * Subscriptions.
 * Federation support.
 * Gateway implementation, including Subscriptions.
+* Batched query support.
 
 ## Install
 
@@ -136,6 +137,47 @@ In addition to the `persistedQueries` above, which let's client request for eith
 
 Note: `onlyPersisted` disables all IDEs (graphiql/playground) so typically you'd want to use it in production.
 
+
+### Batched Queries
+
+Batched queries, like those sent by `apollo-link-batch-http` are supported by enabling the `allowBatchedQueries` option.
+
+Instead a single query object, an array of queries is accepted, and the response is returned as an array of results. Errors are returned on a per query basis. Note that the response will not be returned until the slowest query has been executed.
+
+Request:
+```js
+[
+  {
+    operationName: 'AddQuery',
+    variables: { x: 1, y: 2 },
+    query: 'query AddQuery ($x: Int!, $y: Int!) { add(x: $x, y: $y) }'
+  },
+  {
+    operationName: 'DoubleQuery',
+    variables: { x: 1 },
+    query: 'query DoubleQuery ($x: Int!) { add(x: $x, y: $x) }'
+  },
+  {
+    operationName: 'BadQuery',
+    query: 'query DoubleQuery ($x: Int!) {---' // Malformed Query
+  }
+]
+```
+
+Response:
+```js
+[
+  {
+    data: { add: 3 }
+  },
+  {
+    data: { add: 2 }
+  },
+  {
+    errors: [{ message: 'Bad Request' }]
+  }
+]
+```
 
 ### Access app context in resolver
 
@@ -555,7 +597,7 @@ const resolvers = {
     findUser: (_, { id }) => {
       const user = users[id]
       if (user) return users[id]
-      else throw new ErrorWithProps('Invalid User ID', "USER_ID_INVALID", { id, timestamp: Math.round(new Date().getTime()/1000) })
+      else throw new ErrorWithProps('Invalid User ID', { id, code: "USER_ID_INVALID", timestamp: Math.round(new Date().getTime()/1000) })
     }
   }
 }
@@ -595,6 +637,7 @@ __fastify-gql__ supports the following options:
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 * `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE (or Playground IDE) sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
+* `validationRules`: `Function` or `Function[]`. Optional additional validation rules that the queries must satisfy in addition to those defined by the GraphQL specification. When using `Function`, arguments include additional data from graphql request and the return value must be validation rules `Function[]`.
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
@@ -608,6 +651,7 @@ __fastify-gql__ supports the following options:
     * `service.wsConnectionParams`: `Function` or `Object`
 * `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash.
 * `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql).
+* `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
 #### queryDepth example
 ```
@@ -857,7 +901,10 @@ async function run () {
 run()
 ```
 
-<a name="defineLoaders"></a>
+#### app.graphql.schema
+
+Provides access to the built `GraphQLSchema` object that `fastify-gql` will use to execute queries. This property will reflect any updates made by `extendSchema` or `replaceSchema` as well.
+
 #### app.graphql.defineLoaders(loaders)
 
 A loader is an utility to avoid the 1 + N query problem of GraphQL.

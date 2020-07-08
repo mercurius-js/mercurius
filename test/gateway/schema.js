@@ -65,6 +65,7 @@ test('It builds the gateway schema correctly', async (t) => {
   const userServicePort = await createService(t, `
     extend type Query {
       me: User
+      hello: String
     }
 
     type User @key(fields: "id") {
@@ -83,7 +84,8 @@ test('It builds the gateway schema correctly', async (t) => {
     Query: {
       me: (root, args, context, info) => {
         return users.u1
-      }
+      },
+      hello: () => 'World'
     },
     User: {
       __resolveReference: (user, args, context, info) => {
@@ -106,7 +108,7 @@ test('It builds the gateway schema correctly', async (t) => {
       topPosts(count: Int): [Post]
     }
 
-    extend type User @key(fields: "id") {
+    type User @key(fields: "id") @extends {
       id: ID! @external
       name: String @external
       posts: [Post]
@@ -185,6 +187,7 @@ test('It builds the gateway schema correctly', async (t) => {
     topPosts(count: $count) {
       ...PostFragment
     }
+    hello
   }
   
   fragment UserFragment on User {
@@ -290,7 +293,8 @@ test('It builds the gateway schema correctly', async (t) => {
           avatar: 'avatar-medium.jpg',
           numberOfPosts: 2
         }
-      }]
+      }],
+      hello: 'World'
     }
   })
 })

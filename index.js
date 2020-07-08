@@ -20,14 +20,16 @@ const {
   extendSchema,
   validate,
   validateSchema,
+  specifiedRules,
   execute
 } = require('graphql')
+const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
-const { ErrorWithProps } = require('./lib/errors')
+const { ErrorWithProps, FEDERATED_ERROR } = require('./lib/errors')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -126,8 +128,10 @@ const plugin = fp(async function (app, opts) {
     })
   }
 
+  fastifyGraphQl.schema = schema
+
   app.ready(async function () {
-    const schemaValidationErrors = validateSchema(schema)
+    const schemaValidationErrors = validateSchema(fastifyGraphQl.schema)
     if (schemaValidationErrors.length > 0) {
       const err = new Error('schema issues')
       err.errors = schemaValidationErrors
@@ -147,7 +151,8 @@ const plugin = fp(async function (app, opts) {
       context: opts.context,
       onlyPersisted: onlyPersisted,
       persistedQueries: opts.persistedQueries,
-      schema,
+      allowBatchedQueries: opts.allowBatchedQueries,
+      schema: fastifyGraphQl.schema,
       subscriber,
       verifyClient,
       lruGatewayResolvers,
@@ -172,7 +177,7 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Must provide valid Document AST')
     }
 
-    schema = s
+    fastifyGraphQl.schema = s
 
     lru.clear()
     lruErrors.clear()
@@ -189,7 +194,7 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Must provide valid Document AST')
     }
 
-    schema = extendSchema(schema, s)
+    fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
@@ -198,7 +203,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     for (const name of Object.keys(resolvers)) {
-      const type = schema.getType(name)
+      const type = fastifyGraphQl.schema.getType(name)
 
       if (typeof resolvers[name] === 'function') {
         root[name] = resolvers[name]
@@ -314,7 +319,15 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Validate
-      const validationErrors = validate(schema, document)
+      let validationRules = []
+      if (opts.validationRules) {
+        if (Array.isArray(opts.validationRules)) {
+          validationRules = opts.validationRules
+        } else {
+          validationRules = opts.validationRules({ source, variables, operationName })
+        }
+      }
+      const validationErrors = validate(fastifyGraphQl.schema, document, [...specifiedRules, ...validationRules])
 
       if (validationErrors.length > 0) {
         if (lruErrors) {
@@ -354,16 +367,40 @@ const plugin = fp(async function (app, opts) {
 
     // minJit is 0 by default
     if (cached && cached.count++ === minJit) {
-      cached.jit = compileQuery(schema, document, operationName)
+      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
     }
 
     if (cached && cached.jit !== null) {
       const res = await cached.jit.query(root, context, variables || {})
+
+      // as `graphql-jit` takes the original response that's dispatched
+      // by the request handler none of the transformations applied do have an effect,
+      // so `FederatedError` needs to be exchanged
+      // with the contents of its `extensions.errors` property and flattened afterwards
+      if (res.errors) {
+        res.errors = res.errors.map((error, idx) => {
+          if (error.message === FEDERATED_ERROR.toString()) {
+            return error.extensions.errors
+          }
+          return error
+        }).reduce((acc, val) => acc.concat(val), [])
+      }
+
       return res
     }
 
+    // Validate variables
+    if (variables !== undefined) {
+      const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
+      if (Array.isArray(executionContext)) {
+        const err = new BadRequest()
+        err.errors = executionContext
+        throw err
+      }
+    }
+
     const execution = await execute(
-      schema,
+      fastifyGraphQl.schema,
       document,
       root,
       context,
@@ -373,11 +410,8 @@ const plugin = fp(async function (app, opts) {
 
     if (execution.errors) {
       execution.errors = execution.errors.map(e => {
-        if (Object.prototype.hasOwnProperty.call(e.originalError, 'code') || Object.prototype.hasOwnProperty.call(e.originalError, 'additionalProperties')) {
-          return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, {
-            code: e.originalError.code,
-            ...e.originalError.additionalProperties
-          })
+        if (e.originalError && (Object.prototype.hasOwnProperty.call(e.originalError, 'extensions'))) {
+          return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, e.originalError.extensions)
         }
         return e
       })

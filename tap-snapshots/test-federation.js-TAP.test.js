@@ -14,20 +14,16 @@ directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
 
 directive @key(fields: _FieldSet!) on OBJECT | INTERFACE
 
+directive @extends on OBJECT | INTERFACE
+
 directive @customdir on FIELD_DEFINITION
 
 scalar _Any
-
-union _Entity = User | Product
 
 scalar _FieldSet
 
 type _Service {
   sdl: String
-}
-
-type Product {
-  sku: String
 }
 
 type Query {
@@ -36,10 +32,16 @@ type Query {
   _service: _Service!
 }
 
+type Product {
+  sku: String
+}
+
 type User {
   id: ID!
   name: String
   username: String
 }
+
+union _Entity = Product | User
 
 `
