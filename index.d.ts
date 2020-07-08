@@ -46,7 +46,7 @@ declare namespace fastifyGQL {
       extensions?: object
   }
 
-  export interface PeristedQuerySettings {
+  export interface PeristedQueryProvider {
       /**
        *  Return true if a given request matches the desired persisted query format.
        */
@@ -188,7 +188,7 @@ declare namespace fastifyGQL {
     /**
      * Settings for enabling persisted queries.
      */
-    persistedQueryProvider?: PeristedQuerySettings
+    persistedQueryProvider?: PeristedQueryProvider
     
     /**
      * Enable support for batched queries (POST requests only).
@@ -213,9 +213,9 @@ declare namespace fastifyGQL {
    * Default options for persisted queries.
    */
   export const persistedQueryDefaults: { 
-    prepared: (persistedQueries: object) => PeristedQuerySettings
-    preparedOnly: (persistedQueries: object) => PeristedQuerySettings
-    automatic: (maxSize?: number) => PeristedQuerySettings
+    prepared: (persistedQueries: object) => PeristedQueryProvider
+    preparedOnly: (persistedQueries: object) => PeristedQueryProvider
+    automatic: (maxSize?: number) => PeristedQueryProvider
    };
 }
 
