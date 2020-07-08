@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "end-of-stream": "^1.4.4",
-    "fastify-plugin": "^1.6.0",
+    "fastify-plugin": "^2.0.0",
     "fastify-static": "^2.6.0",
     "fastify-websocket": "^1.0.0",
     "graphql": "^15.0.0",
