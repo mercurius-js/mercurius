@@ -105,8 +105,6 @@ const plugin = fp(async function (app, opts) {
   let subscriber
   let verifyClient
 
-  const validationRules = [...specifiedRules, ...(opts.validationRules || [])]
-
   if (typeof subscriptionOpts === 'object') {
     emitter = subscriptionOpts.emitter || mq()
     verifyClient = subscriptionOpts.verifyClient
@@ -154,8 +152,10 @@ const plugin = fp(async function (app, opts) {
     })
   }
 
+  fastifyGraphQl.schema = schema
+
   app.ready(async function () {
-    const schemaValidationErrors = validateSchema(schema)
+    const schemaValidationErrors = validateSchema(fastifyGraphQl.schema)
     if (schemaValidationErrors.length > 0) {
       const err = new Error('schema issues')
       err.errors = schemaValidationErrors
@@ -175,7 +175,7 @@ const plugin = fp(async function (app, opts) {
       context: opts.context,
       persistedQueryProvider: opts.persistedQueryProvider,
       allowBatchedQueries: opts.allowBatchedQueries,
-      schema,
+      schema: fastifyGraphQl.schema,
       subscriber,
       verifyClient,
       lruGatewayResolvers,
@@ -200,7 +200,7 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Must provide valid Document AST')
     }
 
-    schema = s
+    fastifyGraphQl.schema = s
 
     lru.clear()
     lruErrors.clear()
@@ -217,7 +217,7 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Must provide valid Document AST')
     }
 
-    schema = extendSchema(schema, s)
+    fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
@@ -226,7 +226,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     for (const name of Object.keys(resolvers)) {
-      const type = schema.getType(name)
+      const type = fastifyGraphQl.schema.getType(name)
 
       if (typeof resolvers[name] === 'function') {
         root[name] = resolvers[name]
@@ -342,7 +342,15 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Validate
-      const validationErrors = validate(schema, document, validationRules)
+      let validationRules = []
+      if (opts.validationRules) {
+        if (Array.isArray(opts.validationRules)) {
+          validationRules = opts.validationRules
+        } else {
+          validationRules = opts.validationRules({ source, variables, operationName })
+        }
+      }
+      const validationErrors = validate(fastifyGraphQl.schema, document, [...specifiedRules, ...validationRules])
 
       if (validationErrors.length > 0) {
         if (lruErrors) {
@@ -382,7 +390,7 @@ const plugin = fp(async function (app, opts) {
 
     // minJit is 0 by default
     if (cached && cached.count++ === minJit) {
-      cached.jit = compileQuery(schema, document, operationName)
+      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
     }
 
     if (cached && cached.jit !== null) {
@@ -406,7 +414,7 @@ const plugin = fp(async function (app, opts) {
 
     // Validate variables
     if (variables !== undefined) {
-      const executionContext = buildExecutionContext(schema, document, root, context, variables, operationName)
+      const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
       if (Array.isArray(executionContext)) {
         const err = new BadRequest()
         err.errors = executionContext
@@ -415,7 +423,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     const execution = await execute(
-      schema,
+      fastifyGraphQl.schema,
       document,
       root,
       context,

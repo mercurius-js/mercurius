@@ -37,6 +37,10 @@ declare namespace fastifyGQL {
           }) => any
       }
     }): void;
+    /**
+     * Managed GraphQL schema object for doing custom execution with. Will reflect changes made via `extendSchema`, `defineResolvers`, etc.
+     */
+    schema: GraphQLSchema;
   }
 
   export interface QueryRequest {
@@ -152,7 +156,7 @@ declare namespace fastifyGQL {
      * Optional additional validation rules.
      * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
      */
-    validationRules?: ValidationRule[],
+    validationRules?: ValidationRules,
     context?: (request: FastifyRequest<HttpRequest>, reply: FastifyReply<HttpResponse>) => Promise<any>,
     /**
      * Enable subscription support when options are provided. [`emitter`](https://github.com/mcollina/mqemitter) property is required when subscriptions is an object. (Default false)
@@ -328,3 +332,5 @@ type Request = {
   variables: Record<string, any>;
   extensions?: Record<string, any>;
 };
+
+type ValidationRules = ValidationRule[] | ((params: { source: string, variables?: Record<string, any>, operationName?: string }) => ValidationRule[])
