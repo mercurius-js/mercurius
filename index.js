@@ -64,16 +64,32 @@ const plugin = fp(async function (app, opts) {
 
   if (opts.persistedQueries) {
     if (opts.onlyPersisted) {
-      opts.persistedQuerySettings = persistedQueryDefaults.PreparedOnly(opts.persistedQueries)
+      opts.persistedQueryProvider = persistedQueryDefaults.preparedOnly(opts.persistedQueries)
 
       // Disable GraphiQL and GraphQL Playground
       opts.graphiql = false
       opts.ide = false
     } else {
-      opts.persistedQuerySettings = persistedQueryDefaults.Prepared(opts.persistedQueries)
+      opts.persistedQueryProvider = persistedQueryDefaults.prepared(opts.persistedQueries)
     }
   } else if (opts.onlyPersisted) {
     throw new Error('onlyPersisted is true but there are no persistedQueries')
+  }
+
+  if (opts.persistedQueryProvider) {
+    if (opts.persistedQueryProvider.getHash) {
+      if (!opts.persistedQueryProvider.getQueryFromHash) {
+        throw new Error('persistedQueryProvider: getQueryFromHash is required when getHash is provided')
+      }
+    } else {
+      throw new Error('persistedQueryProvider: getHash is required')
+    }
+
+    if (opts.persistedQueryProvider.getHashForQuery) {
+      if (!opts.persistedQueryProvider.saveQuery) {
+        throw new Error('persistedQueryProvider: saveQuery is required when getHashForQuery is provided')
+      }
+    }
   }
 
   if (typeof minJit !== 'number') {
@@ -158,7 +174,7 @@ const plugin = fp(async function (app, opts) {
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
-      persistedQuerySettings: opts.persistedQuerySettings,
+      persistedQueryProvider: opts.persistedQueryProvider,
       allowBatchedQueries: opts.allowBatchedQueries,
       schema,
       subscriber,

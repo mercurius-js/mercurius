@@ -4,7 +4,93 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
 
-test('Automatic POST new query', async (t) => {
+test('persistedQueryProvider errors when getHash is not provided', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  const persistedQueryProvider = {
+    getHash: null
+  }
+
+  t.rejects(async () => {
+    app.register(GQL, {
+      schema,
+      resolvers,
+      persistedQueryProvider
+    })
+
+    await app.ready()
+  })
+})
+
+test('persistedQueryProvider errors when getQueryFromHash is not provided', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  const persistedQueryProvider = {
+    ...GQL.persistedQueryDefaults.prepared(),
+    getQueryFromHash: null
+  }
+
+  t.rejects(async () => {
+    app.register(GQL, {
+      schema,
+      resolvers,
+      persistedQueryProvider
+    })
+
+    await app.ready()
+  })
+})
+
+test('persistedQueryProvider errors when saveQuery is not provided', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  const persistedQueryProvider = {
+    ...GQL.persistedQueryDefaults.automatic(),
+    saveQuery: null
+  }
+
+  t.rejects(async () => {
+    app.register(GQL, {
+      schema,
+      resolvers,
+      persistedQueryProvider
+    })
+
+    await app.ready()
+  })
+})
+
+test('automatic POST new query', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -20,7 +106,7 @@ test('Automatic POST new query', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
   })
 
   const res = await app.inject({
@@ -39,7 +125,7 @@ test('Automatic POST new query', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
-test('Automatic POST new query, error on saveQuery is handled', async (t) => {
+test('automatic POST new query, null result hashing a query is handled', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -55,8 +141,46 @@ test('Automatic POST new query, error on saveQuery is handled', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: {
-      ...GQL.persistedQueryDefaults.Automatic(),
+    persistedQueryProvider: {
+      ...GQL.persistedQueryDefaults.automatic(),
+      getHashForQuery: () => null
+    }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'AddQuery',
+      variables: { x: 1, y: 2 },
+      query: `
+        query AddQuery ($x: Int!, $y: Int!) {
+            add(x: $x, y: $y)
+        }`
+    }
+  })
+
+  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+})
+
+test('automatic POST new query, error on saveQuery is handled', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQueryProvider: {
+      ...GQL.persistedQueryDefaults.automatic(),
       saveQuery: async (hash, query) => { throw new Error('Failed to save somewhere.') }
     }
   })
@@ -77,7 +201,7 @@ test('Automatic POST new query, error on saveQuery is handled', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
-test('Automatic POST new query, only one of hash or saveQuery is required', async (t) => {
+test('automatic POST new persisted query and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -93,45 +217,7 @@ test('Automatic POST new query, only one of hash or saveQuery is required', asyn
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: {
-      ...GQL.persistedQueryDefaults.Automatic(),
-      saveQuery: null
-    }
-  })
-
-  const res = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      operationName: 'AddQuery',
-      variables: { x: 1, y: 2 },
-      query: `
-        query AddQuery ($x: Int!, $y: Int!) {
-            add(x: $x, y: $y)
-        }`
-    }
-  })
-
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
-})
-
-test('Automatic POST new persisted query and error', async (t) => {
-  const app = Fastify()
-
-  const schema = `
-      type Query {
-        add(x: Int, y: Int): Int
-      }
-    `
-
-  const resolvers = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
   })
 
   const res = await app.inject({
@@ -152,7 +238,7 @@ test('Automatic POST new persisted query and error', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotFound' }] })
 })
 
-test('Automatic POST invalid version persisted query and error', async (t) => {
+test('automatic POST invalid version persisted query and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -168,7 +254,7 @@ test('Automatic POST invalid version persisted query and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
   })
 
   const res = await app.inject({
@@ -189,7 +275,7 @@ test('Automatic POST invalid version persisted query and error', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
-test('Automatic POST invalid extension and error', async (t) => {
+test('automatic POST invalid extension and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -205,7 +291,7 @@ test('Automatic POST invalid extension and error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
   })
 
   const res = await app.inject({
@@ -220,7 +306,7 @@ test('Automatic POST invalid extension and error', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Unknown query' }] })
 })
 
-test('Automatic POST invalid extension without persistedQueries and error', async (t) => {
+test('automatic POST invalid extension without persistedQueries and error', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -236,7 +322,7 @@ test('Automatic POST invalid extension without persistedQueries and error', asyn
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
   })
 
   const res = await app.inject({
@@ -254,7 +340,7 @@ test('Automatic POST invalid extension without persistedQueries and error', asyn
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
-test('Automatic POST persisted query after priming', async (t) => {
+test('automatic POST persisted query after priming', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -270,7 +356,7 @@ test('Automatic POST persisted query after priming', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
   })
 
   let res = await app.inject({
@@ -306,7 +392,7 @@ test('Automatic POST persisted query after priming', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
-test('Automatic POST persisted query after priming, with extension set in both payloads', async (t) => {
+test('automatic POST persisted query after priming, with extension set in both payloads', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -322,7 +408,7 @@ test('Automatic POST persisted query after priming, with extension set in both p
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Automatic()
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
   })
 
   let res = await app.inject({
@@ -364,7 +450,7 @@ test('Automatic POST persisted query after priming, with extension set in both p
   t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
-// persistedQuerySettings
+// persistedQueryProvider
 
 test('GET route with query, variables & persisted', async (t) => {
   const app = Fastify()
@@ -381,7 +467,7 @@ test('GET route with query, variables & persisted', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Prepared({
+    persistedQueryProvider: GQL.persistedQueryDefaults.prepared({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
       '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
       '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
@@ -437,7 +523,7 @@ test('POST route with query, variables & persisted', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.Prepared({
+    persistedQueryProvider: GQL.persistedQueryDefaults.prepared({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
       '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
       '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
@@ -491,7 +577,7 @@ test('POST route with query, variables & persisted', async (t) => {
   })
 })
 
-test('PreparedOnly POST route with query, variables & persisted', async (t) => {
+test('preparedOnly POST route with query, variables & persisted', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -506,7 +592,7 @@ test('PreparedOnly POST route with query, variables & persisted', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.PreparedOnly({
+    persistedQueryProvider: GQL.persistedQueryDefaults.preparedOnly({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
       '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
       '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
@@ -560,7 +646,7 @@ test('PreparedOnly POST route with query, variables & persisted', async (t) => {
   })
 })
 
-test('PreparedOnly reject unknown queries with 400 for GET route', async (t) => {
+test('preparedOnly reject unknown queries with 400 for GET route', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -576,7 +662,7 @@ test('PreparedOnly reject unknown queries with 400 for GET route', async (t) => 
     schema,
     resolvers,
     graphiql: true,
-    persistedQuerySettings: GQL.persistedQueryDefaults.PreparedOnly({
+    persistedQueryProvider: GQL.persistedQueryDefaults.preparedOnly({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
     })
   })
@@ -589,7 +675,7 @@ test('PreparedOnly reject unknown queries with 400 for GET route', async (t) => 
   t.is(res.statusCode, 400)
 })
 
-test('PreparedOnly reject unknown queries with 400 for POST route', async (t) => {
+test('preparedOnly reject unknown queries with 400 for POST route', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -604,7 +690,7 @@ test('PreparedOnly reject unknown queries with 400 for POST route', async (t) =>
   app.register(GQL, {
     schema,
     resolvers,
-    persistedQuerySettings: GQL.persistedQueryDefaults.PreparedOnly({
+    persistedQueryProvider: GQL.persistedQueryDefaults.preparedOnly({
       '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
     })
   })
