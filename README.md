@@ -714,7 +714,7 @@ __fastify-gql__ supports the following options:
 * `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 * `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 * `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE (or Playground IDE) sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
-* `validationRules`: `Function[]`. Optional additional validation rules that the queries must satisfy in addition to those defined by the GraphQL specification.
+* `validationRules`: `Function` or `Function[]`. Optional additional validation rules that the queries must satisfy in addition to those defined by the GraphQL specification. When using `Function`, arguments include additional data from graphql request and the return value must be validation rules `Function[]`.
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
@@ -986,7 +986,10 @@ async function run () {
 run()
 ```
 
-<a name="defineLoaders"></a>
+#### app.graphql.schema
+
+Provides access to the built `GraphQLSchema` object that `fastify-gql` will use to execute queries. This property will reflect any updates made by `extendSchema` or `replaceSchema` as well.
+
 #### app.graphql.defineLoaders(loaders)
 
 A loader is an utility to avoid the 1 + N query problem of GraphQL.
