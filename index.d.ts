@@ -1,11 +1,9 @@
-import fastify, { FastifyError, FastifyReply, FastifyRequest, RegisterOptions } from "fastify";
-import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType, ValidationRule } from 'graphql';
-import { IncomingMessage, Server, ServerResponse } from "http";
-import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
+import { FastifyError, FastifyReply, FastifyRequest, FastifyInstance, RawServerBase, RawRequestDefaultExpression, RawReplyDefaultExpression, RegisterOptions  } from "fastify";
+import { DocumentNode, ExecutionResult, GraphQLSchema, Source, GraphQLResolveInfo, GraphQLIsTypeOfFn, GraphQLTypeResolver, GraphQLScalarType, ValidationRule  } from 'graphql';
 
 declare namespace fastifyGQL {
 
-  export interface Plugin<HttpResponse> {
+  export interface Plugin {
     /**
      * Replace existing schema
      * @param schema graphql schema
@@ -33,7 +31,7 @@ declare namespace fastifyGQL {
             params: any
           }>,
           context: {
-            reply: FastifyReply<HttpResponse>
+            reply: FastifyReply
           }) => any
       }
     }): void;
@@ -81,11 +79,7 @@ declare namespace fastifyGQL {
       notSupportedError?: string
   }
 
-  export interface Options<
-      HttpServer extends (Server | Http2Server) = Server,
-      HttpRequest extends (IncomingMessage | Http2ServerRequest) = IncomingMessage,
-      HttpResponse extends (ServerResponse | Http2ServerResponse) = ServerResponse
-    > extends RegisterOptions<HttpServer, HttpRequest, HttpResponse> {
+  export interface Options {
     /**
      * The GraphQL schema. String schema will be parsed
      */
@@ -105,7 +99,7 @@ declare namespace fastifyGQL {
             params: any
           }>,
           context: {
-            reply: FastifyReply<HttpResponse>
+            reply: FastifyReply
           }) => any
       }
     },
@@ -145,19 +139,19 @@ declare namespace fastifyGQL {
      */
     errorHandler?: boolean | ((
       error: FastifyError,
-      request: FastifyRequest<HttpRequest>,
-      reply: FastifyReply<HttpResponse>
+      request: FastifyRequest,
+      reply: FastifyReply
     ) => ExecutionResult),
     /**
      * The maximum depth allowed for a single query.
      */
     queryDepth?: number,
+    context?: (request: FastifyRequest, reply: FastifyReply) => Promise<any>,
     /**
      * Optional additional validation rules.
      * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
      */
     validationRules?: ValidationRules,
-    context?: (request: FastifyRequest<HttpRequest>, reply: FastifyReply<HttpResponse>) => Promise<any>,
     /**
      * Enable subscription support when options are provided. [`emitter`](https://github.com/mcollina/mqemitter) property is required when subscriptions is an object. (Default false)
      */
@@ -224,14 +218,14 @@ declare namespace fastifyGQL {
 }
 
 declare module "fastify" {
-  interface FastifyInstance<HttpServer, HttpRequest, HttpResponse> {
+  interface FastifyInstance {
     /**
      * GraphQL plugin
      */
-    graphql: fastifyGQL.Plugin<HttpResponse>;
+    graphql: fastifyGQL.Plugin;
   }
 
-  interface FastifyReply<HttpResponse> {
+  interface FastifyReply {
     /**
      * @param source GraphQL query string
      * @param context request context
@@ -247,14 +241,9 @@ declare module "fastify" {
   }
 }
 
-declare function fastifyGQL<
-  HttpServer extends (Server | Http2Server) = Server,
-  HttpRequest extends (IncomingMessage | Http2ServerRequest) = IncomingMessage,
-  HttpResponse extends (ServerResponse | Http2ServerResponse) = ServerResponse,
-  Options = fastifyGQL.Options<HttpServer, HttpRequest, HttpResponse>
->(
-  fastify: fastify.FastifyInstance<HttpServer, HttpRequest, HttpResponse>,
-  opts: Options): void;
+declare function fastifyGQL(
+  instance: FastifyInstance<RawServerBase, RawRequestDefaultExpression<RawServerBase>, RawReplyDefaultExpression<RawServerBase>>,
+  opts: fastifyGQL.Options): void
 
 
 export = fastifyGQL;
