@@ -1,7 +1,7 @@
 import Fastify from 'fastify'
-import * as GQL from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
+import GQL, { ErrorWithProps } from '../..'
 
 const app = Fastify()
 
@@ -91,7 +91,7 @@ app.register(async function (app) {
   `)
   app.graphql.defineResolvers({
     Query: {
-      willThrow: async () => { throw new GQL.ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
+      willThrow: async () => { throw new ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
     }
   })
 })

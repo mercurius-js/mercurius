@@ -1,6 +1,6 @@
 # fastify-gql
 
-![CI workflow](https://github.com/fastify/fastify-oauth2/workflows/CI%20workflow/badge.svg)
+[![Build Status](https://travis-ci.com/mcollina/fastify-gql.svg?branch=master)](https://travis-ci.com/mcollina/fastify-gql)
 
 Fastify GraphQL adapter.
 

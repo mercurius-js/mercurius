@@ -424,8 +424,7 @@ const plugin = fp(async function (app, opts) {
     return execution
   }
 }, {
-  name: 'fastify-gql',
-  fastify: '>=3.x'
+  name: 'fastify-gql'
 })
 
 plugin.ErrorWithProps = ErrorWithProps
