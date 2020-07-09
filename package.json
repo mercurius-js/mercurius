@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcollina/fastify-gql.git"  
+    "url": "git+https://github.com/mcollina/fastify-gql.git"
   },
   "author": "Matteo Collina <hello@matteocollina.com>",
   "license": "MIT",
@@ -35,7 +35,7 @@
     "snazzy": "^8.0.0",
     "standard": "^14.0.0",
     "tap": "^14.10.6",
-    "tsd": "^0.11.0"
+    "tsd": "^0.13.1"
   },
   "dependencies": {
     "end-of-stream": "^1.4.4",
