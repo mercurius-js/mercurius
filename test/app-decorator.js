@@ -284,9 +284,14 @@ test('replaceSchema with makeSchemaExecutable (schema should be provided)', asyn
 
 test('extendSchema and defineResolvers for query', async (t) => {
   const app = Fastify()
-  const schema = `
-    extend type Query {
+  const schema1 = `
+    type Query {
       add(x: Int, y: Int): Int
+    }
+  `
+  const schema2 = `
+    extend type Query {
+      subtract(x: Int, y: Int): Int
     }
   `
 
@@ -294,10 +299,10 @@ test('extendSchema and defineResolvers for query', async (t) => {
     add: async ({ x, y }) => x + y
   }
 
-  app.register(GQL)
+  app.register(GQL, { schema: schema1 })
 
   app.register(async function (app) {
-    app.graphql.extendSchema(schema)
+    app.graphql.extendSchema(schema2)
     app.graphql.defineResolvers(resolvers)
   })
 
@@ -316,9 +321,14 @@ test('extendSchema and defineResolvers for query', async (t) => {
 
 test('extendSchema changes reflected in schema access', async (t) => {
   const app = Fastify()
-  const schema = `
-    extend type Query {
+  const schema1 = `
+    type Query {
       add(x: Int, y: Int): Int
+    }
+  `
+  const schema2 = `
+    extend type Query {
+      subtract(x: Int, y: Int): Int
     }
   `
 
@@ -326,13 +336,13 @@ test('extendSchema changes reflected in schema access', async (t) => {
     add: async ({ x, y }) => x + y
   }
 
-  app.register(GQL)
+  app.register(GQL, { schema: schema1 })
 
   let beforeSchema
   app.register(async function (app) {
     beforeSchema = app.graphql.schema
 
-    app.graphql.extendSchema(schema)
+    app.graphql.extendSchema(schema2)
     app.graphql.defineResolvers(resolvers)
   })
 
@@ -381,7 +391,14 @@ test('extendSchema and defineResolvers with mutation definition', async (t) => {
 
 test('extendSchema and defineResolvers throws without mutation definition', async (t) => {
   const app = Fastify()
-  const schema = `
+
+  const schema1 = `
+    type Query {
+      multiply(x: Int, y: Int): Int
+    }
+  `
+
+  const schema2 = `
     extend type Query {
       add(x: Int, y: Int): Int
     }
@@ -396,10 +413,10 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
     sub: async ({ x, y }) => x - y
   }
 
-  app.register(GQL)
+  app.register(GQL, { schema: schema1 })
 
   app.register(async function (app) {
-    app.graphql.extendSchema(schema)
+    app.graphql.extendSchema(schema2)
     app.graphql.defineResolvers(resolvers)
   })
 
@@ -914,11 +931,18 @@ test('union should be supported with resolveType', async (t) => {
 
 test('extended Schema is not string', async t => {
   const app = Fastify()
-  const schema = 666
 
-  app.register(GQL)
+  const schema1 = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+  `
+
+  const schema2 = 666
+
+  app.register(GQL, { schema: schema1 })
   app.register(async function (app) {
-    app.graphql.extendSchema(schema)
+    app.graphql.extendSchema(schema2)
   })
 
   try {
@@ -930,8 +954,12 @@ test('extended Schema is not string', async t => {
 
 test('extended Schema is undefined', async t => {
   const app = Fastify()
-
-  app.register(GQL)
+  const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+  `
+  app.register(GQL, { schema })
   app.register(async function (app) {
     app.graphql.extendSchema()
   })
@@ -945,6 +973,13 @@ test('extended Schema is undefined', async t => {
 
 test('extended Schema is an object', async t => {
   const app = Fastify()
+
+  const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+  `
+
   const schemaObject = {
     kind: 'Document',
     definitions: [
@@ -974,7 +1009,7 @@ test('extended Schema is an object', async t => {
     ]
   }
 
-  app.register(GQL)
+  app.register(GQL, { schema })
   app.register(async function (app) {
     app.graphql.extendSchema(schemaObject)
   })
