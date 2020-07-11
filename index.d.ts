@@ -41,6 +41,44 @@ declare namespace fastifyGQL {
     schema: GraphQLSchema;
   }
 
+  export interface QueryRequest {
+      operationName?: string
+      query: string
+      variables?: object
+      extensions?: object
+  }
+
+  export interface PeristedQueryProvider {
+      /**
+       *  Return true if a given request matches the desired persisted query format.
+       */
+      isPersistedQuery: (r: QueryRequest) => boolean
+      /**
+       *  Return the hash from a given request, or falsy if this request format is not supported.
+       */
+      getHash: (r: QueryRequest) => string
+      /**
+       *  Return the query for a given hash.
+       */
+      getQueryFromHash: (hash: string) => Promise<string>
+      /**
+       *  Return the hash for a given query string. Do not provide if you want to skip saving new queries.
+       */
+      getHashForQuery?: (query: string) => string
+      /**
+       *  Save a query, given its hash.
+       */
+      saveQuery?: (hash: string, query: string) => Promise<void>
+      /**
+       * An error message to return when getQueryFromHash returns a falsy result. Defaults to 'Bad Request'.
+       */
+      notFoundError?: string
+      /**
+       * An error message to return when a query matches isPersistedQuery, but fasly from getHash. Defaults to 'Bad Request'.
+       */
+      notSupportedError?: string
+  }
+
   export interface Options {
     /**
      * The GraphQL schema. String schema will be parsed
@@ -138,6 +176,19 @@ declare namespace fastifyGQL {
       }>
     }
     /**
+     * Persisted queries, overrides persistedQueryProvider.
+     */
+    persistedQueries?: object
+    /**
+     * Only allow persisted queries. Required persistedQueries, overrides persistedQueryProvider.
+     */
+    onlyPersisted?: boolean
+    /**
+     * Settings for enabling persisted queries.
+     */
+    persistedQueryProvider?: PeristedQueryProvider
+    
+    /**
      * Enable support for batched queries (POST requests only).
      * Batched query support allows clients to send an array of queries and
      * receive an array of responses within a single request.
@@ -155,6 +206,15 @@ declare namespace fastifyGQL {
      */
     extensions?: object
   }
+
+  /**
+   * Default options for persisted queries.
+   */
+  export const persistedQueryDefaults: { 
+    prepared: (persistedQueries: object) => PeristedQueryProvider
+    preparedOnly: (persistedQueries: object) => PeristedQueryProvider
+    automatic: (maxSize?: number) => PeristedQueryProvider
+   };
 }
 
 declare module "fastify" {

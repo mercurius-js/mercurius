@@ -13,6 +13,7 @@ Features:
 * Federation support.
 * Gateway implementation, including Subscriptions.
 * Batched query support.
+* Customisable persisted queries.
 
 ## Install
 
@@ -92,51 +93,127 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
-### persistedQueries support
+### Persisted Queries
 
-Unlike REST APIs that use a fixed URL to load data, GraphQL queries are often much longer than that, in some cases by many kilobytes. This is actually significant overhead. When paired with the fact that the uplink speed from the client is typically the most bandwidth-constrained part of the chain, large queries can become bottlenecks for client performance.
+GraphQL query strings are often larger than the URLs used in REST requests, sometimes by many kilobytes.
 
-Persisted Queries solves this problem by sending a generated ID instead of the query text as the request. This smaller signature reduces bandwidth utilization and speeds up client loading times.
+Depending on the client, this can be a significant overhead for each request, especially given that upload speed is typically the most bandwidth-constrained part of the request lifecycle. Large queries can add significant performance overheads.
 
-See the example below, we're supplying an object containing hash of each query to the server. This object will be used to lookup actual query texts when server recieves a request containing hash of the query.
+Persisted Queries solve this problem by having the client send a generated ID, instead of the full query string, resulting in a smaller request. The server can use an internal lookup to turn this back into a full query and return the result.
 
+The `persistedQueryProvider` option lets you configure this for Fastify GQL. There are a few default options available, included in `GQL.persistedQueryDefaults`.
+
+#### Prepared
+
+Prepared queries give the best performance in all use cases, at the expense of tooling complexity. Queries must be hashed ahead of time, and a matching set of hashes must be available for both the client and the server. Additionally, version control of query hashes must be considered, e.g. queries used by old clients may need to be kept such that hashes can be calculated at build time. This can be very useful for non-public APIs, but is impractical for public APIs.
+
+Clients can provide a full query string, or set the `persisted` flag to true and provide a hash instead of the query in the request:
 ```js
-'use strict'
+{
+  query: '<hash>',
+  persisted: true
+}
+```
 
-const Fastify = require('fastify')
+A map of hashes to queries must be provided to the server at startup:
+```js
 const GQL = require('fastify-gql')
 
-const app = Fastify()
+app.register(GQL, {
+  ...
+  persistedQueryProvider: GQL.persistedQueryDefaults.prepared({
+    '<hash>':  '{ add(x: 1, y: 1) }'
+  })
+})
+```
 
-const schema = `
-  type Query {
-    add(x: Int, y: Int): Int
-  }
-`
+Alternatively the `peristedQueries` option may be used directly, which will be internally mapped to the `prepared` default:
+```js
+const GQL = require('fastify-gql')
 
-const resolvers = {
-  Query: {
-    add: async (_, { x, y }) => x + y
+app.register(GQL, {
+  ...
+  persistedQueries: {
+    '<hash>':  '{ add(x: 1, y: 1) }'
   }
+})
+```
+
+#### Prepared Only
+
+This offers similar performance and considerations to the `prepared` queries, but only allows persisted queries. This provides additional secuirity benefits, but means that the server **must** know all queries ahead of time or will reject the request.
+
+The API is the same as the `prepared` default.
+
+Alternatively the `peristedQueries` and `onlyPersisted` options may be used directly, which will be internally mapped to the `preparedOnly` default:
+```js
+const GQL = require('fastify-gql')
+
+app.register(GQL, {
+  ...
+  persistedQueries: {
+    '<hash>': '{ add(x: 1, y: 1) }'
+  },
+  onlyPersisted: true
+})
+```
+
+#### Automatic
+
+This default is compatible with `apollo-client`, and requires no additional tooling to set up at the cost of some performance. In order for this mode to be effective, you must have long lived server instances (i.e *not* cloud functions). This mode is also appropriate for public APIs where queries are not known ahead of time.
+
+When an unrecognised hash is recieved by the server instance, an error is thrown informing the client that the persisted query has not been seen before. The client then re-sends the full query string. When a full query string is recieved, the server caches the hash of the query string and returns the response. *Note that sticky sessions should be used to ensure optimal performance here by making sure the follow up request is sent to the same server instance.*
+
+The next request for that query (from the same or a different client) will already have been cached and will then be looked up accordingly.
+
+When the server initially starts, no queries will be cached and additional latency will be added to the first requests recieved (due to the client re-sending the full query). However, the most common queries will rapidly be cached by the server. After a warmup (length dependent on the number of queries clients might send and how frequent they are) performance will match that of the `prepared` query option.
+
+Additional documentation on Apollo's automatic persisted queries implementation can be found [here](https://www.apollographql.com/docs/apollo-server/performance/apq/).
+
+Example:
+```js
+const GQL = require('fastify-gql')
+
+app.register(GQL, {
+  ...
+  persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
+})
+```
+
+An LRU cache is used to prevent DoS attacks on the storage of hashes & queries. The maximum size of this cache (maximum number of cached queries) can be adjusted by passing a value to the constructor, for example:
+
+```js
+const GQL = require('fastify-gql')
+
+app.register(GQL, {
+  ...
+  persistedQueryProvider: GQL.persistedQueryDefaults.automatic(5000)
+})
+```
+
+
+#### Custom Persisted Queries
+
+It is also possible to extend or modify these persisted query implementations for custom cases, such as automatic Persisted Queries, but with a shared cache between servers.
+
+This would enable all persisted queries to be shared between all server instances in a cache which is dynamically populated. The lookup time from the cache is an additional overhead for each request, but a higher rate of persisted query matches would be achieved. This may be beneficial, for example, in a public facing API which supports persisted queries and uses cloud functions (short lived server instances). *Note the performance impacts of this need to be considered thoroughly: the latency added to each request must be less than the savings from smaller requests.*
+
+A example of using this with Redis would be:
+
+```js
+const GQL = require('fastify-gql')
+
+const persistedQueryProvider = {
+  ...GQL.persistedQueryDefaults.automatic(),
+  getQueryFromHash: async (hash) => redis.get(hash),
+  saveQuery: async (hash, query) => redis.set(hash, query),
 }
 
 app.register(GQL, {
-  schema,
-  resolvers,
-  persistedQueries: {
-    '<unique-hash>': '{ add(x: 1, y: 1) }'
-  }
+  ...
+  persistedQueryProvider
 })
-
-app.listen(3000)
 ```
-
-### Disallowing unknown queries
-
-In addition to the `persistedQueries` above, which let's client request for either query text OR a hash (if pre-fed), there's another option available called `onlyPersisted`. This is useful when you want to secure the server by disallowing any unknown requests. It will ensure the server never responds to any query except what it already knows (form the `persistedQueries`).
-
-Note: `onlyPersisted` disables all IDEs (graphiql/playground) so typically you'd want to use it in production.
-
 
 ### Batched Queries
 
@@ -649,8 +726,16 @@ __fastify-gql__ supports the following options:
     * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
     * `service.wsUrl`: The url of the websocket endpoint
     * `service.wsConnectionParams`: `Function` or `Object`
-* `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash.
-* `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql).
+* `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash. Overrides `persistedQueryProvider`.
+* `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.
+* `persistedQueryProvider`
+  * `isPersistedQuery: (request: object) => boolean`: Return true if a given request matches the desired persisted query format.
+  * `getHash: (request: object) => string`: Return the hash from a given request, or falsy if this request format is not supported.
+  * `getQueryFromHash: async (hash: string) => string`: Return the query for a given hash.
+  * `getHashForQuery?: (query: string) => string`: Return the hash for a given query string. Do not provide if you want to skip saving new queries.
+  * `saveQuery?: async (hash: string, query: string) => void`: Save a query, given its hash.
+  * `notFoundError?: string`: An error message to return when `getQueryFromHash` returns no result. Defaults to `Bad Request`.
+  * `notSupportedError?: string`: An error message to return when a query matches `isPersistedQuery`, but returns no valid hash from `getHash`. Defaults to `Bad Request`.
 * `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
 #### queryDepth example
