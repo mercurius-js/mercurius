@@ -518,50 +518,6 @@ test('POST return 400 on error', async (t) => {
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
-test('POST return 500 on error without statusCode', async (t) => {
-  const app = Fastify()
-  const schema = `
-    interface Event {
-      Id: Int!
-    }
-    type CustomEvent implements Event {
-      # Id needs to be specified here
-      Name: String!
-    }
-    type Query {
-      listEvent: [Event]
-    }
-  `
-
-  const resolvers = {
-    listEvent: async () => []
-  }
-
-  // node v14 requires that this GQL schema error is caught - error doesn't propagate when node <= v12
-  try {
-    app.register(GQL, {
-      schema,
-      resolvers
-    })
-    await app.ready()
-  } catch (error) {
-    t.equal(error.name, 'GraphQLError')
-  }
-
-  const query = '{ listEvent { id } }'
-
-  const res = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query
-    }
-  })
-
-  t.equal(res.statusCode, 500) // Internal error
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
-})
-
 test('mutation with POST', async (t) => {
   const app = Fastify()
   const schema = `
