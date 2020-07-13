@@ -142,6 +142,7 @@ declare namespace fastifyGQL {
         name: string
         url: string
       }>
+      pollingInterval: number
     }
     /**
      * Enable support for batched queries (POST requests only).

@@ -122,18 +122,23 @@ const plugin = fp(async function (app, opts) {
     schema = gateway.schema
     entityResolversFactory = gateway.entityResolversFactory
 
+    let gatewayInterval = null
+
     if (gateway.pollingInterval !== undefined) {
-      setInterval(async () => {
+      gatewayInterval = setInterval(async () => {
         try {
-          fastifyGraphQl.schema = await gateway.refresh()
-        } catch (err) {
-          console.error(err)
+          fastifyGraphQl.replaceSchema(await gateway.refresh())
+        } catch (error) {
+          app.log.error(error)
         }
       }, gateway.pollingInterval)
     }
 
     app.onClose((fastify, next) => {
       gateway.close()
+      if (gatewayInterval !== null) {
+        clearInterval(gatewayInterval)
+      }
       setImmediate(next)
     })
 
