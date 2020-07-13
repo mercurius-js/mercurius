@@ -188,14 +188,11 @@ export interface FastifyGQLOptions {
   allowBatchedQueries?: boolean;
 }
 
-// declare const fastifyGQL: FastifyPlugin<FastifyGQLOptions>
-
 
 declare function fastifyGQL 
   (
     instance: FastifyInstance,
-    opts: FastifyGQLOptions,
-    next: (err?: FastifyError) => void
+    opts: FastifyGQLOptions
   ): void;
 
 
