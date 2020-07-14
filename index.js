@@ -150,11 +150,7 @@ const plugin = fp(async function (app, opts) {
 
     if (gateway.pollingInterval !== undefined) {
       gatewayInterval = setInterval(async () => {
-        try {
-          fastifyGraphQl.replaceSchema(await gateway.refresh())
-        } catch (error) {
-          app.log.error(error)
-        }
+        fastifyGraphQl.replaceSchema(await gateway.refresh())
       }, gateway.pollingInterval)
     }
 
