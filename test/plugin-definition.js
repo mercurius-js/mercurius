@@ -7,7 +7,12 @@ const GQL = require('..')
 
 test('plugin name definition', async (t) => {
   const app = Fastify()
-  app.register(GQL)
+  const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+  `
+  app.register(GQL, { schema })
   app.register(fp(async (app, opts) => {}, {
     dependencies: ['fastify-gql']
   }))

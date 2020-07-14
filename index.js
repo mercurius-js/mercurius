@@ -30,6 +30,7 @@ const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
 const { ErrorWithProps, FEDERATED_ERROR } = require('./lib/errors')
+const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -60,12 +61,35 @@ const plugin = fp(async function (app, opts) {
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
-  const onlyPersisted = !!opts.onlyPersisted
-  opts.graphiql = onlyPersisted ? false : opts.graphiql
-  opts.ide = onlyPersisted ? false : opts.ide
 
-  if (onlyPersisted && !opts.persistedQueries) {
+  if (opts.persistedQueries) {
+    if (opts.onlyPersisted) {
+      opts.persistedQueryProvider = persistedQueryDefaults.preparedOnly(opts.persistedQueries)
+
+      // Disable GraphiQL and GraphQL Playground
+      opts.graphiql = false
+      opts.ide = false
+    } else {
+      opts.persistedQueryProvider = persistedQueryDefaults.prepared(opts.persistedQueries)
+    }
+  } else if (opts.onlyPersisted) {
     throw new Error('onlyPersisted is true but there are no persistedQueries')
+  }
+
+  if (opts.persistedQueryProvider) {
+    if (opts.persistedQueryProvider.getHash) {
+      if (!opts.persistedQueryProvider.getQueryFromHash) {
+        throw new Error('persistedQueryProvider: getQueryFromHash is required when getHash is provided')
+      }
+    } else {
+      throw new Error('persistedQueryProvider: getHash is required')
+    }
+
+    if (opts.persistedQueryProvider.getHashForQuery) {
+      if (!opts.persistedQueryProvider.saveQuery) {
+        throw new Error('persistedQueryProvider: saveQuery is required when getHashForQuery is provided')
+      }
+    }
   }
 
   if (typeof minJit !== 'number') {
@@ -147,7 +171,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.schema = schema
 
-  app.ready(async function () {
+  app.addHook('onReady', async function () {
     const schemaValidationErrors = validateSchema(fastifyGraphQl.schema)
     if (schemaValidationErrors.length > 0) {
       const err = new Error('schema issues')
@@ -166,8 +190,7 @@ const plugin = fp(async function (app, opts) {
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
-      onlyPersisted: onlyPersisted,
-      persistedQueries: opts.persistedQueries,
+      persistedQueryProvider: opts.persistedQueryProvider,
       allowBatchedQueries: opts.allowBatchedQueries,
       schema: fastifyGraphQl.schema,
       subscriber,
@@ -437,9 +460,11 @@ const plugin = fp(async function (app, opts) {
     return execution
   }
 }, {
-  name: 'fastify-gql'
+  name: 'fastify-gql',
+  fastify: '>=3.x'
 })
 
 plugin.ErrorWithProps = ErrorWithProps
+plugin.persistedQueryDefaults = persistedQueryDefaults
 
 module.exports = plugin

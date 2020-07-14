@@ -210,7 +210,7 @@ test('POST batched query with a resolver which succeeds and a resolver which thr
 
   const resolvers = {
     add: async ({ x, y }) => x + y,
-    bad: () => { console.log('RUNNING'); throw new Error('Bad Resolver') }
+    bad: () => { throw new Error('Bad Resolver') }
   }
 
   app.register(GQL, {
