@@ -368,7 +368,8 @@ test('options cache is type = number', async t => {
   const app = Fastify()
 
   app.register(GQL, {
-    cache: 256
+    cache: 256,
+    schema
   })
 
   await app.ready()
@@ -378,7 +379,8 @@ test('options cache is boolean', async t => {
   const app = Fastify()
 
   app.register(GQL, {
-    cache: true
+    cache: true,
+    schema
   })
 
   try {

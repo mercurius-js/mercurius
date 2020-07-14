@@ -1016,3 +1016,34 @@ test('extended Schema is an object', async t => {
 
   await app.ready()
 })
+
+test('Error in schema', async (t) => {
+  const schema = `
+    interface Event {
+      Id: Int!
+    }
+    type CustomEvent implements Event {
+      # Id needs to be specified here
+      Name: String!
+    }
+    type Query {
+      listEvent: [Event]
+    }
+  `
+
+  const resolvers = {
+    listEvent: async () => []
+  }
+
+  const app = Fastify()
+
+  try {
+    app.register(GQL, {
+      schema,
+      resolvers
+    })
+    await app.ready()
+  } catch (error) {
+    t.equal(error.name, 'Error')
+  }
+})
