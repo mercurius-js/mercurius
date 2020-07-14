@@ -1,5 +1,6 @@
 import Fastify from 'fastify'
-import * as GQL from '../..'
+// eslint-disable-next-line no-unused-vars
+import fastifyGQL, { FastifyGQLOptions } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
 
@@ -39,7 +40,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(fastifyGQL, {
   schema: schema,
   resolvers,
   loaders: {},
@@ -91,7 +92,7 @@ app.register(async function (app) {
   `)
   app.graphql.defineResolvers({
     Query: {
-      willThrow: async () => { throw new GQL.ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
+      willThrow: async () => { throw new fastifyGQL.ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
     }
   })
 })
@@ -103,10 +104,10 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 
-function makeGraphqlServer (options: GQL.Options) {
+function makeGraphqlServer (options: FastifyGQLOptions) {
   const app = Fastify()
 
-  app.register(GQL, options)
+  app.register(fastifyGQL, options)
 
   return app
 }
@@ -122,4 +123,4 @@ const customValidationRule: ValidationRule = (_context: ValidationContext) => {
 makeGraphqlServer({ schema, resolvers })
 makeGraphqlServer({ schema, resolvers, validationRules: [] })
 makeGraphqlServer({ schema, resolvers, validationRules: [customValidationRule] })
-makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }) => [customValidationRule] })
+makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }: { source: string, variables?: Record<string, any>, operationName?: string }) => [customValidationRule] })
