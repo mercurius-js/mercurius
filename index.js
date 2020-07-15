@@ -213,6 +213,7 @@ const plugin = fp(async function (app, opts) {
 
     lru.clear()
     lruErrors.clear()
+    lruGatewayResolvers.clear()
   }
 
   fastifyGraphQl.extendSchema = function (s) {
