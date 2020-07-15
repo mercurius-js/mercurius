@@ -3,7 +3,7 @@
 const { test } = require('tap')
 const FakeTimers = require('@sinonjs/fake-timers')
 
-const { once, EventEmitter } = require('events')
+const { once } = require('events')
 
 const Fastify = require('fastify')
 const WebSocket = require('ws')
@@ -493,8 +493,6 @@ test('Polling schemas (cache should be cleared)', async (t) => {
 })
 
 test('Polling schemas (subscriptions should be handled)', async (t) => {
-  const eventEmitter = new EventEmitter()
-
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
@@ -648,12 +646,11 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         id: 'u1',
         name: 'John'
       })
-
-      eventEmitter.emit('client.on.data')
     }
   })
 
-  await once(eventEmitter, 'client.on.data')
+  await once(client, 'data')
+  await once(client, 'data')
 
   userService.graphql.replaceSchema(
     buildFederationSchema(`
@@ -698,8 +695,6 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         id: 'u1',
         name: 'John'
       })
-
-      eventEmitter.emit('client.on.data')
     }
   })
 
@@ -715,7 +710,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     }
   })
 
-  await once(eventEmitter, 'client.on.data')
+  await once(client, 'data')
 
   t.equal(ws.readyState, 1)
 
@@ -784,12 +779,10 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         name: 'John',
         lastName: 'Doe'
       })
-
-      eventEmitter.emit('client.on.data')
     }
   })
 
-  await once(eventEmitter, 'client.on.data')
+  await once(client, 'data')
 
   t.equal(ws2.readyState, 1)
 
