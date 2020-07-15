@@ -3,6 +3,8 @@
 const { test } = require('tap')
 const FakeTimers = require('@sinonjs/fake-timers')
 
+const { once, EventEmitter } = require('events')
+
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const buildFederationSchema = require('../../lib/federation')
@@ -491,6 +493,8 @@ test('Polling schemas (cache should be cleared)', async (t) => {
 })
 
 test('Polling schemas (subscriptions should be handled)', async (t) => {
+  const eventEmitter = new EventEmitter()
+
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
@@ -586,6 +590,8 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     'graphql-ws'
   )
 
+  t.equal(ws.readyState, 0)
+
   const client = WebSocket.createWebSocketStream(ws, {
     encoding: 'utf8',
     objectMode: true
@@ -620,171 +626,172 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     })
   )
 
-  const promise = () =>
-    new Promise((resolve) => {
-      client.on('data', (chunk) => {
-        const data = JSON.parse(chunk)
+  client.on('data', (chunk) => {
+    const data = JSON.parse(chunk)
 
-        if (data.type === 'connection_ack') {
-          gateway.inject({
-            method: 'POST',
-            url: '/graphql',
-            body: {
-              query: `
-              mutation {
-                triggerUser
-              }
-            `
-            }
-          })
-        } else if (data.type === 'data' && data.id === 1) {
-          const { payload: { data: { updatedUser = {} } = {} } = {} } = data
-
-          t.deepEqual(updatedUser, {
-            id: 'u1',
-            name: 'John'
-          })
-
-          resolve()
-        }
-      })
-    })
-
-  return promise()
-    .then(async () => {
-      userService.graphql.replaceSchema(
-        buildFederationSchema(`
-          extend type Query {
-            me: User
-          }
-
-          extend type Subscription {
-            updatedUser: User
-          }
-
-          extend type Mutation {
-            triggerUser: Boolean
-          }
-
-          type User @key(fields: "id") {
-            id: ID!
-            name: String!
-            lastName: String
-          }
-        `)
-      )
-
-      userService.graphql.defineResolvers(resolvers)
-
-      await clock.tickAsync(2000)
-
-      const promise = () =>
-        new Promise((resolve) => {
-          client.on('data', (chunk) => {
-            const data = JSON.parse(chunk)
-
-            if (data.id === 1) {
-              const { payload: { data: { updatedUser = {} } = {} } = {} } = data
-
-              t.deepEqual(updatedUser, {
-                id: 'u1',
-                name: 'John'
-              })
-
-              resolve()
-            }
-          })
-        })
-
-      await gateway.inject({
+    if (data.type === 'connection_ack') {
+      gateway.inject({
         method: 'POST',
         url: '/graphql',
         body: {
           query: `
-              mutation {
-                triggerUser
-              }
-            `
+          mutation {
+            triggerUser
+          }
+        `
         }
       })
+    } else if (data.type === 'data' && data.id === 1) {
+      const { payload: { data: { updatedUser = {} } = {} } = {} } = data
 
-      return promise()
-    })
-    .then(() => {
-      const ws = new WebSocket(
-        `ws://localhost:${gateway.server.address().port}/graphql`,
-        'graphql-ws'
-      )
-
-      const client2 = WebSocket.createWebSocketStream(ws, {
-        encoding: 'utf8',
-        objectMode: true
+      t.deepEqual(updatedUser, {
+        id: 'u1',
+        name: 'John'
       })
 
-      t.tearDown(() => {
-        client2.destroy()
+      eventEmitter.emit('client.on.data')
+    }
+  })
+
+  await once(eventEmitter, 'client.on.data')
+
+  userService.graphql.replaceSchema(
+    buildFederationSchema(`
+      extend type Query {
+        me: User
+      }
+
+      extend type Subscription {
+        updatedUser: User
+      }
+
+      extend type Mutation {
+        triggerUser: Boolean
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+        lastName: String
+      }
+    `)
+  )
+
+  userService.graphql.defineResolvers(resolvers)
+
+  await clock.tickAsync(2000)
+  await clock.tickAsync()
+
+  t.deepEqual(Object.keys(gateway.graphql.schema.getType('User').getFields()), [
+    'id',
+    'name',
+    'lastName'
+  ])
+
+  client.on('data', (chunk) => {
+    const data = JSON.parse(chunk)
+
+    if (data.id === 1) {
+      const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+
+      t.deepEqual(updatedUser, {
+        id: 'u1',
+        name: 'John'
       })
 
-      client2.setEncoding('utf8')
+      eventEmitter.emit('client.on.data')
+    }
+  })
 
-      client2.write(
-        JSON.stringify({
-          type: 'connection_init'
-        })
-      )
-
-      client2.write(
-        JSON.stringify({
-          id: 2,
-          type: 'start',
-          payload: {
-            query: `
-                subscription {
-                  updatedUser {
-                    id
-                    name
-                    lastName
-                  }
-                }
-              `
+  await gateway.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: `
+          mutation {
+            triggerUser
           }
-        })
-      )
+        `
+    }
+  })
 
-      const promise = () =>
-        new Promise((resolve) => {
-          client2.on('data', (chunk) => {
-            const data = JSON.parse(chunk)
+  await once(eventEmitter, 'client.on.data')
 
-            if (data.type === 'connection_ack') {
-              gateway.inject({
-                method: 'POST',
-                url: '/graphql',
-                body: {
-                  query: `
-                      mutation {
-                        triggerUser
-                      }
-                    `
-                }
-              })
-            } else if (data.type === 'data' && data.id === 2) {
-              const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+  t.equal(ws.readyState, 1)
 
-              t.deepEqual(updatedUser, {
-                id: 'u1',
-                name: 'John',
-                lastName: 'Doe'
-              })
+  const ws2 = new WebSocket(
+    `ws://localhost:${gateway.server.address().port}/graphql`,
+    'graphql-ws'
+  )
 
-              resolve()
+  t.equal(ws2.readyState, 0)
+
+  const client2 = WebSocket.createWebSocketStream(ws2, {
+    encoding: 'utf8',
+    objectMode: true
+  })
+
+  t.tearDown(() => {
+    client2.destroy()
+  })
+
+  client2.setEncoding('utf8')
+
+  client2.write(
+    JSON.stringify({
+      type: 'connection_init'
+    })
+  )
+
+  client2.write(
+    JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            updatedUser {
+              id
+              name
+              lastName
             }
-          })
-        })
+          }
+        `
+      }
+    })
+  )
 
-      return promise()
-    })
-    .then(() => {
-      clock.uninstall()
-    })
+  client2.on('data', (chunk) => {
+    const data = JSON.parse(chunk)
+
+    if (data.type === 'connection_ack') {
+      gateway.inject({
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
+            mutation {
+              triggerUser
+            }
+          `
+        }
+      })
+    } else if (data.type === 'data' && data.id === 2) {
+      const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+
+      t.deepEqual(updatedUser, {
+        id: 'u1',
+        name: 'John',
+        lastName: 'Doe'
+      })
+
+      eventEmitter.emit('client.on.data')
+    }
+  })
+
+  await once(eventEmitter, 'client.on.data')
+
+  t.equal(ws2.readyState, 1)
+
+  clock.uninstall()
 })
