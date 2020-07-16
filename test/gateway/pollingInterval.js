@@ -650,7 +650,6 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   })
 
   await once(client, 'data')
-  await once(client, 'data')
 
   userService.graphql.replaceSchema(
     buildFederationSchema(`
