@@ -1044,7 +1044,6 @@ test('Error in schema', async (t) => {
     })
     await app.ready()
   } catch (error) {
-    console.log(error.message, error.name)
     t.equal(error.message, 'Interface field Event.Id expected but CustomEvent does not provide it.')
     t.equal(error.name, 'GraphQLError')
   }
