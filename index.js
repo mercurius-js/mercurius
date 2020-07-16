@@ -156,8 +156,10 @@ const plugin = fp(async function (app, opts) {
 
   app.addHook('onReady', async function () {
     const schemaValidationErrors = validateSchema(fastifyGraphQl.schema)
-    if (schemaValidationErrors.length > 0) {
-      const err = new Error('schema issues')
+    if (schemaValidationErrors.length === 1) {
+      throw schemaValidationErrors[0]
+    } else if (schemaValidationErrors.length > 1) {
+      const err = new Error('Schema issues, check out the .errors property on the Error.')
       err.errors = schemaValidationErrors
       throw err
     }
