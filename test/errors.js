@@ -382,3 +382,46 @@ test('errors - federated errors without locations, path and extensions', async (
   t.equal(jitres.statusCode, 200)
   t.deepEqual(JSON.parse(jitres.payload), expectedResult)
 })
+
+test('POST query with a resolver which which throws and a custom error formatter', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        bad: Int
+      }
+    `
+
+  const resolvers = {
+    bad: () => { throw new Error('Bad Resolver') }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    allowBatchedQueries: true,
+    errorFormatter: () => ({
+      statusCode: 200,
+      response: {
+        data: null,
+        errors: [{ message: 'Internal Server Error' }]
+      }
+    })
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'BadQuery',
+      variables: { x: 1 },
+      query: `
+          query BadQuery {
+              bad
+          }`
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+})

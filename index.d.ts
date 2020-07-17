@@ -12,6 +12,7 @@ import {
   DocumentNode,
   ExecutionResult,
   GraphQLSchema,
+  GraphQLError,
   Source,
   GraphQLResolveInfo,
   GraphQLIsTypeOfFn,
@@ -133,6 +134,18 @@ export interface FastifyGQLOptions {
         reply: FastifyReply
       ) => ExecutionResult);
   /**
+   * Change the default error formatter.
+   */
+  errorFormatter?: ((
+    error: FastifyError | GraphQLError | Error
+  ) => {
+    statusCode?: number
+    response?: {
+      data?: object
+      errors: any[]
+    }
+  });
+  /**
    * The maximum depth allowed for a single query.
    */
   queryDepth?: number;
@@ -228,7 +241,6 @@ declare namespace fastifyGQL {
     notSupportedError?: string;
   }
 
- 
 
   /**
    * Extended errors for adding additional information in error responses
