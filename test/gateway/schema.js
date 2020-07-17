@@ -63,6 +63,8 @@ test('It builds the gateway schema correctly', async (t) => {
   }
 
   const userServicePort = await createService(t, `
+    directive @customDirective on FIELD_DEFINITION
+
     extend type Query {
       me: User
       hello: String
@@ -189,14 +191,14 @@ test('It builds the gateway schema correctly', async (t) => {
     }
     hello
   }
-  
+
   fragment UserFragment on User {
     id
     name
     avatar(size: medium)
     numberOfPosts
   }
-  
+
   fragment PostFragment on Post {
     pid
     title
