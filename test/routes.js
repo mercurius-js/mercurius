@@ -1613,3 +1613,43 @@ test('if ide is graphiql, serve config.js with the correct endpoint', async (t) 
   t.strictEqual(res.headers['content-type'], 'application/javascript')
   t.matchSnapshot(res.body)
 })
+
+test('if operationName is null, it should work fine', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const operationName = null
+
+  const query = 'query { add(x: 2, y: 3) }'
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({
+      query,
+      operationName,
+      variables: {}
+    })
+  })
+
+  t.strictEqual(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 5
+    }
+  })
+})
