@@ -170,7 +170,7 @@ async function start () {
       post: Post
     }
 
-    extend type User @key(fields: "id") {
+    extend type User {
       id: ID! @external
       comments: [Comment]
     }
