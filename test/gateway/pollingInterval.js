@@ -329,6 +329,128 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   clock.uninstall()
 })
 
+test('Polling schemas (if service is mandatory, exception should be thrown)', async (t) => {
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => user
+    },
+    User: {
+      __resolveReference: (user, args, context, info) => user
+    }
+  }
+
+  const user = {
+    id: 'u1',
+    name: 'John',
+    lastName: 'Doe'
+  }
+
+  const userService = Fastify()
+  const gateway = Fastify()
+
+  userService.register(GQL, {
+    schema: `
+      extend type Query {
+        me: User
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+      }
+    `,
+    resolvers: resolvers,
+    federationMetadata: true
+  })
+
+  await userService.listen(0)
+
+  const userServicePort = userService.server.address().port
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`,
+          mandatory: true
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  {
+    const { body } = await gateway.inject({
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      url: '/graphql',
+      body: JSON.stringify({
+        query: `
+          query MainQuery {
+            me {
+              id
+              name
+            }
+          }
+        `
+      })
+    })
+
+    t.deepEqual(JSON.parse(body), {
+      data: {
+        me: {
+          id: 'u1',
+          name: 'John'
+        }
+      }
+    })
+  }
+
+  {
+    const { body } = await gateway.inject({
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      url: '/graphql',
+      body: JSON.stringify({
+        query: `
+          query MainQuery {
+            me {
+              id
+              name
+              lastName
+            }
+          }
+        `
+      })
+    })
+
+    t.deepEqual(JSON.parse(body), {
+      errors: [
+        {
+          message:
+            'Cannot query field "lastName" on type "User". Did you mean "name"?',
+          locations: [{ line: 6, column: 15 }]
+        }
+      ],
+      data: null
+    })
+  }
+
+  await userService.close()
+
+  t.rejects(async () => {
+    await gateway.graphql.gateway.refresh()
+  })
+
+  await gateway.close()
+})
+
 test('Polling schemas (cache should be cleared)', async (t) => {
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
