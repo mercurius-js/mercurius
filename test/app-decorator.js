@@ -1044,6 +1044,47 @@ test('Error in schema', async (t) => {
     })
     await app.ready()
   } catch (error) {
+    t.equal(error.message, 'Interface field Event.Id expected but CustomEvent does not provide it.')
+    t.equal(error.name, 'GraphQLError')
+  }
+})
+
+test('Multiple errors in schema', async (t) => {
+  const schema = `
+    interface Event {
+      Id: Int!
+    }
+    type CustomEvent implements Event {
+      # Id needs to be specified here
+      Name: String!
+    }
+    type AnotherEvent implements Event {
+      # Id needs to be specified here
+      Name: String!
+    }
+    type Query {
+      listEvent: [Event]
+    }
+  `
+
+  const resolvers = {
+    listEvent: async () => []
+  }
+
+  const app = Fastify()
+
+  try {
+    app.register(GQL, {
+      schema,
+      resolvers
+    })
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Schema issues, check out the .errors property on the Error.')
     t.equal(error.name, 'Error')
+    t.equal(error.errors[0].message, 'Interface field Event.Id expected but CustomEvent does not provide it.')
+    t.equal(error.errors[0].name, 'GraphQLError')
+    t.equal(error.errors[1].message, 'Interface field Event.Id expected but AnotherEvent does not provide it.')
+    t.equal(error.errors[1].name, 'GraphQLError')
   }
 })

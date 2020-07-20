@@ -29,7 +29,7 @@ const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
-const { ErrorWithProps, FEDERATED_ERROR } = require('./lib/errors')
+const { ErrorWithProps, defaultErrorFormatter } = require('./lib/errors')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 
 const kLoaders = Symbol('fastify-gql.loaders')
@@ -61,6 +61,7 @@ const plugin = fp(async function (app, opts) {
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
+  const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
 
   if (opts.persistedQueries) {
     if (opts.onlyPersisted) {
@@ -173,8 +174,10 @@ const plugin = fp(async function (app, opts) {
 
   app.addHook('onReady', async function () {
     const schemaValidationErrors = validateSchema(fastifyGraphQl.schema)
-    if (schemaValidationErrors.length > 0) {
-      const err = new Error('schema issues')
+    if (schemaValidationErrors.length === 1) {
+      throw schemaValidationErrors[0]
+    } else if (schemaValidationErrors.length > 1) {
+      const err = new Error('Schema issues, check out the .errors property on the Error.')
       err.errors = schemaValidationErrors
       throw err
     }
@@ -186,6 +189,7 @@ const plugin = fp(async function (app, opts) {
     const optsIde = opts.graphiql || opts.ide
     app.register(routes, {
       errorHandler: opts.errorHandler,
+      errorFormatter: opts.errorFormatter,
       ide: optsIde,
       prefix: opts.prefix,
       path: opts.path,
@@ -410,17 +414,10 @@ const plugin = fp(async function (app, opts) {
     if (cached && cached.jit !== null) {
       const res = await cached.jit.query(root, context, variables || {})
 
-      // as `graphql-jit` takes the original response that's dispatched
-      // by the request handler none of the transformations applied do have an effect,
-      // so `FederatedError` needs to be exchanged
-      // with the contents of its `extensions.errors` property and flattened afterwards
       if (res.errors) {
-        res.errors = res.errors.map((error, idx) => {
-          if (error.message === FEDERATED_ERROR.toString()) {
-            return error.extensions.errors
-          }
-          return error
-        }).reduce((acc, val) => acc.concat(val), [])
+        const { response: { data, errors } } = errorFormatter(res)
+        res.data = data
+        res.errors = errors
       }
 
       return res

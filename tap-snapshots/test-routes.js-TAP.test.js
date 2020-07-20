@@ -51,6 +51,7 @@ exports['test/routes.js TAP POST return 200 on resolver error > must match snaps
 
 exports['test/routes.js TAP POST return 400 on error > must match snapshot 1'] = `
 {
+  "data": null,
   "errors": [
     {
       "message": "Syntax Error: Expected Name, found <EOF>.",
@@ -61,19 +62,18 @@ exports['test/routes.js TAP POST return 400 on error > must match snapshot 1'] =
         }
       ]
     }
-  ],
-  "data": null
+  ]
 }
 `
 
 exports['test/routes.js TAP POST return 500 on error without statusCode > must match snapshot 1'] = `
 {
+  "data": null,
   "errors": [
     {
       "message": "Interface field Event.Id expected but CustomEvent does not provide it."
     }
-  ],
-  "data": null
+  ]
 }
 `
 
@@ -92,12 +92,12 @@ window.addEventListener('load', function(event) {
 
 exports['test/routes.js TAP mutation with GET errors > must match snapshot 1'] = `
 {
+  "data": null,
   "errors": [
     {
       "message": "Operation cannot be perfomed via a GET request"
     }
-  ],
-  "data": null
+  ]
 }
 `
 
@@ -125,6 +125,7 @@ exports['test/routes.js TAP server should return 200 on graphql errors (if field
 
 exports['test/routes.js TAP server should return 500 on graphql errors (if field can not be null) > must match snapshot 1'] = `
 {
+  "data": null,
   "errors": [
     {
       "message": "Simple error",
@@ -138,7 +139,6 @@ exports['test/routes.js TAP server should return 500 on graphql errors (if field
         "hello"
       ]
     }
-  ],
-  "data": null
+  ]
 }
 `

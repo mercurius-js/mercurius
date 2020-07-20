@@ -3,6 +3,7 @@ import Fastify from 'fastify'
 import fastifyGQL, { FastifyGQLOptions } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
+import { makeExecutableSchema } from 'graphql-tools'
 
 const app = Fastify()
 
@@ -124,3 +125,31 @@ makeGraphqlServer({ schema, resolvers })
 makeGraphqlServer({ schema, resolvers, validationRules: [] })
 makeGraphqlServer({ schema, resolvers, validationRules: [customValidationRule] })
 makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }: { source: string, variables?: Record<string, any>, operationName?: string }) => [customValidationRule] })
+
+// Gateway mode
+
+const gateway = Fastify()
+
+gateway.register(fastifyGQL, {
+  gateway: {
+    services: [{
+      name: 'user',
+      url: 'http://localhost:4001/graphql'
+
+    }, {
+      name: 'post',
+      url: 'http://localhost:4002/graphql'
+    }]
+  }
+})
+
+// Executable schema
+
+const executableSchema = makeExecutableSchema({
+  typeDefs: [],
+  resolvers: []
+})
+
+gateway.register(fastifyGQL, {
+  schema: executableSchema
+})

@@ -141,6 +141,7 @@ test('Polling schemas', async (t) => {
   userService.graphql.defineResolvers(resolvers)
 
   await clock.tickAsync(2000)
+  await clock.tickAsync()
 
   const res3 = await gateway.inject({
     method: 'POST',

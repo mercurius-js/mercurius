@@ -1,6 +1,6 @@
 {
   "name": "fastify-gql",
-  "version": "5.0.0",
+  "version": "5.1.1",
   "description": "Fastify GraphQL adapter",
   "main": "index.js",
   "types": "index.d.ts",
@@ -30,7 +30,7 @@
     "@typescript-eslint/parser": "^3.6.1",
     "autocannon": "^5.0.0",
     "fastify": "^3.0.2",
-    "graphql-tools": "^6.0.8",
+    "graphql-tools": "^6.0.14",
     "pre-commit": "^1.2.2",
     "proxyquire": "^2.1.3",
     "snazzy": "^8.0.0",
