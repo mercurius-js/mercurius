@@ -1,6 +1,7 @@
 'use strict'
 
 const { test } = require('tap')
+
 const FakeTimers = require('@sinonjs/fake-timers')
 
 const { once } = require('events')
@@ -588,7 +589,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     'graphql-ws'
   )
 
-  t.equal(ws.readyState, 0)
+  t.equal(ws.readyState, WebSocket.CONNECTING)
 
   const client = WebSocket.createWebSocketStream(ws, {
     encoding: 'utf8',
@@ -624,32 +625,37 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     })
   )
 
-  client.on('data', (chunk) => {
+  {
+    const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
 
-    if (data.type === 'connection_ack') {
-      gateway.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
+    await gateway.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
           mutation {
             triggerUser
           }
         `
-        }
-      })
-    } else if (data.type === 'data' && data.id === 1) {
-      const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+      }
+    })
+  }
 
-      t.deepEqual(updatedUser, {
-        id: 'u1',
-        name: 'John'
-      })
-    }
-  })
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'data')
+    t.equal(data.id, 1)
 
-  await once(client, 'data')
+    const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+
+    t.deepEqual(updatedUser, {
+      id: 'u1',
+      name: 'John'
+    })
+  }
 
   userService.graphql.replaceSchema(
     buildFederationSchema(`
@@ -684,41 +690,14 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     'lastName'
   ])
 
-  client.on('data', (chunk) => {
-    const data = JSON.parse(chunk)
-
-    if (data.id === 1) {
-      const { payload: { data: { updatedUser = {} } = {} } = {} } = data
-
-      t.deepEqual(updatedUser, {
-        id: 'u1',
-        name: 'John'
-      })
-    }
-  })
-
-  await gateway.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query: `
-          mutation {
-            triggerUser
-          }
-        `
-    }
-  })
-
-  await once(client, 'data')
-
-  t.equal(ws.readyState, 1)
+  // t.equal(ws.readyState, WebSocket.OPEN)
 
   const ws2 = new WebSocket(
     `ws://localhost:${gateway.server.address().port}/graphql`,
     'graphql-ws'
   )
 
-  t.equal(ws2.readyState, 0)
+  t.equal(ws2.readyState, WebSocket.CONNECTING)
 
   const client2 = WebSocket.createWebSocketStream(ws2, {
     encoding: 'utf8',
@@ -755,35 +734,39 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     })
   )
 
-  client2.on('data', (chunk) => {
+  {
+    const [chunk] = await once(client2, 'data')
     const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
 
-    if (data.type === 'connection_ack') {
-      gateway.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
-            mutation {
-              triggerUser
-            }
-          `
-        }
-      })
-    } else if (data.type === 'data' && data.id === 2) {
-      const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+    await gateway.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            triggerUser
+          }
+        `
+      }
+    })
+  }
 
-      t.deepEqual(updatedUser, {
-        id: 'u1',
-        name: 'John',
-        lastName: 'Doe'
-      })
-    }
-  })
+  {
+    const [chunk] = await once(client2, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'data')
+    t.equal(data.id, 2)
 
-  await once(client, 'data')
+    const { payload: { data: { updatedUser = {} } = {} } = {} } = data
 
-  t.equal(ws2.readyState, 1)
+    t.deepEqual(updatedUser, {
+      id: 'u1',
+      name: 'John'
+    })
+  }
+
+  t.equal(ws2.readyState, WebSocket.OPEN)
 
   clock.uninstall()
 })

@@ -148,7 +148,7 @@ const plugin = fp(async function (app, opts) {
 
     let gatewayInterval = null
 
-    if (gateway.pollingInterval !== undefined) {
+    if (typeof gateway.pollingInterval === 'number') {
       gatewayInterval = setInterval(async () => {
         const schema = await gateway.refresh()
 
