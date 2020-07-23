@@ -106,6 +106,7 @@ export interface FastifyGQLCommonOptions {
   /**
    * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
    */
+  playground?: boolean | string;
   graphiql?: boolean | string;
   ide?: boolean | string;
   /**
