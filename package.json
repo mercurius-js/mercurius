@@ -48,6 +48,7 @@
     "http-errors": "^1.7.3",
     "mqemitter": "^4.0.0",
     "p-map": "^4.0.0",
+    "promise.allsettled": "^1.0.2",
     "readable-stream": "^3.5.0",
     "single-user-cache": "^0.3.0",
     "tiny-lru": "^7.0.2",
