@@ -445,6 +445,103 @@ test('buildFederationSchema function adds stub types', async (t) => {
   t.matchSnapshot(printSchema(federationSchema))
 })
 
+test('buildFederationSchema works correctly with multiple type extensions', async (t) => {
+  const schema = `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      author: User
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      posts: [Post]
+    }
+
+    extend type User @key(fields: "id") {
+      other: String
+    }
+  `
+  try {
+    buildFederationSchema(schema)
+    t.pass('schema built without errors')
+  } catch (err) {
+    t.fail('it should not throw errors', err)
+  }
+})
+
+test('buildFederationSchema still validate schema for errors (1 error)', async (t) => {
+  const schema = `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      author: User
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      posts: [Post]
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+    }
+  `
+  try {
+    buildFederationSchema(schema)
+    t.fail('it should throw validation error')
+  } catch (err) {
+    // expected error: Field "User.id" can only be defined once.
+    t.pass('it should throw error')
+  }
+})
+
+test('buildFederationSchema still validate schema for errors (multiple error)', async (t) => {
+  const schema = `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      author: User
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      posts: [Post]
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      activity: [Actions]
+    }
+  `
+  try {
+    buildFederationSchema(schema)
+    t.fail('it should throw validation error')
+  } catch (err) {
+    // expected errors:
+    // Field "User.id" can only be defined once.
+    // Unknown type "Actions"
+    t.ok(err.errors)
+    t.equal(err.errors.length, 2)
+    t.pass('it should throw error')
+  }
+})
+
 test('mutation works with federation support', async (t) => {
   const app = Fastify()
   const schema = `
