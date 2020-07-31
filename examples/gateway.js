@@ -1,6 +1,7 @@
 'use strict'
 const Fastify = require('fastify')
 const GQL = require('..')
+const { ErrorWithProps } = GQL
 
 async function createService (port, schema, resolvers = {}) {
   const service = Fastify()
@@ -61,6 +62,7 @@ async function start () {
   await createService(4001, `
     extend type Query {
       me: User
+      you: User
       hello: String
     }
 
@@ -81,6 +83,9 @@ async function start () {
     Query: {
       me: (root, args, context, info) => {
         return users.u1
+      },
+      you: (root, args, context, info) => {
+        throw new ErrorWithProps('Can\'t fetch other users data', { code: 'NOT_ALLOWED' })
       },
       hello: () => 'world'
     },

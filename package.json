@@ -1,16 +1,16 @@
 {
   "name": "fastify-gql",
-  "version": "3.9.0",
+  "version": "5.1.2",
   "description": "Fastify GraphQL adapter",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "unit": "tap --no-esm --no-jsx --100 -J test/*.js test/gateway/*.js",
-    "cov": "tap  --no-esm --no-jsx --coverage-report=html -J test/*.js test/gateway/*.js",
+    "unit": "tap --100 test/*.js test/gateway/*.js",
+    "cov": "tap  --coverage-report=html -J test/*.js test/gateway/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:standard": "standard | snazzy",
     "lint:typescript": "standard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin test/types/*.ts",
-    "typescript": "tsc --project ./test/types/tsconfig.json",
+    "typescript": "tsd",
     "test": "npm run lint && npm run unit && npm run typescript"
   },
   "repository": {
@@ -24,32 +24,35 @@
   },
   "homepage": "https://github.com/mcollina/fastify-gql#readme",
   "devDependencies": {
-    "@types/node": "^14.0.1",
-    "@typescript-eslint/eslint-plugin": "^2.19.2",
-    "@typescript-eslint/parser": "^2.19.2",
-    "autocannon": "^4.5.1",
-    "fastify": "^2.12.0",
-    "graphql-tools": "^4.0.6",
+    "@types/node": "^14.0.23",
+    "@typescript-eslint/eslint-plugin": "^3.6.1",
+    "@typescript-eslint/parser": "^3.6.1",
+    "autocannon": "^5.0.0",
+    "fastify": "^3.0.2",
+    "graphql-tools": "^6.0.14",
     "pre-commit": "^1.2.2",
     "proxyquire": "^2.1.3",
     "snazzy": "^8.0.0",
     "standard": "^14.0.0",
     "tap": "^14.10.6",
-    "typescript": "^3.7.5",
-    "ws": "^7.2.1"
+    "tsd": "^0.13.1"
   },
   "dependencies": {
     "end-of-stream": "^1.4.4",
-    "fastify-plugin": "^1.6.0",
-    "fastify-static": "^2.6.0",
-    "fastify-websocket": "^1.0.0",
-    "graphql": "^14.6.0",
+    "fastify-plugin": "^2.0.1",
+    "fastify-static": "^3.0.0",
+    "fastify-websocket": "^2.0.5",
+    "graphql": "^15.0.0",
     "graphql-jit": "^0.4.0",
     "http-errors": "^1.7.3",
     "mqemitter": "^4.0.0",
     "p-map": "^4.0.0",
     "readable-stream": "^3.5.0",
     "single-user-cache": "^0.3.0",
-    "tiny-lru": "^7.0.2"
+    "tiny-lru": "^7.0.2",
+    "ws": "^7.2.1"
+  },
+  "tsd": {
+    "directory": "test/types"
   }
 }

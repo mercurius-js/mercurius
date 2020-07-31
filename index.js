@@ -20,6 +20,7 @@ const {
   extendSchema,
   validate,
   validateSchema,
+  specifiedRules,
   execute
 } = require('graphql')
 const { buildExecutionContext } = require('graphql/execution/execute')
@@ -28,7 +29,8 @@ const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
-const { ErrorWithProps } = require('./lib/errors')
+const { ErrorWithProps, defaultErrorFormatter } = require('./lib/errors')
+const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 
 const kLoaders = Symbol('fastify-gql.loaders')
 
@@ -59,12 +61,36 @@ const plugin = fp(async function (app, opts) {
 
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
-  const onlyPersisted = !!opts.onlyPersisted
-  opts.graphiql = onlyPersisted ? false : opts.graphiql
-  opts.ide = onlyPersisted ? false : opts.ide
+  const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
 
-  if (onlyPersisted && !opts.persistedQueries) {
+  if (opts.persistedQueries) {
+    if (opts.onlyPersisted) {
+      opts.persistedQueryProvider = persistedQueryDefaults.preparedOnly(opts.persistedQueries)
+
+      // Disable GraphiQL and GraphQL Playground
+      opts.graphiql = false
+      opts.ide = false
+    } else {
+      opts.persistedQueryProvider = persistedQueryDefaults.prepared(opts.persistedQueries)
+    }
+  } else if (opts.onlyPersisted) {
     throw new Error('onlyPersisted is true but there are no persistedQueries')
+  }
+
+  if (opts.persistedQueryProvider) {
+    if (opts.persistedQueryProvider.getHash) {
+      if (!opts.persistedQueryProvider.getQueryFromHash) {
+        throw new Error('persistedQueryProvider: getQueryFromHash is required when getHash is provided')
+      }
+    } else {
+      throw new Error('persistedQueryProvider: getHash is required')
+    }
+
+    if (opts.persistedQueryProvider.getHashForQuery) {
+      if (!opts.persistedQueryProvider.saveQuery) {
+        throw new Error('persistedQueryProvider: saveQuery is required when getHashForQuery is provided')
+      }
+    }
   }
 
   if (typeof minJit !== 'number') {
@@ -129,10 +155,14 @@ const plugin = fp(async function (app, opts) {
     })
   }
 
-  app.ready(async function () {
-    const schemaValidationErrors = validateSchema(schema)
-    if (schemaValidationErrors.length > 0) {
-      const err = new Error('schema issues')
+  fastifyGraphQl.schema = schema
+
+  app.addHook('onReady', async function () {
+    const schemaValidationErrors = validateSchema(fastifyGraphQl.schema)
+    if (schemaValidationErrors.length === 1) {
+      throw schemaValidationErrors[0]
+    } else if (schemaValidationErrors.length > 1) {
+      const err = new Error('Schema issues, check out the .errors property on the Error.')
       err.errors = schemaValidationErrors
       throw err
     }
@@ -144,13 +174,14 @@ const plugin = fp(async function (app, opts) {
     const optsIde = opts.graphiql || opts.ide
     app.register(routes, {
       errorHandler: opts.errorHandler,
+      errorFormatter: opts.errorFormatter,
       ide: optsIde,
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
-      onlyPersisted: onlyPersisted,
-      persistedQueries: opts.persistedQueries,
-      schema,
+      persistedQueryProvider: opts.persistedQueryProvider,
+      allowBatchedQueries: opts.allowBatchedQueries,
+      schema: fastifyGraphQl.schema,
       subscriber,
       verifyClient,
       onConnect,
@@ -176,7 +207,7 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Must provide valid Document AST')
     }
 
-    schema = s
+    fastifyGraphQl.schema = s
 
     lru.clear()
     lruErrors.clear()
@@ -193,7 +224,7 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Must provide valid Document AST')
     }
 
-    schema = extendSchema(schema, s)
+    fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
@@ -202,7 +233,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     for (const name of Object.keys(resolvers)) {
-      const type = schema.getType(name)
+      const type = fastifyGraphQl.schema.getType(name)
 
       if (typeof resolvers[name] === 'function') {
         root[name] = resolvers[name]
@@ -318,7 +349,15 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Validate
-      const validationErrors = validate(schema, document)
+      let validationRules = []
+      if (opts.validationRules) {
+        if (Array.isArray(opts.validationRules)) {
+          validationRules = opts.validationRules
+        } else {
+          validationRules = opts.validationRules({ source, variables, operationName })
+        }
+      }
+      const validationErrors = validate(fastifyGraphQl.schema, document, [...specifiedRules, ...validationRules])
 
       if (validationErrors.length > 0) {
         if (lruErrors) {
@@ -358,17 +397,24 @@ const plugin = fp(async function (app, opts) {
 
     // minJit is 0 by default
     if (cached && cached.count++ === minJit) {
-      cached.jit = compileQuery(schema, document, operationName)
+      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
     }
 
     if (cached && cached.jit !== null) {
       const res = await cached.jit.query(root, context, variables || {})
+
+      if (res.errors) {
+        const { response: { data, errors } } = errorFormatter(res)
+        res.data = data
+        res.errors = errors
+      }
+
       return res
     }
 
     // Validate variables
     if (variables !== undefined) {
-      const executionContext = buildExecutionContext(schema, document, root, context, variables, operationName)
+      const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
       if (Array.isArray(executionContext)) {
         const err = new BadRequest()
         err.errors = executionContext
@@ -377,7 +423,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     const execution = await execute(
-      schema,
+      fastifyGraphQl.schema,
       document,
       root,
       context,
@@ -401,9 +447,11 @@ const plugin = fp(async function (app, opts) {
     return execution
   }
 }, {
-  name: 'fastify-gql'
+  name: 'fastify-gql',
+  fastify: '>=3.x'
 })
 
 plugin.ErrorWithProps = ErrorWithProps
+plugin.persistedQueryDefaults = persistedQueryDefaults
 
 module.exports = plugin

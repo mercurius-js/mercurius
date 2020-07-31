@@ -1,5 +1,9 @@
 import Fastify from 'fastify'
-import GQL, { ErrorWithProps } from '../..'
+// eslint-disable-next-line no-unused-vars
+import fastifyGQL, { FastifyGQLOptions } from '../..'
+// eslint-disable-next-line no-unused-vars
+import { ValidationContext, ValidationRule } from 'graphql'
+import { makeExecutableSchema } from 'graphql-tools'
 
 const app = Fastify()
 
@@ -37,7 +41,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(fastifyGQL, {
   schema: schema,
   resolvers,
   loaders: {},
@@ -89,7 +93,7 @@ app.register(async function (app) {
   `)
   app.graphql.defineResolvers({
     Query: {
-      willThrow: async () => { throw new ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
+      willThrow: async () => { throw new fastifyGQL.ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
     }
   })
 })
@@ -101,12 +105,51 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 
-function makeGraphqlServer (options: GQL.Options) {
+function makeGraphqlServer (options: FastifyGQLOptions) {
   const app = Fastify()
 
-  app.register(GQL, options)
+  app.register(fastifyGQL, options)
 
   return app
 }
 
+const customValidationRule: ValidationRule = (_context: ValidationContext) => {
+  return {
+    Document () {
+      return false
+    }
+  }
+}
+
 makeGraphqlServer({ schema, resolvers })
+makeGraphqlServer({ schema, resolvers, validationRules: [] })
+makeGraphqlServer({ schema, resolvers, validationRules: [customValidationRule] })
+makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }: { source: string, variables?: Record<string, any>, operationName?: string }) => [customValidationRule] })
+
+// Gateway mode
+
+const gateway = Fastify()
+
+gateway.register(fastifyGQL, {
+  gateway: {
+    services: [{
+      name: 'user',
+      url: 'http://localhost:4001/graphql'
+
+    }, {
+      name: 'post',
+      url: 'http://localhost:4002/graphql'
+    }]
+  }
+})
+
+// Executable schema
+
+const executableSchema = makeExecutableSchema({
+  typeDefs: [],
+  resolvers: []
+})
+
+gateway.register(fastifyGQL, {
+  schema: executableSchema
+})

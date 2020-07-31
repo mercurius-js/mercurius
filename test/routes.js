@@ -6,6 +6,7 @@ const querystring = require('querystring')
 const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
 const GQL = require('..')
+const { FederatedError } = require('../lib/errors')
 
 test('POST route', async (t) => {
   const app = Fastify()
@@ -39,6 +40,36 @@ test('POST route', async (t) => {
     data: {
       add: 4
     }
+  })
+})
+
+test('POST route, no query error', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {}
+  })
+
+  t.equal(res.statusCode, 400)
+  t.deepEqual(JSON.parse(res.body), {
+    errors: [{ message: 'Unknown query' }],
+    data: null
   })
 })
 
@@ -487,44 +518,6 @@ test('POST return 400 on error', async (t) => {
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
-test('POST return 500 on error without statusCode', async (t) => {
-  const app = Fastify()
-  const schema = `
-    interface Event {
-      Id: Int!
-    }
-    type CustomEvent implements Event {
-      # Id needs to be specified here
-      Name: String!
-    }
-    type Query {
-      listEvent: [Event]
-    }
-  `
-
-  const resolvers = {
-    listEvent: async () => []
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers
-  })
-
-  const query = '{ listEvent { id } }'
-
-  const res = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query
-    }
-  })
-
-  t.equal(res.statusCode, 500) // Internal error
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
-})
-
 test('mutation with POST', async (t) => {
   const app = Fastify()
   const schema = `
@@ -765,8 +758,14 @@ test('error if there are functions defined in the root object', async (t) => {
 
 test('GET graphiql endpoint', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    ide: 'graphiql'
+    ide: 'graphiql',
+    schema
   })
 
   const res = await app.inject({
@@ -778,8 +777,14 @@ test('GET graphiql endpoint', async (t) => {
 
 test('GET graphiql endpoint with boolean', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    ide: true
+    ide: true,
+    schema
   })
 
   const res = await app.inject({
@@ -797,10 +802,16 @@ test('GET graphiql endpoint with boolean', async (t) => {
 
 test('GET graphiql endpoint with property priority', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
     ide: 'graphiql',
     graphiql: 'playground',
-    routes: true
+    routes: true,
+    schema
   })
 
   const res = await app.inject({
@@ -819,8 +830,14 @@ test('GET graphiql endpoint with property priority', async (t) => {
 
 test('Disable ide endpoint', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    ide: false
+    ide: false,
+    schema
   })
 
   const res = await app.inject({
@@ -837,7 +854,12 @@ test('Disable ide endpoint', async (t) => {
 
 test('Disable ide endpoint by leaving empty', async (t) => {
   const app = Fastify()
-  app.register(GQL, {})
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, { schema })
 
   const res = await app.inject({
     method: 'GET',
@@ -853,9 +875,15 @@ test('Disable ide endpoint by leaving empty', async (t) => {
 
 test('GET graphiql endpoint with prefix', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
     ide: 'graphiql',
-    prefix: '/test-prefix'
+    prefix: '/test-prefix',
+    schema
   })
 
   const res = await app.inject({
@@ -868,8 +896,20 @@ test('GET graphiql endpoint with prefix', async (t) => {
 
 test('GET graphiql endpoint with prefixed wrapper', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
   app.register(async function (app, opts) {
     app.register(GQL, {
+      schema,
+      resolvers,
       ide: 'graphiql'
     })
   }, { prefix: '/test-wrapper-prefix' })
@@ -884,8 +924,14 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
 
 test('GET graphql playground endpoint', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    ide: 'playground'
+    ide: 'playground',
+    schema
   })
 
   const res = await app.inject({
@@ -897,9 +943,15 @@ test('GET graphql playground endpoint', async (t) => {
 
 test('GET graphql playground endpoint with prefix', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
     ide: 'playground',
-    prefix: '/test-prefix'
+    prefix: '/test-prefix',
+    schema
   })
 
   const res = await app.inject({
@@ -912,8 +964,20 @@ test('GET graphql playground endpoint with prefix', async (t) => {
 
 test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
   app.register(async function (app, opts) {
     app.register(GQL, {
+      schema,
+      resolvers,
       ide: 'playground'
     })
   }, { prefix: '/test-wrapper-prefix' })
@@ -1104,7 +1168,7 @@ test('Error handler set to true should not change default behavior', async (t) =
 
   const expectedResult = {
     errors: [{
-      message: 'Expected type Int, found "2".',
+      message: 'Int cannot represent non-integer value: "2"',
       locations: [{
         line: 1,
         column: 8
@@ -1176,6 +1240,53 @@ test('route validation is catched and parsed to graphql error', async (t) => {
   const expectedResult = { errors: [{ message: 'body should be object' }], data: null }
 
   t.strictEqual(res.statusCode, 400)
+  t.strictDeepEqual(JSON.parse(res.body), expectedResult)
+})
+
+test('Error handler flattens federated errors', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => {
+      throw new FederatedError([{
+        message: 'Service error',
+        path: ['add'],
+        locations: [{ column: 3, line: 2 }],
+        extensions: { code: 'NOT_IMPLEMENTED' }
+      }])
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler: true
+  })
+
+  // Invalid query
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={add(x:2,y:2)}'
+  })
+
+  const expectedResult = {
+    errors: [{
+      message: 'Service error',
+      path: ['add'],
+      locations: [{ column: 3, line: 2 }],
+      extensions: { code: 'NOT_IMPLEMENTED' }
+    }],
+    data: {
+      add: null
+    }
+  }
+
+  t.strictEqual(res.statusCode, 200)
   t.strictDeepEqual(JSON.parse(res.body), expectedResult)
 })
 
@@ -1480,8 +1591,14 @@ test('cached errors', async (t) => {
 
 test('disable GET graphiql if ide is not "graphiql" or "playground"', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    ide: 'not-graphiql'
+    ide: 'not-graphiql',
+    schema
   })
 
   const res = await app.inject({
@@ -1499,8 +1616,14 @@ test('disable GET graphiql if ide is not "graphiql" or "playground"', async (t) 
 
 test('render graphiql if graphiql: true', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    graphiql: true
+    graphiql: true,
+    schema
   })
 
   const res = await app.inject({
@@ -1516,10 +1639,16 @@ test('render graphiql if graphiql: true', async (t) => {
   t.strictEqual(res2.statusCode, 404)
 })
 
-test('if ide is grpahiql, always serve main.js and sw.js', async (t) => {
+test('if ide is graphiql, always serve main.js and sw.js', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    ide: 'graphiql'
+    ide: 'graphiql',
+    schema
   })
 
   const res = await app.inject({
@@ -1537,8 +1666,14 @@ test('if ide is grpahiql, always serve main.js and sw.js', async (t) => {
 
 test('if ide is playground, do not serve main.js and sw.js', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
-    ide: 'playground'
+    ide: 'playground',
+    schema
   })
 
   const res = await app.inject({
@@ -1556,9 +1691,15 @@ test('if ide is playground, do not serve main.js and sw.js', async (t) => {
 
 test('if ide is playground, serve init.js with the correct endpoint', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
     ide: 'playground',
-    path: '/app/graphql'
+    path: '/app/graphql',
+    schema
   })
 
   const res = await app.inject({
@@ -1572,9 +1713,15 @@ test('if ide is playground, serve init.js with the correct endpoint', async (t) 
 
 test('if ide is graphiql, serve config.js with the correct endpoint', async (t) => {
   const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
   app.register(GQL, {
     ide: 'graphiql',
-    path: '/app/graphql'
+    path: '/app/graphql',
+    schema
   })
 
   const res = await app.inject({
@@ -1586,7 +1733,7 @@ test('if ide is graphiql, serve config.js with the correct endpoint', async (t) 
   t.matchSnapshot(res.body)
 })
 
-test('GET route with query, variables & persisted', async (t) => {
+test('if operationName is null, it should work fine', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -1595,203 +1742,33 @@ test('GET route with query, variables & persisted', async (t) => {
   `
 
   const resolvers = {
-    add: async ({ x, y }) => x + y
+    add: ({ x, y }) => x + y
   }
 
   app.register(GQL, {
     schema,
-    resolvers,
-    persistedQueries: {
-      '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
-      '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
-      '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
-    }
+    resolvers
   })
 
-  const res1 = await app.inject({
-    method: 'GET',
-    url: '/graphql?query=248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602&persisted=true'
-  })
+  const operationName = null
 
-  t.deepEqual(JSON.parse(res1.body), {
-    data: {
-      add: 2
-    }
-  })
-
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/graphql?query=495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf&variables={"x":2,"y":2}&persisted=true'
-  })
-
-  t.deepEqual(JSON.parse(res2.body), {
-    data: {
-      add: 4
-    }
-  })
-
-  const res3 = await app.inject({
-    method: 'GET',
-    url: '/graphql?query=03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e&persisted=true'
-  })
-
-  t.deepEqual(JSON.parse(res3.body), {
-    data: {
-      add: 6
-    }
-  })
-})
-
-test('POST route with query, variables & persisted', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const resolvers = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    persistedQueries: {
-      '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }',
-      '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf': 'query Add($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
-      '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e': '{ add(x: 3, y: 3) }'
-    }
-  })
-
-  const res1 = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query: '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602',
-      persisted: true
-    }
-  })
-
-  t.deepEqual(JSON.parse(res1.body), {
-    data: {
-      add: 2
-    }
-  })
-
-  const res2 = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query: '495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf',
-      variables: { x: 2, y: 2 },
-      persisted: true
-    }
-  })
-
-  t.deepEqual(JSON.parse(res2.body), {
-    data: {
-      add: 4
-    }
-  })
-
-  const res3 = await app.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query: '03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e',
-      persisted: true
-    }
-  })
-
-  t.deepEqual(JSON.parse(res3.body), {
-    data: {
-      add: 6
-    }
-  })
-})
-
-test('if onlyPersisted then nullify graphiql option', async (t) => {
-  const app = Fastify()
-  app.register(GQL, {
-    graphiql: true,
-    onlyPersisted: true,
-    persistedQueries: {
-      '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
-    }
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphiql/main.js'
-  })
-  t.strictEqual(res.statusCode, 404)
-
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/graphiql/sw.js'
-  })
-  t.strictEqual(res2.statusCode, 404)
-})
-
-test('if onlyPersisted then reject unknown queries with 400 for GET route', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const resolvers = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    graphiql: true,
-    onlyPersisted: true,
-    persistedQueries: {
-      '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
-    }
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={add(x:2,y:2)}' // custom/unknown query
-  })
-
-  t.is(res.statusCode, 400)
-})
-
-test('if onlyPersisted then reject unknown queries with 400 for POST route', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const resolvers = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    onlyPersisted: true,
-    persistedQueries: {
-      '248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602': '{ add(x: 1, y: 1) }'
-    }
-  })
+  const query = 'query { add(x: 2, y: 3) }'
 
   const res = await app.inject({
     method: 'POST',
+    headers: { 'content-type': 'application/json' },
     url: '/graphql',
-    body: {
-      query: '{ add(x: 2, y: 2) }' // custom/unknown query
-    }
+    body: JSON.stringify({
+      query,
+      operationName,
+      variables: {}
+    })
   })
 
-  t.equal(res.statusCode, 400)
+  t.strictEqual(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      add: 5
+    }
+  })
 })
