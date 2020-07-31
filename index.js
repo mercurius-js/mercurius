@@ -105,10 +105,12 @@ const plugin = fp(async function (app, opts) {
 
   let subscriber
   let verifyClient
+  let onConnect
 
   if (typeof subscriptionOpts === 'object') {
     emitter = subscriptionOpts.emitter || mq()
     verifyClient = subscriptionOpts.verifyClient
+    onConnect = subscriptionOpts.onConnect
   } else if (subscriptionOpts === true) {
     emitter = mq()
   }
@@ -182,6 +184,7 @@ const plugin = fp(async function (app, opts) {
       schema: fastifyGraphQl.schema,
       subscriber,
       verifyClient,
+      onConnect,
       lruGatewayResolvers,
       entityResolversFactory
     })

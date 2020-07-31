@@ -1413,6 +1413,125 @@ test('connection is not allowed when verifyClient callback called with `false`',
   })
 })
 
+test('connection is not allowed when onConnect callback called with `false`', t => {
+  t.plan(2)
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      onConnect (data) {
+        if (data.payload && data.payload.authorization === 'allow') {
+          return true
+        }
+        return false
+      }
+    }
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init',
+      payload: {
+        authorization: 'allow'
+      }
+    }))
+    client.on('data', chunk => {
+      t.equal(chunk, JSON.stringify({
+        type: 'connection_ack'
+      }))
+      client.end()
+    })
+
+    const ws2 = new WebSocket(url, 'graphql-ws')
+    const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client2.destroy.bind(client2))
+
+    client2.setEncoding('utf8')
+    client2.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client2.on('data', chunk => {
+      t.equal(chunk, JSON.stringify({
+        type: 'connection_error',
+        payload: {
+          message: 'Forbidden'
+        }
+      }))
+      client2.end()
+    })
+  })
+})
+
+test('connection is not allowed when onConnect callback throws', t => {
+  t.plan(1)
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      onConnect (data) {
+        throw new Error('kaboom')
+      }
+    }
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client.on('data', chunk => {
+      t.equal(chunk, JSON.stringify({
+        type: 'connection_error',
+        payload: {
+          message: 'Forbidden'
+        }
+      }))
+      client.end()
+    })
+  })
+})
+
 test('cached errors', async (t) => {
   const app = Fastify()
 
