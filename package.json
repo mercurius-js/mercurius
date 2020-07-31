@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "end-of-stream": "^1.4.4",
+    "events.on": "^1.0.1",
     "fastify-plugin": "^2.0.1",
     "fastify-static": "^3.0.0",
     "fastify-websocket": "^2.0.5",
