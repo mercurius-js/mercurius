@@ -1,9 +1,12 @@
+/* eslint-disable no-unused-expressions */
+
 import Fastify from 'fastify'
 // eslint-disable-next-line no-unused-vars
 import fastifyGQL, { FastifyGQLOptions } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from 'graphql-tools'
+import mq from 'mqemitter'
 
 const app = Fastify()
 
@@ -152,4 +155,62 @@ const executableSchema = makeExecutableSchema({
 
 gateway.register(fastifyGQL, {
   schema: executableSchema
+})
+
+// Subscriptions
+
+app.register(fastifyGQL, {
+  schema: schema,
+  resolvers,
+  subscription: true
+})
+
+const emitter = mq()
+
+app.register(fastifyGQL, {
+  schema: schema,
+  resolvers,
+  subscription: {
+    emitter,
+    verifyClient: (info, next) => {
+      info.req.headers
+      next(true)
+      next(false)
+    },
+    context: (connection, request) => {
+      connection.socket
+      request.headers
+      return {}
+    },
+    onConnect: (data) => {
+      data.type
+      data.payload
+      return {}
+    }
+  }
+})
+
+app.register(fastifyGQL, {
+  schema: schema,
+  resolvers,
+  subscription: {
+    context: async (connection, request) => {
+      connection.socket
+      request.headers
+      return {}
+    },
+    onConnect: async (data) => {
+      data.type
+      data.payload
+      return {}
+    }
+  }
+})
+
+app.register(fastifyGQL, {
+  schema: schema,
+  resolvers,
+  subscription: {
+    emitter
+  }
 })
