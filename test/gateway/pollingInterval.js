@@ -177,6 +177,70 @@ test('Polling schemas', async (t) => {
   clock.uninstall()
 })
 
+test('Polling schemas (gateway.polling interval is not a number)', async (t) => {
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => user
+    },
+    User: {
+      __resolveReference: (user, args, context, info) => user
+    }
+  }
+
+  const user = {
+    id: 'u1',
+    name: 'John',
+    lastName: 'Doe'
+  }
+
+  const userService = Fastify()
+  const gateway = Fastify({
+    log: {
+      warn () {
+        t.pass()
+      }
+    }
+  })
+
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
+
+  userService.register(GQL, {
+    schema: `
+      extend type Query {
+        me: User
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+      }
+    `,
+    resolvers: resolvers,
+    federationMetadata: true
+  })
+
+  await userService.listen(0)
+
+  const userServicePort = userService.server.address().port
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ],
+      pollingInterval: '2000'
+    }
+  })
+
+  await gateway.listen(0)
+})
+
 test("Polling schemas (if service is down, schema shouldn't be changed)", async (t) => {
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,

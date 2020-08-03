@@ -596,43 +596,177 @@ app.listen(3000)
 A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that supports the federation.
 
 In Gateway mode the following options are not allowed (the plugin will throw an error if any of them are defined):
-* `schema`
-* `resolvers`
-* `loaders`
+
+- `schema`
+- `resolvers`
+- `loaders`
 
 Also, using the following decorator methods will throw:
-* `app.graphql.defineResolvers`
-* `app.graphql.defineLoaders`
-* `app.graphql.replaceSchema`
-* `app.graphql.extendSchema`
+
+- `app.graphql.defineResolvers`
+- `app.graphql.defineLoaders`
+- `app.graphql.extendSchema`
 
 ```js
 const gateway = Fastify()
+const GQL = require('fastify-gql')
 
 gateway.register(GQL, {
   gateway: {
-    services: [{
-      name: 'user',
-      url: 'http://localhost:4001/graphql',
-      rewriteHeaders: (headers) => {
-        if (headers.authorization) {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql',
+        rewriteHeaders: (headers) => {
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+
           return {
-            authorization: headers.authorization
+            'x-api-key': 'secret-api-key'
           }
         }
-
-        return {
-          x-api-key: 'secret-api-key'
-        }
+      },
+      {
+        name: 'post',
+        url: 'http://localhost:4002/graphql'
       }
-    }, {
-      name: 'post',
-      url: 'http://localhost:4002/graphql'
-    }]
+    ]
   }
 })
 
 await gateway.listen(4000)
+```
+
+#### Automatically refresh schema inside Gateway mode
+
+Service which uses Gateway mode can obtain a new version of schema automatically. A developer should provide a few additional parameters into the Gateway config:
+
+- `gateway.pollingInterval` is an interval between fetching new schema (if schema didn't change, a gateway will use cached one)
+
+```js
+const gateway = Fastify();
+const GQL = require("fastify-gql");
+
+gateway.register(GQL, {
+  gateway: {
+    services: [
+      {
+        name: "user",
+        url: `http://localhost:3000/graphql`,
+      },
+    ],
+    pollingInterval: 2000,
+  },
+});
+
+gateway.listen(3001);
+```
+
+#### Manually refresh schema inside Gateway mode
+
+Service which uses Gateway mode can obtain a new version of schema manually. A developer needs to execute method `.refresh()` from `application.graphql.gateway`. This method can return a new schema or null (when it's not changed).
+
+```js
+const Fastify = require("fastify");
+const GQL = require("fastify-gql");
+
+const server = Fastify();
+
+server.register(GQL, {
+  graphiql: "playground",
+  gateway: {
+    services: [
+      {
+        name: "user",
+        url: "http://localhost:3000/graphql",
+      },
+      {
+        name: "company",
+        url: "http://localhost:3001/graphql",
+      },
+    ],
+  },
+});
+
+server.listen(3002);
+
+setTimeout(async () => {
+  const schema = await server.graphql.gateway.refresh();
+
+  if (schema !== null) {
+    server.graphql.replaceSchema(schema);
+  }
+}, 10000);
+```
+
+#### Mark service as mandatory inside Gateway mode
+
+Service which uses Gateway mode can require 1+ correct services for making correct requests. A developer can provide a flag (`gateway.services.mandatory`) for better processing issues.
+
+```js
+const Fastify = require("fastify");
+const GQL = require("fastify-gql");
+
+const server = Fastify();
+
+server.register(GQL, {
+  graphiql: "playground",
+  gateway: {
+    services: [
+      {
+        name: "user",
+        url: "http://localhost:3000/graphql",
+        mandatory: true,
+      },
+      {
+        name: "company",
+        url: "http://localhost:3001/graphql",
+      },
+    ],
+  },
+  pollingInterval: 2000,
+});
+
+server.listen(3002);
+```
+
+#### Use custom errorHandler for Gateway services
+
+Service which uses Gateway mode can process different types of issues that can be obtained from remote services (for example, Network Error). A developer can provide a function (`gateway.errorHandler`) that can process these errors.
+
+```js
+const Fastify = require("fastify");
+const GQL = require("fastify-gql");
+
+const server = Fastify();
+
+server.register(GQL, {
+  graphiql: "playground",
+  gateway: {
+    services: [
+      {
+        name: "user",
+        url: "http://localhost:3000/graphql",
+        mandatory: true,
+      },
+      {
+        name: "company",
+        url: "http://localhost:3001/graphql",
+      },
+    ],
+  },
+  pollingInterval: 2000,
+  errorHandler: (error, service) => {
+    if (service.mandatory) {
+      logger.error(error);
+    }
+  },
+});
+
+server.listen(3002);
 ```
 
 ### Use errors extension to provide additional information to query errors
@@ -643,7 +777,7 @@ GraphQL services may provide an additional entry to errors with the key `extensi
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('./index')
+const GQL = require('fastify-gql')
 const { ErrorWithProps } = GQL
 
 const users = {

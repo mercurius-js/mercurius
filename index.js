@@ -149,16 +149,17 @@ const plugin = fp(async function (app, opts) {
 
     let gatewayInterval = null
 
-    if (typeof gateway.pollingInterval === 'number') {
-      gatewayInterval = setInterval(async () => {
-        const schema = await gateway.refresh()
-
-        if (schema !== null) {
-          fastifyGraphQl.replaceSchema(schema)
-        }
-      }, gateway.pollingInterval)
-    } else {
-      app.log.warn('\'gateway.pollingInterval\' shoud have a number type')
+    if (gateway.pollingInterval !== undefined) {
+      if (typeof gateway.pollingInterval === 'number') {
+        gatewayInterval = setInterval(async () => {
+          const schema = await gateway.refresh()
+          if (schema !== null) {
+            fastifyGraphQl.replaceSchema(schema)
+          }
+        }, gateway.pollingInterval)
+      } else {
+        app.log.warn('\'gateway.pollingInterval\' shoud have a number type')
+      }
     }
 
     app.onClose((fastify, next) => {
