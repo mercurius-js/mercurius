@@ -201,3 +201,23 @@ test('subscription connection handles GQL_START message correctly, when payload.
     payload: { }
   }))
 })
+
+test('subscription connection extends context with onConnect return value', async (t) => {
+  const context = {}
+
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {
+      t.pass()
+    }
+  }, {
+    context,
+    onConnect: function () {
+      return { data: true }
+    }
+  })
+
+  await sc.handleConnectionInit()
+  t.is(sc.context.data, true)
+})

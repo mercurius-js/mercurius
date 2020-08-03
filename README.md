@@ -362,6 +362,41 @@ app.register(GQL, {
 })
 ```
 
+### Build a custom GraphQL context object for subscriptions
+
+```js
+...
+const resolvers = {
+  Mutation: {
+    sendMessage: async (_, { message, userId }, { pubsub }) => {
+      await pubsub.publish({
+        topic: userId,
+        payload: message
+      })
+
+      return "OK"
+    }
+  },
+  Subscription: {
+    receivedMessage: {
+      // If someone calls the sendMessage mutation with the Id of the user that was added
+      // to the subscription context, that user receives the message.
+      subscribe: (root, args, { pubsub, user }) => pubsub.subscribe(user.id)
+    }
+  }
+}
+
+app.register(GQL, {
+  schema,
+  resolvers,
+  subscription: {
+      // Add the decoded JWT from the Authorization header to the subscription context.
+      context: (_, req) => ({ user: jwt.verify(req.headers["Authorization"].slice(7))})
+  }
+})
+...
+```
+
 ### Subscription support (with redis)
 
 ```js
@@ -853,6 +888,8 @@ __fastify-gql__ supports the following options:
 * `subscription`: Boolean | Object. Enable subscriptions. It is uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true. To use a custom emitter set the value to an object containing the emitter.
   * `subscription.emitter`: Custom emitter
   * `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
+  * `subscription.context`: `Function` Result of function is passed to subscription resolvers as a custom GraphQL context. The function receives the `connection` and `request` as parameters.
+  * `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. If it returns an object the subscription context will be extended with the returned object.
 * `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 * `gateway`: Object. Run the GraphQL server in gateway mode.
   * `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
@@ -874,6 +911,7 @@ __fastify-gql__ supports the following options:
 * `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
 #### queryDepth example
+
 ```
 query {
   dogs {
@@ -893,6 +931,7 @@ query {
   }
 }
 ```
+
 A `queryDepth` of `6` would allow this query. `5` or less would throw with the error - `unnamedQuery query exceeds the query depth limit of 5`
 
 ### HTTP endpoints
@@ -931,6 +970,7 @@ payload must conform to the following JSON schema:
 ```
 
 For code from [example](#example) use:
+
 ```sh
 curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, y: 2) }"}' http://localhost:3000/graphql
 ```
@@ -941,6 +981,7 @@ Executes the GraphQL query or mutation described in the body. `operationName` an
 payload contains the GraphQL query.
 
 For code from [example](#example) use:
+
 ```sh
 curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }" http://localhost:3000/graphql
 ```
@@ -954,7 +995,6 @@ the options.
 
 Serves [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) if enabled by
 the options.
-
 
 ### decorators
 
@@ -1141,7 +1181,6 @@ GraphQL context, and it includes a `reply` object.
 
 Example:
 
-
 ```js
 const loaders = {
   Dog: {
@@ -1183,7 +1222,6 @@ app.register(GQL, {
 
 Disabling caching has the advantage to avoid the serialization at
 the cost of more objects to fetch in the resolvers.
-
 
 Internally, it uses
 [single-user-cache](http://npm.im/single-user-cache).
