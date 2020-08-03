@@ -157,6 +157,8 @@ const plugin = fp(async function (app, opts) {
           fastifyGraphQl.replaceSchema(schema)
         }
       }, gateway.pollingInterval)
+    } else {
+      app.log.warn('\'gateway.pollingInterval\' shoud have a number type')
     }
 
     app.onClose((fastify, next) => {
