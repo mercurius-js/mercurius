@@ -675,11 +675,11 @@ gateway.register(GQL, {
 await gateway.listen(4000)
 ```
 
-#### Automatically refresh schema inside Gateway mode
+#### Periodically refresh federated schemas in Gateway mode
 
-Service which uses Gateway mode can obtain a new version of schema automatically. A developer should provide a few additional parameters into the Gateway config:
+The Gateway service can obtain new versions of federated schemas automatically within a defined polling interval using the following configuration:
 
-- `gateway.pollingInterval` is an interval between fetching new schema (if schema didn't change, a gateway will use cached one)
+- `gateway.pollingInterval` defines the interval (in milliseconds) the gateway should use in order to look for schema changes from the federated services. If the received schema is unchanged, the previously cached version will be reused.
 
 ```js
 const gateway = Fastify();
@@ -700,9 +700,9 @@ gateway.register(GQL, {
 gateway.listen(3001);
 ```
 
-#### Manually refresh schema inside Gateway mode
+#### Programmatically refresh federated schemas in Gateway mode
 
-Service which uses Gateway mode can obtain a new version of schema manually. A developer needs to execute method `.refresh()` from `application.graphql.gateway`. This method can return a new schema or null (when it's not changed).
+The service acting as the Gateway can manually trigger re-fetching the federated schemas programmatically by calling the `application.graphql.gateway.refresh()` method. The method either returns the newly generated schema or `null` if no changes have been discovered.
 
 ```js
 const Fastify = require("fastify");
@@ -737,9 +737,9 @@ setTimeout(async () => {
 }, 10000);
 ```
 
-#### Mark service as mandatory inside Gateway mode
+#### Flag a service as mandatory in Gateway mode
 
-Service which uses Gateway mode can require 1+ correct services for making correct requests. A developer can provide a flag (`gateway.services.mandatory`) for better processing issues.
+A Gateway service can handle the federated services in 2 different modes, `mandatory` or not by utilizing the `gateway.services.mandatory` configuration flag. If a service is not considered mandatory, creating the federated schema will succeed even if the service isn't capable of delivering a schema. By default, all services are consideredmandatory. Note: At least 1 service is necessary in order to create a valid federated schema.
 
 ```js
 const Fastify = require("fastify");
@@ -768,7 +768,7 @@ server.register(GQL, {
 server.listen(3002);
 ```
 
-#### Use custom errorHandler for Gateway services
+#### Using a custom errorHandler for handling downstream service errors in Gateway mode
 
 Service which uses Gateway mode can process different types of issues that can be obtained from remote services (for example, Network Error). A developer can provide a function (`gateway.errorHandler`) that can process these errors.
 
