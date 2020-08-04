@@ -151,10 +151,30 @@ const plugin = fp(async function (app, opts) {
     schema = gateway.schema
     entityResolversFactory = gateway.entityResolversFactory
 
+    let gatewayInterval = null
+
+    if (gateway.pollingInterval !== undefined) {
+      if (typeof gateway.pollingInterval === 'number') {
+        gatewayInterval = setInterval(async () => {
+          const schema = await gateway.refresh()
+          if (schema !== null) {
+            fastifyGraphQl.replaceSchema(schema)
+          }
+        }, gateway.pollingInterval)
+      } else {
+        app.log.warn('\'gateway.pollingInterval\' shoud have a number type')
+      }
+    }
+
     app.onClose((fastify, next) => {
       gateway.close()
+      if (gatewayInterval !== null) {
+        clearInterval(gatewayInterval)
+      }
       setImmediate(next)
     })
+
+    fastifyGraphQl.gateway = gateway
   }
 
   fastifyGraphQl.schema = schema
@@ -202,10 +222,6 @@ const plugin = fp(async function (app, opts) {
   app.decorate('graphql', fastifyGraphQl)
 
   fastifyGraphQl.replaceSchema = function (s) {
-    if (gateway) {
-      throw new Error('Calling replaceSchema method is not allowed when plugin is running in gateway mode is not allowed')
-    }
-
     if (!s || typeof s !== 'object') {
       throw new Error('Must provide valid Document AST')
     }
@@ -214,6 +230,7 @@ const plugin = fp(async function (app, opts) {
 
     lru.clear()
     lruErrors.clear()
+    lruGatewayResolvers.clear()
   }
 
   fastifyGraphQl.extendSchema = function (s) {

@@ -65,15 +65,20 @@ interface QueryRequest {
   extensions?: object;
 }
 
+type FastifyGQLGatewayService = {
+  name: string;
+  url: string;
+  mandatory?: boolean;
+}
+
 export interface FastifyGQLGatewayOptions {
   /**
    * A list of GraphQL services to be combined into the gateway schema
    */
   gateway: {
-    services: Array<{
-      name: string;
-      url: string;
-    }>;
+    services: Array<FastifyGQLGatewayService>;
+    pollingInterval?: number;
+    errorHandler?(error: Error, service: FastifyGQLGatewayService): void
   };
 }
 

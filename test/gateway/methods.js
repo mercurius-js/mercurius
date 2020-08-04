@@ -97,45 +97,6 @@ test('calling defineResolvers throws an error in gateway mode', async (t) => {
   }
 })
 
-test('calling replaceSchema throws an error in gateway mode', async (t) => {
-  const port = await createService(t, `
-    extend type Query {
-      me: User
-    }
-
-    type User @key(fields: "id") {
-      id: ID!
-      name: String!
-    }
-  `)
-
-  const app = Fastify()
-  t.tearDown(() => {
-    app.close()
-  })
-
-  app.register(GQL, {
-    gateway: {
-      services: [{
-        name: 'service-1',
-        url: `http://localhost:${port}/graphql`
-      }]
-    }
-  })
-
-  await app.ready()
-
-  try {
-    app.graphql.replaceSchema(`
-      type Query {
-        field: String!
-      }
-    `)
-  } catch (err) {
-    t.is(err.message, 'Calling replaceSchema method is not allowed when plugin is running in gateway mode is not allowed')
-  }
-})
-
 test('calling extendSchema throws an error in gateway mode', async (t) => {
   const port = await createService(t, `
     extend type Query {
