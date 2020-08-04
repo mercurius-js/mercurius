@@ -62,6 +62,8 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
 })
 
 test('subscripction connection sends error message when message is not json string', async (t) => {
+  t.plan(1)
+
   const sc = new SubscriptionConnection({
     on () {},
     send (message) {
@@ -77,6 +79,7 @@ test('subscripction connection sends error message when message is not json stri
 })
 
 test('subscription connection handles GQL_CONNECTION_TERMINATE message correctly', async (t) => {
+  t.plan(1)
   const sc = new SubscriptionConnection({
     on () {},
     close () { t.pass() },
@@ -113,6 +116,8 @@ test('subscription connection handles GQL_STOP message correctly', async (t) => 
 })
 
 test('handles error in send and closes connection', async t => {
+  t.plan(1)
+
   const sc = new SubscriptionConnection(
     {
       send (message) {
@@ -145,17 +150,21 @@ test('subscription connection handles GQL_STOP message correctly, with no data',
 })
 
 test('subscription connection send error message when GQL_START handler errs', async (t) => {
+  t.plan(1)
+
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
     send (message) {
       t.equal(JSON.stringify({
-        id: 1,
         type: 'error',
+        id: 1,
         payload: 'handleGQLStart error'
-      }), '{"id":1,"type":"error","payload":"handleGQLStart error"}')
+      }), message)
     }
   }, {})
+
+  sc.isReady = true
 
   sc.handleGQLStart = async (data) => {
     throw new Error('handleGQLStart error')
@@ -169,15 +178,17 @@ test('subscription connection send error message when GQL_START handler errs', a
 })
 
 test('subscription connection send error message when client message type is invalid', async (t) => {
+  t.plan(1)
+
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
     send (message) {
       t.equal(JSON.stringify({
-        id: 1,
         type: 'error',
+        id: 1,
         payload: 'Invalid payload type'
-      }), '{"id":1,"type":"error","payload":"Invalid payload type"}')
+      }), message)
     }
   }, {})
 
@@ -189,10 +200,38 @@ test('subscription connection send error message when client message type is inv
 })
 
 test('subscription connection handles GQL_START message correctly, when payload.query is not defined', async (t) => {
+  t.plan(1)
+
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
-    send (message) {}
+    send (message) {
+      t.equal(JSON.stringify(
+        { type: 'error', id: 1, payload: 'Must provide document.' }
+      ), message)
+    }
+  }, {})
+
+  sc.isReady = true
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: { }
+  }))
+})
+
+test('subscription connection handles when GQL_START is called before GQL_INIT', async (t) => {
+  t.plan(1)
+
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {
+      t.equal(JSON.stringify(
+        { type: 'connection_error', payload: { message: 'Connection has not been established yet.' } }
+      ), message)
+    }
   }, {})
 
   await sc.handleMessage(JSON.stringify({
@@ -203,13 +242,17 @@ test('subscription connection handles GQL_START message correctly, when payload.
 })
 
 test('subscription connection extends context with onConnect return value', async (t) => {
-  const context = {}
+  t.plan(3)
+
+  const context = {
+    a: 1
+  }
 
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
     send (message) {
-      t.pass()
+      t.equal(JSON.stringify({ type: 'connection_ack' }), message)
     }
   }, {
     context,
@@ -220,4 +263,5 @@ test('subscription connection extends context with onConnect return value', asyn
 
   await sc.handleConnectionInit()
   t.is(sc.context.data, true)
+  t.is(sc.context.a, 1)
 })

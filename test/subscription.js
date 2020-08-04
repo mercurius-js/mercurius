@@ -2,6 +2,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
+const { promisify } = require('util')
 const GQL = require('..')
 
 test('subscription server replies with connection_ack', t => {
@@ -499,6 +500,11 @@ test('subscription connection is closed if context function throws', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
     t.tearDown(client.destroy.bind(client))
 
     client.setEncoding('utf8')
@@ -574,7 +580,7 @@ test('subscription server sends update to subscriptions with custom async contex
     message: 'Notification message'
   }]
 
-  const wait = (amount = 0) => new Promise(resolve => setTimeout(resolve, amount))
+  const wait = promisify(setTimeout)
 
   const resolvers = {
     Query: {
@@ -706,7 +712,7 @@ test('subscription connection is closed if async context function throws', t => 
     }
   }
 
-  const wait = (amount = 0) => new Promise(resolve => setTimeout(resolve, amount))
+  const wait = promisify(setTimeout)
 
   app.register(GQL, {
     schema,
@@ -736,6 +742,88 @@ test('subscription connection is closed if async context function throws', t => 
     ws.on('close', () => {
       client.end()
       t.end()
+    })
+  })
+})
+
+test('subscription server sends correct error if execution throws', t => {
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const emitter = mq()
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Subscription {
+      notificationAdded: Notification
+    }
+  `
+
+  const resolvers = {
+    Subscription: {
+      notificationAdded: {
+        subscribe: () => {
+          throw Error('custom execution error')
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      emitter
+    }
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'error') {
+        t.equal(chunk, JSON.stringify({
+          type: 'error',
+          id: 1,
+          payload: 'custom execution error'
+        }))
+
+        client.end()
+        t.end()
+      }
     })
   })
 })
