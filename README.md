@@ -770,7 +770,7 @@ server.listen(3002);
 
 #### Using a custom errorHandler for handling downstream service errors in Gateway mode
 
-Service which uses Gateway mode can process different types of issues that can be obtained from remote services (for example, Network Error). A developer can provide a function (`gateway.errorHandler`) that can process these errors.
+Service which uses Gateway mode can process different types of issues that can be obtained from remote services (for example, Network Error, Downstream Error, etc.). A developer can provide a function (`gateway.errorHandler`) that can process these errors.
 
 ```js
 const Fastify = require("fastify");
