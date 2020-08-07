@@ -467,3 +467,79 @@ test('throw when persistedQueries is empty but onlyPersisted is true', async t =
 
   t.rejects(app.ready(), 'onlyPersisted is true but there are no persistedQueries')
 })
+
+test('loaders support custom context', async (t) => {
+  const app = Fastify()
+
+  const loaders = {
+    Dog: {
+      async owner (queries, { reply, test }) {
+        t.is(test, 'custom')
+        // note that the second entry for max is cached
+        t.deepEqual(queries, [{
+          obj: {
+            name: 'Max'
+          },
+          params: {}
+        }, {
+          obj: {
+            name: 'Charlie'
+          },
+          params: {}
+        }, {
+          obj: {
+            name: 'Buddy'
+          },
+          params: {}
+        }])
+        return queries.map(({ obj }) => owners[obj.name])
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders,
+    context: (request, reply) => {
+      return {
+        test: 'custom'
+      }
+    }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      dogs: [{
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }, {
+        name: 'Charlie',
+        owner: {
+          name: 'Sarah'
+        }
+      }, {
+        name: 'Buddy',
+        owner: {
+          name: 'Tracy'
+        }
+      }, {
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }]
+    }
+  })
+})
