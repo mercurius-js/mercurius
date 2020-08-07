@@ -2,7 +2,7 @@
 
 import Fastify from 'fastify'
 // eslint-disable-next-line no-unused-vars
-import fastifyGQL, { FastifyGQLOptions } from '../..'
+import fastifyGQL from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from 'graphql-tools'
@@ -108,7 +108,7 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 
-function makeGraphqlServer (options: FastifyGQLOptions) {
+function makeGraphqlServer (options: fastifyGQL.FastifyGQLOptions) {
   const app = Fastify()
 
   app.register(fastifyGQL, options)

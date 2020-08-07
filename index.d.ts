@@ -71,157 +71,157 @@ type FastifyGQLGatewayService = {
   mandatory?: boolean;
 }
 
-export interface FastifyGQLGatewayOptions {
-  /**
-   * A list of GraphQL services to be combined into the gateway schema
-   */
-  gateway: {
-    services: Array<FastifyGQLGatewayService>;
-    pollingInterval?: number;
-    errorHandler?(error: Error, service: FastifyGQLGatewayService): void
-  };
-}
 
-export interface FastifyGQLSchemaOptions {
-  /**
-   * The GraphQL schema. String schema will be parsed
-   */
-  schema: GraphQLSchema | string;
-  /**
-   * Object with resolver functions
-   */
-  resolvers?: IResolvers;
-  /**
-   * Object with data loader functions
-   */
-  loaders?: {
-    [key: string]: {
-      [key: string]: (
-        queries: Array<{
-          obj: any;
-          params: any;
-        }>,
-        context: {
-          reply: FastifyReply;
-        }
-      ) => any;
-    };
-  };
-}
-
-export interface FastifyGQLCommonOptions {
-  /**
-   * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
-   */
-  graphiql?: boolean | string;
-  ide?: boolean | string;
-  /**
-   * The minimum number of execution a query needs to be executed before being jit'ed.
-   * @default true
-   */
-  jit?: number;
-  /**
-   * A graphql endpoint is exposed at /graphql when true
-   * @default true
-   */
-  routes?: boolean;
-  /**
-   * An endpoint for graphql if routes is true
-   * @default '/graphql'
-   */
-  path?: string;
-  /**
-   * Change the route prefix of the graphql endpoint if set
-   */
-  prefix?: string;
-  /**
-   * Add the empty Mutation definition if schema is not defined
-   * @default false
-   */
-  defineMutation?: boolean;
-  /**
-   * Change the default error handler (Default: true).
-   * If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response).
-   * @default true
-   */
-  errorHandler?:
-    | boolean
-    | ((
-        error: FastifyError,
-        request: FastifyRequest,
-        reply: FastifyReply
-      ) => ExecutionResult);
-  /**
-   * Change the default error formatter.
-   */
-  errorFormatter?: ((
-    error: FastifyError | GraphQLError | Error
-  ) => {
-    statusCode?: number
-    response?: {
-      data?: object
-      errors: any[]
-    }
-  });
-  /**
-   * The maximum depth allowed for a single query.
-   */
-  queryDepth?: number;
-  context?: (request: FastifyRequest, reply: FastifyReply) => Promise<any>;
-  /**
-   * Optional additional validation rules.
-   * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
-   */
-  validationRules?: ValidationRules;
-  /**
-   * Enable subscription support when options are provided. [`emitter`](https://github.com/mcollina/mqemitter) property is required when subscriptions is an object. (Default false)
-   */
-  subscription?:
-    | boolean
-    | {
-        emitter?: object;
-        verifyClient?: (
-          info: { origin: string; secure: boolean; req: IncomingMessage }, 
-          next: (result: boolean, code?: number, message?: string, headers?: OutgoingHttpHeaders) => void
-        ) => void,
-        context?: (connection: SocketStream, request: FastifyRequest) => object | Promise<object>
-        onConnect?: (data: { type: "connection_init", payload: any }) => object | Promise<object>
-      };
-  /**
-   * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
-   */
-  federationMetadata?: boolean;
-  /**
-   * Persisted queries, overrides persistedQueryProvider.
-   */
-  persistedQueries?: object;
-  /**
-   * Only allow persisted queries. Required persistedQueries, overrides persistedQueryProvider.
-   */
-  onlyPersisted?: boolean;
-  /**
-   * Settings for enabling persisted queries.
-   */
-  persistedQueryProvider?: fastifyGQL.PeristedQueryProvider;
-
-  /**
-   * Enable support for batched queries (POST requests only).
-   * Batched query support allows clients to send an array of queries and
-   * receive an array of responses within a single request.
-   */
-  allowBatchedQueries?: boolean;
-}
-
-export type FastifyGQLOptions = FastifyGQLCommonOptions & (FastifyGQLGatewayOptions | FastifyGQLSchemaOptions)
-
-declare function fastifyGQL 
+declare function fastifyGQL
   (
     instance: FastifyInstance,
-    opts: FastifyGQLOptions
+    opts: fastifyGQL.FastifyGQLOptions
   ): void;
 
 
 declare namespace fastifyGQL {
+  interface FastifyGQLGatewayOptions {
+    /**
+     * A list of GraphQL services to be combined into the gateway schema
+     */
+    gateway: {
+      services: Array<FastifyGQLGatewayService>;
+      pollingInterval?: number;
+      errorHandler?(error: Error, service: FastifyGQLGatewayService): void
+    };
+  }
+
+  interface FastifyGQLSchemaOptions {
+    /**
+     * The GraphQL schema. String schema will be parsed
+     */
+    schema: GraphQLSchema | string;
+    /**
+     * Object with resolver functions
+     */
+    resolvers?: IResolvers;
+    /**
+     * Object with data loader functions
+     */
+    loaders?: {
+      [key: string]: {
+        [key: string]: (
+          queries: Array<{
+            obj: any;
+            params: any;
+          }>,
+          context: {
+            reply: FastifyReply;
+          }
+        ) => any;
+      };
+    };
+  }
+
+  interface FastifyGQLCommonOptions {
+    /**
+     * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
+     */
+    graphiql?: boolean | string;
+    ide?: boolean | string;
+    /**
+     * The minimum number of execution a query needs to be executed before being jit'ed.
+     * @default true
+     */
+    jit?: number;
+    /**
+     * A graphql endpoint is exposed at /graphql when true
+     * @default true
+     */
+    routes?: boolean;
+    /**
+     * An endpoint for graphql if routes is true
+     * @default '/graphql'
+     */
+    path?: string;
+    /**
+     * Change the route prefix of the graphql endpoint if set
+     */
+    prefix?: string;
+    /**
+     * Add the empty Mutation definition if schema is not defined
+     * @default false
+     */
+    defineMutation?: boolean;
+    /**
+     * Change the default error handler (Default: true).
+     * If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response).
+     * @default true
+     */
+    errorHandler?:
+      | boolean
+        | ((
+          error: FastifyError,
+          request: FastifyRequest,
+          reply: FastifyReply
+        ) => ExecutionResult);
+        /**
+         * Change the default error formatter.
+         */
+        errorFormatter?: ((
+          error: FastifyError | GraphQLError | Error
+        ) => {
+          statusCode?: number
+          response?: {
+            data?: object
+            errors: any[]
+          }
+        });
+        /**
+         * The maximum depth allowed for a single query.
+         */
+        queryDepth?: number;
+        context?: (request: FastifyRequest, reply: FastifyReply) => Promise<any>;
+        /**
+         * Optional additional validation rules.
+         * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
+         */
+        validationRules?: ValidationRules;
+        /**
+         * Enable subscription support when options are provided. [`emitter`](https://github.com/mcollina/mqemitter) property is required when subscriptions is an object. (Default false)
+         */
+        subscription?:
+          | boolean
+            | {
+              emitter?: object;
+              verifyClient?: (
+                info: { origin: string; secure: boolean; req: IncomingMessage },
+                next: (result: boolean, code?: number, message?: string, headers?: OutgoingHttpHeaders) => void
+              ) => void,
+                context?: (connection: SocketStream, request: FastifyRequest) => object | Promise<object>
+              onConnect?: (data: { type: "connection_init", payload: any }) => object | Promise<object>
+            };
+            /**
+             * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
+             */
+            federationMetadata?: boolean;
+            /**
+             * Persisted queries, overrides persistedQueryProvider.
+             */
+            persistedQueries?: object;
+            /**
+             * Only allow persisted queries. Required persistedQueries, overrides persistedQueryProvider.
+             */
+            onlyPersisted?: boolean;
+            /**
+             * Settings for enabling persisted queries.
+             */
+            persistedQueryProvider?: fastifyGQL.PeristedQueryProvider;
+
+            /**
+             * Enable support for batched queries (POST requests only).
+             * Batched query support allows clients to send an array of queries and
+             * receive an array of responses within a single request.
+             */
+            allowBatchedQueries?: boolean;
+  }
+
+  type FastifyGQLOptions = FastifyGQLCommonOptions & (FastifyGQLGatewayOptions | FastifyGQLSchemaOptions)
   interface PeristedQueryProvider {
     /**
      *  Return true if a given request matches the desired persisted query format.
