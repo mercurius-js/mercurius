@@ -144,7 +144,7 @@ test('queryDepth - test total depth is within queryDepth parameter', async (t) =
   app.register(GQL, {
     schema,
     resolvers,
-    queryDepth: 5
+    queryDepth: 6
   })
 
   // needed so that graphql is defined
@@ -162,14 +162,14 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   app.register(GQL, {
     schema,
     resolvers,
-    queryDepth: 3
+    queryDepth: 5
   })
 
   // needed so that graphql is defined
   await app.ready()
 
   const err = new BadRequest()
-  const queryDepthError = new Error('unnamedQuery query exceeds the query depth limit of 3')
+  const queryDepthError = new Error('unnamedQuery query depth (6) exceeds the query depth limit of 5')
   err.errors = [queryDepthError]
 
   try {
@@ -303,6 +303,7 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
           {
             id: 1,
             name: 'Strawberry',
+            description: 'Lorem ipsum',
             seasons: [
               { name: 'Spring' },
               { name: 'Summer' }
@@ -356,6 +357,7 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
     flavors {
       id
       name
+      description
       nutrition {
         calories,
         description {
@@ -394,6 +396,7 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
         {
           id: '1',
           name: 'Strawberry',
+          description: 'Lorem ipsum',
           nutrition: {
             calories: 123,
             description: {
