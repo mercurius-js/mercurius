@@ -29,7 +29,7 @@
     "@types/ws": "^7.2.6",
     "@typescript-eslint/eslint-plugin": "^3.6.1",
     "@typescript-eslint/parser": "^3.6.1",
-    "autocannon": "^5.0.0",
+    "autocannon": "^6.0.0",
     "fastify": "^3.0.2",
     "graphql-tools": "^6.0.14",
     "pre-commit": "^1.2.2",
