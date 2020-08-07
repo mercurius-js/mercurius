@@ -265,6 +265,11 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   const userService = Fastify()
   const gateway = Fastify()
 
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
+
   userService.register(GQL, {
     schema: `
       extend type Query {
@@ -281,6 +286,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   })
 
   await userService.listen(0)
+  await clock.tickAsync()
 
   const userServicePort = userService.server.address().port
 
@@ -292,104 +298,111 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
           url: `http://localhost:${userServicePort}/graphql`
         }
       ],
-      pollingInterval: 2000
+      pollingInterval: 500
     }
   })
 
   await gateway.listen(0)
+  await clock.tickAsync()
 
-  const res = await gateway.inject({
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    url: '/graphql',
-    body: JSON.stringify({
-      query: `
-        query MainQuery {
-          me {
-            id
-            name
+  {
+    const { body } = await gateway.inject({
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      url: '/graphql',
+      body: JSON.stringify({
+        query: `
+          query MainQuery {
+            me {
+              id
+              name
+            }
           }
-        }
-      `
+        `
+      })
     })
-  })
 
-  t.deepEqual(JSON.parse(res.body), {
-    data: {
-      me: {
-        id: 'u1',
-        name: 'John'
+    await clock.tickAsync()
+
+    t.deepEqual(JSON.parse(body), {
+      data: {
+        me: {
+          id: 'u1',
+          name: 'John'
+        }
       }
-    }
-  })
+    })
+  }
 
-  const res2 = await gateway.inject({
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    url: '/graphql',
-    body: JSON.stringify({
-      query: `
-        query MainQuery {
-          me {
-            id
-            name
-            lastName
+  {
+    const { body } = await gateway.inject({
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      url: '/graphql',
+      body: JSON.stringify({
+        query: `
+          query MainQuery {
+            me {
+              id
+              name
+              lastName
+            }
           }
-        }
-      `
+        `
+      })
     })
-  })
 
-  t.deepEqual(JSON.parse(res2.body), {
-    errors: [
-      {
-        message:
-          'Cannot query field "lastName" on type "User". Did you mean "name"?',
-        locations: [{ line: 6, column: 13 }]
-      }
-    ],
-    data: null
-  })
+    t.deepEqual(JSON.parse(body), {
+      errors: [
+        {
+          message:
+            'Cannot query field "lastName" on type "User". Did you mean "name"?',
+          locations: [{ line: 6, column: 15 }]
+        }
+      ],
+      data: null
+    })
+  }
 
   await userService.close()
+  await clock.tickAsync(500)
 
-  await clock.tickAsync(2000)
-
-  const res3 = await gateway.inject({
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    url: '/graphql',
-    body: JSON.stringify({
-      query: `
-        query MainQuery {
-          me {
-            id
-            name
-            lastName
+  {
+    const { body } = await gateway.inject({
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      url: '/graphql',
+      body: JSON.stringify({
+        query: `
+          query MainQuery {
+            me {
+              id
+              name
+              lastName
+            }
           }
-        }
-      `
+        `
+      })
     })
-  })
 
-  t.deepEqual(JSON.parse(res3.body), {
-    errors: [
-      {
-        message:
-          'Cannot query field "lastName" on type "User". Did you mean "name"?',
-        locations: [{ line: 6, column: 13 }]
-      }
-    ],
-    data: null
-  })
+    t.deepEqual(JSON.parse(body), {
+      errors: [
+        {
+          message:
+            'Cannot query field "lastName" on type "User". Did you mean "name"?',
+          locations: [{ line: 6, column: 15 }]
+        }
+      ],
+      data: null
+    })
+  }
 
-  await gateway.close()
   clock.uninstall()
 })
 
@@ -506,6 +519,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
     })
   }
 
+  gateway.graphql.gateway.close()
   await userService.close()
 
   t.rejects(async () => {
