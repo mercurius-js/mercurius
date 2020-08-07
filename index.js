@@ -33,6 +33,7 @@ const { ErrorWithProps, defaultErrorFormatter } = require('./lib/errors')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 
 const kLoaders = Symbol('fastify-gql.loaders')
+const kFactory = Symbol('fastify-gql.loadersFactory')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -216,7 +217,12 @@ const plugin = fp(async function (app, opts) {
   app.decorateReply(graphqlCtx, null)
 
   app.decorateReply('graphql', function (source, context, variables, operationName) {
-    return app.graphql(source, Object.assign({ reply: this }, context), variables, operationName)
+    context = Object.assign({ reply: this, app }, context)
+    if (app[kFactory]) {
+      this[kLoaders] = factory.create(context)
+    }
+
+    return app.graphql(source, context, variables, operationName)
   })
 
   app.decorate('graphql', fastifyGraphQl)
@@ -301,9 +307,7 @@ const plugin = fp(async function (app, opts) {
     if (!factory) {
       factory = new Factory()
       app.decorateReply(kLoaders)
-      app.addHook('onRequest', async function (req, reply) {
-        reply[kLoaders] = factory.create({ req, reply, app })
-      })
+      app.decorate(kFactory, factory)
     }
 
     function defineLoader (name) {
