@@ -126,6 +126,11 @@ export interface FastifyGQLCommonOptions {
    */
   routes?: boolean;
   /**
+   * Define if the plugin can cache the responses.
+   * @default true
+   */
+  cache?: boolean;
+  /**
    * An endpoint for graphql if routes is true
    * @default '/graphql'
    */
