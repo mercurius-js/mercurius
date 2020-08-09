@@ -54,7 +54,8 @@ app.register(fastifyGQL, {
   prefix: '/prefix',
   defineMutation: false,
   errorHandler: true,
-  queryDepth: 8
+  queryDepth: 8,
+  cache: true
 })
 
 app.register(async function (app) {
