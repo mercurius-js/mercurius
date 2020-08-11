@@ -3,14 +3,13 @@
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./lib/routes')
-const { BadRequest, MethodNotAllowed, InternalServerError } = require('http-errors')
+const { BadRequest, MethodNotAllowed } = require('http-errors')
 const { compileQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
 const {
   parse,
   buildSchema,
   getOperationAST,
-  GraphQLError,
   GraphQLObjectType,
   GraphQLScalarType,
   GraphQLEnumType,
@@ -425,15 +424,9 @@ const plugin = fp(async function (app, opts) {
     }
 
     if (cached && cached.jit !== null) {
-      const res = await cached.jit.query(root, context, variables || {})
+      const execution = await cached.jit.query(root, context, variables || {})
 
-      if (res.errors) {
-        const { response: { data, errors } } = errorFormatter(res)
-        res.data = data
-        res.errors = errors
-      }
-
-      return res
+      return maybeFormatErrors(execution, reply)
     }
 
     // Validate variables
@@ -455,19 +448,18 @@ const plugin = fp(async function (app, opts) {
       operationName
     )
 
-    if (execution.errors) {
-      execution.errors = execution.errors.map(e => {
-        if (e.originalError && (Object.prototype.hasOwnProperty.call(e.originalError, 'extensions'))) {
-          return new GraphQLError(e.originalError.message, e.nodes, e.source, e.positions, e.path, e.originalError, e.originalError.extensions)
-        }
-        return e
-      })
-      const err = new InternalServerError()
-      err.errors = execution.errors
-      err.data = execution.data
-      throw err
-    }
+    return maybeFormatErrors(execution, reply)
+  }
 
+  function maybeFormatErrors (execution, reply) {
+    if (execution.errors) {
+      const { statusCode, response: { data, errors } } = errorFormatter(execution)
+      execution.data = data
+      execution.errors = errors
+      if (reply) {
+        reply.code(statusCode)
+      }
+    }
     return execution
   }
 }, {

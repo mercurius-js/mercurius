@@ -66,17 +66,6 @@ exports['test/routes.js TAP POST return 400 on error > must match snapshot 1'] =
 }
 `
 
-exports['test/routes.js TAP POST return 500 on error without statusCode > must match snapshot 1'] = `
-{
-  "data": null,
-  "errors": [
-    {
-      "message": "Interface field Event.Id expected but CustomEvent does not provide it."
-    }
-  ]
-}
-`
-
 exports['test/routes.js TAP if ide is graphiql, serve config.js with the correct endpoint > must match snapshot 1'] = `
 window.GRAPHQL_ENDPOINT = '/app/graphql'
 `
@@ -125,7 +114,6 @@ exports['test/routes.js TAP server should return 200 on graphql errors (if field
 
 exports['test/routes.js TAP server should return 500 on graphql errors (if field can not be null) > must match snapshot 1'] = `
 {
-  "data": null,
   "errors": [
     {
       "message": "Simple error",
@@ -139,6 +127,7 @@ exports['test/routes.js TAP server should return 500 on graphql errors (if field
         "hello"
       ]
     }
-  ]
+  ],
+  "data": null
 }
 `
