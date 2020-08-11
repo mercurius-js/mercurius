@@ -770,7 +770,7 @@ test('GET graphiql endpoint', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql'
+    url: '/graphql/graphiql'
   })
   t.strictEqual(res.statusCode, 200)
 })
@@ -789,13 +789,13 @@ test('GET graphiql endpoint with boolean', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql'
+    url: '/graphql/graphiql'
   })
   t.strictEqual(res.statusCode, 200)
 
   const res2 = await app.inject({
     method: 'GET',
-    url: '/playground'
+    url: '/graphql/playground'
   })
   t.strictEqual(res2.statusCode, 404)
 })
@@ -816,16 +816,16 @@ test('GET graphiql endpoint with property priority', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/playground'
+    url: '/graphql/playground'
   })
   t.strictEqual(res.statusCode, 200)
 
   const res2 = await app.inject({
     method: 'GET',
-    url: '/graphiql'
+    url: '/graphql/graphiql'
   })
   t.strictEqual(res2.statusCode, 404)
-  t.notStrictEqual(res2.headers.location, '/graphiql.html')
+  t.notStrictEqual(res2.headers.location, '/graphql/graphiql.html')
 })
 
 test('Disable ide endpoint', async (t) => {
@@ -842,11 +842,11 @@ test('Disable ide endpoint', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql'
+    url: '/graphql/graphiql'
   })
   const res2 = await app.inject({
     method: 'GET',
-    url: '/playground'
+    url: '/graphql/playground'
   })
   t.strictEqual(res.statusCode, 404)
   t.strictEqual(res2.statusCode, 404)
@@ -863,11 +863,11 @@ test('Disable ide endpoint by leaving empty', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql'
+    url: '/graphql/graphiql'
   })
   const res2 = await app.inject({
     method: 'GET',
-    url: '/playground'
+    url: '/graphql/playground'
   })
   t.strictEqual(res.statusCode, 404)
   t.strictEqual(res2.statusCode, 404)
@@ -888,7 +888,7 @@ test('GET graphiql endpoint with prefix', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/test-prefix/graphiql'
+    url: '/test-prefix/graphql/graphiql'
   })
 
   t.strictEqual(res.statusCode, 200)
@@ -916,7 +916,7 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/test-wrapper-prefix/graphiql'
+    url: '/test-wrapper-prefix/graphql/graphiql'
   })
 
   t.strictEqual(res.statusCode, 200)
@@ -936,7 +936,7 @@ test('GET graphql playground endpoint', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/playground'
+    url: '/graphql/playground'
   })
   t.strictEqual(res.statusCode, 200)
 })
@@ -956,7 +956,7 @@ test('GET graphql playground endpoint with prefix', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/test-prefix/playground'
+    url: '/test-prefix/graphql/playground'
   })
 
   t.strictEqual(res.statusCode, 200)
@@ -984,7 +984,7 @@ test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/test-wrapper-prefix/playground'
+    url: '/test-wrapper-prefix/graphql/playground'
   })
 
   t.strictEqual(res.statusCode, 200)
@@ -1603,13 +1603,13 @@ test('disable GET graphiql if ide is not "graphiql" or "playground"', async (t) 
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql'
+    url: '/graphql/graphiql'
   })
   t.strictEqual(res.statusCode, 404)
 
   const res2 = await app.inject({
     method: 'GET',
-    url: '/playground'
+    url: '/graphql/playground'
   })
   t.strictEqual(res2.statusCode, 404)
 })
@@ -1628,13 +1628,13 @@ test('render graphiql if graphiql: true', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql'
+    url: '/graphql/graphiql'
   })
   t.strictEqual(res.statusCode, 200)
 
   const res2 = await app.inject({
     method: 'GET',
-    url: '/playground'
+    url: '/graphql/playground'
   })
   t.strictEqual(res2.statusCode, 404)
 })
@@ -1653,13 +1653,13 @@ test('if ide is graphiql, always serve main.js and sw.js', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql/main.js'
+    url: '/graphql/graphiql/main.js'
   })
   t.strictEqual(res.statusCode, 200)
 
   const res2 = await app.inject({
     method: 'GET',
-    url: '/graphiql/sw.js'
+    url: '/graphql/graphiql/sw.js'
   })
   t.strictEqual(res2.statusCode, 200)
 })
@@ -1678,13 +1678,13 @@ test('if ide is playground, do not serve main.js and sw.js', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql/main.js'
+    url: '/graphql/graphiql/main.js'
   })
   t.strictEqual(res.statusCode, 404)
 
   const res2 = await app.inject({
     method: 'GET',
-    url: '/graphiql/sw.js'
+    url: '/graphql/graphiql/sw.js'
   })
   t.strictEqual(res2.statusCode, 404)
 })
@@ -1704,7 +1704,7 @@ test('if ide is playground, serve init.js with the correct endpoint', async (t) 
 
   const res = await app.inject({
     method: 'GET',
-    url: '/playground/init.js'
+    url: '/app/graphql/playground/init.js'
   })
   t.strictEqual(res.statusCode, 200)
   t.strictEqual(res.headers['content-type'], 'application/javascript')
@@ -1726,7 +1726,7 @@ test('if ide is graphiql, serve config.js with the correct endpoint', async (t) 
 
   const res = await app.inject({
     method: 'GET',
-    url: '/graphiql/config.js'
+    url: '/app/graphql/graphiql/config.js'
   })
   t.strictEqual(res.statusCode, 200)
   t.strictEqual(res.headers['content-type'], 'application/javascript')
