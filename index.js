@@ -426,9 +426,7 @@ const plugin = fp(async function (app, opts) {
     if (cached && cached.jit !== null) {
       const execution = await cached.jit.query(root, context, variables || {})
 
-      maybeFormatErrors(execution, reply)
-
-      return execution
+      return maybeFormatErrors(execution, reply)
     }
 
     // Validate variables
@@ -450,9 +448,7 @@ const plugin = fp(async function (app, opts) {
       operationName
     )
 
-    maybeFormatErrors(execution, reply)
-
-    return execution
+    return maybeFormatErrors(execution, reply)
   }
 
   function maybeFormatErrors (execution, reply) {
@@ -464,6 +460,7 @@ const plugin = fp(async function (app, opts) {
         reply.code(statusCode)
       }
     }
+    return execution
   }
 }, {
   name: 'fastify-gql',
