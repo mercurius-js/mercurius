@@ -255,6 +255,65 @@ test('errors - errors with jit enabled', async (t) => {
   })
 })
 
+test('errors - errors with jit enabled using the app decorator', async (t) => {
+  const schema = `
+    type Query {
+      error: String
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error () {
+        throw new ErrorWithProps('Error', { code: 'ERROR', additional: 'information', other: 'data' })
+      },
+      successful () {
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    jit: 1
+  })
+
+  await app.ready()
+
+  // jit it
+  await app.graphql('{error,successful}')
+
+  const payload = await app.graphql('{error,successful}')
+
+  t.deepEqual(payload, {
+    data: {
+      error: null,
+      successful: 'Runs OK'
+    },
+    errors: [
+      {
+        message: 'Error',
+        locations: [
+          {
+            line: 1,
+            column: 2
+          }
+        ],
+        path: ['error'],
+        extensions: {
+          code: 'ERROR',
+          additional: 'information',
+          other: 'data'
+        }
+      }
+    ]
+  })
+})
+
 test('errors - federated errors with jit enabled', async (t) => {
   const schema = `
     type Query {
@@ -484,4 +543,56 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
 
   t.equal(res.statusCode, 200)
   t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+})
+
+test('POST query which throws, with JIT enabled, twice', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        bad: Int
+      }
+    `
+
+  const resolvers = {
+    bad: () => { throw new Error('Bad Resolver') }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    jit: 1
+  })
+
+  let res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'BadQuery',
+      variables: { x: 1 },
+      query: `
+          query BadQuery {
+              bad
+          }`
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+
+  res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'BadQuery',
+      variables: { x: 1 },
+      query: `
+          query BadQuery {
+              bad
+          }`
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
