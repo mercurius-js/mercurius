@@ -5,6 +5,8 @@ const { test } = require('tap')
 const FakeTimers = require('@sinonjs/fake-timers')
 
 const { once } = require('events')
+const { promisify } = require('util')
+const immediate = promisify(setImmediate)
 
 const Fastify = require('fastify')
 const WebSocket = require('ws')
@@ -882,8 +884,12 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   userService.graphql.defineResolvers(resolvers)
 
-  await clock.tickAsync(2000)
-  await clock.tickAsync()
+  await clock.tickAsync(10000)
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
 
   t.deepEqual(Object.keys(gateway.graphql.schema.getType('User').getFields()), [
     'id',
