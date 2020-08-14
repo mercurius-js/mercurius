@@ -624,6 +624,8 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
       t.is(line.err.type, expected.errorType)
     }
   }
+
+  t.is(errors.length, 0)
 })
 
 test('app.graphql which throws, with JIT enabled, twice', async (t) => {
@@ -682,4 +684,6 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
       t.is(line.err.type, expected.errorType)
     }
   }
+
+  t.is(errors.length, 0)
 })
