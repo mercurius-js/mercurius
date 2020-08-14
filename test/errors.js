@@ -5,6 +5,7 @@ const Fastify = require('fastify')
 const GQL = require('..')
 const { ErrorWithProps } = GQL
 const { FederatedError } = require('../lib/errors')
+const split = require('split2')
 
 test('errors - multiple extended errors', async (t) => {
   const schema = `
@@ -459,13 +460,18 @@ test('POST query with a resolver which which throws and a custom error formatter
     schema,
     resolvers,
     allowBatchedQueries: true,
-    errorFormatter: () => ({
-      statusCode: 200,
-      response: {
-        data: null,
-        errors: [{ message: 'Internal Server Error' }]
+    errorFormatter: (errors, ctx) => {
+      t.ok(ctx)
+      t.is(ctx.app, app)
+      t.ok(ctx.reply)
+      return {
+        statusCode: 200,
+        response: {
+          data: null,
+          errors: [{ message: 'Internal Server Error' }]
+        }
       }
-    })
+    }
   })
 
   const res = await app.inject({
@@ -546,7 +552,12 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
 })
 
 test('POST query which throws, with JIT enabled, twice', async (t) => {
-  const app = Fastify()
+  const lines = split(JSON.parse)
+  const app = Fastify({
+    logger: {
+      stream: lines
+    }
+  })
 
   const schema = `
       type Query {
@@ -595,4 +606,22 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
 
   t.equal(res.statusCode, 200)
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+
+  lines.end()
+
+  const errors = [{
+    msg: 'Bad Resolver',
+    errorType: 'GraphQLError'
+  }, {
+    msg: 'Int cannot represent non-integer value: [function bad]',
+    errorType: 'GraphQLError'
+  }]
+
+  for await (const line of lines) {
+    if (line.err) {
+      const expected = errors.shift()
+      t.is(line.msg, expected.msg)
+      t.is(line.err.type, expected.errorType)
+    }
+  }
 })

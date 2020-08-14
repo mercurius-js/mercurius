@@ -426,7 +426,7 @@ const plugin = fp(async function (app, opts) {
     if (cached && cached.jit !== null) {
       const execution = await cached.jit.query(root, context, variables || {})
 
-      return maybeFormatErrors(execution, reply)
+      return maybeFormatErrors(execution, context)
     }
 
     // Validate variables
@@ -448,12 +448,13 @@ const plugin = fp(async function (app, opts) {
       operationName
     )
 
-    return maybeFormatErrors(execution, reply)
+    return maybeFormatErrors(execution, context)
   }
 
-  function maybeFormatErrors (execution, reply) {
+  function maybeFormatErrors (execution, context) {
     if (execution.errors) {
-      const { statusCode, response: { data, errors } } = errorFormatter(execution)
+      const { reply } = context
+      const { statusCode, response: { data, errors } } = errorFormatter(execution, context)
       execution.data = data
       execution.errors = errors
       if (reply) {
