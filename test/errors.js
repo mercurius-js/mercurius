@@ -625,3 +625,61 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
     }
   }
 })
+
+test('app.graphql which throws, with JIT enabled, twice', async (t) => {
+  const lines = split(JSON.parse)
+  const app = Fastify({
+    logger: {
+      stream: lines
+    }
+  })
+
+  const schema = `
+      type Query {
+        bad: Int
+      }
+    `
+
+  const resolvers = {
+    bad: () => { throw new Error('Bad Resolver') }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    jit: 1
+  })
+
+  await app.ready()
+
+  const query = `
+    query BadQuery {
+        bad
+    }`
+
+  let res = await app.graphql(query, null, { x: 1 })
+
+  t.matchSnapshot(JSON.stringify(res), null, 2)
+
+  res = await app.graphql(query, null, { x: 1 })
+
+  t.matchSnapshot(JSON.stringify(res), null, 2)
+
+  lines.end()
+
+  const errors = [{
+    msg: 'Bad Resolver',
+    errorType: 'GraphQLError'
+  }, {
+    msg: 'Int cannot represent non-integer value: [function bad]',
+    errorType: 'GraphQLError'
+  }]
+
+  for await (const line of lines) {
+    if (line.err) {
+      const expected = errors.shift()
+      t.is(line.msg, expected.msg)
+      t.is(line.err.type, expected.errorType)
+    }
+  }
+})
