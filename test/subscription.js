@@ -2,8 +2,9 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
-const { promisify } = require('util')
 const GQL = require('..')
+
+const FakeTimers = require('@sinonjs/fake-timers')
 
 test('subscription server replies with connection_ack', t => {
   const app = Fastify()
@@ -516,8 +517,16 @@ test('subscription connection is closed if context function throws', t => {
 })
 
 test('subscription server sends update to subscriptions with custom async context', t => {
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 40
+  })
+
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.tearDown(() => {
+    app.close()
+    clock.uninstall()
+  })
 
   const sendTestQuery = () => {
     app.inject({
@@ -580,8 +589,6 @@ test('subscription server sends update to subscriptions with custom async contex
     message: 'Notification message'
   }]
 
-  const wait = promisify(setTimeout)
-
   const resolvers = {
     Query: {
       notifications: () => notifications
@@ -617,7 +624,7 @@ test('subscription server sends update to subscriptions with custom async contex
     subscription: {
       emitter,
       context: async () => {
-        await wait(200)
+        await clock.tickAsync(200)
         return { topic: 'NOTIFICATION_ADDED' }
       }
     }
@@ -697,8 +704,16 @@ test('subscription server sends update to subscriptions with custom async contex
 })
 
 test('subscription connection is closed if async context function throws', t => {
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 40
+  })
+
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.tearDown(() => {
+    app.close()
+    clock.uninstall()
+  })
 
   const schema = `
     type Query {
@@ -712,14 +727,12 @@ test('subscription connection is closed if async context function throws', t => 
     }
   }
 
-  const wait = promisify(setTimeout)
-
   app.register(GQL, {
     schema,
     resolvers,
     subscription: {
       context: async function () {
-        await wait(200)
+        await clock.tickAsync(200)
         throw new Error('kaboom')
       }
     }
