@@ -163,7 +163,7 @@ export interface FastifyGQLCommonOptions {
     execution: ExecutionResult,
     context: any,
   ) => {
-    statusCode?: number,
+    statusCode: number,
     response: ExecutionResult,
   });
   /**
