@@ -48,3 +48,11 @@ exports['test/errors.js TAP POST query which throws, with JIT enabled, twice > m
   ]
 }
 `
+
+exports['test/errors.js TAP app.graphql which throws, with JIT enabled, twice > must match snapshot 1'] = `
+{"errors":[{"message":"Bad Resolver","locations":[{"line":3,"column":9}],"path":["bad"]}],"data":{"bad":null}}
+`
+
+exports['test/errors.js TAP app.graphql which throws, with JIT enabled, twice > must match snapshot 2'] = `
+{"data":{"bad":null},"errors":[{"message":"Int cannot represent non-integer value: [function bad]","locations":[{"line":3,"column":9}],"path":["bad"]}]}
+`
