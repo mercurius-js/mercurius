@@ -81,3 +81,24 @@ test('subscription context publish event returns a promise reject on error', asy
     t.deepEqual(error, e)
   }
 })
+
+test('subscription context can handle multiple topics with asyncIterator', t => {
+  t.plan(2)
+
+  const pubsub = new PubSub(mq())
+  const sc = new SubscriptionContext({ pubsub })
+
+  sc.asyncIterator(['TOPIC1', 'TOPIC2'])
+  sc.publish({
+    topic: 'TOPIC1',
+    payload: 1
+  }).then(() => {
+    t.pass()
+  })
+  sc.publish({
+    topic: 'TOPIC2',
+    payload: 2
+  }).then(() => {
+    t.pass()
+  })
+})

@@ -689,9 +689,9 @@ test('subscription server sends update to subscriptions', t => {
         notifications.push(notification)
         await emitter.emit({
           topic: 'NOTIFICATION_ADDED',
-          payload: {
+          payload: JSON.stringify({
             notificationAdded: notification
-          }
+          })
         })
 
         return notification
