@@ -160,13 +160,11 @@ export interface FastifyGQLCommonOptions {
    * Change the default error formatter.
    */
   errorFormatter?: ((
-    error: FastifyError | GraphQLError | Error
+    execution: ExecutionResult,
+    context: any,
   ) => {
-    statusCode?: number
-    response?: {
-      data?: object
-      errors: any[]
-    }
+    statusCode?: number,
+    response: ExecutionResult,
   });
   /**
    * The maximum depth allowed for a single query.
