@@ -54,6 +54,11 @@ app.register(fastifyGQL, {
   prefix: '/prefix',
   defineMutation: false,
   errorHandler: true,
+  errorFormatter: (result, context) => {
+    result.data
+    result.errors?.forEach(e => e.message)
+    return { statusCode: 200, response: result }
+  },
   queryDepth: 8,
   cache: true
 })
