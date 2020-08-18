@@ -350,6 +350,8 @@ const resolvers = {
   },
   Subscription: {
     notificationAdded: {
+      // You can also subscribe to multiple topics at once using an array like this:
+      //  pubsub.subscribe(['TOPIC1', 'TOPIC2'])
       subscribe: async (root, args, { pubsub }) => await pubsub.subscribe('NOTIFICATION_ADDED')
     }
   }
