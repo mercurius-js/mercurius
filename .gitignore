@@ -66,3 +66,6 @@ package-lock.json
 
 # vscode
 .vscode/
+
+# intellij idea, webstorm
+.idea/
