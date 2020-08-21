@@ -65,7 +65,7 @@ app.register(fastifyGQL, {
 
 app.register(fastifyGQL, {
   schema,
-  errorFormatter: fastifyGQL.defaultErrorFormatter,
+  errorFormatter: fastifyGQL.defaultErrorFormatter
 })
 
 app.register(async function (app) {
