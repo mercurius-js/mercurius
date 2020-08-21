@@ -63,6 +63,11 @@ app.register(fastifyGQL, {
   cache: true
 })
 
+app.register(fastifyGQL, {
+  schema,
+  errorFormatter: fastifyGQL.defaultErrorFormatter
+})
+
 app.register(async function (app) {
   app.graphql.extendSchema(`
     type Human {
@@ -134,6 +139,7 @@ makeGraphqlServer({ schema, resolvers })
 makeGraphqlServer({ schema, resolvers, validationRules: [] })
 makeGraphqlServer({ schema, resolvers, validationRules: [customValidationRule] })
 makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }: { source: string, variables?: Record<string, any>, operationName?: string }) => [customValidationRule] })
+makeGraphqlServer({ schema, errorFormatter: fastifyGQL.defaultErrorFormatter })
 
 // Gateway mode
 

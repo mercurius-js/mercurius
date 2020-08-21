@@ -443,6 +443,45 @@ test('errors - federated errors without locations, path and extensions', async (
   t.deepEqual(JSON.parse(jitres.payload), expectedResult)
 })
 
+test('errors - custom error formatter that uses default error formatter', async (t) => {
+  const schema = `
+      type Query {
+        bad: Int
+      }
+    `
+
+  const resolvers = {
+    bad: () => { throw new Error('Bad Resolver') }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorFormatter: (err, ctx) => {
+      t.ok(ctx)
+      t.is(ctx.app, app)
+      t.ok(ctx.reply)
+      const response = GQL.defaultErrorFormatter(err, ctx)
+      response.statusCode = 499
+      return response
+    }
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query: ' query { bad }' }
+  })
+
+  const body = JSON.parse(res.body)
+  t.equal(res.statusCode, 499)
+  t.equal(body.errors[0].message, 'Bad Resolver')
+})
+
 test('POST query with a resolver which which throws and a custom error formatter', async (t) => {
   const app = Fastify()
 
