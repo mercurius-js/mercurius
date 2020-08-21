@@ -184,7 +184,7 @@ export interface FastifyGQLCommonOptions {
     | {
         emitter?: object;
         verifyClient?: (
-          info: { origin: string; secure: boolean; req: IncomingMessage }, 
+          info: { origin: string; secure: boolean; req: IncomingMessage },
           next: (result: boolean, code?: number, message?: string, headers?: OutgoingHttpHeaders) => void
         ) => void,
         context?: (connection: SocketStream, request: FastifyRequest) => object | Promise<object>
@@ -217,7 +217,7 @@ export interface FastifyGQLCommonOptions {
 
 export type FastifyGQLOptions = FastifyGQLCommonOptions & (FastifyGQLGatewayOptions | FastifyGQLSchemaOptions)
 
-declare function fastifyGQL 
+declare function fastifyGQL
   (
     instance: FastifyInstance,
     opts: FastifyGQLOptions
@@ -276,6 +276,14 @@ declare namespace fastifyGQL {
     preparedOnly: (persistedQueries: object) => PeristedQueryProvider;
     automatic: (maxSize?: number) => PeristedQueryProvider;
   };
+
+  /**
+   * Default error formatter.
+   */
+  const defaultErrorFormatter: (
+    execution: ExecutionResult,
+    context: any
+  ) => { statusCode: number, response: ExecutionResult };
 }
 
 export default fastifyGQL;
