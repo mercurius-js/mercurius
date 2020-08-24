@@ -10,7 +10,7 @@ const immediate = promisify(setImmediate)
 
 const Fastify = require('fastify')
 const WebSocket = require('ws')
-const buildFederationSchema = require('../../lib/federation')
+const { buildFederationSchema } = require('../../lib/federation')
 const GQL = require('../..')
 
 test('Polling schemas', async (t) => {

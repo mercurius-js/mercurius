@@ -24,7 +24,10 @@ const {
 } = require('graphql')
 const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
-const buildFederationSchema = require('./lib/federation')
+const {
+  buildFederationSchema,
+  extendFederationSchema
+} = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub } = require('./lib/subscriber')
@@ -244,13 +247,17 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
     }
 
-    if (typeof s === 'string') {
-      s = parse(s)
-    } else if (!s || typeof s !== 'object') {
-      throw new Error('Must provide valid Document AST')
-    }
+    if (opts.federationMetadata) {
+      fastifyGraphQl.schema = extendFederationSchema(fastifyGraphQl.schema, s)
+    } else {
+      if (typeof s === 'string') {
+        s = parse(s)
+      } else if (!s || typeof s !== 'object') {
+        throw new Error('Must provide valid Document AST')
+      }
 
-    fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
+      fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
+    }
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {

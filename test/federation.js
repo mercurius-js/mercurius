@@ -6,7 +6,7 @@ const { printSchema } = require('graphql')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
 const GQL = require('..')
-const buildFederationSchema = require('../lib/federation')
+const { buildFederationSchema } = require('../lib/federation')
 
 test('basic federation support', async (t) => {
   const app = Fastify()
@@ -918,6 +918,52 @@ test('federation schema is built correctly with type extension', async (t) => {
   await app.ready()
 
   const query = '{ topPosts { id author { id posts { id } } } }'
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}`
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      topPosts: null
+    }
+  })
+})
+
+test('federation schema extends correctly', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+    }
+  `
+
+  app.register(GQL, {
+    schema,
+    federationMetadata: true
+  })
+
+  await app.ready()
+
+  app.graphql.extendSchema(`
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      posts: [Post]
+    }
+
+    extend type Post {
+      author: User
+    }
+  `)
+
+  const query = '{ topPosts { id author { id posts { id } } } }'
+
   const res = await app.inject({
     method: 'GET',
     url: `/graphql?query=${query}`
