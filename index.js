@@ -119,6 +119,7 @@ const plugin = fp(async function (app, opts) {
 
   if (subscriptionOpts) {
     subscriber = new PubSub(emitter)
+    fastifyGraphQl.pubsub = subscriber
   }
 
   if (gateway && (schema || opts.resolvers || opts.loaders)) {
