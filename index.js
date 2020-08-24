@@ -247,17 +247,14 @@ const plugin = fp(async function (app, opts) {
       throw new Error('Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
     }
 
-    if (opts.federationMetadata) {
-      fastifyGraphQl.schema = extendFederationSchema(fastifyGraphQl.schema, s)
-    } else {
-      if (typeof s === 'string') {
-        s = parse(s)
-      } else if (!s || typeof s !== 'object') {
-        throw new Error('Must provide valid Document AST')
-      }
-
-      fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
+    if (typeof s === 'string') {
+      s = parse(s)
+    } else if (!s || typeof s !== 'object') {
+      throw new Error('Must provide valid Document AST')
     }
+
+    fastifyGraphQl.schema = opts.federationMetadata
+      ? extendFederationSchema(fastifyGraphQl.schema, s) : extendSchema(fastifyGraphQl.schema, s)
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
