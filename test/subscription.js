@@ -842,8 +842,6 @@ test('subscription server sends correct error if execution throws', t => {
 })
 
 test('subscription server exposes pubsub', t => {
-  // t.plan(2)
-
   const app = Fastify()
   t.tearDown(() => app.close())
 
@@ -910,7 +908,7 @@ test('subscription server exposes pubsub', t => {
     client.on('data', chunk => {
       const data = JSON.parse(chunk)
       if (data.type === 'connection_ack') {
-        app.pubsub.publish({
+        app.graphql.pubsub.publish({
           topic: 'NOTIFICATION_ADDED',
           payload: {
             notificationAdded: {
