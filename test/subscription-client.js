@@ -215,3 +215,56 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
     }
   })
 })
+
+test('subscription client closes the connection after GQL_CONNECTION_ERROR type payload received', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message) {
+      const data = JSON.parse(message)
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: '1', type: 'connection_error' }))
+      }
+    })
+
+    ws.on('close', function () {
+      client.close()
+      server.close()
+      t.end()
+    })
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: false,
+    serviceName: 'test-service'
+  })
+})
+
+test('subscription client connectionInitPayload is correctly passed', (t) => {
+  const connectionInitPayload = {
+    hello: 'world'
+  }
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message) {
+      const data = JSON.parse(message)
+      if (data.type === 'connection_init') {
+        t.deepEqual(data.payload, connectionInitPayload)
+        client.close()
+        server.close()
+        t.end()
+      }
+    })
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: false,
+    serviceName: 'test-service',
+    connectionInitPayload: function () {
+      return connectionInitPayload
+    }
+  })
+})
