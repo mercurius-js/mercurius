@@ -263,7 +263,7 @@ test('subscription client connectionInitPayload is correctly passed', (t) => {
   const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: false,
     serviceName: 'test-service',
-    connectionInitPayload: function () {
+    connectionInitPayload: async function () {
       return connectionInitPayload
     }
   })

@@ -373,7 +373,7 @@ test('gateway wsConnectionParams function is passed to SubscriptionClient', t =>
           name: 'test',
           url: `http://localhost:${testServicePort}/graphql`,
           wsUrl: `ws://localhost:${testServicePort}/graphql`,
-          wsConnectionParams: function () {
+          wsConnectionParams: async function () {
             return {
               connectionInitPayload
             }
