@@ -268,3 +268,24 @@ test('subscription client connectionInitPayload is correctly passed', (t) => {
     }
   })
 })
+
+test('subscription client closes the connection if connectionInitPayload throws', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('close', function () {
+      client.close()
+      server.close()
+      t.end()
+    })
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: false,
+    serviceName: 'test-service',
+    connectionInitPayload: async function () {
+      throw new Error('kaboom')
+    }
+  })
+})
