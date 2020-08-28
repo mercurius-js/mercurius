@@ -300,3 +300,107 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   })
 })
+
+test('It support variable inside nested arguments', async (t) => {
+  const user = {
+    id: 'u1',
+    name: {
+      firstName: 'John',
+      lastName: 'Doe'
+    }
+  }
+
+  const userServicePort = await createService(t, `
+    directive @customDirective on FIELD_DEFINITION
+
+    extend type Query {
+      me (user: UserInput!): User
+    }
+
+    input UserInput {
+      id: ID!
+      name: UserNameInput!
+    }
+
+    input UserNameInput {
+      firstName: String!
+      lastName: String!
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: UserName!
+    }
+
+    type UserName {
+      firstName: String!
+      lastName: String!
+    }
+  `, {
+    Query: {
+      me: (root, args, context, info) => {
+        return args.user
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'user',
+        url: `http://localhost:${userServicePort}/graphql`
+      }]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const query = `
+  query MainQuery(
+    $userId: ID!
+    $userFirstName: String!
+    $userLastName: String!
+  ){
+    me (
+      user: {
+        id: $userId
+        name: {
+          firstName: $userFirstName
+          lastName: $userLastName
+        }
+      }
+    ) {
+      id
+      name {
+        firstName
+        lastName
+      }
+    }
+  }`
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query,
+      variables: {
+        userId: user.id,
+        userFirstName: user.name.firstName,
+        userLastName: user.name.lastName
+      }
+    })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: user
+    }
+  })
+})
