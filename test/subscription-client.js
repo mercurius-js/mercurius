@@ -289,3 +289,81 @@ test('subscription client closes the connection if connectionInitPayload throws'
     }
   })
 })
+
+test('subscription client sending empty object payload on connection init', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message) {
+      const data = JSON.parse(message)
+      if (data.type === 'connection_init') {
+        t.deepEqual(data.payload, {})
+        ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+      }
+    })
+
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const maxReconnectAttempts = 10
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts,
+    serviceName: 'test-service'
+  })
+
+  client.createSubscription('query', {}, (data) => {
+    client.close()
+    server.close()
+    t.end()
+  })
+})
+
+test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type payload received', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+  const keepAliveInterval = 500
+  let keepAliveTimer
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message) {
+      const data = JSON.parse(message)
+      if (data.type === 'start') {
+        keepAliveTimer = setInterval(() => {
+          ws.send(JSON.stringify({ type: 'ka' }))
+        }, keepAliveInterval)
+      } else if (data.type === 'stop') {
+        clearInterval(keepAliveTimer)
+        ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+      }
+    })
+
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const maxReconnectAttempts = 10
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts,
+    serviceName: 'test-service',
+    connectionCallback: () => {
+      function publish (data) {
+        t.deepEqual(data, {
+          topic: 'test-service_1',
+          payload: null
+        })
+        client.close()
+        server.close()
+        t.end()
+      }
+
+      const operationId1 = client.createSubscription('query', {}, publish)
+
+      setTimeout(() => {
+        // Let keep alive payload sent twice
+        client.unsubscribe(operationId1)
+      }, keepAliveInterval * 2)
+    }
+  })
+})
