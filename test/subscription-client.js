@@ -1,5 +1,8 @@
 'use strict'
 const { test } = require('tap')
+
+const FakeTimers = require('@sinonjs/fake-timers')
+
 const SubscriptionClient = require('../lib/subscription-client')
 const WS = require('ws')
 
@@ -321,49 +324,45 @@ test('subscription client sending empty object payload on connection init', (t) 
 })
 
 test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type payload received', (t) => {
+  const clock = FakeTimers.createClock()
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
-  const keepAliveInterval = 500
-  let keepAliveTimer
+  t.tearDown(() => {
+    server.close()
+  })
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
       const data = JSON.parse(message)
       if (data.type === 'start') {
-        keepAliveTimer = setInterval(() => {
-          ws.send(JSON.stringify({ type: 'ka' }))
-        }, keepAliveInterval)
-      } else if (data.type === 'stop') {
-        clearInterval(keepAliveTimer)
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
     })
 
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+
+    clock.setInterval(() => {
+      ws.send(JSON.stringify({ type: 'ka' }))
+    }, 200)
   })
 
-  const maxReconnectAttempts = 10
   const client = new SubscriptionClient(`ws://localhost:${port}`, {
     reconnect: true,
-    maxReconnectAttempts,
+    maxReconnectAttempts: 10,
     serviceName: 'test-service',
     connectionCallback: () => {
-      function publish (data) {
-        t.deepEqual(data, {
-          topic: 'test-service_1',
-          payload: null
-        })
-        client.close()
-        server.close()
-        t.end()
-      }
-
-      const operationId1 = client.createSubscription('query', {}, publish)
-
-      setTimeout(() => {
-        // Let keep alive payload sent twice
-        client.unsubscribe(operationId1)
-      }, keepAliveInterval * 2)
+      clock.tick(200)
+      clock.tick(200)
     }
+  })
+
+  client.createSubscription('query', {}, (data) => {
+    t.deepEqual(data, {
+      topic: 'test-service_1',
+      payload: null
+    })
+    clock.tick(200)
+    client.close()
+    t.end()
   })
 })
