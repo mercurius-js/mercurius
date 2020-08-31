@@ -1,5 +1,8 @@
 'use strict'
 const { test } = require('tap')
+
+const FakeTimers = require('@sinonjs/fake-timers')
+
 const SubscriptionClient = require('../lib/subscription-client')
 const WS = require('ws')
 
@@ -287,5 +290,79 @@ test('subscription client closes the connection if connectionInitPayload throws'
     connectionInitPayload: async function () {
       throw new Error('kaboom')
     }
+  })
+})
+
+test('subscription client sending empty object payload on connection init', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message) {
+      const data = JSON.parse(message)
+      if (data.type === 'connection_init') {
+        t.deepEqual(data.payload, {})
+        ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+      }
+    })
+
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const maxReconnectAttempts = 10
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts,
+    serviceName: 'test-service'
+  })
+
+  client.createSubscription('query', {}, (data) => {
+    client.close()
+    server.close()
+    t.end()
+  })
+})
+
+test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type payload received', (t) => {
+  const clock = FakeTimers.createClock()
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+  t.tearDown(() => {
+    server.close()
+  })
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message) {
+      const data = JSON.parse(message)
+      if (data.type === 'start') {
+        ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+      }
+    })
+
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+
+    clock.setInterval(() => {
+      ws.send(JSON.stringify({ type: 'ka' }))
+    }, 200)
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service',
+    connectionCallback: () => {
+      clock.tick(200)
+      clock.tick(200)
+    }
+  })
+
+  client.createSubscription('query', {}, (data) => {
+    t.deepEqual(data, {
+      topic: 'test-service_1',
+      payload: null
+    })
+    clock.tick(200)
+    client.close()
+    t.end()
   })
 })
