@@ -904,6 +904,7 @@ __fastify-gql__ supports the following options:
       * `wsConnectionParams.reconnect`: `Boolean` Enable reconnect on connection close (Default: `false`)
       * `wsConnectionParams.maxReconnectAttempts`: `Number` Defines the maximum reconnect attempts if reconnect is enabled (Default: `Infinity`)
       * `wsConnectionParams.connectionCallback`: `Function` A function called after a `connection_ack` message is received.
+      * `wsConnectionParams.failedConnectionCallback`: `Function` A function called after a `connection_error` message is received, the first argument contains the message payload.
       * `wsConnectionParams.failedReconnectCallback`: `Function` A function called if reconnect is enabled and maxReconnectAttempts is reached.
 
 * `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash. Overrides `persistedQueryProvider`.
