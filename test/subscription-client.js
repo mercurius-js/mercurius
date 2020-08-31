@@ -448,7 +448,7 @@ test('subscription client does not send message if operation is already started'
     reconnect: true,
     maxReconnectAttempts: 10,
     serviceName: 'test-service',
-    connectionCallback: () => {
+    connectionCallback: async () => {
       const operationId = client.createSubscription('query', {}, publish)
       client.startOperation(operationId)
       server.close()
