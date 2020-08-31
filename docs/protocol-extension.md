@@ -1,6 +1,6 @@
 # GraphQL over WebSocket Protocol extension
 
-The GraphQL over WebSocket Protocol used by `fastify-gql` follows apollo's protocol defined (here)[https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md]. In order to achieve gateway-to-service `connection_init` per client, an extension is used on the protocol for server-to-server communication.
+The GraphQL over WebSocket Protocol used by `fastify-gql` follows apollo's protocol defined (here)[https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md]. In order to achieve gateway-to-service communication and handle `connection_init` per client, an extension is used on the protocol for server-to-server communication.
 
 ## Message structure extension
 
