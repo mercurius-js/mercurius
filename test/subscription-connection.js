@@ -261,7 +261,7 @@ test('subscription connection extends context with onConnect return value', asyn
     }
   })
 
-  await sc.handleConnectionInit()
+  await sc.handleConnectionInit({})
   t.is(sc.context.data, true)
   t.is(sc.context.a, 1)
 })
@@ -377,4 +377,19 @@ test('subscription connection handleConnectionInitExtension returns the onConnec
   const res = await sc.handleConnectionInitExtension({ type: 'connectionInit' })
 
   t.deepEqual(res, onConnectResult)
+})
+
+test('subscription connection externds the context with the connection_init payload', async (t) => {
+  const connectionInitPayload = {
+    hello: 'world'
+  }
+  const sc = new SubscriptionConnection({
+    on () { },
+    close () { },
+    send (message) { }
+  }, {})
+
+  await sc.handleConnectionInit({ type: 'connection_init', payload: connectionInitPayload })
+
+  t.deepEqual(sc.context._connectionInit, connectionInitPayload)
 })
