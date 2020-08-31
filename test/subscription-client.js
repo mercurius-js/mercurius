@@ -364,36 +364,6 @@ test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type p
   })
 })
 
-test('subscription client should throw on createSubscription if connection is not ready', (t) => {
-  const server = new WS.Server({ port: 0 })
-  const port = server.address().port
-
-  server.on('connection', function connection (ws) {
-    ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
-      if (data.type === 'connection_init') {
-        ws.send(JSON.stringify({ id: undefined, type: 'connection_error' }))
-      }
-    })
-  })
-
-  const client = new SubscriptionClient(`ws://localhost:${port}`, {
-    reconnect: false,
-    maxReconnectAttempts: 0,
-    serviceName: 'test-service',
-    failedConnectionCallback: () => {
-      try {
-        client.createSubscription('query', {})
-      } catch (err) {
-        t.ok(err instanceof Error)
-      }
-      server.close()
-      client.close()
-      t.end()
-    }
-  })
-})
-
 test('subscription client should pass the error payload to failedConnectionCallback in case of a connection_error', (t) => {
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
