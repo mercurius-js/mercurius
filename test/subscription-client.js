@@ -381,7 +381,7 @@ test('subscription client should throw on createSubscription if connection is no
     reconnect: false,
     maxReconnectAttempts: 0,
     serviceName: 'test-service',
-    connectionCallback: () => {
+    failedConnectionCallback: () => {
       try {
         client.createSubscription('query', {})
       } catch (err) {
@@ -394,7 +394,7 @@ test('subscription client should throw on createSubscription if connection is no
   })
 })
 
-test('subscription client should pass the error payload to connectionCallback in case of a connection_error', (t) => {
+test('subscription client should pass the error payload to failedConnectionCallback in case of a connection_error', (t) => {
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
   const errorPayload = { message: 'error' }
@@ -412,7 +412,7 @@ test('subscription client should pass the error payload to connectionCallback in
     reconnect: false,
     maxReconnectAttempts: 0,
     serviceName: 'test-service',
-    connectionCallback: (err) => {
+    failedConnectionCallback: (err) => {
       t.deepEqual(err, errorPayload)
 
       server.close()
