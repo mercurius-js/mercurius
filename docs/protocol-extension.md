@@ -11,7 +11,7 @@ export interface OperationMessage {
   id?: string;
   type: string;
 
-  extensions?: array;
+  extensions?: Array<OperationExtension>;
 }
 
 export interface OperationExtension {
