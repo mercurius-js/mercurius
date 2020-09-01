@@ -11,8 +11,13 @@ test('connectionInit extension e2e testing', t => {
 
   function onConnect (data) {
     const { payload } = data
-    if (typeof payload.headers === 'object' && payload.headers.authorize) {
-      if (payload.headers.authorize) {
+    if (typeof payload.headers === 'object') {
+      // 3 different 'dummy' methods for authentication
+      if (payload.headers.from === 'gateway' && payload.headers.allowGateway) {
+        return { user: userContext }
+      } else if (payload.headers.authorize) {
+        return { user: userContext }
+      } else if (payload.headers.foo) {
         return { user: userContext }
       }
     }
@@ -162,7 +167,7 @@ test('connectionInit extension e2e testing', t => {
               connectionInitPayload () {
                 return {
                   headers: {
-                    authorize: true,
+                    allowGateway: true,
                     from: 'gateway'
                   }
                 }
@@ -177,7 +182,7 @@ test('connectionInit extension e2e testing', t => {
               connectionInitPayload () {
                 return {
                   headers: {
-                    authorize: true,
+                    allowGateway: true,
                     from: 'gateway'
                   }
                 }
@@ -297,15 +302,24 @@ test('connectionInit extension e2e testing', t => {
         }
       }
 
-      const messages = [
-        {
-          type: 'connection_init',
-          payload: {
-            headers: {
-              authorize: true
-            }
+      client1.write(JSON.stringify({
+        type: 'connection_init',
+        payload: {
+          headers: {
+            authorize: true
           }
-        },
+        }
+      }))
+      client2.write(JSON.stringify({
+        type: 'connection_init',
+        payload: {
+          headers: {
+            foo: 'bar'
+          }
+        }
+      }))
+
+      const messages = [
         {
           id: 1,
           type: 'start',
