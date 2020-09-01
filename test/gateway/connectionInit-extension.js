@@ -6,7 +6,7 @@ const WebSocket = require('ws')
 const GQL = require('../..')
 
 test('connectionInit extension e2e testing', t => {
-  t.plan(5)
+  t.plan(9)
   const userContext = { name: 'test-user' }
 
   function onConnect (data) {
@@ -222,106 +222,127 @@ test('connectionInit extension e2e testing', t => {
         })
       }
 
-      const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
-      const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-      client.setEncoding('utf8')
+      const ws1 = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+      const ws2 = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+      const client1 = WebSocket.createWebSocketStream(ws1, { encoding: 'utf8', objectMode: true })
+      const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
+      client1.setEncoding('utf8')
+      client2.setEncoding('utf8')
       t.tearDown(() => {
-        client.destroy()
+        client1.destroy()
+        client2.destroy()
       })
 
-      client.write(JSON.stringify({
-        type: 'connection_init',
-        payload: {
-          headers: {
-            authorize: true
+      let ready1 = false
+      let ready2 = false
+      let done1 = false
+      let done2 = false
+      async function connectionAckCallback (clientNb) {
+        if (clientNb === 1) {
+          ready1 = true
+        } else if (clientNb === 2) {
+          ready2 = true
+        }
+
+        if (ready1 && ready2) {
+          await Promise.all([
+            addUser(),
+            addNotification()
+          ])
+        }
+      }
+      function terminateCallback (clientNb) {
+        if (clientNb === 1) {
+          done1 = true
+        } else if (clientNb === 2) {
+          done2 = true
+        }
+
+        if (done1 && done2) {
+          t.end()
+        }
+      }
+
+      function makeDataHandler (clientNb) {
+        return async function dataHandler (chunk) {
+          const data = JSON.parse(chunk)
+          switch (data.type) {
+            case 'connection_ack':
+              t.pass('should ack')
+              await connectionAckCallback(clientNb)
+              break
+            case 'data':
+              switch (data.id) {
+                case 1:
+                  t.deepEqual(data.payload.data, { notificationAdded: { id: '2', message: 'test' } })
+                  terminateCallback(clientNb)
+                  break
+                case 2:
+                  t.deepEqual(data.payload.data, { userAdded: { id: '2', name: 'titi' } })
+                  break
+              }
+              break
+            case 'connection_error':
+              t.fail('should not send connection_error')
+              break
+            case 'error':
+              t.fail('should not send error')
+              break
+            case 'complete':
+              t.fail('should not send complete')
+              break
+            default:
+              t.fail('unknown response')
           }
         }
-      }))
+      }
 
-      client.on('data', async chunk => {
-        const data = JSON.parse(chunk)
-        switch (data.type) {
-          case 'connection_ack':
-            client.write(JSON.stringify({
-              id: 1,
-              type: 'start',
-              payload: {
-                query: `
-                  subscription {
-                    notificationAdded {
-                      id
-                      message
-                    }
-                  }
-                `
-              }
-            }))
-            client.write(JSON.stringify({
-              id: 2,
-              type: 'start',
-              payload: {
-                query: `
-                  subscription {
-                    userAdded {
-                      id
-                      name
-                    }
-                  }
-                `
-              }
-            }))
-
-            // This subscription is only used to trigger the mutation on 'complete'
-            client.write(JSON.stringify({
-              id: 3,
-              type: 'start',
-              payload: {
-                query: `
-                  subscription {
-                    notificationAdded {
-                      id
-                      message
-                    }
-                  }
-                `
-              }
-            }))
-            client.write(JSON.stringify({
-              id: 3,
-              type: 'stop'
-            }))
-            break
-          case 'data':
-            switch (data.id) {
-              case 1:
-                t.deepEqual(data.payload.data, { notificationAdded: { id: '2', message: 'test' } })
-                t.end()
-                break
-              case 2:
-                t.deepEqual(data.payload.data, { userAdded: { id: '2', name: 'titi' } })
-                break
+      const messages = [
+        {
+          type: 'connection_init',
+          payload: {
+            headers: {
+              authorize: true
             }
-            break
-          case 'connection_error':
-            t.fail('should not send connection_error')
-            break
-          case 'error':
-            t.fail('should not send error')
-            break
-          case 'complete':
-            if (data.id === 3) {
-              await Promise.all([
-                addUser(),
-                addNotification()
-              ])
-            } else {
-              t.fail('should not send complete')
+          }
+        },
+        {
+          id: 1,
+          type: 'start',
+          payload: {
+            query: `
+            subscription {
+              notificationAdded {
+                id
+                message
+              }
             }
-            break
-          default:
-            t.fail('unknown response')
+          `
+          }
+        },
+        {
+          id: 2,
+          type: 'start',
+          payload: {
+            query: `
+            subscription {
+              userAdded {
+                id
+                name
+              }
+            }
+          `
+          }
         }
-      })
+      ]
+
+      for (const message of messages) {
+        client1.write(JSON.stringify(message))
+        client2.write(JSON.stringify(message))
+      }
+
+      client1.on('data', makeDataHandler(1))
+      client2.on('data', makeDataHandler(2))
     })
   })
 })
