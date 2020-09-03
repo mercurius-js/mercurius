@@ -4,7 +4,7 @@ const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./lib/routes')
 const { BadRequest, MethodNotAllowed } = require('http-errors')
-const { compileQuery } = require('graphql-jit')
+const { compileQuery, isCompiledQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
 const {
   parse,
@@ -421,7 +421,9 @@ const plugin = fp(async function (app, opts) {
 
     // minJit is 0 by default
     if (cached && cached.count++ === minJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
+      const execution = compileQuery(fastifyGraphQl.schema, document, operationName)
+      if (!isCompiledQuery(execution)) return maybeFormatErrors(execution, context)
+      cached.jit = execution
     }
 
     if (cached && cached.jit !== null) {
