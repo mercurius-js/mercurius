@@ -75,6 +75,7 @@ window.addEventListener('load', function(event) {
           GraphQLPlayground.init(document.getElementById('root'), {
             subscriptionEndpoint: '/app/graphql',
             endpoint: '/app/graphql',
+            settings: undefined,
           });
         });
 `
