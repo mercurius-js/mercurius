@@ -199,7 +199,7 @@ const plugin = fp(async function (app, opts) {
       errorHandler: opts.errorHandler,
       errorFormatter: opts.errorFormatter,
       ide: optsIde,
-      ideSettings: opts.playgroundOpts,
+      ideSettings: opts.playgroundSettings,
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
