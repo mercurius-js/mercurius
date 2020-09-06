@@ -875,6 +875,8 @@ __fastify-gql__ supports the following options:
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
   and if `routes` is `true`. Leave empty or `false` to disable.
   _only applies if `onlyPersisted` option is not `true`_
+* `playgroundSettings` Object. that allow you to configure GraphQL Playground with [playground 
+   options](https://github.com/prisma-labs/graphql-playground#usage). it works if the graphiql is set to `'playground'`.
 * `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 * `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
