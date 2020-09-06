@@ -1733,6 +1733,31 @@ test('if ide is graphiql, serve config.js with the correct endpoint', async (t) 
   t.matchSnapshot(res.body)
 })
 
+test('if ide is playground, and playgroundSettings is set, serve init.js with playground editor options ', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundSettings: {
+      'editor.theme': 'light',
+      'editor.fontSize': 17
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
 test('if operationName is null, it should work fine', async (t) => {
   const app = Fastify()
   const schema = `
