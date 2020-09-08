@@ -936,3 +936,164 @@ test('subscription server exposes pubsub', t => {
     })
   })
 })
+
+test('subscription context is extended with onConnect return value if connectionInit extension is defined in gql_start message', t => {
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Subscription {
+      notificationAdded: Notification
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      notifications: () => []
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: (root, args, { pubsub, topic, hello }) => {
+          t.equal(hello, 'world')
+          t.end()
+          pubsub.subscribe(topic)
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      onConnect: () => ({ hello: 'world' })
+    }
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.type === 'connection_ack') {
+        client.write(JSON.stringify({
+          id: 1,
+          type: 'start',
+          payload: {
+            query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+          },
+          extensions: [
+            { type: 'connectionInit' }
+          ]
+        }))
+
+        client.end()
+      }
+    })
+  })
+})
+
+test('subscription works properly if onConnect is not defined and connectionInit extension is defined in gql_start message', t => {
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Subscription {
+      notificationAdded: Notification
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      notifications: () => []
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: (root, args, { pubsub, topic, hello }) => {
+          t.end()
+          pubsub.subscribe(topic)
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.type === 'connection_ack') {
+        client.write(JSON.stringify({
+          id: 1,
+          type: 'start',
+          payload: {
+            query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+          },
+          extensions: [
+            { type: 'connectionInit' }
+          ]
+        }))
+
+        client.end()
+      }
+    })
+  })
+})

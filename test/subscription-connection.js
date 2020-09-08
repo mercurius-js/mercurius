@@ -261,7 +261,135 @@ test('subscription connection extends context with onConnect return value', asyn
     }
   })
 
-  await sc.handleConnectionInit()
+  await sc.handleConnectionInit({})
   t.is(sc.context.data, true)
   t.is(sc.context.a, 1)
+})
+
+test('subscription connection send GQL_ERROR message if connectionInit extension is defined and onConnect returns a falsy value', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () { },
+    close () { },
+    send (message) {
+      t.deepEquals(JSON.parse(message), {
+        id: 1,
+        type: 'error',
+        payload: 'Forbidden'
+      })
+    }
+  }, {
+    onConnect: function () {
+      throw new Error('Not allowed')
+    },
+    fastify: {
+      log: {
+        error: () => {}
+      }
+    }
+  })
+
+  sc.isReady = true
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {},
+    extensions: [
+      { type: 'connectionInit' }
+    ]
+  }))
+})
+
+test('subscription connection does not create subscription if connectionInit extension is defined and onConnect returns a falsy value', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () { },
+    close () { },
+    send (message) {}
+  }, {
+    onConnect: function () {
+      throw new Error('Not allowed')
+    },
+    fastify: {
+      log: {
+        error: () => {}
+      }
+    }
+  })
+
+  sc.isReady = true
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {},
+    extensions: [
+      { type: 'connectionInit' }
+    ]
+  }))
+
+  t.notOk(sc.subscriptionContexts.get(0))
+})
+
+test('subscription connection send GQL_ERROR on unknown extension', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () { },
+    close () { },
+    send (message) {
+      t.deepEquals(JSON.parse(message), {
+        id: 1,
+        type: 'error',
+        payload: 'Unknown extension unknown'
+      })
+    }
+  }, { })
+
+  sc.isReady = true
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {},
+    extensions: [
+      { type: 'unknown' }
+    ]
+  }))
+
+  t.notOk(sc.subscriptionContexts.get(0))
+})
+
+test('subscription connection handleConnectionInitExtension returns the onConnect return value', async (t) => {
+  const onConnectResult = {
+    hello: 'world'
+  }
+  const sc = new SubscriptionConnection({
+    on () { },
+    close () { },
+    send (message) { }
+  }, {
+    onConnect: function () {
+      return onConnectResult
+    },
+    fastify: {
+      log: {
+        error: () => { }
+      }
+    }
+  })
+
+  sc.isReady = true
+  const res = await sc.handleConnectionInitExtension({ type: 'connectionInit' })
+
+  t.deepEqual(res, onConnectResult)
+})
+
+test('subscription connection externds the context with the connection_init payload', async (t) => {
+  const connectionInitPayload = {
+    hello: 'world'
+  }
+  const sc = new SubscriptionConnection({
+    on () { },
+    close () { },
+    send (message) { }
+  }, {})
+
+  await sc.handleConnectionInit({ type: 'connection_init', payload: connectionInitPayload })
+
+  t.deepEqual(sc.context._connectionInit, connectionInitPayload)
 })
