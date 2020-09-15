@@ -45,10 +45,11 @@ test('validationRules array - reports an error', async (t) => {
   await app.ready()
 
   try {
-    await app.graphql(query)
+    const response = await app.graphql(query)
+    t.equal(response.errors.length, 1)
+    t.equal(response.errors[0].message, 'Validation rule error')
   } catch (e) {
-    t.equal(e.errors.length, 1)
-    t.equal(e.errors[0].message, 'Validation rule error')
+    t.fail(e)
   }
 })
 
@@ -118,10 +119,11 @@ test('validationRules - reports an error', async (t) => {
   await app.ready()
 
   try {
-    await app.graphql(query)
+    const response = await app.graphql(query)
+    t.equal(response.errors.length, 1)
+    t.equal(response.errors[0].message, 'Validation rule error')
   } catch (e) {
-    t.equal(e.errors.length, 1)
-    t.equal(e.errors[0].message, 'Validation rule error')
+    t.fail(e)
   }
 })
 

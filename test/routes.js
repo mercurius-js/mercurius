@@ -1168,11 +1168,7 @@ test('Error handler set to true should not change default behavior', async (t) =
 
   const expectedResult = {
     errors: [{
-      message: 'Int cannot represent non-integer value: "2"',
-      locations: [{
-        line: 1,
-        column: 8
-      }]
+      message: 'Int cannot represent non-integer value: "2"'
     }],
     data: null
   }
@@ -1553,13 +1549,7 @@ test('cached errors', async (t) => {
   t.deepEqual(JSON.parse(get.body), {
     errors: [
       {
-        message: 'Cannot query field "test" on type "Query".',
-        locations: [
-          {
-            line: 1,
-            column: 9
-          }
-        ]
+        message: 'Cannot query field "test" on type "Query".'
       }
     ],
     data: null

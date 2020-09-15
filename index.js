@@ -390,7 +390,7 @@ const plugin = fp(async function (app, opts) {
         }
         const err = new BadRequest()
         err.errors = validationErrors
-        return maybeFormatErrors(err, reply)
+        return maybeFormatErrors(err, context)
       }
 
       if (queryDepthLimit) {

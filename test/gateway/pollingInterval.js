@@ -119,9 +119,7 @@ test('Polling schemas', async (t) => {
   t.deepEqual(JSON.parse(res2.body), {
     errors: [
       {
-        message:
-          'Cannot query field "lastName" on type "User". Did you mean "name"?',
-        locations: [{ line: 6, column: 13 }]
+        message: 'Cannot query field "lastName" on type "User". Did you mean "name"?'
       }
     ],
     data: null
@@ -361,9 +359,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     t.deepEqual(JSON.parse(body), {
       errors: [
         {
-          message:
-            'Cannot query field "lastName" on type "User". Did you mean "name"?',
-          locations: [{ line: 6, column: 15 }]
+          message: 'Cannot query field "lastName" on type "User". Did you mean "name"?'
         }
       ],
       data: null
@@ -512,9 +508,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
     t.deepEqual(JSON.parse(body), {
       errors: [
         {
-          message:
-            'Cannot query field "lastName" on type "User". Did you mean "name"?',
-          locations: [{ line: 6, column: 15 }]
+          message: 'Cannot query field "lastName" on type "User". Did you mean "name"?'
         }
       ],
       data: null
@@ -657,8 +651,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
   t.deepEqual(JSON.parse(res2.body), {
     errors: [
       {
-        message: 'Cannot query field "me" on type "Query". Did you mean "me2"?',
-        locations: [{ line: 3, column: 11 }]
+        message: 'Cannot query field "me" on type "Query". Did you mean "me2"?'
       }
     ],
     data: null
