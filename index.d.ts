@@ -213,6 +213,30 @@ export interface FastifyGQLCommonOptions {
    * receive an array of responses within a single request.
    */
   allowBatchedQueries?: boolean;
+
+  /**
+   * Settings for GraphQL Playground. These settings only apply if `graphiql` parameter is set to 'playground'.
+   * The most current GraphQL Playground code is loaded via CDN, so new configuration settings may be available.
+   * See https://github.com/prisma-labs/graphql-playground#usage for the most up-to-date list.
+   */
+  playgroundSettings?: {
+    ['editor.cursorShape']: 'line' | 'block' | 'underline';
+    ['editor.fontFamily']: string;
+    ['editor.fontSize']: number;
+    ['editor.reuseHeaders']: boolean;
+    ['editor.theme']: 'dark' | 'light';
+    ['general.betaUpdates']: boolean;
+    ['prettier.printWidth']: number;
+    ['prettier.tabWidth']: number;
+    ['prettier.useTabs']: boolean;
+    ['request.credentials']: 'omit' | 'include' | 'same-origin';
+    ['schema.disableComments']: boolean;
+    ['schema.polling.enable']: boolean;
+    ['schema.polling.endpointFilter']: string;
+    ['schema.polling.interval']: number;
+    ['tracing.hideTracingResponse']: boolean;
+    ['tracing.tracingSupported']: boolean;
+  };
 }
 
 export type FastifyGQLOptions = FastifyGQLCommonOptions & (FastifyGQLGatewayOptions | FastifyGQLSchemaOptions)
