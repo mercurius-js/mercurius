@@ -203,6 +203,10 @@ test('It builds the gateway schema correctly', async (t) => {
     pid
     title
     content
+    ...AuthorFragment
+  }
+  
+  fragment AuthorFragment on Post {
     author {
       ...UserFragment
     }
