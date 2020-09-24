@@ -1,6 +1,6 @@
 {
   "name": "fastify-gql",
-  "version": "5.8.0",
+  "version": "5.8.1",
   "description": "Fastify GraphQL adapter",
   "main": "index.js",
   "types": "index.d.ts",
