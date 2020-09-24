@@ -541,3 +541,103 @@ test('Should not throw on nullable reference', async (t) => {
     }
   })
 })
+
+test('Should handle InlineFragment', async (t) => {
+  const products = [
+    {
+      id: 1,
+      type: 'Book',
+      name: 'book1'
+    },
+    {
+      id: 2,
+      type: 'Book',
+      name: 'book2'
+    }
+  ]
+
+  const productServicePort = await createService(t, `
+    extend type Query {
+      products: [Product]
+    }
+
+    enum ProductType {
+      Book
+    }
+
+    interface Product {
+      type: ProductType!
+    }
+
+    type Book implements Product {
+      id: ID!
+      type: ProductType!
+      name: String
+    }
+  `, {
+    Product: {
+      resolveType (value) {
+        return value.type
+      }
+    },
+    Query: {
+      products: async () => {
+        return products
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'product',
+          url: `http://localhost:${productServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const query = `
+  {
+    products{
+      ...on Book {
+        id
+        type
+        name
+      }
+    }
+  }`
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      products: [
+        {
+          id: 1,
+          type: 'Book',
+          name: 'book1'
+        },
+        {
+          id: 2,
+          type: 'Book',
+          name: 'book2'
+        }
+      ]
+    }
+  })
+})
