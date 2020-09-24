@@ -408,3 +408,88 @@ test('It support variable inside nested arguments', async (t) => {
     }
   })
 })
+
+test('It support nullable reference', async (t) => {
+  const topPosts = [{
+    id: 1,
+    title: 'test',
+    content: 'test'
+  }]
+
+  const postServicePort = await createService(t, `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      author: User
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+    }
+  `, {
+    Query: {
+      topPosts: async () => {
+        return topPosts
+      }
+    }
+  })
+
+  const userServicePort = await createService(t, `
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {})
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'post',
+          url: `http://localhost:${postServicePort}/graphql`
+        },
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const query = `
+  {
+    topPosts{
+      id
+      title
+      content
+      author {
+        id
+        name
+      }
+    }
+  }`
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: { topPosts }
+  })
+})
