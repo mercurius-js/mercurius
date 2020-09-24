@@ -408,3 +408,136 @@ test('It support variable inside nested arguments', async (t) => {
     }
   })
 })
+
+test('Should not throw on nullable reference', async (t) => {
+  const topPosts = [
+    {
+      id: 1,
+      title: 'test',
+      content: 'test'
+    },
+    {
+      id: 2,
+      title: 'test2',
+      content: 'test2',
+      authorId: 1
+    }
+  ]
+
+  const users = [
+    {
+      id: 1,
+      name: 'toto'
+    }
+  ]
+
+  const postServicePort = await createService(t, `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      author: User
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+    }
+  `, {
+    Post: {
+      author: async (root) => {
+        if (root.authorId) {
+          return { __typename: 'User', id: root.authorId }
+        }
+      }
+    },
+    Query: {
+      topPosts: async () => {
+        return topPosts
+      }
+    }
+  })
+
+  const userServicePort = await createService(t, `
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    User: {
+      __resolveReference: async (reference) => {
+        if (reference.id) {
+          return users.find(u => u.id === parseInt(reference.id))
+        }
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'post',
+          url: `http://localhost:${postServicePort}/graphql`
+        },
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const query = `
+  {
+    topPosts{
+      id
+      title
+      content
+      author {
+        id
+        name
+      }
+    }
+  }`
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      topPosts: [
+        {
+          id: 1,
+          title: 'test',
+          content: 'test',
+          author: null
+        },
+        {
+          id: 2,
+          title: 'test2',
+          content: 'test2',
+          author: {
+            id: 1,
+            name: 'toto'
+          }
+        }
+      ]
+    }
+  })
+})
