@@ -409,12 +409,27 @@ test('It support variable inside nested arguments', async (t) => {
   })
 })
 
-test('It support nullable reference', async (t) => {
-  const topPosts = [{
-    id: 1,
-    title: 'test',
-    content: 'test'
-  }]
+test('Should not throw on nullable reference', async (t) => {
+  const topPosts = [
+    {
+      id: 1,
+      title: 'test',
+      content: 'test'
+    },
+    {
+      id: 2,
+      title: 'test2',
+      content: 'test2',
+      authorId: 1
+    }
+  ]
+
+  const users = [
+    {
+      id: 1,
+      name: 'toto'
+    }
+  ]
 
   const postServicePort = await createService(t, `
     extend type Query {
@@ -432,6 +447,13 @@ test('It support nullable reference', async (t) => {
       id: ID! @external
     }
   `, {
+    Post: {
+      author: async (root) => {
+        if (root.authorId) {
+          return { __typename: 'User', id: root.authorId }
+        }
+      }
+    },
     Query: {
       topPosts: async () => {
         return topPosts
@@ -444,7 +466,15 @@ test('It support nullable reference', async (t) => {
       id: ID!
       name: String
     }
-  `, {})
+  `, {
+    User: {
+      __resolveReference: async (reference) => {
+        if (reference.id) {
+          return users.find(u => u.id === parseInt(reference.id))
+        }
+      }
+    }
+  })
 
   const gateway = Fastify()
   t.tearDown(() => {
@@ -490,6 +520,24 @@ test('It support nullable reference', async (t) => {
   })
 
   t.deepEqual(JSON.parse(res.body), {
-    data: { topPosts }
+    data: {
+      topPosts: [
+        {
+          id: 1,
+          title: 'test',
+          content: 'test',
+          author: null
+        },
+        {
+          id: 2,
+          title: 'test2',
+          content: 'test2',
+          author: {
+            id: 1,
+            name: 'toto'
+          }
+        }
+      ]
+    }
   })
 })
