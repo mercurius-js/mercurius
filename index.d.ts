@@ -19,7 +19,7 @@ import {
 import { SocketStream } from "fastify-websocket"
 import { IncomingMessage, OutgoingHttpHeaders } from "http";
 
-declare interface FastifyGQLPlugin {
+declare interface MercuriusPlugin {
   /**
    * Replace existing schema
    * @param schema graphql schema
@@ -65,24 +65,24 @@ interface QueryRequest {
   extensions?: object;
 }
 
-type FastifyGQLGatewayService = {
+type MercuriusGatewayService = {
   name: string;
   url: string;
   mandatory?: boolean;
 }
 
-export interface FastifyGQLGatewayOptions {
+export interface MercuriusGatewayOptions {
   /**
    * A list of GraphQL services to be combined into the gateway schema
    */
   gateway: {
-    services: Array<FastifyGQLGatewayService>;
+    services: Array<MercuriusGatewayService>;
     pollingInterval?: number;
-    errorHandler?(error: Error, service: FastifyGQLGatewayService): void
+    errorHandler?(error: Error, service: MercuriusGatewayService): void
   };
 }
 
-export interface FastifyGQLSchemaOptions {
+export interface MercuriusSchemaOptions {
   /**
    * The GraphQL schema. String schema will be parsed
    */
@@ -109,7 +109,7 @@ export interface FastifyGQLSchemaOptions {
   };
 }
 
-export interface FastifyGQLCommonOptions {
+export interface MercuriusCommonOptions {
   /**
    * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
    */
@@ -239,12 +239,12 @@ export interface FastifyGQLCommonOptions {
   };
 }
 
-export type FastifyGQLOptions = FastifyGQLCommonOptions & (FastifyGQLGatewayOptions | FastifyGQLSchemaOptions)
+export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
 
 declare function fastifyGQL
   (
     instance: FastifyInstance,
-    opts: FastifyGQLOptions
+    opts: MercuriusOptions
   ): void;
 
 
@@ -317,7 +317,7 @@ declare module "fastify" {
     /**
      * GraphQL plugin
      */
-    graphql: FastifyGQLPlugin;
+    graphql: MercuriusPlugin;
   }
 
   interface FastifyReply {
