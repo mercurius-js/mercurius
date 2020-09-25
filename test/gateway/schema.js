@@ -641,3 +641,156 @@ test('Should handle InlineFragment', async (t) => {
     }
   })
 })
+
+test('Should support array references with _entities query', async (t) => {
+  const topPosts = [
+    {
+      id: 1,
+      title: 'test',
+      content: 'test',
+      authorIds: [1, 2]
+    },
+    {
+      id: 2,
+      title: 'test2',
+      content: 'test2',
+      authorIds: [3]
+    }
+  ]
+
+  const users = [
+    {
+      id: 1,
+      name: 'toto'
+    },
+    {
+      id: 2,
+      name: 'titi'
+    },
+    {
+      id: 3,
+      name: 'tata'
+    }
+  ]
+
+  const postServicePort = await createService(t, `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      authors: [User]
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+    }
+  `, {
+    Post: {
+      authors: async (root) => {
+        if (root.authorIds) {
+          return root.authorIds.map(id => ({ __typename: 'User', id }))
+        }
+      }
+    },
+    Query: {
+      topPosts: async () => {
+        return topPosts
+      }
+    }
+  })
+
+  const userServicePort = await createService(t, `
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    User: {
+      __resolveReference: async (reference) => {
+        if (reference.id) {
+          return users.find(u => u.id === parseInt(reference.id))
+        }
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'post',
+          url: `http://localhost:${postServicePort}/graphql`
+        },
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const query = `
+  {
+    topPosts{
+      id
+      title
+      content
+      authors {
+        id
+        name
+      }
+    }
+  }`
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      topPosts: [
+        {
+          id: 1,
+          title: 'test',
+          content: 'test',
+          authors: [
+            {
+              id: 1,
+              name: 'toto'
+            },
+            {
+              id: 2,
+              name: 'titi'
+            }
+          ]
+        },
+        {
+          id: 2,
+          title: 'test2',
+          content: 'test2',
+          authors: [
+            {
+              id: 3,
+              name: 'tata'
+            }
+          ]
+        }
+      ]
+    }
+  })
+})
