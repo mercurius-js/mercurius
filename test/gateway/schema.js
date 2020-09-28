@@ -794,3 +794,74 @@ test('Should support array references with _entities query', async (t) => {
     }
   })
 })
+
+test('Should support multiple `extends` of the same type in the service SDL', async (t) => {
+  const productServicePort = await createService(t, `
+    extend type Query {
+      ping: Int
+    }
+    extend type Query {
+      pong: Int
+    }
+  `, {
+    Query: {
+      ping: async () => {
+        return 1
+      },
+      pong: async () => {
+        return 2
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'product',
+          url: `http://localhost:${productServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `{ ping }`
+    })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      ping: 1
+    }
+  })
+
+  const res2 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `{ pong }`
+    })
+  })
+
+  t.deepEqual(JSON.parse(res2.body), {
+    data: {
+      pong: 2
+    }
+  })
+})
