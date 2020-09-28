@@ -838,7 +838,7 @@ test('Should support multiple `extends` of the same type in the service SDL', as
     },
     url: '/graphql',
     body: JSON.stringify({
-      query: `{ ping }`
+      query: '{ ping }'
     })
   })
 
@@ -855,7 +855,7 @@ test('Should support multiple `extends` of the same type in the service SDL', as
     },
     url: '/graphql',
     body: JSON.stringify({
-      query: `{ pong }`
+      query: '{ pong }'
     })
   })
 
