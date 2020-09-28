@@ -1,6 +1,6 @@
 'use strict'
 
-const mercurius = require('fastify-gql')
+const mercurius = require('mercurius')
 const Fastify = require('fastify')
 const mongodbMQEmitter = require('mqemitter-mongodb')
 
