@@ -21,6 +21,8 @@ Features:
 npm i fastify mercurius
 ```
 
+The previous name of this module is [fastify-gql](http://npm.im/fastify-gql) (< 6.0.0).
+
 ## Example
 
 ```js
