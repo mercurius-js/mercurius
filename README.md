@@ -1,8 +1,8 @@
-# fastify-gql
+# mercurius
 
 ![CI workflow](https://github.com/fastify/fastify-oauth2/workflows/CI%20workflow/badge.svg)
 
-Fastify GraphQL adapter.
+Mercurius is [__GraphQL__](https://graphql.org/) adapter for [__Fastify__](https://www.fastify.io)
 
 Features:
 
@@ -18,7 +18,7 @@ Features:
 ## Install
 
 ```
-npm i fastify fastify-gql
+npm i fastify mercurius
 ```
 
 ## Example
@@ -27,7 +27,7 @@ npm i fastify fastify-gql
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
 const app = Fastify()
 
@@ -43,7 +43,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers
 })
@@ -64,7 +64,7 @@ See test.js for more examples, docs are coming.
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 const { makeExecutableSchema } = require('graphql-tools')
 
 const app = Fastify()
@@ -81,7 +81,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema: makeExecutableSchema({ typeDefs, resolvers })
 })
 
@@ -101,7 +101,7 @@ Depending on the client, this can be a significant overhead for each request, es
 
 Persisted Queries solve this problem by having the client send a generated ID, instead of the full query string, resulting in a smaller request. The server can use an internal lookup to turn this back into a full query and return the result.
 
-The `persistedQueryProvider` option lets you configure this for Fastify GQL. There are a few default options available, included in `GQL.persistedQueryDefaults`.
+The `persistedQueryProvider` option lets you configure this for Fastify mercurius. There are a few default options available, included in `mercurius.persistedQueryDefaults`.
 
 #### Prepared
 
@@ -117,11 +117,11 @@ Clients can provide a full query string, or set the `persisted` flag to true and
 
 A map of hashes to queries must be provided to the server at startup:
 ```js
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
-app.register(GQL, {
+app.register(mercurius, {
   ...
-  persistedQueryProvider: GQL.persistedQueryDefaults.prepared({
+  persistedQueryProvider: mercurius.persistedQueryDefaults.prepared({
     '<hash>':  '{ add(x: 1, y: 1) }'
   })
 })
@@ -129,9 +129,9 @@ app.register(GQL, {
 
 Alternatively the `peristedQueries` option may be used directly, which will be internally mapped to the `prepared` default:
 ```js
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
-app.register(GQL, {
+app.register(mercurius, {
   ...
   persistedQueries: {
     '<hash>':  '{ add(x: 1, y: 1) }'
@@ -147,9 +147,9 @@ The API is the same as the `prepared` default.
 
 Alternatively the `peristedQueries` and `onlyPersisted` options may be used directly, which will be internally mapped to the `preparedOnly` default:
 ```js
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
-app.register(GQL, {
+app.register(mercurius, {
   ...
   persistedQueries: {
     '<hash>': '{ add(x: 1, y: 1) }'
@@ -172,22 +172,22 @@ Additional documentation on Apollo's automatic persisted queries implementation 
 
 Example:
 ```js
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
-app.register(GQL, {
+app.register(mercurius, {
   ...
-  persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
+  persistedQueryProvider: mercurius.persistedQueryDefaults.automatic()
 })
 ```
 
 An LRU cache is used to prevent DoS attacks on the storage of hashes & queries. The maximum size of this cache (maximum number of cached queries) can be adjusted by passing a value to the constructor, for example:
 
 ```js
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
-app.register(GQL, {
+app.register(mercurius, {
   ...
-  persistedQueryProvider: GQL.persistedQueryDefaults.automatic(5000)
+  persistedQueryProvider: mercurius.persistedQueryDefaults.automatic(5000)
 })
 ```
 
@@ -201,15 +201,15 @@ This would enable all persisted queries to be shared between all server instance
 A example of using this with Redis would be:
 
 ```js
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
 const persistedQueryProvider = {
-  ...GQL.persistedQueryDefaults.automatic(),
+  ...mercurius.persistedQueryDefaults.automatic(),
   getQueryFromHash: async (hash) => redis.get(hash),
   saveQuery: async (hash, query) => redis.set(hash, query),
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   ...
   persistedQueryProvider
 })
@@ -286,7 +286,7 @@ const resolvers = {
     }
   }
 }
-app.register(GQL, {
+app.register(mercurius, {
   schema: makeExecutableSchema({ typeDefs, resolvers }),
   context: (request, reply) => {
     // Return an object that will be available in your GraphQL resolvers
@@ -357,7 +357,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   subscription: true
@@ -388,7 +388,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   subscription: {
@@ -482,7 +482,7 @@ const resolvers = {
   }
 };
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   subscription: {
@@ -505,7 +505,7 @@ The signature of the method is the same as a standard resolver: `__resolveRefere
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
 const users = {
   1: {
@@ -546,7 +546,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   federationMetadata: true
@@ -568,7 +568,7 @@ Just like standard resolvers, the `__resolveReference` resolver can be a perform
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
 const users = {
   1: {
@@ -613,7 +613,7 @@ const loaders = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   loaders,
@@ -646,9 +646,9 @@ Also, using the following decorator methods will throw:
 
 ```js
 const gateway = Fastify()
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
-gateway.register(GQL, {
+gateway.register(mercurius, {
   gateway: {
     services: [
       {
@@ -685,9 +685,9 @@ The Gateway service can obtain new versions of federated schemas automatically w
 
 ```js
 const gateway = Fastify();
-const GQL = require("fastify-gql");
+const mercurius = require("mercurius");
 
-gateway.register(GQL, {
+gateway.register(mercurius, {
   gateway: {
     services: [
       {
@@ -708,11 +708,11 @@ The service acting as the Gateway can manually trigger re-fetching the federated
 
 ```js
 const Fastify = require("fastify");
-const GQL = require("fastify-gql");
+const mercurius = require("mercurius");
 
 const server = Fastify();
 
-server.register(GQL, {
+server.register(mercurius, {
   graphiql: "playground",
   gateway: {
     services: [
@@ -745,11 +745,11 @@ A Gateway service can handle the federated services in 2 different modes, `manda
 
 ```js
 const Fastify = require("fastify");
-const GQL = require("fastify-gql");
+const mercurius = require("mercurius");
 
 const server = Fastify();
 
-server.register(GQL, {
+server.register(mercurius, {
   graphiql: "playground",
   gateway: {
     services: [
@@ -776,11 +776,11 @@ Service which uses Gateway mode can process different types of issues that can b
 
 ```js
 const Fastify = require("fastify");
-const GQL = require("fastify-gql");
+const mercurius = require("mercurius");
 
 const server = Fastify();
 
-server.register(GQL, {
+server.register(mercurius, {
   graphiql: "playground",
   gateway: {
     services: [
@@ -816,8 +816,8 @@ GraphQL services may provide an additional entry to errors with the key `extensi
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
-const { ErrorWithProps } = GQL
+const mercurius = require('mercurius')
+const { ErrorWithProps } = mercurius
 
 const users = {
   1: {
@@ -852,7 +852,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers
 })
@@ -864,7 +864,7 @@ app.listen(3000)
 
 ### plugin options
 
-__fastify-gql__ supports the following options:
+__mercurius__ supports the following options:
 
 * `schema`: String or [schema
   definition](https://graphql.org/graphql-js/type/#graphqlschema). The graphql schema.
@@ -1011,7 +1011,7 @@ the options.
 
 ### decorators
 
-__fastify-gql__ adds the following decorators.
+__mercurius__ adds the following decorators.
 
 #### app.graphql(source, context, variables, operationName)
 
@@ -1022,7 +1022,7 @@ defined schema, and it adds `{ app }` to the context.
 
 ```js
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
 const app = Fastify()
 const schema = `
@@ -1037,7 +1037,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers
 })
@@ -1068,7 +1068,7 @@ It is possible to add schemas and resolvers in separate fastify plugins, like so
 
 ```js
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
 const app = Fastify()
 const schema = `
@@ -1083,7 +1083,7 @@ const resolvers = {
   }
 }
 
-app.register(GQL)
+app.register(mercurius)
 
 app.register(async function (app) {
   app.graphql.extendSchema(schema)
@@ -1116,12 +1116,12 @@ It is possible to replace schema and resolvers using `makeSchemaExecutable` func
 
 ```js
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 const { makeExecutableSchema } = require('graphql-tools')
 
 const app = Fastify()
 
-app.register(GQL, {
+app.register(mercurius, {
   schema: makeExecutableSchema({
     typeDefs: `
     type Query {
@@ -1176,7 +1176,7 @@ run()
 
 #### app.graphql.schema
 
-Provides access to the built `GraphQLSchema` object that `fastify-gql` will use to execute queries. This property will reflect any updates made by `extendSchema` or `replaceSchema` as well.
+Provides access to the built `GraphQLSchema` object that `mercurius` will use to execute queries. This property will reflect any updates made by `extendSchema` or `replaceSchema` as well.
 
 #### app.graphql.defineLoaders(loaders)
 
@@ -1203,7 +1203,7 @@ const loaders = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   loaders
@@ -1226,7 +1226,7 @@ const loaders = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   loaders
@@ -1248,7 +1248,7 @@ defined schema, and it adds `{ app, reply }` to the context.
 
 ```js
 const Fastify = require('fastify')
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 
 const app = Fastify()
 const schema = `
@@ -1261,7 +1261,7 @@ const resolvers = {
   add: async ({ x, y }) => x + y
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers
 })
@@ -1286,6 +1286,16 @@ async function run () {
 
 run()
 ```
+
+## Acknowledgements
+
+The project is kindly sponsored by:
+
+* [NearForm](https://www.nearform.com) for [Matteo](https://github.com/mcollina)'s time in maintaining this module.
+
+The mercurius name was gracefully donated by [Marco Castelluccio](https://github.com/marco-c).
+The usage of that library was described in https://hacks.mozilla.org/2015/12/web-push-notifications-from-irssi/, and
+you can find that codebase in https://github.com/marco-c/mercurius.
 
 ## License
 

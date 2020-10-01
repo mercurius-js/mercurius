@@ -31,8 +31,8 @@ const { PubSub } = require('./lib/subscriber')
 const { ErrorWithProps, defaultErrorFormatter } = require('./lib/errors')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 
-const kLoaders = Symbol('fastify-gql.loaders')
-const kFactory = Symbol('fastify-gql.loadersFactory')
+const kLoaders = Symbol('mercurius.loaders')
+const kFactory = Symbol('mercurius.loadersFactory')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -466,7 +466,7 @@ const plugin = fp(async function (app, opts) {
     return execution
   }
 }, {
-  name: 'fastify-gql',
+  name: 'mercurius',
   fastify: '>=3.x'
 })
 

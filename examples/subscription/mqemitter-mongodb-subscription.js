@@ -1,6 +1,6 @@
 'use strict'
 
-const GQL = require('fastify-gql')
+const mercurius = require('mercurius')
 const Fastify = require('fastify')
 const mongodbMQEmitter = require('mqemitter-mongodb')
 
@@ -71,7 +71,7 @@ const start = async () => {
     emitter = mongodbMQEmitter({ url: 'mongodb://localhost/test' })
 
     // register GraphQl
-    app.register(GQL, {
+    app.register(mercurius, {
       schema,
       resolvers,
       subscription: {

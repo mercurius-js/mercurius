@@ -2,7 +2,7 @@
 
 import Fastify from 'fastify'
 // eslint-disable-next-line no-unused-vars
-import fastifyGQL, { FastifyGQLOptions } from '../..'
+import mercurius, { MercuriusOptions } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from 'graphql-tools'
@@ -44,7 +44,7 @@ const resolvers = {
   }
 }
 
-app.register(fastifyGQL, {
+app.register(mercurius, {
   schema: schema,
   resolvers,
   loaders: {},
@@ -63,9 +63,9 @@ app.register(fastifyGQL, {
   cache: true
 })
 
-app.register(fastifyGQL, {
+app.register(mercurius, {
   schema,
-  errorFormatter: fastifyGQL.defaultErrorFormatter
+  errorFormatter: mercurius.defaultErrorFormatter
 })
 
 app.register(async function (app) {
@@ -107,7 +107,7 @@ app.register(async function (app) {
   `)
   app.graphql.defineResolvers({
     Query: {
-      willThrow: async () => { throw new fastifyGQL.ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
+      willThrow: async () => { throw new mercurius.ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', reason: 'some reason', other: 32 }) }
     }
   })
 })
@@ -119,10 +119,10 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 
-function makeGraphqlServer (options: FastifyGQLOptions) {
+function makeGraphqlServer (options: MercuriusOptions) {
   const app = Fastify()
 
-  app.register(fastifyGQL, options)
+  app.register(mercurius, options)
 
   return app
 }
@@ -139,13 +139,13 @@ makeGraphqlServer({ schema, resolvers })
 makeGraphqlServer({ schema, resolvers, validationRules: [] })
 makeGraphqlServer({ schema, resolvers, validationRules: [customValidationRule] })
 makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }: { source: string, variables?: Record<string, any>, operationName?: string }) => [customValidationRule] })
-makeGraphqlServer({ schema, errorFormatter: fastifyGQL.defaultErrorFormatter })
+makeGraphqlServer({ schema, errorFormatter: mercurius.defaultErrorFormatter })
 
 // Gateway mode
 
 const gateway = Fastify()
 
-gateway.register(fastifyGQL, {
+gateway.register(mercurius, {
   gateway: {
     services: [{
       name: 'user',
@@ -165,13 +165,13 @@ const executableSchema = makeExecutableSchema({
   resolvers: []
 })
 
-gateway.register(fastifyGQL, {
+gateway.register(mercurius, {
   schema: executableSchema
 })
 
 // Subscriptions
 
-app.register(fastifyGQL, {
+app.register(mercurius, {
   schema: schema,
   resolvers,
   subscription: true
@@ -179,7 +179,7 @@ app.register(fastifyGQL, {
 
 const emitter = mq()
 
-app.register(fastifyGQL, {
+app.register(mercurius, {
   schema: schema,
   resolvers,
   subscription: {
@@ -202,7 +202,7 @@ app.register(fastifyGQL, {
   }
 })
 
-app.register(fastifyGQL, {
+app.register(mercurius, {
   schema: schema,
   resolvers,
   subscription: {
@@ -219,7 +219,7 @@ app.register(fastifyGQL, {
   }
 })
 
-app.register(fastifyGQL, {
+app.register(mercurius, {
   schema: schema,
   resolvers,
   subscription: {

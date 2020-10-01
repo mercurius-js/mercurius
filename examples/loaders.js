@@ -1,7 +1,7 @@
 'use strict'
 
 const Fastify = require('fastify')
-const GQL = require('..')
+const mercurius = require('..')
 
 const app = Fastify()
 
@@ -58,7 +58,7 @@ const loaders = {
   }
 }
 
-app.register(GQL, {
+app.register(mercurius, {
   schema,
   resolvers,
   loaders,

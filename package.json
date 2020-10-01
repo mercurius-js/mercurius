@@ -1,7 +1,8 @@
 {
-  "name": "fastify-gql",
+  "name": "mercurius",
+  "version": "5.8.1",
   "version": "5.8.2",
-  "description": "Fastify GraphQL adapter",
+  "description": "Fastify GraphQL adapter with gateway and subscription support",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
@@ -15,14 +16,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcollina/fastify-gql.git"
+    "url": "git+https://github.com/mercurius-js/mercurius.git"
   },
   "author": "Matteo Collina <hello@matteocollina.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mcollina/fastify-gql/issues"
+    "url": "https://github.com/mercurius-js/mercurius/issues"
   },
-  "homepage": "https://github.com/mcollina/fastify-gql#readme",
+  "homepage": "https://github.com/mercurius-js/mercurius#readme",
   "devDependencies": {
     "@sinonjs/fake-timers": "^6.0.1",
     "@types/node": "^14.0.23",

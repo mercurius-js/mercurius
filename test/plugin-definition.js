@@ -14,7 +14,7 @@ test('plugin name definition', async (t) => {
   `
   app.register(GQL, { schema })
   app.register(fp(async (app, opts) => {}, {
-    dependencies: ['fastify-gql']
+    dependencies: ['mercurius']
   }))
 
   t.resolves(app.ready())
