@@ -205,7 +205,7 @@ export interface MercuriusCommonOptions {
   /**
    * Settings for enabling persisted queries.
    */
-  persistedQueryProvider?: fastifyGQL.PeristedQueryProvider;
+  persistedQueryProvider?: mercurius.PeristedQueryProvider;
 
   /**
    * Enable support for batched queries (POST requests only).
@@ -241,14 +241,14 @@ export interface MercuriusCommonOptions {
 
 export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
 
-declare function fastifyGQL
+declare function mercurius
   (
     instance: FastifyInstance,
     opts: MercuriusOptions
   ): void;
 
 
-declare namespace fastifyGQL {
+declare namespace mercurius {
   interface PeristedQueryProvider {
     /**
      *  Return true if a given request matches the desired persisted query format.
@@ -310,7 +310,7 @@ declare namespace fastifyGQL {
   ) => { statusCode: number, response: ExecutionResult };
 }
 
-export default fastifyGQL;
+export default mercurius;
 
 declare module "fastify" {
   interface FastifyInstance {
