@@ -806,6 +806,8 @@ server.register(mercurius, {
 server.listen(3002);
 ```
 
+_Note: The default behavior of `errorHandler` is call `errorFormatter` to send the result. When is provided an `errorHandler` make sure to **call `errorFormatter` manually if needed**._
+
 ### Use errors extension to provide additional information to query errors
 
 GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
