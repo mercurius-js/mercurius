@@ -66,6 +66,68 @@ test('basic federation support', async (t) => {
   })
 })
 
+test('federation support using schema from buildFederationSchema', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      me: User
+    }
+    
+    extend type Mutation {
+      add(a: Int, b: Int): Int
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+      username: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      me: () => ({
+        id: '1',
+        name: 'John',
+        username: '@john'
+      })
+    },
+    Mutation: {
+      add: (_, { a, b }) => a + b
+    },
+    User: {
+      __resolveReference: (object) => {
+        return {
+          id: object.id,
+          name: 'John',
+          username: '@john'
+        }
+      }
+    }
+  }
+
+  const federationSchema = buildFederationSchema(schema)
+
+  app.register(GQL, {
+    schema: federationSchema,
+    resolvers
+  })
+
+  await app.ready()
+
+  let query = '{ _service { sdl } }'
+  let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
+  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
+
+  query = '{ me { id name username } }'
+  res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
+  t.deepEqual(JSON.parse(res.body), { data: { me: { id: '1', name: 'John', username: '@john' } } })
+
+  query = 'mutation { add(a: 11 b: 19) }'
+  res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
+  t.deepEqual(JSON.parse(res.body), { data: { add: 30 } })
+})
+
 test('a normal schema can be run in federated mode', async (t) => {
   const app = Fastify()
   const schema = `
