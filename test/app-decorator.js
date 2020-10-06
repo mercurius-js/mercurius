@@ -1107,18 +1107,11 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
   app.register(GQL, { schema: schema })
 
   app.register(async function (app) {
-    app.graphql.defineResolvers(resolvers)
+    t.throws(function () {
+      app.graphql.defineResolvers(resolvers)
+    }, new Error('Cannot find field sub of type Query'))
   })
 
   // needed so that graphql is defined
   await app.ready()
-
-  const query = '{ add(x: 2, y: 2) }'
-  const res = await app.graphql(query)
-
-  t.deepEqual(res, {
-    data: {
-      add: 4
-    }
-  })
 })
