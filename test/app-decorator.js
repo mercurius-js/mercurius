@@ -1088,3 +1088,37 @@ test('Multiple errors in schema', async (t) => {
     t.equal(error.errors[1].name, 'GraphQLError')
   }
 })
+
+test('defineResolvers should throw if field is not defined in schema', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: async ({ x, y }) => x + y,
+      sub: async ({ x, y }) => x - y
+    }
+  }
+
+  app.register(GQL, { schema: schema })
+
+  app.register(async function (app) {
+    app.graphql.defineResolvers(resolvers)
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = '{ add(x: 2, y: 2) }'
+  const res = await app.graphql(query)
+
+  t.deepEqual(res, {
+    data: {
+      add: 4
+    }
+  })
+})
