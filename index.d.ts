@@ -308,6 +308,11 @@ declare namespace mercurius {
     execution: ExecutionResult,
     context: any
   ) => { statusCode: number, response: ExecutionResult };
+
+  /**
+   * Builds schema with support for federation mode.
+   */
+  const buildFederationSchema: (schema: string) => GraphQLSchema;
 }
 
 export default mercurius;
