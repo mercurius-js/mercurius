@@ -279,8 +279,10 @@ const plugin = fp(async function (app, opts) {
             }
           } else if (prop === '__resolveReference') {
             type.resolveReference = resolver[prop]
-          } else {
+          } else if (fields[prop]) {
             fields[prop].resolve = resolver[prop]
+          } else {
+            throw new Error(`Cannot find field ${prop} of type ${type}`)
           }
         }
       } else if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
