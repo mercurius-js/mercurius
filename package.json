@@ -5,6 +5,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
+    "docs": "docsify serve",
     "unit": "tap --100 test/*.js test/gateway/*.js",
     "cov": "tap  --coverage-report=html -J test/*.js test/gateway/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
@@ -30,6 +31,7 @@
     "@typescript-eslint/eslint-plugin": "^3.6.1",
     "@typescript-eslint/parser": "^3.6.1",
     "autocannon": "^6.0.0",
+    "docsify-cli": "^4.4.1",
     "fastify": "^3.0.2",
     "graphql-tools": "^6.0.14",
     "pre-commit": "^1.2.2",
