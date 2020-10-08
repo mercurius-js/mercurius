@@ -3,7 +3,6 @@ const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
 const GQL = require('..')
-const sJSON = require('secure-json-parse')
 
 const FakeTimers = require('@sinonjs/fake-timers')
 
@@ -201,7 +200,7 @@ test('subscription server sends update to subscriptions', t => {
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
         t.equal(chunk, JSON.stringify({
@@ -377,7 +376,7 @@ test('subscription server sends update to subscriptions with custom context', t 
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
         t.equal(chunk, JSON.stringify({
@@ -679,7 +678,7 @@ test('subscription server sends update to subscriptions with custom async contex
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
         t.equal(chunk, JSON.stringify({
@@ -826,7 +825,7 @@ test('subscription server sends correct error if execution throws', t => {
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'error') {
         t.equal(chunk, JSON.stringify({
@@ -907,7 +906,7 @@ test('subscription server exposes pubsub', t => {
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
       if (data.type === 'connection_ack') {
         app.graphql.pubsub.publish({
           topic: 'NOTIFICATION_ADDED',
@@ -993,7 +992,7 @@ test('subscription context is extended with onConnect return value if connection
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
 
       if (data.type === 'connection_ack') {
         client.write(JSON.stringify({
@@ -1072,7 +1071,7 @@ test('subscription works properly if onConnect is not defined and connectionInit
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
 
       if (data.type === 'connection_ack') {
         client.write(JSON.stringify({

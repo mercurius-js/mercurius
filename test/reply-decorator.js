@@ -3,7 +3,6 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
-const sJSON = require('secure-json-parse')
 
 test('reply decorator', async (t) => {
   const app = Fastify()
@@ -32,7 +31,7 @@ test('reply decorator', async (t) => {
     url: '/'
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -80,7 +79,7 @@ test('reply decorator operationName', async (t) => {
     url: '/'
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -122,5 +121,5 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.matchSnapshot(JSON.stringify(sJSON.parse(res.body)))
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
 })

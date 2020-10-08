@@ -3,7 +3,6 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
-const sJSON = require('secure-json-parse')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
@@ -150,7 +149,7 @@ test('gateway handles @extends directive correctly', async (t) => {
     })
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',

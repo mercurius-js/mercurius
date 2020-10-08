@@ -7,7 +7,6 @@ const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
 const GQL = require('..')
 const { FederatedError } = require('../lib/errors')
-const sJSON = require('secure-json-parse')
 
 test('POST route', async (t) => {
   const app = Fastify()
@@ -37,7 +36,7 @@ test('POST route', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -68,7 +67,7 @@ test('POST route, no query error', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     errors: [{ message: 'Unknown query' }],
     data: null
   })
@@ -101,7 +100,7 @@ test('POST route application/graphql', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -137,7 +136,7 @@ test('custom route', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -166,7 +165,7 @@ test('GET route', async (t) => {
     url: '/graphql?query={add(x:2,y:2)}'
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -196,7 +195,7 @@ test('GET route with variables', async (t) => {
     url: `/graphql?query=${query}&variables=${JSON.stringify({ x: 2, y: 2 })}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -315,7 +314,7 @@ test('POST route variables', async (t) => {
     }
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -362,7 +361,7 @@ test('POST route operationName', async (t) => {
     }
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -399,7 +398,7 @@ test('GET route variables', async (t) => {
     url: '/graphql?' + query
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -455,7 +454,7 @@ test('GET return 200 on resolver error', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(sJSON.parse(res.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
 test('POST return 200 on resolver error', async (t) => {
@@ -485,7 +484,7 @@ test('POST return 200 on resolver error', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(sJSON.parse(res.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
 test('POST return 400 on error', async (t) => {
@@ -516,7 +515,7 @@ test('POST return 400 on error', async (t) => {
   })
 
   t.equal(res.statusCode, 400) // Bad Request
-  t.matchSnapshot(JSON.stringify(sJSON.parse(res.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
 test('mutation with POST', async (t) => {
@@ -555,7 +554,7 @@ test('mutation with POST', async (t) => {
     }
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       setMessage: 'hello world'
     }
@@ -598,7 +597,7 @@ test('mutation with POST application/graphql', async (t) => {
     body: query
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       setMessage: 'hello world'
     }
@@ -636,7 +635,7 @@ test('mutation with GET errors', async (t) => {
   })
 
   t.equal(res.statusCode, 405) // method not allowed
-  t.matchSnapshot(JSON.stringify(sJSON.parse(res.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
 test('POST should support null variables', async (t) => {
@@ -668,7 +667,7 @@ test('POST should support null variables', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -707,7 +706,7 @@ test('JIT', async (t) => {
     })
 
     t.equal(res.statusCode, 200)
-    t.deepEqual(sJSON.parse(res.body), {
+    t.deepEqual(JSON.parse(res.body), {
       data: {
         add: 4
       }
@@ -724,7 +723,7 @@ test('JIT', async (t) => {
     })
 
     t.equal(res.statusCode, 200)
-    t.deepEqual(sJSON.parse(res.body), {
+    t.deepEqual(JSON.parse(res.body), {
       data: {
         add: 4
       }
@@ -1107,7 +1106,7 @@ test('server should return 200 on graphql errors (if field can be null)', async 
   })
 
   t.equal(response.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(sJSON.parse(response.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
 test('server should return 500 on graphql errors (if field can not be null)', async (t) => {
@@ -1140,7 +1139,7 @@ test('server should return 500 on graphql errors (if field can not be null)', as
   })
 
   t.equal(response.statusCode, 500)
-  t.matchSnapshot(JSON.stringify(sJSON.parse(response.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
 test('Error handler set to true should not change default behavior', async (t) => {
@@ -1179,7 +1178,7 @@ test('Error handler set to true should not change default behavior', async (t) =
   }
 
   t.strictEqual(res.statusCode, 400)
-  t.strictDeepEqual(sJSON.parse(res.body), expectedResult)
+  t.strictDeepEqual(JSON.parse(res.body), expectedResult)
 })
 
 test('Error handler set to false should pass error to higher handler', async (t) => {
@@ -1241,7 +1240,7 @@ test('route validation is catched and parsed to graphql error', async (t) => {
   const expectedResult = { errors: [{ message: 'body should be object' }], data: null }
 
   t.strictEqual(res.statusCode, 400)
-  t.strictDeepEqual(sJSON.parse(res.body), expectedResult)
+  t.strictDeepEqual(JSON.parse(res.body), expectedResult)
 })
 
 test('Error handler flattens federated errors', async (t) => {
@@ -1288,7 +1287,7 @@ test('Error handler flattens federated errors', async (t) => {
   }
 
   t.strictEqual(res.statusCode, 200)
-  t.strictDeepEqual(sJSON.parse(res.body), expectedResult)
+  t.strictDeepEqual(JSON.parse(res.body), expectedResult)
 })
 
 test('routes with custom context', async (t) => {
@@ -1327,7 +1326,7 @@ test('routes with custom context', async (t) => {
     url: '/graphql?query=query { test }'
   })
 
-  t.deepEqual(sJSON.parse(get.body), {
+  t.deepEqual(JSON.parse(get.body), {
     data: {
       test: 'custom'
     }
@@ -1341,7 +1340,7 @@ test('routes with custom context', async (t) => {
     }
   })
 
-  t.deepEqual(sJSON.parse(post.body), {
+  t.deepEqual(JSON.parse(post.body), {
     data: {
       test: 'custom'
     }
@@ -1551,7 +1550,7 @@ test('cached errors', async (t) => {
     url: '/graphql?query=query { test }'
   })
 
-  t.deepEqual(sJSON.parse(get.body), {
+  t.deepEqual(JSON.parse(get.body), {
     errors: [
       {
         message: 'Cannot query field "test" on type "Query".',
@@ -1574,7 +1573,7 @@ test('cached errors', async (t) => {
     }
   })
 
-  t.deepEqual(sJSON.parse(post.body), {
+  t.deepEqual(JSON.parse(post.body), {
     errors: [
       {
         message: 'Cannot query field "test" on type "Query".',
@@ -1840,7 +1839,7 @@ test('if operationName is null, it should work fine', async (t) => {
   })
 
   t.strictEqual(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 5
     }

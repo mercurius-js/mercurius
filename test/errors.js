@@ -6,7 +6,6 @@ const GQL = require('..')
 const { ErrorWithProps } = GQL
 const { FederatedError } = require('../lib/errors')
 const split = require('split2')
-const sJSON = require('secure-json-parse')
 
 test('errors - multiple extended errors', async (t) => {
   const schema = `
@@ -42,7 +41,7 @@ test('errors - multiple extended errors', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.payload), {
+  t.deepEqual(JSON.parse(res.payload), {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -97,7 +96,7 @@ test('errors - extended errors with number extensions', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.payload), {
+  t.deepEqual(JSON.parse(res.payload), {
     data: {
       willThrow: null
     },
@@ -158,7 +157,7 @@ test('errors - extended errors optional parameters', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.payload), {
+  t.deepEqual(JSON.parse(res.payload), {
     data: {
       one: null,
       two: null
@@ -232,7 +231,7 @@ test('errors - errors with jit enabled', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.payload), {
+  t.deepEqual(JSON.parse(res.payload), {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -384,10 +383,10 @@ test('errors - federated errors with jit enabled', async (t) => {
   }
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.payload), expectedResult)
+  t.deepEqual(JSON.parse(res.payload), expectedResult)
 
   t.equal(jitres.statusCode, 200)
-  t.deepEqual(sJSON.parse(jitres.payload), expectedResult)
+  t.deepEqual(JSON.parse(jitres.payload), expectedResult)
 })
 
 test('errors - federated errors without locations, path and extensions', async (t) => {
@@ -438,10 +437,10 @@ test('errors - federated errors without locations, path and extensions', async (
   }
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.payload), expectedResult)
+  t.deepEqual(JSON.parse(res.payload), expectedResult)
 
   t.equal(jitres.statusCode, 200)
-  t.deepEqual(sJSON.parse(jitres.payload), expectedResult)
+  t.deepEqual(JSON.parse(jitres.payload), expectedResult)
 })
 
 test('errors - custom error formatter that uses default error formatter', async (t) => {
@@ -478,7 +477,7 @@ test('errors - custom error formatter that uses default error formatter', async 
     body: { query: ' query { bad }' }
   })
 
-  const body = sJSON.parse(res.body)
+  const body = JSON.parse(res.body)
   t.equal(res.statusCode, 499)
   t.equal(body.errors[0].message, 'Bad Resolver')
 })
@@ -528,7 +527,7 @@ test('POST query with a resolver which which throws and a custom error formatter
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
 })
 
 test('POST query which throws, with custom error formatter and JIT enabled, twice', async (t) => {
@@ -572,7 +571,7 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
 
   res = await app.inject({
     method: 'POST',
@@ -588,11 +587,11 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(sJSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
 })
 
 test('POST query which throws, with JIT enabled, twice', async (t) => {
-  const lines = split(sJSON.parse)
+  const lines = split(JSON.parse)
   const app = Fastify({
     logger: {
       stream: lines
@@ -629,7 +628,7 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(sJSON.parse(res.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 
   res = await app.inject({
     method: 'POST',
@@ -645,7 +644,7 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(sJSON.parse(res.body), null, 2))
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 
   lines.end()
 
@@ -669,7 +668,7 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
 })
 
 test('app.graphql which throws, with JIT enabled, twice', async (t) => {
-  const lines = split(sJSON.parse)
+  const lines = split(JSON.parse)
   const app = Fastify({
     logger: {
       stream: lines

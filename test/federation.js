@@ -8,7 +8,6 @@ const WebSocket = require('ws')
 const mq = require('mqemitter')
 const GQL = require('..')
 const buildFederationSchema = require('../lib/federation')
-const sJSON = require('secure-json-parse')
 
 test('basic federation support', async (t) => {
   const app = Fastify()
@@ -59,7 +58,7 @@ test('basic federation support', async (t) => {
     url: `/graphql?query=${query}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       _service: {
         sdl: schema
@@ -119,15 +118,15 @@ test('federation support using schema from buildFederationSchema', async (t) => 
 
   let query = '{ _service { sdl } }'
   let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(sJSON.parse(res.body), { data: { _service: { sdl: schema } } })
+  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
 
   query = '{ me { id name username } }'
   res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(sJSON.parse(res.body), { data: { me: { id: '1', name: 'John', username: '@john' } } })
+  t.deepEqual(JSON.parse(res.body), { data: { me: { id: '1', name: 'John', username: '@john' } } })
 
   query = 'mutation { add(a: 11 b: 19) }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(sJSON.parse(res.body), { data: { add: 30 } })
+  t.deepEqual(JSON.parse(res.body), { data: { add: 30 } })
 })
 
 test('federation support using schema from buildFederationSchema and custom directives', async (t) => {
@@ -181,11 +180,11 @@ test('federation support using schema from buildFederationSchema and custom dire
 
   let query = '{ _service { sdl } }'
   let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(sJSON.parse(res.body), { data: { _service: { sdl: schema } } })
+  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
 
   query = 'query { foo }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(sJSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
 })
 
 test('a normal schema can be run in federated mode', async (t) => {
@@ -228,7 +227,7 @@ test('a normal schema can be run in federated mode', async (t) => {
     url: `/graphql?query=${query}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       _service: {
         sdl: schema
@@ -273,7 +272,7 @@ test('a schema can be run in federated mode when Query is not defined', async (t
     url: `/graphql?query=${query}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       _service: {
         sdl: schema
@@ -342,7 +341,7 @@ test('entities resolver returns correct value', async (t) => {
     url: `/graphql?query=${query}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       _entities: [{
         __typename: 'User',
@@ -414,7 +413,7 @@ test('entities resolver returns correct value with async resolver', async (t) =>
     url: `/graphql?query=${query}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       _entities: [{
         __typename: 'User',
@@ -477,7 +476,7 @@ test('entities resolver returns user default resolver if resolveReference is not
     url: `/graphql?query=${query}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       _entities: [{
         __typename: 'User',
@@ -540,7 +539,7 @@ test('entities resolver throws an error if reference type name not in schema', a
     url: `/graphql?query=${query}`
   })
 
-  t.equal(sJSON.parse(res.body).errors[0].message, 'The _entities resolver tried to load an entity for type "Account", but no object type of that name was found in the schema')
+  t.equal(JSON.parse(res.body).errors[0].message, 'The _entities resolver tried to load an entity for type "Account", but no object type of that name was found in the schema')
 })
 
 test('buildFederationSchema function adds stub types', async (t) => {
@@ -725,7 +724,7 @@ test('mutation works with federation support', async (t) => {
     }
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       add: 30
     }
@@ -883,7 +882,7 @@ test('subscription server sends update to subscriptions', t => {
     }))
 
     client.on('data', chunk => {
-      const data = sJSON.parse(chunk)
+      const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
         t.equal(chunk, JSON.stringify({
@@ -991,7 +990,7 @@ test('federation supports loader for __resolveReference function', async (t) => 
     }
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       _entities: [{
         id: '1',
@@ -1045,7 +1044,7 @@ test('federation schema is built correctly with type extension', async (t) => {
     url: `/graphql?query=${query}`
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       topPosts: null
     }

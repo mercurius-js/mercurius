@@ -3,7 +3,6 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
-const sJSON = require('secure-json-parse')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
@@ -228,7 +227,7 @@ test('It builds the gateway schema correctly', async (t) => {
     })
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -403,7 +402,7 @@ test('It support variable inside nested arguments', async (t) => {
     })
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       me: user
     }
@@ -520,7 +519,7 @@ test('Should not throw on nullable reference', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       topPosts: [
         {
@@ -625,7 +624,7 @@ test('Should handle InlineFragment', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       products: [
         {
@@ -762,7 +761,7 @@ test('Should support array references with _entities query', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       topPosts: [
         {
@@ -843,7 +842,7 @@ test('Should support multiple `extends` of the same type in the service SDL', as
     })
   })
 
-  t.deepEqual(sJSON.parse(res.body), {
+  t.deepEqual(JSON.parse(res.body), {
     data: {
       ping: 1
     }
@@ -860,7 +859,7 @@ test('Should support multiple `extends` of the same type in the service SDL', as
     })
   })
 
-  t.deepEqual(sJSON.parse(res2.body), {
+  t.deepEqual(JSON.parse(res2.body), {
     data: {
       pong: 2
     }
