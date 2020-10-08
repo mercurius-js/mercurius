@@ -1045,7 +1045,7 @@ test('Should support array references with _entities query and empty response an
       id: ID!
       title: String
       content: String
-      authors: [User]!
+      authors: [User]
     }
 
     extend type User @key(fields: "id") {
