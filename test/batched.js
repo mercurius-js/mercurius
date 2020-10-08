@@ -3,6 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
+const sJSON = require('secure-json-parse')
 
 test('POST regular query', async (t) => {
   const app = Fastify()
@@ -36,7 +37,7 @@ test('POST regular query', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.deepEqual(sJSON.parse(res.body), { data: { add: 3 } })
 })
 
 test('POST single batched query', async (t) => {
@@ -73,7 +74,7 @@ test('POST single batched query', async (t) => {
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }])
+  t.deepEqual(sJSON.parse(res.body), [{ data: { add: 3 } }])
 })
 
 test('POST single bad batched query', async (t) => {
@@ -108,7 +109,7 @@ test('POST single bad batched query', async (t) => {
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 2, column: 37 }] }] }])
+  t.deepEqual(sJSON.parse(res.body), [{ data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 2, column: 37 }] }] }])
 })
 
 test('POST batched query', async (t) => {
@@ -153,7 +154,7 @@ test('POST batched query', async (t) => {
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: { add: 2 } }])
+  t.deepEqual(sJSON.parse(res.body), [{ data: { add: 3 } }, { data: { add: 2 } }])
 })
 
 test('POST good and bad batched query', async (t) => {
@@ -195,7 +196,7 @@ test('POST good and bad batched query', async (t) => {
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 1, column: 20 }] }] }])
+  t.deepEqual(sJSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 1, column: 20 }] }] }])
 })
 
 test('POST batched query with a resolver which succeeds and a resolver which throws', async (t) => {
@@ -242,7 +243,7 @@ test('POST batched query with a resolver which succeeds and a resolver which thr
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: { bad: null }, errors: [{ message: 'Bad Resolver', locations: [{ line: 3, column: 17 }], path: ['bad'] }] }])
+  t.deepEqual(sJSON.parse(res.body), [{ data: { add: 3 } }, { data: { bad: null }, errors: [{ message: 'Bad Resolver', locations: [{ line: 3, column: 17 }], path: ['bad'] }] }])
 })
 
 test('POST batched query with a resolver which succeeds and a resolver which throws, with a custom error formatter', async (t) => {
@@ -295,5 +296,5 @@ test('POST batched query with a resolver which succeeds and a resolver which thr
     ]
   })
 
-  t.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Internal Server Error' }] }])
+  t.deepEqual(sJSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Internal Server Error' }] }])
 })

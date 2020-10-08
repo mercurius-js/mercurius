@@ -12,6 +12,7 @@ const Fastify = require('fastify')
 const WebSocket = require('ws')
 const buildFederationSchema = require('../../lib/federation')
 const GQL = require('../..')
+const sJSON = require('secure-json-parse')
 
 test('Polling schemas', async (t) => {
   const clock = FakeTimers.install({
@@ -88,7 +89,7 @@ test('Polling schemas', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.deepEqual(sJSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -116,7 +117,7 @@ test('Polling schemas', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.deepEqual(sJSON.parse(res2.body), {
     errors: [
       {
         message:
@@ -164,7 +165,7 @@ test('Polling schemas', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.deepEqual(sJSON.parse(res3.body), {
     data: {
       me: {
         id: 'u1',
@@ -328,7 +329,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
 
     await clock.tickAsync()
 
-    t.deepEqual(JSON.parse(body), {
+    t.deepEqual(sJSON.parse(body), {
       data: {
         me: {
           id: 'u1',
@@ -358,7 +359,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.deepEqual(sJSON.parse(body), {
       errors: [
         {
           message:
@@ -393,7 +394,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.deepEqual(sJSON.parse(body), {
       errors: [
         {
           message:
@@ -479,7 +480,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.deepEqual(sJSON.parse(body), {
       data: {
         me: {
           id: 'u1',
@@ -509,7 +510,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.deepEqual(sJSON.parse(body), {
       errors: [
         {
           message:
@@ -604,7 +605,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.deepEqual(sJSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -654,7 +655,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.deepEqual(sJSON.parse(res2.body), {
     errors: [
       {
         message: 'Cannot query field "me" on type "Query". Did you mean "me2"?',
@@ -682,7 +683,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.deepEqual(sJSON.parse(res3.body), {
     data: {
       me2: {
         id: 'u1',
@@ -830,7 +831,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   {
     const [chunk] = await once(client, 'data')
-    const data = JSON.parse(chunk)
+    const data = sJSON.parse(chunk)
     t.equal(data.type, 'connection_ack')
 
     await gateway.inject({
@@ -848,7 +849,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   {
     const [chunk] = await once(client, 'data')
-    const data = JSON.parse(chunk)
+    const data = sJSON.parse(chunk)
     t.equal(data.type, 'data')
     t.equal(data.id, 1)
 
@@ -943,7 +944,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   {
     const [chunk] = await once(client2, 'data')
-    const data = JSON.parse(chunk)
+    const data = sJSON.parse(chunk)
     t.equal(data.type, 'connection_ack')
 
     await gateway.inject({
@@ -961,7 +962,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   {
     const [chunk] = await once(client2, 'data')
-    const data = JSON.parse(chunk)
+    const data = sJSON.parse(chunk)
     t.equal(data.type, 'data')
     t.equal(data.id, 2)
 

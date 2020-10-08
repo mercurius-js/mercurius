@@ -5,6 +5,7 @@ const FakeTimers = require('@sinonjs/fake-timers')
 
 const SubscriptionClient = require('../lib/subscription-client')
 const WS = require('ws')
+const sJSON = require('secure-json-parse')
 
 test('subscription client calls the publish method with the correct payload', (t) => {
   const server = new WS.Server({ port: 0 })
@@ -12,7 +13,7 @@ test('subscription client calls the publish method with the correct payload', (t
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
       } else if (data.type === 'start') {
@@ -47,7 +48,7 @@ test('subscription client calls the publish method with null after GQL_COMPLETE 
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
       } else if (data.type === 'start') {
@@ -105,7 +106,7 @@ test('subscription client tries to reconnect when server closes', (t) => {
       })
       server.on('connection', function connection (ws) {
         ws.on('message', (message) => {
-          const data = JSON.parse(message)
+          const data = sJSON.parse(message)
           if (data.type === 'connection_init') {
             ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
           } else if (data.type === 'start') {
@@ -151,7 +152,7 @@ test('subscription client multiple subscriptions is handled by one operation', t
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
       } else if (data.type === 'start') {
@@ -183,7 +184,7 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'stop') {
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
@@ -221,7 +222,7 @@ test('subscription client closes the connection after GQL_CONNECTION_ERROR type 
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: '1', type: 'connection_error' }))
       }
@@ -249,7 +250,7 @@ test('subscription client connectionInitPayload is correctly passed', (t) => {
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         t.deepEqual(data.payload, connectionInitPayload)
         client.close()
@@ -295,7 +296,7 @@ test('subscription client sending empty object payload on connection init', (t) 
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         t.deepEqual(data.payload, {})
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
@@ -330,7 +331,7 @@ test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type p
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'start') {
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
@@ -370,7 +371,7 @@ test('subscription client should throw on createSubscription if connection is no
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_error' }))
       }
@@ -401,7 +402,7 @@ test('subscription client should pass the error payload to failedConnectionCallb
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message) {
-      const data = JSON.parse(message)
+      const data = sJSON.parse(message)
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_error', payload: errorPayload }))
       }

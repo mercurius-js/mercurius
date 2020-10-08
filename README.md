@@ -1279,7 +1279,7 @@ async function run () {
     url: '/'
   })
 
-  console.log(JSON.parse(res.body), {
+  console.log(sJSON.parse(res.body), {
     data: {
       add: 4
     }

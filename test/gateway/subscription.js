@@ -4,6 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const GQL = require('../..')
+const sJSON = require('secure-json-parse')
 
 const users = {
   u1: {
@@ -231,7 +232,7 @@ test('gateway subscription handling works correctly', t => {
     }))
 
     client.on('data', (chunk) => {
-      const data = JSON.parse(chunk)
+      const data = sJSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
         t.equal(chunk, JSON.stringify({
@@ -467,7 +468,7 @@ test('gateway forwards the connectin_init payload to the federated service on gq
       }))
 
       client.on('data', chunk => {
-        const data = JSON.parse(chunk)
+        const data = sJSON.parse(chunk)
         if (data.type === 'connection_ack') {
           client.write(JSON.stringify({
             id: 1,

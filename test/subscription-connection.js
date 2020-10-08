@@ -6,6 +6,7 @@ const fastify = require('fastify')
 const mq = require('mqemitter')
 const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
+const sJSON = require('secure-json-parse')
 
 test('socket is closed on unhandled promise rejection in handleMessage', t => {
   t.plan(1)
@@ -271,7 +272,7 @@ test('subscription connection send GQL_ERROR message if connectionInit extension
     on () { },
     close () { },
     send (message) {
-      t.deepEquals(JSON.parse(message), {
+      t.deepEquals(sJSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Forbidden'
@@ -333,7 +334,7 @@ test('subscription connection send GQL_ERROR on unknown extension', async (t) =>
     on () { },
     close () { },
     send (message) {
-      t.deepEquals(JSON.parse(message), {
+      t.deepEquals(sJSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Unknown extension unknown'

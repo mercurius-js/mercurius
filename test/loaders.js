@@ -3,6 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
+const sJSON = require('secure-json-parse')
 
 const dogs = [{
   name: 'Max'
@@ -101,7 +102,7 @@ test('loaders create batching resolvers', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.deepEqual(sJSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -181,7 +182,7 @@ test('disable cache for each loader', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.deepEqual(sJSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -237,7 +238,7 @@ test('defineLoaders method, if factory exists', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.deepEqual(sJSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -302,7 +303,7 @@ test('support context in loader', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.deepEqual(sJSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -517,7 +518,7 @@ test('loaders support custom context', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.deepEqual(sJSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',

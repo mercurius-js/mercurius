@@ -4,6 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const GQL = require('../..')
+const sJSON = require('secure-json-parse')
 
 test('connectionInit extension e2e testing', t => {
   t.plan(9)
@@ -270,7 +271,7 @@ test('connectionInit extension e2e testing', t => {
 
       function makeDataHandler (clientNb) {
         return async function dataHandler (chunk) {
-          const data = JSON.parse(chunk)
+          const data = sJSON.parse(chunk)
           switch (data.type) {
             case 'connection_ack':
               t.pass('should ack')
