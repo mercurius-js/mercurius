@@ -164,8 +164,6 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   })
 
-  await gateway.listen(0)
-
   const query = `
   query MainQuery(
     $size: AvatarSize
@@ -361,8 +359,6 @@ test('It support variable inside nested arguments', async (t) => {
     }
   })
 
-  await gateway.listen(0)
-
   const query = `
   query MainQuery(
     $userId: ID!
@@ -495,8 +491,6 @@ test('Should not throw on nullable reference', async (t) => {
     }
   })
 
-  await gateway.listen(0)
-
   const query = `
   {
     topPosts{
@@ -601,8 +595,6 @@ test('Should handle InlineFragment', async (t) => {
       ]
     }
   })
-
-  await gateway.listen(0)
 
   const query = `
   {
@@ -737,8 +729,6 @@ test('Should support array references with _entities query', async (t) => {
     }
   })
 
-  await gateway.listen(0)
-
   const query = `
   {
     topPosts{
@@ -828,8 +818,6 @@ test('Should support multiple `extends` of the same type in the service SDL', as
       ]
     }
   })
-
-  await gateway.listen(0)
 
   const res = await gateway.inject({
     method: 'POST',
@@ -960,8 +948,6 @@ test('Should support array references with _entities query and empty response', 
       ]
     }
   })
-
-  await gateway.listen(0)
 
   const query = `
   {
@@ -1099,8 +1085,6 @@ test('Should support array references with _entities query and empty response an
       ]
     }
   })
-
-  await gateway.listen(0)
 
   const query = `
   {
