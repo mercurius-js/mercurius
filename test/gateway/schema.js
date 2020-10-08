@@ -865,3 +865,281 @@ test('Should support multiple `extends` of the same type in the service SDL', as
     }
   })
 })
+
+test('Should support array references with _entities query and empty response', async (t) => {
+  const topPosts = [
+    {
+      id: 1,
+      title: 'test',
+      content: 'test',
+      authorIds: []
+    },
+    {
+      id: 2,
+      title: 'test2',
+      content: 'test2',
+      authorIds: []
+    }
+  ]
+
+  const users = [
+    {
+      id: 1,
+      name: 'toto'
+    },
+    {
+      id: 2,
+      name: 'titi'
+    },
+    {
+      id: 3,
+      name: 'tata'
+    }
+  ]
+
+  const postServicePort = await createService(t, `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      authors: [User]!
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+    }
+  `, {
+    Post: {
+      authors: async (root) => {
+        if (root.authorIds) {
+          return root.authorIds.map(id => ({ __typename: 'User', id }))
+        }
+      }
+    },
+    Query: {
+      topPosts: async () => {
+        return topPosts
+      }
+    }
+  })
+
+  const userServicePort = await createService(t, `
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    User: {
+      __resolveReference: async (reference) => {
+        if (reference.id) {
+          return users.find(u => u.id === parseInt(reference.id))
+        }
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'post',
+          url: `http://localhost:${postServicePort}/graphql`
+        },
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const query = `
+  {
+    topPosts{
+      id
+      title
+      content
+      authors {
+        id
+        name
+      }
+    }
+  }`
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      topPosts: [
+        {
+          id: 1,
+          title: 'test',
+          content: 'test',
+          authors: []
+        },
+        {
+          id: 2,
+          title: 'test2',
+          content: 'test2',
+          authors: []
+        }
+      ]
+    }
+  })
+})
+
+test('Should support array references with _entities query and empty response and nullable field', async (t) => {
+  const topPosts = [
+    {
+      id: 1,
+      title: 'test',
+      content: 'test',
+      authorIds: []
+    },
+    {
+      id: 2,
+      title: 'test2',
+      content: 'test2',
+      authorIds: []
+    }
+  ]
+
+  const users = [
+    {
+      id: 1,
+      name: 'toto'
+    },
+    {
+      id: 2,
+      name: 'titi'
+    },
+    {
+      id: 3,
+      name: 'tata'
+    }
+  ]
+
+  const postServicePort = await createService(t, `
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String
+      content: String
+      authors: [User]!
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+    }
+  `, {
+    Post: {
+      authors: async (root) => {
+        if (root.authorIds) {
+          return root.authorIds.map(id => ({ __typename: 'User', id }))
+        }
+      }
+    },
+    Query: {
+      topPosts: async () => {
+        return topPosts
+      }
+    }
+  })
+
+  const userServicePort = await createService(t, `
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    User: {
+      __resolveReference: async (reference) => {
+        if (reference.id) {
+          return users.find(u => u.id === parseInt(reference.id))
+        }
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'post',
+          url: `http://localhost:${postServicePort}/graphql`
+        },
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  await gateway.listen(0)
+
+  const query = `
+  {
+    topPosts{
+      id
+      title
+      content
+      authors {
+        id
+        name
+      }
+    }
+  }`
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      topPosts: [
+        {
+          id: 1,
+          title: 'test',
+          content: 'test',
+          authors: null
+        },
+        {
+          id: 2,
+          title: 'test2',
+          content: 'test2',
+          authors: null
+        }
+      ]
+    }
+  })
+})
