@@ -1,3 +1,4 @@
+import { SchemaTransform } from '@graphql-tools/utils'
 import {
   FastifyError,
   FastifyReply,
@@ -8,7 +9,6 @@ import {
   DocumentNode,
   ExecutionResult,
   GraphQLSchema,
-  GraphQLError,
   Source,
   GraphQLResolveInfo,
   GraphQLIsTypeOfFn,
@@ -107,6 +107,10 @@ export interface MercuriusSchemaOptions {
       ) => any;
     };
   };
+  /**
+   * An array of schema transformation functions
+   */
+  schemaTransforms?: Array<SchemaTransform>;
 }
 
 export interface MercuriusCommonOptions {

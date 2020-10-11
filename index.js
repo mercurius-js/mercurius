@@ -22,6 +22,12 @@ const {
   specifiedRules,
   execute
 } = require('graphql')
+const {
+  mergeResolvers,
+  makeExecutableSchema,
+  printSchemaWithDirectives,
+  getResolversFromSchema
+} = require('graphql-tools')
 const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
@@ -346,6 +352,14 @@ const plugin = fp(async function (app, opts) {
 
   if (opts.loaders) {
     fastifyGraphQl.defineLoaders(opts.loaders)
+  }
+
+  if (opts.schemaTransforms) {
+    fastifyGraphQl.schema = makeExecutableSchema({
+      typeDefs: printSchemaWithDirectives(schema),
+      resolvers: mergeResolvers([getResolversFromSchema(schema), root]),
+      schemaTransforms: opts.schemaTransforms
+    })
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
