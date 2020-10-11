@@ -95,7 +95,7 @@ exports['test/routes.js TAP mutation with GET errors > must match snapshot 1'] =
   "data": null,
   "errors": [
     {
-      "message": "Operation cannot be perfomed via a GET request"
+      "message": "Operation cannot be performed via a GET request"
     }
   ]
 }
