@@ -123,7 +123,7 @@ const plugin = fp(async function (app, opts) {
   }
 
   if (gateway && (schema || opts.resolvers || opts.loaders)) {
-    throw new Error('Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
+    throw new Error('Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 
   if (typeof schema === 'string') {
@@ -163,7 +163,7 @@ const plugin = fp(async function (app, opts) {
           }
         }, gateway.pollingInterval)
       } else {
-        app.log.warn('\'gateway.pollingInterval\' shoud have a number type')
+        app.log.warn(`Expected a number for 'gateway.pollingInterval', received: ${typeof gateway.pollingInterval}`)
       }
     }
 
@@ -242,7 +242,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.extendSchema = function (s) {
     if (gateway) {
-      throw new Error('Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
+      throw new Error('Calling extendSchema method when plugin is running in gateway mode is not allowed')
     }
 
     if (typeof s === 'string') {
@@ -256,7 +256,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
     if (gateway) {
-      throw new Error('Calling defineResolvers method is not allowed when plugin is running in gateway mode is not allowed')
+      throw new Error('Calling defineResolvers method when plugin is running in gateway mode is not allowed')
     }
 
     for (const name of Object.keys(resolvers)) {
@@ -303,7 +303,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.defineLoaders = function (loaders) {
     if (gateway) {
-      throw new Error('Calling defineLoaders method is not allowed when plugin is running in gateway mode is not allowed')
+      throw new Error('Calling defineLoaders method when plugin is running in gateway mode is not allowed')
     }
 
     // set up the loaders factory
@@ -417,7 +417,7 @@ const plugin = fp(async function (app, opts) {
       const operationAST = getOperationAST(document, operationName)
       if (operationAST.operation !== 'query') {
         const err = new MethodNotAllowed()
-        err.errors = [new Error('Operation cannot be perfomed via a GET request')]
+        err.errors = [new Error('Operation cannot be performed via a GET request')]
         throw err
       }
     }
