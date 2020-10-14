@@ -1127,3 +1127,119 @@ test('Should support array references with _entities query and empty response an
     }
   })
 })
+
+test('Should handle union with InlineFragment', async (t) => {
+  const products = [
+    {
+      id: 1,
+      type: 'Book',
+      name: 'book1'
+    },
+    {
+      id: 2,
+      type: 'Book',
+      name: 'book2'
+    }
+  ]
+
+  const productServicePort = await createService(t, `
+    extend type Query {
+      products: [Product]
+      shelve: Shelve
+    }
+
+    enum ProductType {
+      Book
+    }
+
+    union Product = Book
+
+    type Shelve {
+      id: ID!
+      products: [Product]
+    }
+
+    type Book {
+      id: ID!
+      type: ProductType!
+      name: String
+    }
+  `, {
+    Product: {
+      resolveType (value) {
+        return value.type
+      }
+    },
+    Query: {
+      products: async () => {
+        return products
+      },
+      shelve: async () => {
+        return {
+          id: 1,
+          products
+        }
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'product',
+          url: `http://localhost:${productServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  const query = `
+  {
+    shelve {
+      ...ShelveInfos
+    }
+  }
+  
+  fragment ShelveInfos on Shelve {
+    id
+    products {
+      ...on Book {
+        id
+        type
+        name
+      }
+    }
+  }
+  `
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      products: [
+        {
+          id: 1,
+          type: 'Book',
+          name: 'book1'
+        },
+        {
+          id: 2,
+          type: 'Book',
+          name: 'book2'
+        }
+      ]
+    }
+  })
+})
