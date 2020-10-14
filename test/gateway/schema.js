@@ -1147,18 +1147,14 @@ test('Should handle union with InlineFragment', async (t) => {
       products: [Product]
       shelve: Shelve
     }
-
     enum ProductType {
       Book
     }
-
     union Product = Book
-
     type Shelve {
       id: ID!
       products: [Product]
     }
-
     type Book {
       id: ID!
       type: ProductType!
@@ -1244,4 +1240,104 @@ test('Should handle union with InlineFragment', async (t) => {
       }
     }
   })
+})
+
+test('Gateway sends initHeaders with _service sdl query', async (t) => {
+  t.plan(1)
+  const service = Fastify()
+  t.tearDown(() => {
+    service.close()
+  })
+  service.register(GQL, {
+    schema: `
+      extend type Query {
+        hello: String
+      }
+    `,
+    resolvers: {
+      Query: {
+        hello: async () => {
+          return 'world'
+        }
+      }
+    },
+    federationMetadata: true
+  })
+  service.addHook('preHandler', async (req, reply) => {
+    t.equal(req.headers.authorization, 'ok')
+    if (!req.headers.authorization) throw new Error('Unauthorized')
+  })
+
+  await service.listen(0)
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'svc',
+          url: `http://localhost:${service.server.address().port}/graphql`,
+          initHeaders: {
+            authorization: 'ok'
+          }
+        }
+      ]
+    }
+  })
+
+  await gateway.ready()
+})
+
+test('Gateway sends initHeaders function result with _service sdl query', async (t) => {
+  t.plan(1)
+  const service = Fastify()
+  t.tearDown(() => {
+    service.close()
+  })
+  service.register(GQL, {
+    schema: `
+      extend type Query {
+        hello: String
+      }
+    `,
+    resolvers: {
+      Query: {
+        hello: async () => {
+          return 'world'
+        }
+      }
+    },
+    federationMetadata: true
+  })
+  service.addHook('preHandler', async (req, reply) => {
+    t.equal(req.headers.authorization, 'ok')
+    if (!req.headers.authorization) throw new Error('Unauthorized')
+  })
+
+  await service.listen(0)
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'svc',
+          url: `http://localhost:${service.server.address().port}/graphql`,
+          async initHeaders () {
+            return {
+              authorization: 'ok'
+            }
+          }
+        }
+      ]
+    }
+  })
+
+  await gateway.ready()
 })

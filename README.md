@@ -904,6 +904,7 @@ __mercurius__ supports the following options:
     * `service.name`: A unique name for the service. Required.
     * `service.url`: The url of the service endpoint. Required
     * `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
+    * `service.initHeaders`: `Function` or `Object` An object or a function that returns the headers sent to the service for the initial _service SDL query.
     * `service.wsUrl`: The url of the websocket endpoint
     * `service.wsConnectionParams`: `Function` or `Object`
       * `wsConnectionParams.connectionInitPayload`: `Function` or `Object` An object or a function that returns the `connection_init` payload sent to the service.
