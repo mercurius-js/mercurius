@@ -1228,18 +1228,20 @@ test('Should handle union with InlineFragment', async (t) => {
 
   t.deepEqual(JSON.parse(res.body), {
     data: {
-      products: [
-        {
-          id: 1,
-          type: 'Book',
-          name: 'book1'
-        },
-        {
-          id: 2,
-          type: 'Book',
-          name: 'book2'
-        }
-      ]
+      shelve: {
+        id: 1,
+        products: [
+          {
+            id: 1,
+            type: 'Book',
+            name: 'book1'
+          },
+          {
+            id: 2,
+            type: 'Book',
+            name: 'book2'
+          }]
+      }
     }
   })
 })
