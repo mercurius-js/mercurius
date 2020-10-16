@@ -874,6 +874,7 @@ __mercurius__ supports the following options:
 * `resolvers`: Object. The graphql resolvers.
 * `loaders`: Object. See [defineLoaders](#defineLoaders) for more
   details.
+* `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
 * `graphiql`: boolean | string. Serve
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
@@ -1175,6 +1176,17 @@ async function run () {
 }
 
 run()
+```
+
+#### app.graphql.transformSchema(transforms)
+
+`transforms` can be an array of functions or a single function that accept the schema and returns a schema.
+It is an utility function that calls `replaceSchema` underneath.
+
+```js
+app.graphql.extendSchema(typeDefs)
+app.graphql.defineResolvers(resolvers)
+app.graphql.transformSchema(directive()) // or [directive()]
 ```
 
 #### app.graphql.schema

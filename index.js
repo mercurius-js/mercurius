@@ -126,6 +126,10 @@ const plugin = fp(async function (app, opts) {
     throw new Error('Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 
+  if (Array.isArray(schema)) {
+    schema = schema.join('\n')
+  }
+
   if (typeof schema === 'string') {
     if (opts.federationMetadata) {
       schema = buildFederationSchema(schema)
@@ -340,12 +344,26 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.defineResolvers(resolvers)
   }
 
+  fastifyGraphQl.transformSchema = function (transforms) {
+    if (!Array.isArray(transforms)) {
+      transforms = [transforms]
+    }
+
+    for (const fn of transforms) {
+      fastifyGraphQl.replaceSchema(fn(fastifyGraphQl.schema))
+    }
+  }
+
   if (opts.resolvers) {
     fastifyGraphQl.defineResolvers(opts.resolvers)
   }
 
   if (opts.loaders) {
     fastifyGraphQl.defineLoaders(opts.loaders)
+  }
+
+  if (opts.schemaTransforms) {
+    fastifyGraphQl.transformSchema(opts.schemaTransforms)
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
