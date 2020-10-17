@@ -8,7 +8,6 @@ import {
   DocumentNode,
   ExecutionResult,
   GraphQLSchema,
-  GraphQLError,
   Source,
   GraphQLResolveInfo,
   GraphQLIsTypeOfFn,
@@ -107,6 +106,10 @@ export interface MercuriusSchemaOptions {
       ) => any;
     };
   };
+  /**
+   * An array of schema transformation functions
+   */
+  schemaTransforms?: Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
 }
 
 export interface MercuriusCommonOptions {

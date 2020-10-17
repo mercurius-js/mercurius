@@ -348,6 +348,12 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.defineLoaders(opts.loaders)
   }
 
+  if (Array.isArray(opts.schemaTransforms)) {
+    opts.schemaTransforms.forEach(schemaTransform => {
+      fastifyGraphQl.schema = schemaTransform(fastifyGraphQl.schema)
+    })
+  }
+
   async function fastifyGraphQl (source, context, variables, operationName) {
     context = Object.assign({ app: this, lruGatewayResolvers }, context)
     const reply = context.reply
