@@ -239,3 +239,9 @@ app.register(mercurius, {
   resolvers,
   schemaTransforms: [(schema) => mapSchema(schema)]
 })
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  schemaTransforms: (schema) => mapSchema(schema)
+})
