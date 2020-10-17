@@ -161,6 +161,53 @@ test('custom directives should work', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
+test('custom directives should work with single transform function', async (t) => {
+  const app = Fastify()
+  const schema = `
+    ${upperDirectiveTypeDefs}
+    
+    type Query {
+      foo: String @upper
+      user: User
+    }
+    
+    type User {
+      id: ID!
+      name: String @upper
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      foo: () => 'bar',
+      user: () => ({ id: '1' })
+    }
+  }
+
+  const loaders = {
+    User: {
+      name: async (queries) => queries.map(() => 'name')
+    }
+  }
+
+  app.register(mercurius, {
+    schema,
+    resolvers,
+    loaders,
+    schemaTransforms: upperDirectiveTransformer
+  })
+
+  await app.ready()
+
+  let query = 'query { foo }'
+  let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
+  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+
+  query = 'query { user { id name } }'
+  res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
+  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+})
+
 test('custom directives should work with executable schema', async (t) => {
   const app = Fastify()
   const schema = `

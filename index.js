@@ -340,6 +340,16 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.defineResolvers(resolvers)
   }
 
+  fastifyGraphQl.transformSchema = function (schemaTransforms) {
+    if (!Array.isArray(schemaTransforms)) {
+      schemaTransforms = [schemaTransforms]
+    }
+
+    for (const transformFn of schemaTransforms) {
+      fastifyGraphQl.replaceSchema(transformFn(fastifyGraphQl.schema))
+    }
+  }
+
   if (opts.resolvers) {
     fastifyGraphQl.defineResolvers(opts.resolvers)
   }
@@ -348,10 +358,8 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.defineLoaders(opts.loaders)
   }
 
-  if (Array.isArray(opts.schemaTransforms)) {
-    opts.schemaTransforms.forEach(schemaTransform => {
-      fastifyGraphQl.schema = schemaTransform(fastifyGraphQl.schema)
-    })
+  if (opts.schemaTransforms) {
+    fastifyGraphQl.transformSchema(opts.schemaTransforms)
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {

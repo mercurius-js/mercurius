@@ -107,9 +107,9 @@ export interface MercuriusSchemaOptions {
     };
   };
   /**
-   * An array of schema transformation functions
+   * Schema transformation function or an array of schema transformation functions
    */
-  schemaTransforms?: Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
+  schemaTransforms?: ((originalSchema: GraphQLSchema) => GraphQLSchema) | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
 }
 
 export interface MercuriusCommonOptions {
