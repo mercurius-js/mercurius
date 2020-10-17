@@ -141,6 +141,7 @@ makeGraphqlServer({ schema, resolvers, validationRules: [customValidationRule] }
 makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }: { source: string, variables?: Record<string, any>, operationName?: string }) => [customValidationRule] })
 makeGraphqlServer({ schema, errorFormatter: mercurius.defaultErrorFormatter })
 makeGraphqlServer({ schema: mercurius.buildFederationSchema(schema) })
+makeGraphqlServer({ schema: [schema, 'extend type Query { foo: String }'] })
 
 // Gateway mode
 

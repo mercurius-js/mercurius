@@ -126,6 +126,10 @@ const plugin = fp(async function (app, opts) {
     throw new Error('Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 
+  if (Array.isArray(schema)) {
+    schema = schema.join('\n')
+  }
+
   if (typeof schema === 'string') {
     if (opts.federationMetadata) {
       schema = buildFederationSchema(schema)
