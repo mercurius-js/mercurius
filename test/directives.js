@@ -259,6 +259,124 @@ test('custom directives should work with executable schema', async (t) => {
   t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
+test('directives with extendSchema', async (t) => {
+  const app = Fastify()
+
+  const todos = []
+  const typeDefs = `
+   type AddTodoResponse {
+     todos: [String]
+   }
+   extend type Query {
+     todos: [String]
+   }
+   extend type Mutation {
+     addTodo (input: TodoInput): AddTodoResponse
+   }
+   input TodoInput {
+     todo: String! @length(max: 3)
+   }
+ `
+
+  const resolvers = {
+    Query: {
+      todos: async () => todos
+    },
+    Mutation: {
+      addTodo: async (_, { input: { todo } }) => {
+        todos.push(todo)
+        return { todos }
+      }
+    }
+  }
+
+  await app.register(mercurius, { defineMutation: true })
+
+  app.graphql.extendSchema(lengthDirectiveTypeDefs)
+  app.graphql.extendSchema(typeDefs)
+  app.graphql.defineResolvers(resolvers)
+  app.graphql.schema = lengthDirectiveTransformer(app.graphql.schema)
+
+  const query = 'mutation { addTodo(input: { todo: "too-long" }) { todos } }'
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 400)
+  t.deepEqual(JSON.parse(res.body), {
+    data: null,
+    errors: [{
+      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      locations: [{ line: 1, column: 35 }],
+      extensions: { foo: 'bar' }
+    }]
+  })
+})
+
+test('directives with transformSchema', async (t) => {
+  const app = Fastify()
+
+  const todos = []
+  const typeDefs = `
+   type AddTodoResponse {
+     todos: [String]
+   }
+   extend type Query {
+     todos: [String]
+   }
+   extend type Mutation {
+     addTodo (input: TodoInput): AddTodoResponse
+   }
+   input TodoInput {
+     todo: String! @length(max: 3)
+   }
+ `
+
+  const resolvers = {
+    Query: {
+      todos: async () => todos
+    },
+    Mutation: {
+      addTodo: async (_, { input: { todo } }) => {
+        todos.push(todo)
+        return { todos }
+      }
+    }
+  }
+
+  await app.register(mercurius, { defineMutation: true })
+
+  app.graphql.extendSchema(lengthDirectiveTypeDefs)
+  app.graphql.extendSchema(typeDefs)
+  app.graphql.defineResolvers(resolvers)
+  app.graphql.transformSchema(lengthDirectiveTransformer)
+
+  const query = 'mutation { addTodo(input: { todo: "too-long" }) { todos } }'
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 400)
+  t.deepEqual(JSON.parse(res.body), {
+    data: null,
+    errors: [{
+      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      locations: [{ line: 1, column: 35 }],
+      extensions: { foo: 'bar' }
+    }]
+  })
+})
+
 test('federation support and custom directives', async (t) => {
   const app = Fastify()
   const schema = `
