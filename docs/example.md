@@ -1,17 +1,4 @@
-# Examples
-
-<!-- * [makeExecutableSchema support](#make-executable-schema-support)
-* [Persisted Queries](#persisted-queries)
-* [Batched Queries](#batched-queries)
-* [Access app context in resolver](#access-app-context-in-resolver)
-* [Build a custom GraphQL context object](#build-a-custom-graphql-context-object)
-* [Subscription support (simple)](#subscription-support-simple)
-* [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
-* [Subscription support (with redis)](#subscription-support-with-redis)
-* [Federation metadata support](#federation-metadata-support)
-* [Federation with __resolveReference caching](#federation-with-resolvereference-caching)
-* [Use GraphQL server as a Gateway for federated schemas](#use-graphql-server-as-a-gateway-for-federated-schemas)
-* [Use errors extension to provide additional information to query errors](#use-errors-extension-to-provide-additional-information-to-query-errors) -->
+# Example
 
 ```js
 'use strict'

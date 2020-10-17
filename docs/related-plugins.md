@@ -1,6 +1,4 @@
-# mercurius
-
-## Plugins
+# Related Plugins
 
 Related plugins for mercurius
 

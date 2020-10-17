@@ -5,8 +5,7 @@ The GraphQL over WebSocket Protocol used by `mercurius` follows apollo's protoco
 ## Message structure extension
 
 This is the extended structure of each message:
-
-```ts
+```
 export interface OperationMessage {
   payload?: any;
   id?: string;
@@ -22,17 +21,16 @@ export interface OperationExtension {
 ```
 
 ## Server -> Server
-
 ### `connectionInit` extension
 
 Gateway uses this extension to share the `connection_init` payload with a service when the connection is already established between gateway and services.
 
-```ts
+```
 export interface ConnectionInitExtension extends OperationExtension {
   type: string;
   payload?: Object;
 }
 ```
 
-- `type: String` : 'connectionInit'
-- `payload: Object` : optional parameters that the client specifies in connectionParams
+* `type: String` : 'connectionInit'
+* `payload: Object` : optional parameters that the client specifies in connectionParams
