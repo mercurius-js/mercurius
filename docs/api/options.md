@@ -25,7 +25,7 @@
 
 **mercurius** supports the following options:
 
-- `schema`: String or [schema
+- `schema`: String, String[] or [schema
   definition](https://graphql.org/graphql-js/type/#graphqlschema). The graphql schema.
   The string will be parsed.
 - `resolvers`: Object. The graphql resolvers.
