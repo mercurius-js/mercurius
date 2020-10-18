@@ -57,6 +57,7 @@
     "readable-stream": "^3.5.0",
     "single-user-cache": "^0.3.0",
     "tiny-lru": "^7.0.2",
+    "undici": "^2.0.7",
     "ws": "^7.2.1"
   },
   "tsd": {
