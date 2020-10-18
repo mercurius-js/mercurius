@@ -4,6 +4,7 @@
 
 - [Subscriptions](#subscriptions)
   - [Subscription support (simple)](#subscription-support-simple)
+  - [Filtered subscription](#filtered-subscription)
   - [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
   - [Subscription support (with redis)](#subscription-support-with-redis)
 
@@ -66,6 +67,80 @@ const resolvers = {
       subscribe: async (root, args, { pubsub }) =>
         await pubsub.subscribe('NOTIFICATION_ADDED')
     }
+  }
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: true
+})
+```
+
+### Filtered subscription
+
+
+```js
+const schema = `
+  type Notification {
+    id: ID!
+    message: String
+  }
+
+  type Query {
+    notifications: [Notification]
+  }
+
+  type Mutation {
+    addNotification(message: String): Notification
+  }
+
+  type Subscription {
+    notificationAdded(contains: String): Notification
+  }
+`
+
+let idCount = 1
+const notifications = [
+  {
+    id: idCount,
+    message: 'Notification message'
+  }
+]
+
+const { withFilter } = mercurius
+
+const resolvers = {
+  Query: {
+    notifications: () => notifications
+  },
+  Mutation: {
+    addNotification: async (_, { message }, { pubsub }) => {
+      const id = idCount++
+      const notification = {
+        id,
+        message
+      }
+      notifications.push(notification)
+      await pubsub.publish({
+        topic: 'NOTIFICATION_ADDED',
+        payload: {
+          notificationAdded: notification
+        }
+      })
+
+      return notification
+    }
+  },
+  Subscription: {
+    notificationAdded: {
+      subscribe: withFilter(
+        (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED'),
+        (payload, { contains }) => {
+          if (!contains) return true
+            return payload.notificationAdded.message.includes(contains)
+        }
+      )
   }
 }
 
