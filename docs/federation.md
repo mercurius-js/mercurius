@@ -1,6 +1,5 @@
 # mercurius
 
-
 - [Federation metadata support](#federation-metadata-support)
 - [Federation with \_\_resolveReference caching](#federation-with-__resolvereference-caching)
 - [Use GraphQL server as a Gateway for federated schemas](#use-graphql-server-as-a-gateway-for-federated-schemas)
@@ -8,7 +7,6 @@
   - [Programmatically refresh federated schemas in Gateway mode](#programmatically-refresh-federated-schemas-in-gateway-mode)
   - [Flag a service as mandatory in Gateway mode](#flag-a-service-as-mandatory-in-gateway-mode)
   - [Using a custom errorHandler for handling downstream service errors in Gateway mode](#using-a-custom-errorhandler-for-handling-downstream-service-errors-in-gateway-mode)
-- [Use errors extension to provide additional information to query errors](#use-errors-extension-to-provide-additional-information-to-query-errors)
 
 ## Federation
 
@@ -322,60 +320,3 @@ server.listen(3002)
 ```
 
 _Note: The default behavior of `errorHandler` is call `errorFormatter` to send the result. When is provided an `errorHandler` make sure to **call `errorFormatter` manually if needed**._
-
-### Use errors extension to provide additional information to query errors
-
-GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
-
-```js
-'use strict'
-
-const Fastify = require('fastify')
-const mercurius = require('mercurius')
-const { ErrorWithProps } = mercurius
-
-const users = {
-  1: {
-    id: '1',
-    name: 'John'
-  },
-  2: {
-    id: '2',
-    name: 'Jane'
-  }
-}
-
-const app = Fastify()
-const schema = `
-  type Query {
-    findUser(id: String!): User
-  }
-
-  type User {
-    id: ID!
-    name: String
-  }
-`
-
-const resolvers = {
-  Query: {
-    findUser: (_, { id }) => {
-      const user = users[id]
-      if (user) return users[id]
-      else
-        throw new ErrorWithProps('Invalid User ID', {
-          id,
-          code: 'USER_ID_INVALID',
-          timestamp: Math.round(new Date().getTime() / 1000)
-        })
-    }
-  }
-}
-
-app.register(mercurius, {
-  schema,
-  resolvers
-})
-
-app.listen(3000)
-```
