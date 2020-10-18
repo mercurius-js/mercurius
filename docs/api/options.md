@@ -62,6 +62,7 @@
   - `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
     - `service.name`: A unique name for the service. Required.
     - `service.url`: The url of the service endpoint. Required
+    - `service.mandatory`: `Boolean` Marks service as mandatory. If any of the mandatory services are unavailable, gateway will exit with an error. (Default: `false`)
     - `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
     - `service.initHeaders`: `Function` or `Object` An object or a function that returns the headers sent to the service for the initial \_service SDL query.
     - `service.wsUrl`: The url of the websocket endpoint
