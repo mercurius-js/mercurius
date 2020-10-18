@@ -23,23 +23,21 @@ npm i fastify mercurius
 
 The previous name of this module is [fastify-gql](http://npm.im/fastify-gql) (< 6.0.0).
 
-## Table of Contents
-
-- [mercurius](#mercurius)
-  - [Install](#install)
-  - [Table of Contents](#table-of-contents)
-  - [Example](#example)
-    - [makeExecutableSchema support](#makeexecutableschema-support)
-  - [Context](#context)
-  - [API](#api)
-  - [Federation](#federation)
-  - [Subscriptions](#subscriptions)
-  - [Batched Queries](#batched-queries)
-  - [Persisted Queries](#persisted-queries)
-  - [Plugins](#plugins)
-  - [Integrations](#integrations)
-  - [Acknowledgements](#acknowledgements)
-  - [License](#license)
+---
+- [Install](#install)
+- [Example](#example)
+  - [makeExecutableSchema support](#makeexecutableschema-support)
+- [Context](#context)
+- [API](#api)
+- [Federation](#federation)
+- [Subscriptions](#subscriptions)
+- [Batched Queries](#batched-queries)
+- [Persisted Queries](#persisted-queries)
+- [Plugins](#plugins)
+- [Integrations](#integrations)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+---
 
 ## Example
 
@@ -115,35 +113,35 @@ app.listen(3000)
 
 ## Context
 
-[More info](./docs/context.md)
+[More info](docs/context.md)
 
 ## API
 
-[More info](./docs/api/options.md)
+[More info](docs/api/options.md)
 
 ## Federation
 
-[More info](./docs/federation.md)
+[More info](docs/federation.md)
 
 ## Subscriptions
 
-[More info](./docs/subscriptions.md)
+[More info](docs/subscriptions.md)
 
 ## Batched Queries
 
-[More info](./docs/batched-queries.md)
+[More info](docs/batched-queries.md)
 
 ## Persisted Queries
 
-[More info](./docs/persisted-queries.md)
+[More info](docs/persisted-queries.md)
 
 ## Plugins
 
-[More info](./docs/plugins.md)
+[More info](docs/plugins.md)
 
 ## Integrations
 
-[More info](./docs/integrations/index.md)
+[More info](docs/integrations/)
 
 ## Acknowledgements
 

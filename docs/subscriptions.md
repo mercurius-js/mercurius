@@ -1,11 +1,11 @@
 # mercurius
 
+## Subscriptions
+
 - [Subscriptions](#subscriptions)
   - [Subscription support (simple)](#subscription-support-simple)
   - [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
   - [Subscription support (with redis)](#subscription-support-with-redis)
-
-## Subscriptions
 
 ### Subscription support (simple)
 
