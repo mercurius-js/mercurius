@@ -10,7 +10,7 @@ Persisted Queries solve this problem by having the client send a generated ID, i
 
 The `persistedQueryProvider` option lets you configure this for Fastify mercurius. There are a few default options available, included in `mercurius.persistedQueryDefaults`.
 
-#### Prepared
+### Prepared
 
 Prepared queries give the best performance in all use cases, at the expense of tooling complexity. Queries must be hashed ahead of time, and a matching set of hashes must be available for both the client and the server. Additionally, version control of query hashes must be considered, e.g. queries used by old clients may need to be kept such that hashes can be calculated at build time. This can be very useful for non-public APIs, but is impractical for public APIs.
 
@@ -49,7 +49,7 @@ app.register(mercurius, {
 })
 ```
 
-#### Prepared Only
+### Prepared Only
 
 This offers similar performance and considerations to the `prepared` queries, but only allows persisted queries. This provides additional secuirity benefits, but means that the server **must** know all queries ahead of time or will reject the request.
 
@@ -69,7 +69,7 @@ app.register(mercurius, {
 })
 ```
 
-#### Automatic
+### Automatic
 
 This default is compatible with `apollo-client`, and requires no additional tooling to set up at the cost of some performance. In order for this mode to be effective, you must have long lived server instances (i.e _not_ cloud functions). This mode is also appropriate for public APIs where queries are not known ahead of time.
 
@@ -103,7 +103,7 @@ app.register(mercurius, {
 })
 ```
 
-#### Custom Persisted Queries
+### Custom Persisted Queries
 
 It is also possible to extend or modify these persisted query implementations for custom cases, such as automatic Persisted Queries, but with a shared cache between servers.
 

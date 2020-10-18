@@ -1,27 +1,23 @@
 # mercurius
 
-- [mercurius](#mercurius)
-  - [API](#api)
-    - [plugin options](#plugin-options)
-      - [queryDepth example](#querydepth-example)
-    - [HTTP endpoints](#http-endpoints)
-      - [GET /graphql](#get-graphql)
-      - [POST /graphql](#post-graphql)
-      - [POST /graphql with Content-type: application/graphql](#post-graphql-with-content-type-applicationgraphql)
-      - [GET /graphiql](#get-graphiql)
-      - [GET /playground](#get-playground)
-    - [decorators](#decorators)
-      - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
-      - [app.graphql.extendSchema(schema) and app.graphql.defineResolvers(resolvers)](#appgraphqlextendschemaschema-and-appgraphqldefineresolversresolvers)
-      - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
-      - [app.graphql.schema](#appgraphqlschema)
-      - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
-      - [app.graphql.defineLoaders(loaders)](#appgraphqldefineloadersloaders)
-      - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
+- [Plugin options](#plugin-options)
+- [HTTP endpoints](#http-endpoints)
+  - [GET /graphql](#get-graphql)
+  - [POST /graphql](#post-graphql)
+  - [POST /graphql with Content-type: application/graphql](#post-graphql-with-content-type-applicationgraphql)
+  - [GET /graphiql](#get-graphiql)
+  - [GET /playground](#get-playground)
+- [Decorators](#decorators)
+  - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
+  - [app.graphql.extendSchema(schema) and app.graphql.defineResolvers(resolvers)](#appgraphqlextendschemaschema-and-appgraphqldefineresolversresolvers)
+  - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
+  - [app.graphql.schema](#appgraphqlschema)
+  - [app.graphql.defineLoaders(loaders)](#appgraphqldefineloadersloaders)
+  - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
 
 ## API
 
-### plugin options
+### Plugin options
 
 **mercurius** supports the following options:
 
@@ -172,7 +168,7 @@ the options.
 Serves [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) if enabled by
 the options.
 
-### decorators
+### Decorators
 
 **mercurius** adds the following decorators.
 
