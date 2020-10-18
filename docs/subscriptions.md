@@ -4,7 +4,7 @@
 
 - [Subscriptions](#subscriptions)
   - [Subscription support (simple)](#subscription-support-simple)
-  - [Filtered subscription](#filtered-subscription)
+  - [Subscription filters](#subscription-filters)
   - [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
   - [Subscription support (with redis)](#subscription-support-with-redis)
 
@@ -77,7 +77,7 @@ app.register(mercurius, {
 })
 ```
 
-### Filtered subscription
+### Subscription filters
 
 
 ```js
