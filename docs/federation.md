@@ -244,9 +244,9 @@ setTimeout(async () => {
 }, 10000)
 ```
 
-#### Flag a service as mandatory in Gateway mode
+#### Flag service as mandatory in Gateway mode
 
-A Gateway service can handle the federated services in 2 different modes, `mandatory` or not by utilizing the `gateway.services.mandatory` configuration flag. If a service is not considered mandatory, creating the federated schema will succeed even if the service isn't capable of delivering a schema. By default, all services are consideredmandatory. Note: At least 1 service is necessary in order to create a valid federated schema.
+Gateway service can handle federated services in 2 different modes, `mandatory` or not by utilizing the `gateway.services.mandatory` configuration flag. If a service is not mandatory, creating the federated schema will succeed even if the service isn't capable of delivering a schema. By default, services are not mandatory. Note: At least 1 service is necessary to create a valid federated schema.
 
 ```js
 const Fastify = require('fastify')
