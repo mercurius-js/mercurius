@@ -5,7 +5,7 @@ import Fastify from 'fastify'
 import mercurius, { MercuriusOptions } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
-import { makeExecutableSchema } from 'graphql-tools'
+import { makeExecutableSchema, mapSchema } from 'graphql-tools'
 import mq from 'mqemitter'
 
 const app = Fastify()
@@ -141,6 +141,7 @@ makeGraphqlServer({ schema, resolvers, validationRules: [customValidationRule] }
 makeGraphqlServer({ schema, resolvers, validationRules: ({ variables, operationName, source }: { source: string, variables?: Record<string, any>, operationName?: string }) => [customValidationRule] })
 makeGraphqlServer({ schema, errorFormatter: mercurius.defaultErrorFormatter })
 makeGraphqlServer({ schema: mercurius.buildFederationSchema(schema) })
+makeGraphqlServer({ schema: [schema, 'extend type Query { foo: String }'] })
 
 // Gateway mode
 
@@ -226,4 +227,22 @@ app.register(mercurius, {
   subscription: {
     emitter
   }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  schemaTransforms: []
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  schemaTransforms: [(schema) => mapSchema(schema)]
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  schemaTransforms: (schema) => mapSchema(schema)
 })

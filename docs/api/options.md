@@ -15,6 +15,7 @@
       - [app.graphql.extendSchema(schema) and app.graphql.defineResolvers(resolvers)](#appgraphqlextendschemaschema-and-appgraphqldefineresolversresolvers)
       - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
       - [app.graphql.schema](#appgraphqlschema)
+      - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
       - [app.graphql.defineLoaders(loaders)](#appgraphqldefineloadersloaders)
       - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
 
@@ -24,12 +25,13 @@
 
 **mercurius** supports the following options:
 
-- `schema`: String or [schema
+- `schema`: String, String[] or [schema
   definition](https://graphql.org/graphql-js/type/#graphqlschema). The graphql schema.
   The string will be parsed.
 - `resolvers`: Object. The graphql resolvers.
 - `loaders`: Object. See [defineLoaders](#defineLoaders) for more
   details.
+- `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
 - `graphiql`: boolean | string. Serve
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
   [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
@@ -332,6 +334,17 @@ async function run() {
 }
 
 run()
+```
+
+#### app.graphql.transformSchema(transforms)
+
+`transforms` can be an array of functions or a single function that accept the schema and returns a schema.
+It is an utility function that calls `replaceSchema` underneath.
+
+```js
+app.graphql.extendSchema(typeDefs)
+app.graphql.defineResolvers(resolvers)
+app.graphql.transformSchema(directive()) // or [directive()]
 ```
 
 #### app.graphql.schema

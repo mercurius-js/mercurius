@@ -8,7 +8,6 @@ import {
   DocumentNode,
   ExecutionResult,
   GraphQLSchema,
-  GraphQLError,
   Source,
   GraphQLResolveInfo,
   GraphQLIsTypeOfFn,
@@ -86,7 +85,7 @@ export interface MercuriusSchemaOptions {
   /**
    * The GraphQL schema. String schema will be parsed
    */
-  schema: GraphQLSchema | string;
+  schema: GraphQLSchema | string | string[];
   /**
    * Object with resolver functions
    */
@@ -107,6 +106,10 @@ export interface MercuriusSchemaOptions {
       ) => any;
     };
   };
+  /**
+   * Schema transformation function or an array of schema transformation functions
+   */
+  schemaTransforms?: ((originalSchema: GraphQLSchema) => GraphQLSchema) | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
 }
 
 export interface MercuriusCommonOptions {
