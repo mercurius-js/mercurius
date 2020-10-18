@@ -27,7 +27,7 @@ const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
-const { PubSub } = require('./lib/subscriber')
+const { PubSub, withFilter } = require('./lib/subscriber')
 const { ErrorWithProps, defaultErrorFormatter } = require('./lib/errors')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 
@@ -494,5 +494,6 @@ plugin.ErrorWithProps = ErrorWithProps
 plugin.defaultErrorFormatter = defaultErrorFormatter
 plugin.persistedQueryDefaults = persistedQueryDefaults
 plugin.buildFederationSchema = buildFederationSchema
+plugin.withFilter = withFilter
 
 module.exports = plugin
