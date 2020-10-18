@@ -138,7 +138,7 @@ const resolvers = {
         (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED'),
         (payload, { contains }) => {
           if (!contains) return true
-            return payload.notificationAdded.message.includes(contains)
+          return payload.notificationAdded.message.includes(contains)
         }
       )
   }
