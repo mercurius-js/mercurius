@@ -11,6 +11,7 @@ Features:
 - Just-In-Time compiler via [graphql-jit](http://npm.im/graphql-jit).
 - Subscriptions.
 - Federation support.
+- Federated subscriptions support.
 - Gateway implementation, including Subscriptions.
 - Batched query support.
 - Customisable persisted queries.
