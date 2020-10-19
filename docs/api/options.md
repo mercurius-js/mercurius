@@ -12,8 +12,10 @@
   - [app.graphql.extendSchema(schema) and app.graphql.defineResolvers(resolvers)](#appgraphqlextendschemaschema-and-appgraphqldefineresolversresolvers)
   - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
   - [app.graphql.schema](#appgraphqlschema)
+  - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
   - [app.graphql.defineLoaders(loaders)](#appgraphqldefineloadersloaders)
   - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
+- [Error extensions](#use-errors-extension-to-provide-additional-information-to-query-errors)
 
 ## API
 
@@ -456,3 +458,61 @@ async function run() {
 
 run()
 ```
+
+### Use errors extension to provide additional information to query errors
+
+GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const mercurius = require('mercurius')
+const { ErrorWithProps } = mercurius
+
+const users = {
+  1: {
+    id: '1',
+    name: 'John'
+  },
+  2: {
+    id: '2',
+    name: 'Jane'
+  }
+}
+
+const app = Fastify()
+const schema = `
+  type Query {
+    findUser(id: String!): User
+  }
+
+  type User {
+    id: ID!
+    name: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    findUser: (_, { id }) => {
+      const user = users[id]
+      if (user) return users[id]
+      else
+        throw new ErrorWithProps('Invalid User ID', {
+          id,
+          code: 'USER_ID_INVALID',
+          timestamp: Math.round(new Date().getTime() / 1000)
+        })
+    }
+  }
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers
+})
+
+app.listen(3000)
+```
+
