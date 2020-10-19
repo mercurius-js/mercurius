@@ -83,7 +83,7 @@ See test.js for more examples, docs are coming.
 
 const Fastify = require('fastify')
 const mercurius = require('mercurius')
-const { makeExecutableSchema } = require('graphql-tools')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 const app = Fastify()
 

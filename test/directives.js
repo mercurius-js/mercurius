@@ -4,15 +4,15 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const mercurius = require('..')
 const { defaultFieldResolver, GraphQLScalarType, isNonNullType, isScalarType } = require('graphql')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
+const { mergeResolvers } = require('@graphql-tools/merge')
 const {
   MapperKind,
   mapSchema,
   getDirectives,
-  makeExecutableSchema,
   printSchemaWithDirectives,
-  getResolversFromSchema,
-  mergeResolvers
-} = require('graphql-tools')
+  getResolversFromSchema
+} = require('@graphql-tools/utils')
 const buildFederationSchema = require('../lib/federation')
 
 class ValidationError extends Error {

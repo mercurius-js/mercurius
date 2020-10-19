@@ -5,7 +5,8 @@ import Fastify from 'fastify'
 import mercurius, { MercuriusOptions } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { ValidationContext, ValidationRule } from 'graphql'
-import { makeExecutableSchema, mapSchema } from 'graphql-tools'
+import { makeExecutableSchema } from '@graphql-tools/schema'
+import { mapSchema } from '@graphql-tools/utils'
 import mq from 'mqemitter'
 
 const app = Fastify()

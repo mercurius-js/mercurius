@@ -9,7 +9,7 @@ const {
   GraphQLScalarType,
   GraphQLEnumType
 } = require('graphql')
-const { makeExecutableSchema } = require('graphql-tools')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 test('basic GQL', async (t) => {
   const app = Fastify()

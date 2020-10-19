@@ -278,7 +278,7 @@ It is possible to replace schema and resolvers using `makeSchemaExecutable` func
 ```js
 const Fastify = require('fastify')
 const mercurius = require('mercurius')
-const { makeExecutableSchema } = require('graphql-tools')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 const app = Fastify()
 
