@@ -11,6 +11,7 @@
   * [Decorators](/docs/api/options#decorators)
   * [Error extensions](/docs/api/options#use-errors-extension-to-provide-additional-information-to-query-errors)
 * [Context](/docs/context)
+* [Loaders](/docs/loaders)
 * [Federation](/docs/federation)
 * [Subscriptions](/docs/subscriptions)
 * [Batched Queries](/docs/batched-queries)
