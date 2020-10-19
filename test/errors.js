@@ -7,6 +7,63 @@ const { ErrorWithProps } = GQL
 const { FederatedError } = require('../lib/errors')
 const split = require('split2')
 
+test('errors - incorrect query error', async (t) => {
+  const schema = `
+    type Query {
+      error: String
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error (err) {
+        console.log(JSON.stringify(err))
+        throw new ErrorWithProps('Error', { code: 'ERROR', additional: 'information', other: 'data' })
+      },
+      successful () {
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?querys={error,successful}'
+  })
+
+  t.equal(res.statusCode, 400)
+  t.deepEqual(JSON.parse(res.payload), {
+    data: null,
+    errors: [
+      {
+        message: 'Unknown query',
+        locations: [
+          {
+            line: 1,
+            column: 2
+          }
+        ],
+        path: ['error'],
+        extensions: {
+          code: 'BAD_REQUEST',
+          additional: 'information',
+          other: 'data'
+        }
+      }
+    ]
+  })
+})
+
 test('errors - multiple extended errors', async (t) => {
   const schema = `
     type Query {
