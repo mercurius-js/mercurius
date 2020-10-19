@@ -1403,3 +1403,155 @@ test('subscription handles `withFilter` if filter throws', t => {
     })
   })
 })
+
+test('`withFilter` tool works with async filters', t => {
+  t.plan(4)
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const { withFilter } = GQL
+
+  let idCount = 0
+  const notifications = []
+
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Mutation {
+      addNotification(message: String!): Notification!
+    }
+
+    type Subscription {
+      notificationAdded(contains: String): Notification
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      notifications: () => notifications
+    },
+    Mutation: {
+      addNotification: async (_, { message }, { pubsub }) => {
+        const id = idCount++
+        const notification = {
+          id,
+          message
+        }
+        notifications.push(notification)
+        await pubsub.publish({
+          topic: 'NOTIFICATION_ADDED',
+          payload: {
+            notificationAdded: notification
+          }
+        })
+      }
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: withFilter(
+          (_, __, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED'),
+          async (payload, { contains }) => {
+            if (!contains) return true
+            return payload.notificationAdded.message.includes(contains)
+          }
+        )
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+  app.listen(0, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+            subscription {
+              notificationAdded(contains: "Hello") {
+                id
+                message
+              }
+            }
+          `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+            subscription {
+              notificationAdded {
+                id
+                message
+              }
+            }
+          `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.true(!data.payload.data.notificationAdded.message.includes('filtered'))
+        client.end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        app.inject({
+          method: 'POST',
+          url: '/graphql',
+          body: {
+            query: `
+              mutation {
+                addNotification(message: "filtered should not pass") {
+                  id
+                }
+              }
+            `
+          }
+        }, () => { t.pass() })
+        app.inject({
+          method: 'POST',
+          url: '/graphql',
+          body: {
+            query: `
+              mutation {
+                addNotification(message: "Hello World") {
+                  id
+                }
+              }
+            `
+          }
+        }, () => { t.pass() })
+      }
+    })
+  })
+})
