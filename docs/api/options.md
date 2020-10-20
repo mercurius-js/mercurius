@@ -9,7 +9,7 @@
   - [GET /playground](#get-playground)
 - [Decorators](#decorators)
   - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
-  - [app.graphql.extendSchema(schema) and app.graphql.defineResolvers(resolvers)](#appgraphqlextendschemaschema-and-appgraphqldefineresolversresolvers)
+  - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
   - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
   - [app.graphql.schema](#appgraphqlschema)
   - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
