@@ -4,7 +4,7 @@
 
 A loader is an utility to avoid the 1 + N query problem of GraphQL.
 Each defined loader will register a resolver that coalesces each of the
-request and combines them into a single, bulk query. Morever, it can
+request and combines them into a single, bulk query. Moreover, it can
 also cache the results, so that other parts of the GraphQL do not have
 to fetch the same data.
 
