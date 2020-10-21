@@ -5,7 +5,7 @@ This allows you to follow a code first approach instead of the SDL first.
 
 ## Installation
 
-```sh
+```bash
 npm install --save @nexus/schema
 ```
 
@@ -73,6 +73,6 @@ app.listen(3000);
 
 If you run this, you will get type definitions and a generated GraphQL based on your code:
 
-```sh
+```bash
 node index.js
 ```

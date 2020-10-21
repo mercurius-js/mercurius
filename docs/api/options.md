@@ -145,7 +145,7 @@ payload must conform to the following JSON schema:
 
 For code from [example](#example) use:
 
-```sh
+```bash
 curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, y: 2) }"}' http://localhost:3000/graphql
 ```
 
@@ -156,7 +156,7 @@ payload contains the GraphQL query.
 
 For code from [example](#example) use:
 
-```sh
+```bash
 curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }" http://localhost:3000/graphql
 ```
 

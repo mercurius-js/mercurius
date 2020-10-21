@@ -18,7 +18,7 @@ Features:
 
 ## Install
 
-```
+```bash
 npm i fastify mercurius
 ```
 
