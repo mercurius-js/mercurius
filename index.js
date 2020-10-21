@@ -319,11 +319,11 @@ const plugin = fp(async function (app, opts) {
 
     function defineLoader (name) {
       // async needed because of throw
-      return async function (obj, params, { reply }) {
+      return async function (obj, params, { reply }, info) {
         if (!reply) {
           throw new Error('loaders only work via reply.graphql()')
         }
-        return reply[kLoaders][name]({ obj, params })
+        return reply[kLoaders][name]({ obj, params, info })
       }
     }
 

@@ -64,23 +64,23 @@ test('loaders create batching resolvers', async (t) => {
   const loaders = {
     Dog: {
       async owner (queries, { reply }) {
+        const objs = queries.map(({ obj }) => obj)
+        const params = queries.map(({ params }) => params)
+
         // note that the second entry for max is cached
-        t.deepEqual(queries, [{
-          obj: {
-            name: 'Max'
-          },
-          params: {}
-        }, {
-          obj: {
-            name: 'Charlie'
-          },
-          params: {}
-        }, {
-          obj: {
-            name: 'Buddy'
-          },
-          params: {}
-        }])
+        t.deepEqual(objs, [
+          { name: 'Max' },
+          { name: 'Charlie' },
+          { name: 'Buddy' }
+        ])
+        t.deepEqual(params, [
+          { },
+          { },
+          { }
+        ])
+
+        queries.map(({ info }) => t.true(typeof info === 'object'))
+
         return queries.map(({ obj }) => owners[obj.name])
       }
     }
@@ -135,28 +135,25 @@ test('disable cache for each loader', async (t) => {
     Dog: {
       owner: {
         async loader (queries, { reply }) {
+          const objs = queries.map(({ obj }) => obj)
+          const params = queries.map(({ params }) => params)
+
           // note that the second entry for max is NOT cached
-          t.deepEqual(queries, [{
-            obj: {
-              name: 'Max'
-            },
-            params: {}
-          }, {
-            obj: {
-              name: 'Charlie'
-            },
-            params: {}
-          }, {
-            obj: {
-              name: 'Buddy'
-            },
-            params: {}
-          }, {
-            obj: {
-              name: 'Max'
-            },
-            params: {}
-          }])
+          t.deepEqual(objs, [
+            { name: 'Max' },
+            { name: 'Charlie' },
+            { name: 'Buddy' },
+            { name: 'Max' }
+          ])
+          t.deepEqual(params, [
+            {},
+            {},
+            {},
+            {}
+          ])
+
+          queries.map(({ info }) => t.true(typeof info === 'object'))
+
           return queries.map(({ obj }) => owners[obj.name])
         },
         opts: {
@@ -475,23 +472,22 @@ test('loaders support custom context', async (t) => {
     Dog: {
       async owner (queries, { reply, test }) {
         t.is(test, 'custom')
-        // note that the second entry for max is cached
-        t.deepEqual(queries, [{
-          obj: {
-            name: 'Max'
-          },
-          params: {}
-        }, {
-          obj: {
-            name: 'Charlie'
-          },
-          params: {}
-        }, {
-          obj: {
-            name: 'Buddy'
-          },
-          params: {}
-        }])
+        const objs = queries.map(({ obj }) => obj)
+        const params = queries.map(({ params }) => params)
+
+        // note that the second entry for max is NOT cached
+        t.deepEqual(objs, [
+          { name: 'Max' },
+          { name: 'Charlie' },
+          { name: 'Buddy' }
+        ])
+        t.deepEqual(params, [
+          {},
+          {},
+          {}
+        ])
+
+        queries.map(({ info }) => t.true(typeof info === 'object'))
         return queries.map(({ obj }) => owners[obj.name])
       }
     }
