@@ -6,7 +6,7 @@ You can easily test your GraphQL API using `mercurius-integration-testing`.
 
 ## Installation
 
-```sh
+```bash
 npm install mercurius-integration-testing
 ```
 

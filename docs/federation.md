@@ -5,7 +5,7 @@
 - [Use GraphQL server as a Gateway for federated schemas](#use-graphql-server-as-a-gateway-for-federated-schemas)
   - [Periodically refresh federated schemas in Gateway mode](#periodically-refresh-federated-schemas-in-gateway-mode)
   - [Programmatically refresh federated schemas in Gateway mode](#programmatically-refresh-federated-schemas-in-gateway-mode)
-  - [Flag a service as mandatory in Gateway mode](#flag-a-service-as-mandatory-in-gateway-mode)
+  - [Flag service as mandatory in Gateway mode](#flag-service-as-mandatory-in-gateway-mode)
   - [Using a custom errorHandler for handling downstream service errors in Gateway mode](#using-a-custom-errorhandler-for-handling-downstream-service-errors-in-gateway-mode)
 
 ## Federation
