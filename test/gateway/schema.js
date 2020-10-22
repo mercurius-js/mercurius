@@ -1341,3 +1341,319 @@ test('Gateway sends initHeaders function result with _service sdl query', async 
 
   await gateway.ready()
 })
+
+test('Should handle interface', async (t) => {
+  const products = [
+    {
+      id: 1,
+      type: 'Book',
+      name: 'book1'
+    },
+    {
+      id: 2,
+      type: 'Book',
+      name: 'book2'
+    }
+  ]
+
+  const productServicePort = await createService(t, `
+    extend type Query {
+      products: [Product]
+      shelve: Shelve
+    }
+    enum ProductType {
+      Book
+    }
+
+    type Shelve {
+      id: ID!
+      products: [Product]
+    }
+
+    interface Product {
+      id: ID!
+      type: ProductType!
+    }
+
+    type Book implements Product {
+      id: ID!
+      type: ProductType!
+      name: String
+    }
+  `, {
+    Product: {
+      resolveType (value) {
+        return value.type
+      }
+    },
+    Query: {
+      products: async () => {
+        return products
+      },
+      shelve: async () => {
+        return {
+          id: 1,
+          products
+        }
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'product',
+          url: `http://localhost:${productServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  const query = `
+  {
+    shelve {
+      ...ShelveInfos
+    }
+  }
+  
+  fragment ShelveInfos on Shelve {
+    id
+    products {
+      ...on Book {
+        id
+        type
+        name
+      }
+    }
+  }
+  `
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      shelve: {
+        id: 1,
+        products: [
+          {
+            id: 1,
+            type: 'Book',
+            name: 'book1'
+          },
+          {
+            id: 2,
+            type: 'Book',
+            name: 'book2'
+          }]
+      }
+    }
+  })
+})
+
+test('Should handle interface referenced multiple times in different services', async (t) => {
+  const books = [
+    {
+      id: 1,
+      type: 'Book',
+      name: 'book1',
+      author: 'toto'
+    },
+    {
+      id: 2,
+      type: 'Book',
+      name: 'book2',
+      author: 'titi'
+    }
+  ]
+
+  const dictionaries = [
+    {
+      id: 1,
+      type: 'Dictionary',
+      name: 'Dictionary 1',
+      editor: 'john'
+    },
+    {
+      id: 2,
+      type: 'Dictionary',
+      name: 'Dictionary 2',
+      editor: 'jim'
+    }
+  ]
+
+  const bookServicePort = await createService(t, `
+    extend type Query {
+      books: [Book]
+    }
+    enum ProductType {
+      Book
+    }
+
+    interface Product {
+      id: ID!
+      type: ProductType!
+    }
+
+    type Book implements Product {
+      id: ID!
+      type: ProductType!
+      name: String!
+      author: String!
+    }
+  `, {
+    Product: {
+      resolveType (value) {
+        return value.type
+      }
+    },
+    Query: {
+      books: async () => {
+        return books
+      }
+    }
+  })
+  const dictionariesServicePort = await createService(t, `
+    extend type Query {
+      dictionaries: [Dictionary]
+    }
+    enum ProductType {
+      Dictionary
+    }
+
+    interface Product {
+      id: ID!
+      type: ProductType!
+    }
+
+    type Dictionary implements Product {
+      id: ID!
+      type: ProductType!
+      name: String!
+      editor: String!
+    }
+  `, {
+    Product: {
+      resolveType (value) {
+        return value.type
+      }
+    },
+    Query: {
+      dictionaries: async () => {
+        return dictionaries
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'book',
+          url: `http://localhost:${bookServicePort}/graphql`
+        },
+        {
+          name: 'dictionaries',
+          url: `http://localhost:${dictionariesServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  const query1 = `
+  {
+    books {
+      id
+      type
+      ... on Book {
+        name
+        author
+      }
+    }
+  }
+  `
+
+  const res1 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query: query1 })
+  })
+
+  t.deepEqual(JSON.parse(res1.body), {
+    data: {
+      books: [
+        {
+          id: 1,
+          type: 'Book',
+          name: 'book1',
+          author: 'toto'
+        },
+        {
+          id: 2,
+          type: 'Book',
+          name: 'book2',
+          author: 'titi'
+        }
+      ]
+    }
+  })
+
+  const query2 = `
+  {
+    dictionaries {
+      id
+      type
+      ... on Dictionary {
+        name
+        editor
+      }
+    }
+  }
+  `
+
+  const res2 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query: query2 })
+  })
+
+  t.deepEqual(JSON.parse(res2.body), {
+    data: {
+      dictionaries: [
+        {
+          id: 1,
+          type: 'Dictionary',
+          name: 'Dictionary 1',
+          editor: 'john'
+        },
+        {
+          id: 2,
+          type: 'Dictionary',
+          name: 'Dictionary 2',
+          editor: 'jim'
+        }
+      ]
+    }
+  })
+})
