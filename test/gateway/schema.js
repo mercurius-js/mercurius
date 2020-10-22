@@ -1498,6 +1498,7 @@ test('Should handle interface referenced multiple times in different services', 
       books: [Book]
     }
     enum ProductType {
+      Dictionary
       Book
     }
 
@@ -1506,7 +1507,7 @@ test('Should handle interface referenced multiple times in different services', 
       type: ProductType!
     }
 
-    type Book implements Product {
+    type Book implements Product @key(fields: "id") {
       id: ID!
       type: ProductType!
       name: String!
@@ -1530,6 +1531,7 @@ test('Should handle interface referenced multiple times in different services', 
     }
     enum ProductType {
       Dictionary
+      Book
     }
 
     interface Product {
@@ -1537,7 +1539,7 @@ test('Should handle interface referenced multiple times in different services', 
       type: ProductType!
     }
 
-    type Dictionary implements Product {
+    type Dictionary implements Product @key(fields: "id") {
       id: ID!
       type: ProductType!
       name: String!
@@ -1587,7 +1589,6 @@ test('Should handle interface referenced multiple times in different services', 
     }
   }
   `
-
   const res1 = await gateway.inject({
     method: 'POST',
     headers: {
