@@ -969,7 +969,8 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
     t.deepEqual(updatedUser, {
       id: 'u1',
-      name: 'John'
+      name: 'John',
+      lastName: 'Doe'
     })
   }
 

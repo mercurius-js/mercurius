@@ -209,7 +209,6 @@ const plugin = fp(async function (app, opts) {
       context: opts.context,
       persistedQueryProvider: opts.persistedQueryProvider,
       allowBatchedQueries: opts.allowBatchedQueries,
-      schema: fastifyGraphQl.schema,
       subscriber,
       verifyClient,
       onConnect,
