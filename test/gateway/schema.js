@@ -1676,7 +1676,7 @@ test('Should handle complex and nested interfaces with external types', async (t
       id: 10,
       userId: 1,
       nestedInterface: {
-        type: 'ConfigA',
+        type: 'ConfigB',
         property: 'hello'
       }
     },
@@ -1684,7 +1684,7 @@ test('Should handle complex and nested interfaces with external types', async (t
       id: 11,
       userId: 2,
       nestedInterface: {
-        type: 'ConfigA',
+        type: 'ConfigB',
         property: 'world'
       }
     },
@@ -1692,7 +1692,7 @@ test('Should handle complex and nested interfaces with external types', async (t
       id: 12,
       userId: 1,
       nestedInterface: {
-        type: 'ConfigB',
+        type: 'ConfigA',
         arrayProperty: ['hellow', 'world']
       }
     },
@@ -1700,7 +1700,7 @@ test('Should handle complex and nested interfaces with external types', async (t
       id: 13,
       userId: 2,
       nestedInterface: {
-        type: 'ConfigB',
+        type: 'ConfigA',
         arrayProperty: ['world', 'hello']
       }
     }
@@ -1724,7 +1724,6 @@ test('Should handle complex and nested interfaces with external types', async (t
       }
     }
   ]
-
 
   const configInterface = `
     interface ConfigInterface {
@@ -1915,19 +1914,19 @@ test('Should handle complex and nested interfaces with external types', async (t
             {
               id: '10',
               nestedInterface: {
-                type: 'ConfigA',
+                type: 'ConfigB',
                 property: 'hello'
               }
             },
             {
               id: '12',
               nestedInterface: {
-                type: 'ConfigB',
+                type: 'ConfigA',
                 arrayProperty: ['hellow', 'world']
               }
-            },
+            }
           ],
-          configsCs: [
+          configCs: [
             {
               id: '20',
               nestedInterface: {
@@ -1942,19 +1941,19 @@ test('Should handle complex and nested interfaces with external types', async (t
           name: 'titi',
           configABs: [
             {
-              id: '10',
+              id: '11',
               nestedInterface: {
-                type: 'ConfigA',
+                type: 'ConfigB',
                 property: 'world'
               }
             },
             {
-              id: '12',
+              id: '13',
               nestedInterface: {
-                type: 'ConfigB',
+                type: 'ConfigA',
                 arrayProperty: ['world', 'hello']
               }
-            },
+            }
           ],
           configCs: [
             {
