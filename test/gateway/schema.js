@@ -1658,3 +1658,314 @@ test('Should handle interface referenced multiple times in different services', 
     }
   })
 })
+
+test('Should handle complex and nested interfaces with external types', async (t) => {
+  const users = [
+    {
+      id: 1,
+      name: 'toto'
+    },
+    {
+      id: 2,
+      name: 'titi'
+    }
+  ]
+
+  const configsAB = [
+    {
+      id: 10,
+      userId: 1,
+      nestedInterface: {
+        type: 'ConfigB',
+        property: 'hello'
+      }
+    },
+    {
+      id: 11,
+      userId: 2,
+      nestedInterface: {
+        type: 'ConfigB',
+        property: 'world'
+      }
+    },
+    {
+      id: 12,
+      userId: 1,
+      nestedInterface: {
+        type: 'ConfigA',
+        arrayProperty: ['hellow', 'world']
+      }
+    },
+    {
+      id: 13,
+      userId: 2,
+      nestedInterface: {
+        type: 'ConfigA',
+        arrayProperty: ['world', 'hello']
+      }
+    }
+  ]
+
+  const configsC = [
+    {
+      id: 20,
+      userId: 1,
+      nestedInterface: {
+        type: 'ConfigC',
+        integerValue: 101
+      }
+    },
+    {
+      id: 21,
+      userId: 2,
+      nestedInterface: {
+        type: 'ConfigC',
+        integerValue: 420
+      }
+    }
+  ]
+
+  const configInterface = `
+    interface ConfigInterface {
+      type: EConfig!
+    }
+    enum EConfig {
+      ConfigA
+      ConfigB
+      ConfigC
+    }
+  `
+
+  const userServicePort = await createService(t, `
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+
+    extend type Query {
+      users: [User]!
+    }
+  `, {
+    User: {
+      __resolveReference: (root) => {
+        return users.find(u => u.id === root.id)
+      }
+    },
+    Query: {
+      users: async () => {
+        return users
+      }
+    }
+  })
+  const configABServicePort = await createService(t, `
+    ${configInterface}
+    type ConfigA implements ConfigInterface {
+      type: EConfig!
+      arrayProperty: [String]
+    }
+    type ConfigB implements ConfigInterface {
+      type: EConfig!
+      property: String
+    }
+    type ServiceConfigAB @key(fields: "id") {
+      id: ID!
+      nestedInterface: ConfigInterface!
+    }
+
+    extend type Query {
+      configsA: [ConfigA]
+      configsB: [ConfigB]
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      configABs: [ServiceConfigAB]!
+    }
+  `, {
+    ConfigInterface: {
+      resolveType (value) {
+        return value.type
+      }
+    },
+    User: {
+      configABs: async (root) => {
+        return configsAB.filter(c => c.userId === Number(root.id))
+      }
+    },
+    Query: {
+      configsA: async () => {
+        return configsAB
+      },
+      configsB: async () => {
+        return configsAB
+      }
+    }
+  })
+  const configCServicePort = await createService(t, `
+    ${configInterface}
+    type ConfigC implements ConfigInterface {
+      type: EConfig!
+      integerValue: Int
+    }
+    type ServiceConfigC @key(fields: "id") {
+      id: ID!
+      nestedInterface: ConfigInterface!
+    }
+
+    extend type Query {
+      configsC: [ConfigC]!
+    }
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      configCs: [ServiceConfigC]!
+    }
+  `, {
+    ServiceConfigC: {
+      __resolveReference (root) {
+        return configsC.find(c => c.id === root.id)
+      }
+    },
+    ConfigInterface: {
+      resolveType (value) {
+        return value.type
+      }
+    },
+    User: {
+      configCs: async (root) => {
+        return configsC.filter(c => c.userId === Number(root.id))
+      }
+    },
+    Query: {
+      configsC: async () => {
+        return configsC
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        },
+        {
+          name: 'configAB',
+          url: `http://localhost:${configABServicePort}/graphql`
+        },
+        {
+          name: 'configC',
+          url: `http://localhost:${configCServicePort}/graphql`
+        }
+      ]
+    }
+  })
+
+  const query = `
+  {
+    users {
+      id
+      name
+      configABs {
+        id
+        nestedInterface {
+          type
+          ... on ConfigA {
+            arrayProperty
+          }
+          ... on ConfigB {
+            property
+          }
+        }
+      }
+      configCs {
+        id
+        nestedInterface {
+          type
+          ... on ConfigC {
+            integerValue
+          }
+        }
+      }
+    }
+  }
+  `
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      users: [
+        {
+          id: '1',
+          name: 'toto',
+          configABs: [
+            {
+              id: '10',
+              nestedInterface: {
+                type: 'ConfigB',
+                property: 'hello'
+              }
+            },
+            {
+              id: '12',
+              nestedInterface: {
+                type: 'ConfigA',
+                arrayProperty: ['hellow', 'world']
+              }
+            }
+          ],
+          configCs: [
+            {
+              id: '20',
+              nestedInterface: {
+                type: 'ConfigC',
+                integerValue: 101
+              }
+            }
+          ]
+        },
+        {
+          id: '2',
+          name: 'titi',
+          configABs: [
+            {
+              id: '11',
+              nestedInterface: {
+                type: 'ConfigB',
+                property: 'world'
+              }
+            },
+            {
+              id: '13',
+              nestedInterface: {
+                type: 'ConfigA',
+                arrayProperty: ['world', 'hello']
+              }
+            }
+          ],
+          configCs: [
+            {
+              id: '21',
+              nestedInterface: {
+                type: 'ConfigC',
+                integerValue: 420
+              }
+            }
+          ]
+        }
+      ]
+    }
+  })
+})
