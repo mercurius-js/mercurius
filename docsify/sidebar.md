@@ -16,6 +16,7 @@
 * [Subscriptions](/docs/subscriptions)
 * [Batched Queries](/docs/batched-queries)
 * [Persisted Queries](/docs/persisted-queries)
+* [TypeScript Usage](/docs/typescript)
 * [Integrations](/docs/integrations/)
   * [@nexus/schema](/docs/integrations/nexus-schema)
   * [Testing](/docs/integrations/mercurius-integration-testing)
