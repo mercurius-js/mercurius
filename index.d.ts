@@ -17,9 +17,10 @@ import {
 } from "graphql";
 import { SocketStream } from "fastify-websocket"
 import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
+import { Readable } from "stream";
 
 export interface PubSub {
-  subscribe<TResult = any>(topics: string | string[]): Promise<AsyncIterator<TResult>>;
+  subscribe<TResult = any>(topics: string | string[]): Promise<Readable & AsyncIterableIterator<TResult>>;
   publish<TResult = any>(event: { topic: string; payload: TResult }, callback?: () => void): void;
 }
 
@@ -389,6 +390,33 @@ declare namespace mercurius {
    * Builds schema with support for federation mode.
    */
   const buildFederationSchema: (schema: string) => GraphQLSchema;
+
+  /**
+   * Subscriptions with filter functionality
+   */
+  const withFilter: <
+    TPayload = any,
+    TSource = any,
+    TContext = MercuriusContext,
+    TArgs = Record<string, any>
+  >(
+    subscribeFn: IFieldResolver<TSource, TContext, TArgs>,
+    filterFn: (
+      payload: TPayload,
+      args: TArgs,
+      context: TContext,
+      info: GraphQLResolveInfo & {
+        mergeInfo: MergeInfo
+      }
+    ) => boolean | Promise<boolean>
+  ) => (
+    root: TSource,
+    args: TArgs,
+    context: TContext,
+    info: GraphQLResolveInfo & {
+      mergeInfo: MergeInfo
+    }
+  ) => AsyncGenerator<TPayload>
 }
 
 export default mercurius;

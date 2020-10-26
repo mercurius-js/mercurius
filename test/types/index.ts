@@ -94,23 +94,40 @@ app.register(mercurius, {
       }
     },
     Mutation: {
-      addDog (_root, { name }: { name: string }, ctx) {
+      addDog (_root, { name, breed }: { name: string; breed?:string }, ctx) {
         ctx.pubsub.publish({
           topic: 'new_dog',
           payload: {
-            name
+            newDogs: {
+              name,
+              breed
+            }
           }
         })
       }
     },
     Subscription: {
-      newDogs (_, __, ctx) {
-        return ctx.pubsub.subscribe<{
+      newDogs: {
+        subscribe (_root, _params, ctx) {
+          return ctx.pubsub.subscribe('new_dog')
+        }
+      },
+      newRetrieverDogs: {
+        subscribe: mercurius.withFilter<{
           name: string
-        }>('new_dog')
+          breed?: string
+        }>(
+          (_root, _args, { pubsub }) => {
+            return pubsub.subscribe('new_dog')
+          },
+          (payload) => {
+            return payload.breed === 'retriever'
+          }
+        )
       }
     }
-  }
+  },
+  subscription: true
 })
 
 app.register(async function (app) {
@@ -372,9 +389,17 @@ app.graphql.pubsub.publish({
   payload: 'payload'
 })
 
-app.graphql.pubsub.subscribe('topic')
+async () => {
+  const subscription = await app.graphql.pubsub.subscribe<{ newNotification: string }>('topic')
 
-app.graphql.pubsub.subscribe
+  subscription.on('data', (chunk) => {
+    console.log(chunk)
+  })
+
+  for await (const data of subscription) {
+    console.log(data.newNotification)
+  }
+}
 
 app.graphql.transformSchema([(schema) => schema])
 
