@@ -60,6 +60,8 @@ serviceAdd.js
 const service = require('fastify')()
 const mercurius = require('mercurius')
 const opentelemetry = require('fastify-opentelemetry')
+const api = require('@opentelemetry/api')
+const meta = require('./package.json')
 
 const tracer = require('./tracer')('service-add')
 service.register(opentelemetry, tracer)
@@ -71,8 +73,17 @@ service.register(mercurius, {
   `,
   resolvers: {
     Query: {
-      add: (_, { x, y }) => x+y
+      add: (_, { x, y }, { tracer }) => {
+       const span = tracer.startSpan('customTrace', { parent: tracer.getCurrentSpan() })
+       const result = x+y
+       span.end()
+       return result
+      }
     }
+  },
+  context: () => {
+    const tracer = api.trace.getTracer(meta.name, meta.version)
+    return { tracer }
   },
   federationMedata: true
 })
