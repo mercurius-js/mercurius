@@ -97,4 +97,4 @@ Start a zipkin service:
 $ docker run -d -p 9411:9411 openzipkin/zipkin
 ```
 
-You can know browse through mercurius tracing at `http://localhost:9411`
+You can now browse through mercurius tracing at `http://localhost:9411`
