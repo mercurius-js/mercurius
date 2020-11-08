@@ -3,7 +3,7 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
-const { FST_ERR_GQL_VALIDATION, FST_ERR_GQL_QUERY_DEPTH } = require('../lib/errors')
+const { MER_ERR_GQL_VALIDATION, MER_ERR_GQL_QUERY_DEPTH } = require('../lib/errors')
 
 const dogs = [{
   name: 'Max',
@@ -168,8 +168,8 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   // needed so that graphql is defined
   await app.ready()
 
-  const err = new FST_ERR_GQL_VALIDATION()
-  const queryDepthError = new FST_ERR_GQL_QUERY_DEPTH('unnamedQuery', 6, 5)
+  const err = new MER_ERR_GQL_VALIDATION()
+  const queryDepthError = new MER_ERR_GQL_QUERY_DEPTH('unnamedQuery', 6, 5)
   err.errors = [queryDepthError]
 
   try {
