@@ -4,6 +4,9 @@
 
 Mercurius is compatible with open-telemetry
 
+
+## Example
+
 Here is a simple exemple on how to enable tracing on Mercurius with OpenTelemetry:
 
 tracer.js
