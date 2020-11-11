@@ -278,7 +278,7 @@ test('replaceSchema with makeSchemaExecutable (schema should be provided)', asyn
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Must provide valid Document AST')
+    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
   }
 })
 
@@ -948,7 +948,7 @@ test('extended Schema is not string', async t => {
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Must provide valid Document AST')
+    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
   }
 })
 
@@ -967,7 +967,7 @@ test('extended Schema is undefined', async t => {
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Must provide valid Document AST')
+    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
   }
 })
 
@@ -1080,8 +1080,8 @@ test('Multiple errors in schema', async (t) => {
     })
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Schema issues, check out the .errors property on the Error.')
-    t.equal(error.name, 'Error')
+    t.equal(error.message, 'Invalid schema: check out the .errors property on the Error')
+    t.equal(error.name, 'FastifyError')
     t.equal(error.errors[0].message, 'Interface field Event.Id expected but CustomEvent does not provide it.')
     t.equal(error.errors[0].name, 'GraphQLError')
     t.equal(error.errors[1].message, 'Interface field Event.Id expected but AnotherEvent does not provide it.')
