@@ -60,7 +60,7 @@ const opentelemetry = require('@autotelic/fastify-opentelemetry')
 service.register(opentelemetry, { serviceName })
 service.register(mercurius, {
   schema: `
-  type Query {
+  extend type Query {
     add(x: Float, y: Float): Float
   }
   `,
