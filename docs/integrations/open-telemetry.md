@@ -2,9 +2,9 @@
 
 ## OpenTelemetry (Tracing)
 
-Mercurius is fully compatible with open-telemetry
+Mercurius is compatible with open-telemetry
 
-Here is a simple exemple on how to enable tracing on Mercurius with OpenTelemetry and Zipkin:
+Here is a simple exemple on how to enable tracing on Mercurius with OpenTelemetry:
 
 tracer.js
 ```js
@@ -13,34 +13,98 @@ tracer.js
 const api = require('@opentelemetry/api')
 const { NodeTracerProvider } = require('@opentelemetry/node')
 const { SimpleSpanProcessor } = require('@opentelemetry/tracing')
-const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin')
+const { JaegerExporter } = require('@opentelemetry/exporter-jaeger')
 const { GraphQLInstrumentation } = require('@opentelemetry/instrumentation-graphql')
+const { HttpTraceContext } = require('@opentelemetry/core')
+const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin')
+// or
+// const { JaegerExporter } = require('@opentelemetry/exporter-jaeger')
 
 module.exports = serviceName => {
   const provider = new NodeTracerProvider()
   const graphQLInstrumentation = new GraphQLInstrumentation()
   graphQLInstrumentation.setTracerProvider(provider)
   graphQLInstrumentation.enable()
+
+  api.propagation.setGlobalPropagator(new HttpTraceContext())
+  api.trace.setGlobalTracerProvider(provider)
+
   provider.addSpanProcessor(
     new SimpleSpanProcessor(
       new ZipkinExporter({
         serviceName
       })
+      // or 
+      // new JaegerExporter({
+      //   serviceName,
+      // })
     )
   )
   provider.register()
-  return api.trace.getTracer(serviceName)
+  return provider
 }
+```
+
+serviceAdd.js
+```js
+'use strict'
+// Register tracer
+const serviceName = 'service-add'
+const tracer = require('./tracer')
+tracer(serviceName)
+
+const service = require('fastify')({ logger: { level: 'debug' } })
+const mercurius = require('mercurius')
+const opentelemetry = require('@autotelic/fastify-opentelemetry')
+
+service.register(opentelemetry, { serviceName })
+service.register(mercurius, {
+  schema: `
+  type Query {
+    add(x: Float, y: Float): Float
+  }
+  `,
+  resolvers: {
+    Query: {
+      add: (_, { x, y }, { reply }) => {
+        const { activeSpan, tracer } = reply.request.openTelemetry()
+
+        activeSpan.setAttribute('arg.x', x)
+        activeSpan.setAttribute('arg.y', y)
+
+        const span = tracer.startSpan('compute-add', { parent: tracer.getCurrentSpan() })
+        const result = x + y
+        span.end()
+
+        return result
+      }
+    }
+  },
+  federationMetadata: true
+})
+
+service.listen(4001, 'localhost', err => {
+  if (err) {
+    console.error(err)
+    process.exit(1)
+  }
+})
 ```
 
 gateway.js
 ```js
-const gateway = require('fastify')()
-const mercurius = require('mercurius')
-const opentelemetry = require('fastify-opentelemetry')
+'use strict'
+const serviceName = 'gateway'
+const tracer = require('./tracer')
+// Register tracer
+tracer(serviceName)
 
-const tracer = require('./tracer')('gateway')
-gateway.register(opentelemetry, tracer)
+const gateway = require('fastify')({ logger: { level: 'debug' } })
+const mercurius = require('mercurius')
+const opentelemetry = require('@autotelic/fastify-opentelemetry')
+
+// Register fastify opentelemetry
+gateway.register(opentelemetry, { serviceName })
 gateway.register(mercurius, {
   gateway: {
     services: [
@@ -52,49 +116,23 @@ gateway.register(mercurius, {
   }
 })
 
-await gateway.listen(3000)
-```
-
-serviceAdd.js
-```js
-const service = require('fastify')()
-const mercurius = require('mercurius')
-const opentelemetry = require('fastify-opentelemetry')
-const api = require('@opentelemetry/api')
-const meta = require('./package.json')
-
-const tracer = require('./tracer')('service-add')
-service.register(opentelemetry, tracer)
-service.register(mercurius, {
-  schema: `
-  extend type Query {
-    add(x: Float, y: Float): Float
+gateway.listen(3000, 'localhost', err => {
+  if (err) {
+    process.exit(1)
   }
-  `,
-  resolvers: {
-    Query: {
-      add: (_, { x, y }, { tracer }) => {
-       const span = tracer.startSpan('customTrace', { parent: tracer.getCurrentSpan() })
-       const result = x+y
-       span.end()
-       return result
-      }
-    }
-  },
-  context: () => {
-    const tracer = api.trace.getTracer(meta.name, meta.version)
-    return { tracer }
-  },
-  federationMedata: true
 })
-
-await service.listen(4001)
 ```
 
 Start a zipkin service:
 
 ```
 $ docker run -d -p 9411:9411 openzipkin/zipkin
+```
+
+Send some request to the gateway: 
+
+```bash
+$ curl localhost:3000/graphql -H 'Content-Type: application/json' --data '{"query":"{ add(x: 1, y: 2) }"}'
 ```
 
 You can now browse through mercurius tracing at `http://localhost:9411`
