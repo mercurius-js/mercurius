@@ -19,6 +19,7 @@
 * [Integrations](/docs/integrations/)
   * [@nexus/schema](/docs/integrations/nexus-schema)
   * [Testing](/docs/integrations/mercurius-integration-testing)
+  * [Tracing - OpenTelemetry](/docs/integrations/open-telemetry)
 * [Related plugins](/docs/plugins)
   * [mercurius-upload](/docs/plugins#mercurius-upload)
   * [altair-fastify-plugin](/docs/plugins#altair-fastify-plugin)
