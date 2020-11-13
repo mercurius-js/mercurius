@@ -136,35 +136,3 @@ test('calling extendSchema throws an error in gateway mode', async (t) => {
     t.end()
   }
 })
-
-test('calling extendSchema throws an error if federationMetadata is enabled', async (t) => {
-  const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
-  service.register(GQL, {
-    schema: `
-      extend type Query {
-        me: User
-      }
-
-      type User @key(fields: "id") {
-        id: ID!
-        name: String!
-      }
-    `,
-    federationMetadata: true
-  })
-  await service.ready()
-
-  try {
-    service.graphql.extendSchema(`
-      extend type Query {
-        field: String!
-      }
-    `)
-  } catch (err) {
-    t.is(err.message, 'Invalid method: Calling extendSchema method when federationMetadata is enabled is not allowed')
-    t.end()
-  }
-})
