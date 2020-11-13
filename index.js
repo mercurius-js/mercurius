@@ -35,7 +35,8 @@ const {
   MER_ERR_GQL_GATEWAY,
   MER_ERR_GQL_VALIDATION,
   MER_ERR_INVALID_OPTS,
-  MER_ERR_METHOD_NOT_ALLOWED
+  MER_ERR_METHOD_NOT_ALLOWED,
+  MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
 
 const kLoaders = Symbol('mercurius.loaders')
@@ -253,6 +254,9 @@ const plugin = fp(async function (app, opts) {
   fastifyGraphQl.extendSchema = function (s) {
     if (gateway) {
       throw new MER_ERR_GQL_GATEWAY('Calling extendSchema method when plugin is running in gateway mode is not allowed')
+    }
+    if (opts.federationMetadata) {
+      throw new MER_ERR_INVALID_METHOD('Calling extendSchema method when federationMetadata is enabled is not allowed')
     }
 
     if (typeof s === 'string') {
