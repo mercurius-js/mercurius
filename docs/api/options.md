@@ -310,6 +310,8 @@ async function run() {
 run()
 ```
 
+Note: `app.graphql.extendSchema` is not allowed if `federationMetadata` is enabled.
+
 #### app.graphql.replaceSchema(schema)
 
 It is possible to replace schema and resolvers using `makeSchemaExecutable` function in separate fastify plugins, like so:
