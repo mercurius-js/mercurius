@@ -245,6 +245,7 @@ export interface MercuriusCommonOptions {
     | boolean
     | {
         emitter?: object;
+        pubsub?: any; // FIXME: Technically this should be the PubSub type. But PubSub is now typed as SubscriptionContext.
         verifyClient?: (
           info: { origin: string; secure: boolean; req: IncomingMessage },
           next: (

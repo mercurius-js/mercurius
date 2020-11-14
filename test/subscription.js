@@ -2,6 +2,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
+const { EventEmitter } = require('events')
 const GQL = require('..')
 
 const FakeTimers = require('@sinonjs/fake-timers')
@@ -149,6 +150,201 @@ test('subscription server sends update to subscriptions', t => {
     resolvers,
     subscription: {
       emitter
+    }
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              notificationAdded: {
+                id: '1',
+                message: 'Hello World'
+              }
+            }
+          }
+        }))
+
+        client.end()
+        t.end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        sendTestQuery()
+      }
+    })
+  })
+})
+
+class CustomPubSub {
+  constructor () {
+    this.emitter = new EventEmitter()
+  }
+
+  async subscribe (topic, queue) {
+    const listener = (value) => {
+      queue.push(value)
+    }
+
+    const close = () => {
+      this.emitter.removeListener(topic, listener)
+    }
+
+    this.emitter.on(topic, listener)
+    queue.close = close
+  }
+
+  publish (event, callback) {
+    this.emitter.emit(event.topic, event.payload)
+    callback()
+  }
+}
+
+test('subscription with custom pubsub', t => {
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const pubsub = new CustomPubSub()
+
+  const sendTestQuery = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          query {
+            notifications {
+              id
+              message
+            }
+          }
+        `
+      }
+    }, () => {
+      sendTestMutation()
+    })
+  }
+
+  const sendTestMutation = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            addNotification(message: "Hello World") {
+              id
+            }
+          }
+        `
+      }
+    }, () => {})
+  }
+
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Mutation {
+      addNotification(message: String): Notification
+    }
+
+    type Subscription {
+      notificationAdded: Notification
+    }
+  `
+
+  let idCount = 1
+  const notifications = [{
+    id: idCount,
+    message: 'Notification message'
+  }]
+
+  const resolvers = {
+    Query: {
+      notifications: () => notifications
+    },
+    Mutation: {
+      addNotification: async (_, { message }) => {
+        const id = idCount++
+        const notification = {
+          id,
+          message
+        }
+        notifications.push(notification)
+        await pubsub.emitter.emit('NOTIFICATION_ADDED', { notificationAdded: notification })
+
+        return notification
+      }
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED')
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      pubsub
     }
   })
 

@@ -7,6 +7,7 @@
   - [Subscription filters](#subscription-filters)
   - [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
   - [Subscription support (with redis)](#subscription-support-with-redis)
+  - [Subscriptions with custom PubSub](#subscriptions-with-custom-pubsub)
 
 ### Subscription support (simple)
 
@@ -278,4 +279,42 @@ app.register(mercurius, {
     }
   }
 })
+```
+
+### Subscriptions with custom PubSub
+> Note that when passing both `pubsub` and `emitter` options, `emitter` will be ignored.
+
+```js
+class CustomPubSub {
+  constructor () {
+    this.emitter = new EventEmitter()
+  }
+
+  async subscribe (topic, queue) {
+    const listener = (value) => {
+      queue.push(value)
+    }
+
+    const close = () => {
+      this.emitter.removeListener(topic, listener)
+    }
+
+    this.emitter.on(topic, listener)
+    queue.close = close
+  }
+
+  publish (event, callback) {
+    this.emitter.emit(event.topic, event.payload)
+    callback()
+  }
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
+    pubsub
+  }
+})
+
 ```

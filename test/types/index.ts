@@ -1,6 +1,9 @@
 /* eslint-disable no-unused-expressions */
+import { EventEmitter } from 'events'
 // eslint-disable-next-line no-unused-vars
 import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
+// eslint-disable-next-line no-unused-vars
+import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
 import mercurius, { MercuriusOptions, IResolvers } from '../..'
 // eslint-disable-next-line no-unused-vars
@@ -404,3 +407,38 @@ async () => {
 app.graphql.transformSchema([(schema) => schema])
 
 app.graphql.transformSchema(schema => schema)
+
+class CustomPubSub {
+  emitter: EventEmitter
+
+  constructor () {
+    this.emitter = new EventEmitter()
+  }
+
+  // typed based on the PubSub implementation
+  async subscribe (topic: string, queue: Readable & { close: () => void }): Promise<void> {
+    const listener = (payload: any) => {
+      queue.push(payload)
+    }
+
+    const close = () => {
+      this.emitter.removeListener(topic, listener)
+    }
+
+    this.emitter.on(topic, listener)
+    queue.close = close
+  }
+
+  publish (event: { topic: string, payload: any }, callback: () => void) {
+    this.emitter.emit(event.topic, event.payload)
+    callback()
+  }
+}
+
+app.register(mercurius, {
+  schema: schema,
+  resolvers,
+  subscription: {
+    pubsub: new CustomPubSub()
+  }
+})
