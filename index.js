@@ -117,16 +117,21 @@ const plugin = fp(async function (app, opts) {
   let onConnect
 
   if (typeof subscriptionOpts === 'object') {
-    emitter = subscriptionOpts.emitter || mq()
+    if (subscriptionOpts.pubsub) {
+      subscriber = subscriptionOpts.pubsub
+    } else {
+      emitter = subscriptionOpts.emitter || mq()
+      subscriber = new PubSub(emitter)
+    }
     verifyClient = subscriptionOpts.verifyClient
     subscriptionContextFn = subscriptionOpts.context
     onConnect = subscriptionOpts.onConnect
   } else if (subscriptionOpts === true) {
     emitter = mq()
+    subscriber = new PubSub(emitter)
   }
 
   if (subscriptionOpts) {
-    subscriber = new PubSub(emitter)
     fastifyGraphQl.pubsub = subscriber
   }
 
