@@ -31,10 +31,13 @@
   details.
 - `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
 - `graphiql`: boolean | string. Serve
-  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
-  [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
-  and if `routes` is `true`. Leave empty or `false` to disable.
+  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. If `'playground'` is provided it will serve [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground`. Leave empty or `false` to disable.
   _only applies if `onlyPersisted` option is not `true`_
+
+  **Note:** If you are working with subscription is recommended to set 'playground' for testing proposes. See [283](https://github.com/mercurius-js/mercurius/issues/283).
+
+  **Note**: If `routes` is false, set `playground` does not have effects.
+
 - `playgroundSettings` Object. that allow you to configure GraphQL Playground with [playground
   options](https://github.com/prisma-labs/graphql-playground#usage). it works if the graphiql is set to `'playground'`.
 - `jit`: Integer. The minimum number of execution a query needs to be
