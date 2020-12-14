@@ -393,7 +393,7 @@ const plugin = fp(async function (app, opts) {
     let document = null
 
     // Add opentelemetry attributes
-    span.setAttribute('mercurius.cached', cached)
+    span.setAttribute('mercurius.cached', !!cached)
 
     if (!cached) {
       // We use two caches to avoid errors bust the good
