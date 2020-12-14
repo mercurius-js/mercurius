@@ -27,7 +27,7 @@ test('Should add opentelemetry span and cached attribute', async (t) => {
     startSpan (name, opts) {
       t.is(name, 'mercurius - graphql')
       t.deepEquals(opts.parent.context(), dummySpan.context())
-      return new TestSpan(testSpanContext)
+      return new TestSpan()
     }
 
     getCurrentSpan () {
