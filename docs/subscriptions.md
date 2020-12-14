@@ -309,6 +309,8 @@ class CustomPubSub {
   }
 }
 
+const pubsub = new CustomPubSub()
+
 app.register(mercurius, {
   schema,
   resolvers,
