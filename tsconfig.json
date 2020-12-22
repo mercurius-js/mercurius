@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es2018",
     "module": "commonjs",
+    "lib": ["DOM"],
     "noEmit": true,
     "strict": true,
     "esModuleInterop": true

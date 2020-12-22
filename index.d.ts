@@ -311,6 +311,15 @@ export interface MercuriusCommonOptions {
     ['tracing.hideTracingResponse']: boolean;
     ['tracing.tracingSupported']: boolean;
   };
+
+  /**
+   * It provides HTTP headers to GraphQL Playground. If it is an object, 
+   * it is provided as-is. If it is a function, it is serialized, injected 
+   * in the generated HTML and invoked with the `window` object as the argument. 
+   * Useful to read authorization token from browser's storage. 
+   * See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
+   */
+  playgroundHeaders?: ((window: Window) => object) | object;
 }
 
 export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
