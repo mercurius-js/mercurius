@@ -1870,6 +1870,134 @@ test('if ide is playground, and playgroundSettings is set, serve init.js with pl
   t.matchSnapshot(res.body)
 })
 
+test('if ide is playground, and playgroundHeaders is an object, serve init.js with playground headers options', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: {
+      authorization: 'bearer token'
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is a method, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders (window) {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is a named function, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: function headers (window) {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is an anonymous function, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: function (window) {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is an arrow function, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: window => {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
 test('if operationName is null, it should work fine', async (t) => {
   const app = Fastify()
   const schema = `
