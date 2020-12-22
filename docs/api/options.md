@@ -40,6 +40,7 @@
 
 - `playgroundSettings` Object. that allow you to configure GraphQL Playground with [playground
   options](https://github.com/prisma-labs/graphql-playground#usage). it works if the graphiql is set to `'playground'`.
+- `playgroundHeaders` Object | Function. It provides HTTP headers to GraphQL Playground. If it is an object, it is provided as-is. If it is a function, it is serialized, injected in the generated HTML and invoked with the `window` object as the argument. Useful to read authorization token from browser's storage. See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
 - `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -499,4 +500,3 @@ app.register(mercurius, {
 
 app.listen(3000)
 ```
-
