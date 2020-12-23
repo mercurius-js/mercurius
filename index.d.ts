@@ -130,6 +130,7 @@ interface WsConnectionParams {
 export interface MercuriusGatewayService {
   name: string;
   url: string;
+  sdl?: string;
   wsUrl?: string;
   mandatory?: boolean;
   initHeaders?: (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>) | OutgoingHttpHeaders;
