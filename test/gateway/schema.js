@@ -2067,7 +2067,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
       posts: [Post]
       numberOfPosts: Int @requires(fields: "id")
     }
-  `;
+  `
 
   const postServicePort = await createService(t, postServiceSdl, {
     Post: {
@@ -2102,11 +2102,11 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
     gateway: {
       services: [{
         name: 'user',
-        url: `http://localhost:${userServicePort}/graphql`,
+        url: `http://localhost:${userServicePort}/graphql`
       }, {
         name: 'post',
         url: `http://localhost:${postServicePort}/graphql`,
-        sdl: postServiceSdl,
+        sdl: postServiceSdl
       }]
     }
   })
@@ -2159,7 +2159,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
   const res = await gateway.inject({
     method: 'POST',
     headers: {
-      'content-type': 'application/json',
+      'content-type': 'application/json'
     },
     url: '/graphql',
     body: JSON.stringify({
