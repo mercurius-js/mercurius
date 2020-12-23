@@ -2038,7 +2038,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
       me: (root, args, context, info) => {
         return users.u1
       },
-      hello: () => 'World',
+      hello: () => 'World'
     },
     User: {
       __resolveReference: (user, args, context, info) => {
@@ -2092,7 +2092,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
     },
     Query: {
       topPosts: (root, { count = 2 }) => Object.values(posts).slice(0, count),
-      _service: () => new Error("Not supposed to retrieve this")
+      _service: () => new Error('Not supposed to retrieve this')
     }
   })
 
