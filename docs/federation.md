@@ -299,7 +299,7 @@ server.register(mercurius, {
   }
 })
 
-server.listen(3002)
+await server.listen(3002)
 
 server.graphql.gateway.serviceMap.user.setSchema(`
   extend type Query {
