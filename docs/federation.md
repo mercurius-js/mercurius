@@ -5,6 +5,7 @@
 - [Use GraphQL server as a Gateway for federated schemas](#use-graphql-server-as-a-gateway-for-federated-schemas)
   - [Periodically refresh federated schemas in Gateway mode](#periodically-refresh-federated-schemas-in-gateway-mode)
   - [Programmatically refresh federated schemas in Gateway mode](#programmatically-refresh-federated-schemas-in-gateway-mode)
+  - [Using Gateway mode with a schema registry](#using-gateway-mode-with-a-schema-registry)
   - [Flag service as mandatory in Gateway mode](#flag-service-as-mandatory-in-gateway-mode)
   - [Using a custom errorHandler for handling downstream service errors in Gateway mode](#using-a-custom-errorhandler-for-handling-downstream-service-errors-in-gateway-mode)
 
@@ -250,6 +251,73 @@ setTimeout(async () => {
     server.graphql.replaceSchema(schema)
   }
 }, 10000)
+```
+
+#### Using Gateway mode with a schema registry
+
+The service acting as the Gateway can use supplied schema definitions instead of relying on the gateway to query each service. These can be updated using `application.graphql.gateway.serviceMap.serviceName.setSchema()` and then refreshing and replacing the schema.
+
+```js
+const Fastify = require('fastify')
+const mercurius = require('mercurius')
+
+const server = Fastify()
+
+server.register(mercurius, {
+  graphiql: 'playground',
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:3000/graphql',
+        schema: `
+          extend type Query {
+            me: User
+          }
+
+          type User @key(fields: "id") {
+            id: ID!
+            name: String
+          }
+        `
+      },
+      {
+        name: 'company',
+        url: 'http://localhost:3001/graphql',
+        schema: `
+          extend type Query {
+            company: Company
+          }
+
+          type Company @key(fields: "id") {
+            id: ID!
+            name: String
+          }
+        `
+      }
+    ]
+  }
+})
+
+server.listen(3002)
+
+server.graphql.gateway.serviceMap.user.setSchema(`
+  extend type Query {
+    me: User
+  }
+
+  type User @key(fields: "id") {
+    id: ID!
+    name: String
+    username: String
+  }
+`)
+
+const schema = await server.graphql.gateway.refresh()
+
+if (schema !== null) {
+  server.graphql.replaceSchema(schema)
+}
 ```
 
 #### Flag service as mandatory in Gateway mode
