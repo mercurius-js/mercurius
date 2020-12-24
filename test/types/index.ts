@@ -447,9 +447,9 @@ app.register(mercurius, {
   }
 })
 
-app.graphql.gateway.refresh();
+app.graphql.gateway.refresh()
 
-app.graphql.gateway.serviceMap['service_name'].setSchema(`
+app.graphql.gateway.serviceMap.serviceName.setSchema(`
 query hello {
   helloWorld
 }
