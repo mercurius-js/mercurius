@@ -2108,7 +2108,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
       }, {
         name: 'post',
         url: `http://localhost:${postServicePort}/graphql`,
-        sdl: postServiceSdl
+        schema: postServiceSdl
       }]
     }
   })
@@ -2249,4 +2249,195 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
       hello: 'World'
     }
   })
+})
+
+test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+  const brokenServicePort = await createService(t, `
+    extend type Query {
+      _service: String
+    }
+  `, {
+    Query: {
+      _service: () => {
+        throw new Error()
+      }
+    },
+  })
+
+  const workingServicePort = await createService(t, `
+    extend type Query {
+      hello: String!
+    }
+  `, {
+    Query: {
+      hello: () => "world",
+    }
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'working',
+        url: `http://localhost:${workingServicePort}/graphql`
+      }, {
+        name: 'broken',
+        url: `http://localhost:${brokenServicePort}/graphql`
+      }]
+    }
+  })
+
+  const query = `
+    query {
+      hello
+    }`
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      hello: "world"
+    }
+  })
+})
+
+test('Update the schema', async (t) => {
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+
+  const schema = `
+    extend type Query {
+      hello: String!
+    }
+  `
+
+  const fullSchema = `
+    extend type Query {
+      hello: String
+      world: String
+    }
+  `
+
+  const servicePort = await createService(t, fullSchema, {
+    Query: {
+      hello: () => "world",
+      world: () => "hello"
+    }
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'working',
+        url: `http://localhost:${servicePort}/graphql`,
+        schema
+      }]
+    }
+  })
+
+  const query = `
+    query {
+      hello
+      world
+    }`
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(
+    JSON.parse(res.body).errors[0].message, 
+    'Cannot query field "world" on type "Query".'
+  )
+
+  gateway.graphql.gateway.serviceMap['working'].setSchema(fullSchema)
+  const newSchema = await gateway.graphql.gateway.refresh()
+
+  gateway.graphql.replaceSchema(newSchema)
+  
+  const res2 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res2.body), {
+    data: {
+      hello: "world",
+      world: "hello"
+    }
+  })
+})
+
+test('Update the schema without any changes', async (t) => {
+  const gateway = Fastify()
+  t.tearDown(() => {
+    gateway.close()
+  })
+
+  const schema = `
+    extend type Query {
+      hello: String!
+    }
+  `
+
+  const servicePort = await createService(t, schema, {
+    Query: {
+      hello: () => "world",
+    }
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'working',
+        url: `http://localhost:${servicePort}/graphql`,
+        schema
+      }]
+    }
+  })
+
+  const query = `
+    query {
+      hello
+    }`
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(
+    JSON.parse(res.body), {
+      data: {
+        hello: "world"
+      }
+    }
+  )
+
+  gateway.graphql.gateway.serviceMap['working'].setSchema(schema)
+  const newSchema = await gateway.graphql.gateway.refresh()
+
+  t.equals(newSchema, null)
 })
