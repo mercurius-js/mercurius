@@ -2265,7 +2265,7 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
       _service: () => {
         throw new Error()
       }
-    },
+    }
   })
 
   const workingServicePort = await createService(t, `
@@ -2274,7 +2274,7 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
     }
   `, {
     Query: {
-      hello: () => "world",
+      hello: () => 'world'
     }
   })
 
@@ -2305,7 +2305,7 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
 
   t.deepEqual(JSON.parse(res.body), {
     data: {
-      hello: "world"
+      hello: 'world'
     }
   })
 })
@@ -2331,8 +2331,8 @@ test('Update the schema', async (t) => {
 
   const servicePort = await createService(t, fullSchema, {
     Query: {
-      hello: () => "world",
-      world: () => "hello"
+      hello: () => 'world',
+      world: () => 'hello'
     }
   })
 
@@ -2361,15 +2361,15 @@ test('Update the schema', async (t) => {
   })
 
   t.deepEqual(
-    JSON.parse(res.body).errors[0].message, 
+    JSON.parse(res.body).errors[0].message,
     'Cannot query field "world" on type "Query".'
   )
 
-  gateway.graphql.gateway.serviceMap['working'].setSchema(fullSchema)
+  gateway.graphql.gateway.serviceMap.working.setSchema(fullSchema)
   const newSchema = await gateway.graphql.gateway.refresh()
 
   gateway.graphql.replaceSchema(newSchema)
-  
+
   const res2 = await gateway.inject({
     method: 'POST',
     headers: {
@@ -2381,8 +2381,8 @@ test('Update the schema', async (t) => {
 
   t.deepEqual(JSON.parse(res2.body), {
     data: {
-      hello: "world",
-      world: "hello"
+      hello: 'world',
+      world: 'hello'
     }
   })
 })
@@ -2401,7 +2401,7 @@ test('Update the schema without any changes', async (t) => {
 
   const servicePort = await createService(t, schema, {
     Query: {
-      hello: () => "world",
+      hello: () => 'world'
     }
   })
 
@@ -2431,12 +2431,12 @@ test('Update the schema without any changes', async (t) => {
   t.deepEqual(
     JSON.parse(res.body), {
       data: {
-        hello: "world"
+        hello: 'world'
       }
     }
   )
 
-  gateway.graphql.gateway.serviceMap['working'].setSchema(schema)
+  gateway.graphql.gateway.serviceMap.working.setSchema(schema)
   const newSchema = await gateway.graphql.gateway.refresh()
 
   t.equals(newSchema, null)
