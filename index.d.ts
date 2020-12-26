@@ -61,6 +61,15 @@ export interface MercuriusLoaders<TContext extends Record<string, any> = Mercuri
   };
 }
 
+interface ServiceConfig {
+  setSchema: (schema: string) => ServiceConfig;
+}
+
+interface Gateway {
+  refresh: () => Promise<GraphQLSchema | null>;
+  serviceMap: Record<string, ServiceConfig>;
+}
+
 interface MercuriusPlugin {
   <
     TData extends Record<string, any> = Record<string, any>,
@@ -107,6 +116,8 @@ interface MercuriusPlugin {
    * Managed GraphQL schema object for doing custom execution with. Will reflect changes made via `extendSchema`, `defineResolvers`, etc.
    */
   schema: GraphQLSchema;
+
+  gateway: Gateway;
 }
 
 interface QueryRequest {
@@ -130,6 +141,7 @@ interface WsConnectionParams {
 export interface MercuriusGatewayService {
   name: string;
   url: string;
+  schema?: string;
   wsUrl?: string;
   mandatory?: boolean;
   initHeaders?: (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>) | OutgoingHttpHeaders;
