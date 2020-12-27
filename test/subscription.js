@@ -1753,12 +1753,21 @@ test('`withFilter` tool works with async filters', t => {
   })
 })
 
-test('subscription server does not register fastify-websocket if already registered', t => {
+test('subscription server works with fastify-websocket', t => {
   const app = Fastify()
   t.tearDown(() => app.close())
   t.plan(3)
 
-  app.register(fastifyWebsocket)
+  function handle (conn) {
+    conn.end(JSON.stringify({ error: 'unknown route' }))
+  }
+
+  app.register(fastifyWebsocket, {
+    handle,
+    options: {
+      maxPayload: 1048576
+    }
+  })
 
   app.get('/fastify-websocket', { websocket: true }, (connection, req) => {
     connection.socket.on('message', message => {
