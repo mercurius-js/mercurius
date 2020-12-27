@@ -333,7 +333,7 @@ function handle (conn) {
   conn.end(JSON.stringify({ error: 'unknown route' }))
 }
 
-fastify.register(fastifyWebsocket, {
+app.register(fastifyWebsocket, {
   handle,
   options: {
     maxPayload: 1048576
@@ -346,7 +346,7 @@ app.register(mercurius, {
   subscription: true
 })
 
-fastify.get('/', { websocket: true }, (connection, req) => {
+app.get('/', { websocket: true }, (connection, req) => {
   connection.socket.on('message', message => {
     connection.socket.send('hi from server')
   })
