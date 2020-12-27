@@ -3,6 +3,7 @@ const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
 const { EventEmitter } = require('events')
+const fastifyWebsocket = require('fastify-websocket')
 const GQL = require('..')
 
 const FakeTimers = require('@sinonjs/fake-timers')
@@ -1749,5 +1750,35 @@ test('`withFilter` tool works with async filters', t => {
         }, () => { t.pass() })
       }
     })
+  })
+})
+
+test('subscription server does not register fastify-websocket if already registered', t => {
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(fastifyWebsocket)
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+    t.end()
   })
 })
