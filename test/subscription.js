@@ -1756,29 +1756,155 @@ test('`withFilter` tool works with async filters', t => {
 test('subscription server does not register fastify-websocket if already registered', t => {
   const app = Fastify()
   t.tearDown(() => app.close())
+  t.plan(3)
 
+  app.register(fastifyWebsocket)
+
+  app.get('/fastify-websocket', { websocket: true }, (connection, req) => {
+    connection.socket.on('message', message => {
+      connection.socket.send('hi from server')
+    })
+  })
+
+  const sendTestMutation = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            addNotification(message: "Hello World") {
+              id
+            }
+          }
+        `
+      }
+    })
+  }
+
+  const emitter = mq()
   const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
     type Query {
-      add(x: Int, y: Int): Int
+      notifications: [Notification]
+    }
+
+    type Mutation {
+      addNotification(message: String): Notification
+    }
+
+    type Subscription {
+      notificationAdded: Notification
     }
   `
 
+  let idCount = 1
+  const notifications = [{
+    id: idCount,
+    message: 'Notification message'
+  }]
+
   const resolvers = {
     Query: {
-      add: (parent, { x, y }) => x + y
+      notifications: () => notifications
+    },
+    Mutation: {
+      addNotification: async (_, { message }) => {
+        const id = idCount++
+        const notification = {
+          id,
+          message
+        }
+        notifications.push(notification)
+        await emitter.emit({
+          topic: 'NOTIFICATION_ADDED',
+          payload: {
+            notificationAdded: notification
+          }
+        })
+
+        return notification
+      }
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED')
+      }
     }
   }
-
-  app.register(fastifyWebsocket)
 
   app.register(GQL, {
     schema,
     resolvers,
-    subscription: true
+    subscription: {
+      emitter
+    }
   })
 
   app.listen(0, err => {
     t.error(err)
-    t.end()
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/fastify-websocket')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    const subscriptionWs = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const subscriptionClient = WebSocket.createWebSocketStream(subscriptionWs, { encoding: 'utf8', objectMode: true })
+    t.tearDown(subscriptionClient.destroy.bind(subscriptionClient))
+    subscriptionClient.setEncoding('utf8')
+
+    client.write('hi from client')
+
+    subscriptionClient.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    subscriptionClient.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.on('data', chunk => {
+      t.equal(chunk, 'hi from server')
+      client.end()
+    })
+
+    subscriptionClient.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              notificationAdded: {
+                id: '1',
+                message: 'Hello World'
+              }
+            }
+          }
+        }))
+        subscriptionClient.end()
+        t.end()
+      } else {
+        sendTestMutation()
+      }
+    })
   })
 })
