@@ -275,7 +275,7 @@ export interface MercuriusCommonOptions {
           type: 'connection_init';
           payload: any;
         }) => Record<string, any> | Promise<Record<string, any>>;
-        onDisconnect?: (context: Record<string, any>) => void | Promise<void>;
+        onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
       };
   /**
    * Enable federation metadata support so the service can be deployed behind an Apollo Gateway

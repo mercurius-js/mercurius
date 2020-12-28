@@ -323,6 +323,15 @@ app.register(mercurius, {
       data.type
       data.payload
       return {}
+    },
+    onDisconnect: (context) => {
+      context.app.graphql
+      context.pubsub.publish({
+        topic: 'topic',
+        payload: 'payload'
+      })
+      context.reply.headers
+      context.request.ip
     }
   }
 })
