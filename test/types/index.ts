@@ -231,6 +231,10 @@ gateway.register(mercurius, {
       {
         name: 'user',
         url: 'http://localhost:4001/graphql',
+        schema: `
+        type Query {
+          dogs: [Dog]
+        }`,
         connections: 10,
         initHeaders: {
           authorization: 'bearer supersecret'
@@ -442,3 +446,11 @@ app.register(mercurius, {
     pubsub: new CustomPubSub()
   }
 })
+
+app.graphql.gateway.refresh()
+
+app.graphql.gateway.serviceMap.serviceName.setSchema(`
+query hello {
+  helloWorld
+}
+`)
