@@ -275,6 +275,7 @@ export interface MercuriusCommonOptions {
           type: 'connection_init';
           payload: any;
         }) => Record<string, any> | Promise<Record<string, any>>;
+        onDisconnect?: (context: Record<string, any>) => void | Promise<void>;
       };
   /**
    * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
@@ -325,10 +326,10 @@ export interface MercuriusCommonOptions {
   };
 
   /**
-   * It provides HTTP headers to GraphQL Playground. If it is an object, 
-   * it is provided as-is. If it is a function, it is serialized, injected 
-   * in the generated HTML and invoked with the `window` object as the argument. 
-   * Useful to read authorization token from browser's storage. 
+   * It provides HTTP headers to GraphQL Playground. If it is an object,
+   * it is provided as-is. If it is a function, it is serialized, injected
+   * in the generated HTML and invoked with the `window` object as the argument.
+   * Useful to read authorization token from browser's storage.
    * See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
    */
   playgroundHeaders?: ((window: Window) => object) | object;
