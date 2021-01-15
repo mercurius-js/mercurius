@@ -2,8 +2,7 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
-const { printSchema, defaultFieldResolver } = require('graphql')
-const { MapperKind, mapSchema, getDirectives, makeExecutableSchema, printSchemaWithDirectives, getResolversFromSchema, mergeResolvers } = require('graphql-tools')
+const { printSchema } = require('graphql')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
 const GQL = require('..')
@@ -73,7 +72,7 @@ test('federation support using schema from buildFederationSchema', async (t) => 
     extend type Query {
       me: User
     }
-    
+
     extend type Mutation {
       add(a: Int, b: Int): Int
     }
@@ -127,64 +126,6 @@ test('federation support using schema from buildFederationSchema', async (t) => 
   query = 'mutation { add(a: 11 b: 19) }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
   t.deepEqual(JSON.parse(res.body), { data: { add: 30 } })
-})
-
-test('federation support using schema from buildFederationSchema and custom directives', async (t) => {
-  const app = Fastify()
-  const schema = `
-    directive @upper on FIELD_DEFINITION
-    
-    type Query {
-      foo: String @upper
-    }
-  `
-
-  const resolvers = {
-    Query: {
-      foo: () => 'bar'
-    }
-  }
-
-  function upperDirectiveTransformer (schema) {
-    return mapSchema(schema, {
-      [MapperKind.OBJECT_FIELD]: (fieldConfig) => {
-        const directives = getDirectives(schema, fieldConfig)
-        if (directives.upper) {
-          const { resolve = defaultFieldResolver } = fieldConfig
-          fieldConfig.resolve = async function (source, args, context, info) {
-            const result = await resolve(source, args, context, info)
-            if (typeof result === 'string') {
-              return result.toUpperCase()
-            }
-            return result
-          }
-          return fieldConfig
-        }
-      }
-    })
-  }
-
-  const federationSchema = buildFederationSchema(schema)
-
-  const executableSchema = makeExecutableSchema({
-    typeDefs: printSchemaWithDirectives(federationSchema),
-    resolvers: mergeResolvers([getResolversFromSchema(federationSchema), resolvers]),
-    schemaTransforms: [upperDirectiveTransformer]
-  })
-
-  app.register(GQL, {
-    schema: executableSchema
-  })
-
-  await app.ready()
-
-  let query = '{ _service { sdl } }'
-  let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
-
-  query = 'query { foo }'
-  res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
 })
 
 test('a normal schema can be run in federated mode', async (t) => {
@@ -586,6 +527,40 @@ test('buildFederationSchema works correctly with multiple type extensions', asyn
 
     extend type User @key(fields: "id") {
       other: String
+    }
+  `
+  try {
+    buildFederationSchema(schema)
+    t.pass('schema built without errors')
+  } catch (err) {
+    t.fail('it should not throw errors', err)
+  }
+})
+
+test('buildFederationSchema ignores UniqueDirectivesPerLocationRule when validating', async (t) => {
+  const schema = `
+    directive @upper on FIELD_DEFINITION
+
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String @upper
+      content: String
+      author: User
+    }
+
+    directive @upper on FIELD_DEFINITION
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      posts: [Post]
+    }
+
+    extend type User @key(fields: "id") {
+      other: String @upper
     }
   `
   try {

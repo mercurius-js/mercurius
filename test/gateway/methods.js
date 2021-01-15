@@ -54,7 +54,7 @@ test('calling defineLoaders throws an error in gateway mode', async (t) => {
       }
     })
   } catch (err) {
-    t.is(err.message, 'Calling defineLoaders method is not allowed when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Gateway issues: Calling defineLoaders method when plugin is running in gateway mode is not allowed')
   }
 })
 
@@ -93,7 +93,7 @@ test('calling defineResolvers throws an error in gateway mode', async (t) => {
       }
     })
   } catch (err) {
-    t.is(err.message, 'Calling defineResolvers method is not allowed when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Gateway issues: Calling defineResolvers method when plugin is running in gateway mode is not allowed')
   }
 })
 
@@ -132,7 +132,7 @@ test('calling extendSchema throws an error in gateway mode', async (t) => {
       }
     `)
   } catch (err) {
-    t.is(err.message, 'Calling extendSchema method is not allowed when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Gateway issues: Calling extendSchema method when plugin is running in gateway mode is not allowed')
     t.end()
   }
 })

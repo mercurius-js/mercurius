@@ -345,7 +345,7 @@ test('rersolver unknown type', async t => {
     await app.ready()
     app.graphql('query { test }')
   } catch (error) {
-    t.equal(error.message, 'Cannot find type test')
+    t.equal(error.message, 'Invalid options: Cannot find type test')
   }
 })
 
@@ -355,12 +355,11 @@ test('minJit is not a number, throw error', async t => {
   app.register(GQL, {
     jit: '0'
   })
-  const typeError = new Error('the jit option must be a number')
 
   try {
     await app.ready()
   } catch (error) {
-    t.deepEqual(error, typeError)
+    t.equal(error.message, 'Invalid options: the jit option must be a number')
   }
 })
 
@@ -386,7 +385,7 @@ test('options cache is boolean', async t => {
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Cache type is not supported')
+    t.equal(error.message, 'Invalid options: Cache type is not supported')
   }
 })
 
@@ -400,7 +399,7 @@ test('options cache is !number && !boolean', async t => {
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Cache type is not supported')
+    t.equal(error.message, 'Invalid options: Cache type is not supported')
   }
 })
 
@@ -418,7 +417,7 @@ test('options cache is false and lruErrors exists', async t => {
   try {
     await app.graphql('{ dogs { name { owner } } }')
   } catch (error) {
-    t.equal(error.message, 'Bad Request')
+    t.equal(error.message, 'Graphql validation error')
     t.end()
   }
 })

@@ -4,7 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
 
-test('"schema" option not allowed in gateway moode', async (t) => {
+test('"schema" option not allowed in gateway mode', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -22,11 +22,11 @@ test('"schema" option not allowed in gateway moode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Invalid options: Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 })
 
-test('"resolvers" option not allowed in gateway moode', async (t) => {
+test('"resolvers" option not allowed in gateway mode', async (t) => {
   const app = Fastify()
 
   app.register(GQL, {
@@ -39,11 +39,11 @@ test('"resolvers" option not allowed in gateway moode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Invalid options: Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 })
 
-test('"loaders" option not allowed in gateway moode', async (t) => {
+test('"loaders" option not allowed in gateway mode', async (t) => {
   const app = Fastify()
 
   app.register(GQL, {
@@ -56,6 +56,6 @@ test('"loaders" option not allowed in gateway moode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers", "loaders" or to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Invalid options: Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 })

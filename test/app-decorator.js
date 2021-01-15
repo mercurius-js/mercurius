@@ -9,7 +9,7 @@ const {
   GraphQLScalarType,
   GraphQLEnumType
 } = require('graphql')
-const { makeExecutableSchema } = require('graphql-tools')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 test('basic GQL', async (t) => {
   const app = Fastify()
@@ -278,7 +278,7 @@ test('replaceSchema with makeSchemaExecutable (schema should be provided)', asyn
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Must provide valid Document AST')
+    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
   }
 })
 
@@ -948,7 +948,7 @@ test('extended Schema is not string', async t => {
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Must provide valid Document AST')
+    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
   }
 })
 
@@ -967,7 +967,7 @@ test('extended Schema is undefined', async t => {
   try {
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Must provide valid Document AST')
+    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
   }
 })
 
@@ -1080,8 +1080,8 @@ test('Multiple errors in schema', async (t) => {
     })
     await app.ready()
   } catch (error) {
-    t.equal(error.message, 'Schema issues, check out the .errors property on the Error.')
-    t.equal(error.name, 'Error')
+    t.equal(error.message, 'Invalid schema: check out the .errors property on the Error')
+    t.equal(error.name, 'FastifyError')
     t.equal(error.errors[0].message, 'Interface field Event.Id expected but CustomEvent does not provide it.')
     t.equal(error.errors[0].name, 'GraphQLError')
     t.equal(error.errors[1].message, 'Interface field Event.Id expected but AnotherEvent does not provide it.')
@@ -1114,4 +1114,36 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
 
   // needed so that graphql is defined
   await app.ready()
+})
+
+test('calling extendSchema throws an error if federationMetadata is enabled', async (t) => {
+  const service = Fastify()
+  t.tearDown(() => {
+    service.close()
+  })
+  service.register(GQL, {
+    schema: `
+      extend type Query {
+        me: User
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+      }
+    `,
+    federationMetadata: true
+  })
+  await service.ready()
+
+  try {
+    service.graphql.extendSchema(`
+      extend type Query {
+        field: String!
+      }
+    `)
+  } catch (err) {
+    t.is(err.message, 'Invalid method: Calling extendSchema method when federationMetadata is enabled is not allowed')
+    t.end()
+  }
 })

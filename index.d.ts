@@ -8,7 +8,6 @@ import {
   DocumentNode,
   ExecutionResult,
   GraphQLSchema,
-  GraphQLError,
   Source,
   GraphQLResolveInfo,
   GraphQLIsTypeOfFn,
@@ -17,9 +16,70 @@ import {
   ValidationRule,
 } from "graphql";
 import { SocketStream } from "fastify-websocket"
-import { IncomingMessage, OutgoingHttpHeaders } from "http";
+import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
+import { Readable } from "stream";
 
-declare interface MercuriusPlugin {
+export interface PubSub {
+  subscribe<TResult = any>(topics: string | string[]): Promise<Readable & AsyncIterableIterator<TResult>>;
+  publish<TResult = any>(event: { topic: string; payload: TResult }, callback?: () => void): void;
+}
+
+export interface MercuriusContext {
+  app: FastifyInstance;
+  /**
+   * __Caution__: Only available if `subscriptions` are enabled
+   */
+  pubsub: PubSub;
+}
+
+export interface Loader<
+  TObj extends Record<string, any> = any,
+  TParams extends Record<string, any> = any,
+  TContext extends Record<string, any> = MercuriusContext
+> {
+  (
+    queries: Array<{
+      obj: TObj;
+      params: TParams;
+    }>,
+    context: TContext & {
+      reply: FastifyReply;
+    }
+  ): any;
+}
+
+export interface MercuriusLoaders<TContext extends Record<string, any> = MercuriusContext> {
+  [root: string]: {
+    [field: string]:
+      | Loader
+      | {
+          loader: Loader<any, any, TContext>;
+          opts?: {
+            cache?: boolean;
+          };
+        };
+  };
+}
+
+interface ServiceConfig {
+  setSchema: (schema: string) => ServiceConfig;
+}
+
+interface Gateway {
+  refresh: () => Promise<GraphQLSchema | null>;
+  serviceMap: Record<string, ServiceConfig>;
+}
+
+interface MercuriusPlugin {
+  <
+    TData extends Record<string, any> = Record<string, any>,
+    TVariables extends Record<string, any> = Record<string, any>
+  >(
+    source: string,
+    context?: Record<string, any>,
+    variables?: TVariables,
+    operationName?: string
+  ): Promise<ExecutionResult<TData>>;
   /**
    * Replace existing schema
    * @param schema graphql schema
@@ -34,28 +94,30 @@ declare interface MercuriusPlugin {
    * Define additional resolvers
    * @param resolvers object with resolver functions
    */
-  defineResolvers(resolvers: IResolvers): void;
+  defineResolvers<TContext = MercuriusContext>(resolvers: IResolvers<any, TContext>): void;
   /**
    * Define data loaders
    * @param loaders object with data loader functions
    */
-  defineLoaders(loaders: {
-    [key: string]: {
-      [key: string]: (
-        queries: Array<{
-          obj: any;
-          params: any;
-        }>,
-        context: {
-          reply: FastifyReply;
-        }
-      ) => any;
-    };
-  }): void;
+  defineLoaders<TContext = MercuriusContext>(loaders: MercuriusLoaders<TContext>): void;
+  /**
+   * Transform the existing schema
+   */
+  transformSchema: (
+    schemaTransforms:
+      | ((schema: GraphQLSchema) => GraphQLSchema)
+      | Array<(schema: GraphQLSchema) => GraphQLSchema>
+  ) => void;
+  /**
+   * __Caution__: Only available if `subscriptions` are enabled
+   */
+  pubsub: PubSub;
   /**
    * Managed GraphQL schema object for doing custom execution with. Will reflect changes made via `extendSchema`, `defineResolvers`, etc.
    */
   schema: GraphQLSchema;
+
+  gateway: Gateway;
 }
 
 interface QueryRequest {
@@ -65,10 +127,31 @@ interface QueryRequest {
   extensions?: object;
 }
 
-type MercuriusGatewayService = {
+interface WsConnectionParams {
+  connectionInitPayload?:
+    | (() => Record<string, any> | Promise<Record<string, any>>)
+    | Record<string, any>;
+  reconnect?: boolean;
+  maxReconnectAttempts?: number;
+  connectionCallback?: () => void;
+  failedConnectionCallback?: (err: { message: string }) => void | Promise<void>;
+  failedReconnectCallback?: () => void;
+}
+
+export interface MercuriusGatewayService {
   name: string;
   url: string;
+  schema?: string;
+  wsUrl?: string;
   mandatory?: boolean;
+  initHeaders?: (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>) | OutgoingHttpHeaders;
+  rewriteHeaders?: (headers: IncomingHttpHeaders) => OutgoingHttpHeaders;
+  connections?: number;
+  keepAliveMaxTimeout?: number;
+  rejectUnauthorized?: boolean;
+  wsConnectionParams?:
+    | (() => WsConnectionParams | Promise<WsConnectionParams>)
+    | WsConnectionParams;
 }
 
 export interface MercuriusGatewayOptions {
@@ -86,7 +169,7 @@ export interface MercuriusSchemaOptions {
   /**
    * The GraphQL schema. String schema will be parsed
    */
-  schema: GraphQLSchema | string;
+  schema: GraphQLSchema | string | string[];
   /**
    * Object with resolver functions
    */
@@ -94,19 +177,11 @@ export interface MercuriusSchemaOptions {
   /**
    * Object with data loader functions
    */
-  loaders?: {
-    [key: string]: {
-      [key: string]: (
-        queries: Array<{
-          obj: any;
-          params: any;
-        }>,
-        context: {
-          reply: FastifyReply;
-        }
-      ) => any;
-    };
-  };
+  loaders?: MercuriusLoaders;
+  /**
+   * Schema transformation function or an array of schema transformation functions
+   */
+  schemaTransforms?: ((originalSchema: GraphQLSchema) => GraphQLSchema) | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
 }
 
 export interface MercuriusCommonOptions {
@@ -129,7 +204,7 @@ export interface MercuriusCommonOptions {
    * Define if the plugin can cache the responses.
    * @default true
    */
-  cache?: boolean;
+  cache?: boolean | number;
   /**
    * An endpoint for graphql if routes is true
    * @default '/graphql'
@@ -151,26 +226,25 @@ export interface MercuriusCommonOptions {
    */
   errorHandler?:
     | boolean
-    | ((
-        error: FastifyError,
-        request: FastifyRequest,
-        reply: FastifyReply
-      ) => ExecutionResult);
+    | ((error: FastifyError, request: FastifyRequest, reply: FastifyReply) => ExecutionResult);
   /**
    * Change the default error formatter.
    */
-  errorFormatter?: ((
+  errorFormatter?: <TContext extends Record<string,any> = MercuriusContext>(
     execution: ExecutionResult,
-    context: any,
+    context: TContext
   ) => {
-    statusCode: number,
-    response: ExecutionResult,
-  });
+    statusCode: number;
+    response: ExecutionResult;
+  };
   /**
    * The maximum depth allowed for a single query.
    */
   queryDepth?: number;
-  context?: (request: FastifyRequest, reply: FastifyReply) => Promise<any>;
+  context?: (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => Promise<Record<string, any>> | Record<string, any>;
   /**
    * Optional additional validation rules.
    * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
@@ -183,12 +257,25 @@ export interface MercuriusCommonOptions {
     | boolean
     | {
         emitter?: object;
+        pubsub?: any; // FIXME: Technically this should be the PubSub type. But PubSub is now typed as SubscriptionContext.
         verifyClient?: (
           info: { origin: string; secure: boolean; req: IncomingMessage },
-          next: (result: boolean, code?: number, message?: string, headers?: OutgoingHttpHeaders) => void
-        ) => void,
-        context?: (connection: SocketStream, request: FastifyRequest) => object | Promise<object>
-        onConnect?: (data: { type: "connection_init", payload: any }) => object | Promise<object>
+          next: (
+            result: boolean,
+            code?: number,
+            message?: string,
+            headers?: OutgoingHttpHeaders
+          ) => void
+        ) => void;
+        context?: (
+          connection: SocketStream,
+          request: FastifyRequest
+        ) => Record<string, any> | Promise<Record<string, any>>;
+        onConnect?: (data: {
+          type: 'connection_init';
+          payload: any;
+        }) => Record<string, any> | Promise<Record<string, any>>;
+        onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
       };
   /**
    * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
@@ -197,7 +284,7 @@ export interface MercuriusCommonOptions {
   /**
    * Persisted queries, overrides persistedQueryProvider.
    */
-  persistedQueries?: object;
+  persistedQueries?: Record<string,string>;
   /**
    * Only allow persisted queries. Required persistedQueries, overrides persistedQueryProvider.
    */
@@ -205,7 +292,7 @@ export interface MercuriusCommonOptions {
   /**
    * Settings for enabling persisted queries.
    */
-  persistedQueryProvider?: mercurius.PeristedQueryProvider;
+  persistedQueryProvider?: mercurius.PersistedQueryProvider;
 
   /**
    * Enable support for batched queries (POST requests only).
@@ -237,6 +324,15 @@ export interface MercuriusCommonOptions {
     ['tracing.hideTracingResponse']: boolean;
     ['tracing.tracingSupported']: boolean;
   };
+
+  /**
+   * It provides HTTP headers to GraphQL Playground. If it is an object,
+   * it is provided as-is. If it is a function, it is serialized, injected
+   * in the generated HTML and invoked with the `window` object as the argument.
+   * Useful to read authorization token from browser's storage.
+   * See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
+   */
+  playgroundHeaders?: ((window: Window) => object) | object;
 }
 
 export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
@@ -249,7 +345,7 @@ declare function mercurius
 
 
 declare namespace mercurius {
-  interface PeristedQueryProvider {
+  interface PersistedQueryProvider {
     /**
      *  Return true if a given request matches the desired persisted query format.
      */
@@ -280,6 +376,10 @@ declare namespace mercurius {
     notSupportedError?: string;
   }
 
+  /**
+   * @deprecated Use `PersistedQueryProvider`
+   */
+  interface PeristedQueryProvider extends PersistedQueryProvider {}
 
   /**
    * Extended errors for adding additional information in error responses
@@ -296,9 +396,9 @@ declare namespace mercurius {
    * Default options for persisted queries.
    */
   const persistedQueryDefaults: {
-    prepared: (persistedQueries: object) => PeristedQueryProvider;
-    preparedOnly: (persistedQueries: object) => PeristedQueryProvider;
-    automatic: (maxSize?: number) => PeristedQueryProvider;
+    prepared: (persistedQueries: object) => PersistedQueryProvider;
+    preparedOnly: (persistedQueries: object) => PersistedQueryProvider;
+    automatic: (maxSize?: number) => PersistedQueryProvider;
   };
 
   /**
@@ -307,12 +407,39 @@ declare namespace mercurius {
   const defaultErrorFormatter: (
     execution: ExecutionResult,
     context: any
-  ) => { statusCode: number, response: ExecutionResult };
+  ) => { statusCode: number; response: ExecutionResult };
 
   /**
    * Builds schema with support for federation mode.
    */
   const buildFederationSchema: (schema: string) => GraphQLSchema;
+
+  /**
+   * Subscriptions with filter functionality
+   */
+  const withFilter: <
+    TPayload = any,
+    TSource = any,
+    TContext = MercuriusContext,
+    TArgs = Record<string, any>
+  >(
+    subscribeFn: IFieldResolver<TSource, TContext, TArgs>,
+    filterFn: (
+      payload: TPayload,
+      args: TArgs,
+      context: TContext,
+      info: GraphQLResolveInfo & {
+        mergeInfo: MergeInfo
+      }
+    ) => boolean | Promise<boolean>
+  ) => (
+    root: TSource,
+    args: TArgs,
+    context: TContext,
+    info: GraphQLResolveInfo & {
+      mergeInfo: MergeInfo
+    }
+  ) => AsyncGenerator<TPayload>
 }
 
 export default mercurius;
@@ -332,32 +459,37 @@ declare module "fastify" {
      * @param variables request variables which will get passed to the executor
      * @param operationName specify which operation will be run
      */
-    graphql(
+    graphql<
+      TData extends Record<string, any> = Record<string, any>,
+      TVariables extends Record<string, any> = Record<string, any>
+    >(
       source: string,
-      context?: any,
-      variables?: { [key: string]: any },
+      context?: Record<string, any>,
+      variables?: TVariables,
       operationName?: string
-    ): Promise<ExecutionResult>;
+    ): Promise<ExecutionResult<TData>>;
   }
 }
 
-interface IResolvers<TSource = any, TContext = any> {
+export interface IResolvers<TSource = any, TContext = MercuriusContext> {
   [key: string]:
     | (() => any)
     | IResolverObject<TSource, TContext>
     | IResolverOptions<TSource, TContext>
     | GraphQLScalarType
-    | IEnumResolver;
+    | IEnumResolver
+    | undefined;
 }
 
-type IResolverObject<TSource = any, TContext = any, TArgs = any> = {
+export type IResolverObject<TSource = any, TContext = MercuriusContext, TArgs = any> = {
   [key: string]:
     | IFieldResolver<TSource, TContext, TArgs>
     | IResolverOptions<TSource, TContext>
-    | IResolverObject<TSource, TContext>;
-};
+    | IResolverObject<TSource, TContext>
+    | undefined;
+}
 
-interface IResolverOptions<TSource = any, TContext = any, TArgs = any> {
+export interface IResolverOptions<TSource = any, TContext = MercuriusContext, TArgs = any> {
   fragment?: string;
   resolve?: IFieldResolver<TSource, TContext, TArgs>;
   subscribe?: IFieldResolver<TSource, TContext, TArgs>;
@@ -369,14 +501,16 @@ type IEnumResolver = {
   [key: string]: string | number;
 };
 
-type IFieldResolver<TSource, TContext, TArgs = Record<string, any>> = (
-  source: TSource,
-  args: TArgs,
-  context: TContext,
-  info: GraphQLResolveInfo & {
-    mergeInfo: MergeInfo;
-  }
-) => any;
+export interface IFieldResolver<TSource, TContext = MercuriusContext, TArgs = Record<string, any>> {
+  (
+    source: TSource,
+    args: TArgs,
+    context: TContext,
+    info: GraphQLResolveInfo & {
+      mergeInfo: MergeInfo;
+    }
+  ): any;
+}
 
 type MergeInfo = {
   delegate: (

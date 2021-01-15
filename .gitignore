@@ -62,10 +62,14 @@ typings/
 
 # clinic
 *clinic*
-package-lock.json
 
 # vscode
 .vscode/
 
 # intellij idea, webstorm
 .idea/
+
+# lockfiles
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
