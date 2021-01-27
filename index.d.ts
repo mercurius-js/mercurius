@@ -1,9 +1,4 @@
-import {
-  FastifyError,
-  FastifyReply,
-  FastifyRequest,
-  FastifyInstance,
-} from "fastify";
+import { FastifyError, FastifyReply, FastifyRequest, FastifyInstance } from "fastify";
 import {
   DocumentNode,
   ExecutionResult,
@@ -15,7 +10,7 @@ import {
   GraphQLScalarType,
   ValidationRule,
 } from "graphql";
-import { SocketStream } from "fastify-websocket"
+import { SocketStream } from "fastify-websocket";
 import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
 import { Readable } from "stream";
 
@@ -70,7 +65,7 @@ interface Gateway {
   serviceMap: Record<string, ServiceConfig>;
 }
 
-interface MercuriusPlugin {
+export interface MercuriusPlugin {
   <
     TData extends Record<string, any> = Record<string, any>,
     TVariables extends Record<string, any> = Record<string, any>
@@ -104,9 +99,7 @@ interface MercuriusPlugin {
    * Transform the existing schema
    */
   transformSchema: (
-    schemaTransforms:
-      | ((schema: GraphQLSchema) => GraphQLSchema)
-      | Array<(schema: GraphQLSchema) => GraphQLSchema>
+    schemaTransforms: ((schema: GraphQLSchema) => GraphQLSchema) | Array<(schema: GraphQLSchema) => GraphQLSchema>
   ) => void;
   /**
    * __Caution__: Only available if `subscriptions` are enabled
@@ -128,9 +121,7 @@ interface QueryRequest {
 }
 
 interface WsConnectionParams {
-  connectionInitPayload?:
-    | (() => Record<string, any> | Promise<Record<string, any>>)
-    | Record<string, any>;
+  connectionInitPayload?: (() => Record<string, any> | Promise<Record<string, any>>) | Record<string, any>;
   reconnect?: boolean;
   maxReconnectAttempts?: number;
   connectionCallback?: () => void;
@@ -149,9 +140,7 @@ export interface MercuriusGatewayService {
   connections?: number;
   keepAliveMaxTimeout?: number;
   rejectUnauthorized?: boolean;
-  wsConnectionParams?:
-    | (() => WsConnectionParams | Promise<WsConnectionParams>)
-    | WsConnectionParams;
+  wsConnectionParams?: (() => WsConnectionParams | Promise<WsConnectionParams>) | WsConnectionParams;
 }
 
 export interface MercuriusGatewayOptions {
@@ -161,7 +150,7 @@ export interface MercuriusGatewayOptions {
   gateway: {
     services: Array<MercuriusGatewayService>;
     pollingInterval?: number;
-    errorHandler?(error: Error, service: MercuriusGatewayService): void
+    errorHandler?(error: Error, service: MercuriusGatewayService): void;
   };
 }
 
@@ -181,7 +170,9 @@ export interface MercuriusSchemaOptions {
   /**
    * Schema transformation function or an array of schema transformation functions
    */
-  schemaTransforms?: ((originalSchema: GraphQLSchema) => GraphQLSchema) | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
+  schemaTransforms?:
+    | ((originalSchema: GraphQLSchema) => GraphQLSchema)
+    | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
 }
 
 export interface MercuriusCommonOptions {
@@ -224,13 +215,11 @@ export interface MercuriusCommonOptions {
    * If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response).
    * @default true
    */
-  errorHandler?:
-    | boolean
-    | ((error: FastifyError, request: FastifyRequest, reply: FastifyReply) => ExecutionResult);
+  errorHandler?: boolean | ((error: FastifyError, request: FastifyRequest, reply: FastifyReply) => ExecutionResult);
   /**
    * Change the default error formatter.
    */
-  errorFormatter?: <TContext extends Record<string,any> = MercuriusContext>(
+  errorFormatter?: <TContext extends Record<string, any> = MercuriusContext>(
     execution: ExecutionResult,
     context: TContext
   ) => {
@@ -241,10 +230,7 @@ export interface MercuriusCommonOptions {
    * The maximum depth allowed for a single query.
    */
   queryDepth?: number;
-  context?: (
-    request: FastifyRequest,
-    reply: FastifyReply
-  ) => Promise<Record<string, any>> | Record<string, any>;
+  context?: (request: FastifyRequest, reply: FastifyReply) => Promise<Record<string, any>> | Record<string, any>;
   /**
    * Optional additional validation rules.
    * Queries must satisfy these rules in addition to those defined by the GraphQL specification.
@@ -260,19 +246,14 @@ export interface MercuriusCommonOptions {
         pubsub?: any; // FIXME: Technically this should be the PubSub type. But PubSub is now typed as SubscriptionContext.
         verifyClient?: (
           info: { origin: string; secure: boolean; req: IncomingMessage },
-          next: (
-            result: boolean,
-            code?: number,
-            message?: string,
-            headers?: OutgoingHttpHeaders
-          ) => void
+          next: (result: boolean, code?: number, message?: string, headers?: OutgoingHttpHeaders) => void
         ) => void;
         context?: (
           connection: SocketStream,
           request: FastifyRequest
         ) => Record<string, any> | Promise<Record<string, any>>;
         onConnect?: (data: {
-          type: 'connection_init';
+          type: "connection_init";
           payload: any;
         }) => Record<string, any> | Promise<Record<string, any>>;
         onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
@@ -284,7 +265,7 @@ export interface MercuriusCommonOptions {
   /**
    * Persisted queries, overrides persistedQueryProvider.
    */
-  persistedQueries?: Record<string,string>;
+  persistedQueries?: Record<string, string>;
   /**
    * Only allow persisted queries. Required persistedQueries, overrides persistedQueryProvider.
    */
@@ -307,22 +288,22 @@ export interface MercuriusCommonOptions {
    * See https://github.com/prisma-labs/graphql-playground#usage for the most up-to-date list.
    */
   playgroundSettings?: {
-    ['editor.cursorShape']: 'line' | 'block' | 'underline';
-    ['editor.fontFamily']: string;
-    ['editor.fontSize']: number;
-    ['editor.reuseHeaders']: boolean;
-    ['editor.theme']: 'dark' | 'light';
-    ['general.betaUpdates']: boolean;
-    ['prettier.printWidth']: number;
-    ['prettier.tabWidth']: number;
-    ['prettier.useTabs']: boolean;
-    ['request.credentials']: 'omit' | 'include' | 'same-origin';
-    ['schema.disableComments']: boolean;
-    ['schema.polling.enable']: boolean;
-    ['schema.polling.endpointFilter']: string;
-    ['schema.polling.interval']: number;
-    ['tracing.hideTracingResponse']: boolean;
-    ['tracing.tracingSupported']: boolean;
+    ["editor.cursorShape"]: "line" | "block" | "underline";
+    ["editor.fontFamily"]: string;
+    ["editor.fontSize"]: number;
+    ["editor.reuseHeaders"]: boolean;
+    ["editor.theme"]: "dark" | "light";
+    ["general.betaUpdates"]: boolean;
+    ["prettier.printWidth"]: number;
+    ["prettier.tabWidth"]: number;
+    ["prettier.useTabs"]: boolean;
+    ["request.credentials"]: "omit" | "include" | "same-origin";
+    ["schema.disableComments"]: boolean;
+    ["schema.polling.enable"]: boolean;
+    ["schema.polling.endpointFilter"]: string;
+    ["schema.polling.interval"]: number;
+    ["tracing.hideTracingResponse"]: boolean;
+    ["tracing.tracingSupported"]: boolean;
   };
 
   /**
@@ -335,14 +316,9 @@ export interface MercuriusCommonOptions {
   playgroundHeaders?: ((window: Window) => object) | object;
 }
 
-export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
+export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions);
 
-declare function mercurius
-  (
-    instance: FastifyInstance,
-    opts: MercuriusOptions
-  ): void;
-
+declare function mercurius(instance: FastifyInstance, opts: MercuriusOptions): void;
 
 declare namespace mercurius {
   interface PersistedQueryProvider {
@@ -417,19 +393,14 @@ declare namespace mercurius {
   /**
    * Subscriptions with filter functionality
    */
-  const withFilter: <
-    TPayload = any,
-    TSource = any,
-    TContext = MercuriusContext,
-    TArgs = Record<string, any>
-  >(
+  const withFilter: <TPayload = any, TSource = any, TContext = MercuriusContext, TArgs = Record<string, any>>(
     subscribeFn: IFieldResolver<TSource, TContext, TArgs>,
     filterFn: (
       payload: TPayload,
       args: TArgs,
       context: TContext,
       info: GraphQLResolveInfo & {
-        mergeInfo: MergeInfo
+        mergeInfo: MergeInfo;
       }
     ) => boolean | Promise<boolean>
   ) => (
@@ -437,9 +408,9 @@ declare namespace mercurius {
     args: TArgs,
     context: TContext,
     info: GraphQLResolveInfo & {
-      mergeInfo: MergeInfo
+      mergeInfo: MergeInfo;
     }
-  ) => AsyncGenerator<TPayload>
+  ) => AsyncGenerator<TPayload>;
 }
 
 export default mercurius;
@@ -487,7 +458,7 @@ export type IResolverObject<TSource = any, TContext = MercuriusContext, TArgs = 
     | IResolverOptions<TSource, TContext>
     | IResolverObject<TSource, TContext>
     | undefined;
-}
+};
 
 export interface IResolverOptions<TSource = any, TContext = MercuriusContext, TArgs = any> {
   fragment?: string;
@@ -573,8 +544,4 @@ type Request = {
 
 type ValidationRules =
   | ValidationRule[]
-  | ((params: {
-      source: string;
-      variables?: Record<string, any>;
-      operationName?: string;
-    }) => ValidationRule[]);
+  | ((params: { source: string; variables?: Record<string, any>; operationName?: string }) => ValidationRule[]);

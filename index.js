@@ -31,6 +31,7 @@ const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 const {
   ErrorWithProps,
   defaultErrorFormatter,
+  addErrorsToExecutionResult,
   MER_ERR_GQL_INVALID_SCHEMA,
   MER_ERR_GQL_GATEWAY,
   MER_ERR_GQL_VALIDATION,
@@ -38,9 +39,9 @@ const {
   MER_ERR_METHOD_NOT_ALLOWED,
   MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
-
-const kLoaders = Symbol('mercurius.loaders')
-const kFactory = Symbol('mercurius.loadersFactory')
+const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
+const { kLoaders, kFactory, kHooks } = require('./lib/symbols')
+const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler } = require('./lib/handlers')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -385,9 +386,20 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.transformSchema(opts.schemaTransforms)
   }
 
+  fastifyGraphQl[kHooks] = new Hooks()
+
+  // Wrapper that we expose to the user for GraphQL hooks handling
+  fastifyGraphQl.addHook = function (name, fn) {
+    this[kHooks].add(name, fn)
+  }
+
   async function fastifyGraphQl (source, context, variables, operationName) {
     context = Object.assign({ app: this, lruGatewayResolvers }, context)
+    context = assignLifeCycleHooksToContext(fastifyGraphQl[kHooks], context)
     const reply = context.reply
+
+    // Trigger preParsing hook
+    await preParsingHandler(source, context, variables, operationName)
 
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
@@ -411,6 +423,9 @@ const plugin = fp(async function (app, opts) {
         err.errors = [syntaxError]
         throw err
       }
+
+      // Trigger preValidation hook
+      await preValidationHandler(document, context, variables, operationName)
 
       // Validate
       let validationRules = []
@@ -480,19 +495,29 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
-    const execution = await execute(
+    // TODO: Trigger preExecution hook for non-gateway services here
+    const preExecution = {}
+    const request = { schema: fastifyGraphQl.schema, document, context }
+    if (!gateway) {
+      await preExecutionHandler(request, preExecution)
+    }
+
+    let execution = await execute(
       fastifyGraphQl.schema,
-      document,
+      request.document,
       root,
       context,
       variables,
       operationName
     )
 
+    // TODO: add errors from preExecutionHandler
+    execution = addErrorsToExecutionResult(execution, preExecution.errors)
+
     return maybeFormatErrors(execution, context)
   }
 
-  function maybeFormatErrors (execution, context) {
+  async function maybeFormatErrors (execution, context) {
     if (execution.errors) {
       const { reply } = context
       const { statusCode, response: { data, errors } } = errorFormatter(execution, context)
@@ -502,6 +527,9 @@ const plugin = fp(async function (app, opts) {
         reply.code(statusCode)
       }
     }
+
+    // TODO: trigger onResolution hook here
+    await onResolutionHandler(execution, context)
     return execution
   }
 }, {
