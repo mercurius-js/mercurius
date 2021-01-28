@@ -394,7 +394,7 @@ const plugin = fp(async function (app, opts) {
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this, lruGatewayResolvers }, context)
+    context = Object.assign({ app: this, lruGatewayResolvers, errors: null }, context)
     context = assignLifeCycleHooksToContext(fastifyGraphQl[kHooks], context)
     const reply = context.reply
 
@@ -496,13 +496,13 @@ const plugin = fp(async function (app, opts) {
     }
 
     // TODO: Trigger preExecution hook for non-gateway services here
-    const preExecution = {}
     const request = { schema: fastifyGraphQl.schema, document, context }
     if (!gateway) {
-      await preExecutionHandler(request, preExecution)
+      // TODO: Maybe assign document here
+      await preExecutionHandler(request)
     }
 
-    let execution = await execute(
+    const execution = await execute(
       fastifyGraphQl.schema,
       request.document,
       root,
@@ -511,13 +511,12 @@ const plugin = fp(async function (app, opts) {
       operationName
     )
 
-    // TODO: add errors from preExecutionHandler
-    execution = addErrorsToExecutionResult(execution, preExecution.errors)
-
     return maybeFormatErrors(execution, context)
   }
 
   async function maybeFormatErrors (execution, context) {
+    execution = addErrorsToExecutionResult(execution, context.errors)
+
     if (execution.errors) {
       const { reply } = context
       const { statusCode, response: { data, errors } } = errorFormatter(execution, context)

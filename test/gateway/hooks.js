@@ -287,7 +287,7 @@ test('gateway - preParsing hooks should handle errors', async t => {
     t.fail('this should not be called')
   })
 
-  app.graphql.addHook('preExecution', async (request) => {
+  app.graphql.addHook('preExecution', async (schema, operation, context) => {
     t.fail('this should not be called')
   })
 
@@ -403,6 +403,143 @@ test('gateway - preExecution hooks should handle errors', async t => {
         path: ['topPosts']
       }
     ]
+  })
+})
+
+test('preExecution hooks should be able to add to the errors array', async t => {
+  t.plan(9)
+  const app = await createTestGatewayServer(t)
+
+  app.graphql.addHook('preExecution', async (schema, document, context) => {
+    t.ok('preExecution called for foo error')
+    return {
+      errors: [new Error(`foo - ${document.definitions[0].name.value}`)]
+    }
+  })
+
+  app.graphql.addHook('preExecution', async (schema, document, context) => {
+    t.ok('preExecution called for foo error')
+    return {
+      errors: [new Error(`bar - ${document.definitions[0].name.value}`)]
+    }
+  })
+
+  await app.listen(0)
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        topPosts: [
+          {
+            pid: 'p1',
+            author: {
+              id: 'u1'
+            }
+          },
+          {
+            pid: 'p3',
+            author: {
+              id: 'u1'
+            }
+          }
+        ]
+      },
+      topPosts: [
+        {
+          pid: 'p1'
+        },
+        {
+          pid: 'p2'
+        }
+      ]
+    },
+    errors: [
+      {
+        message: 'foo - Query_me'
+      },
+      {
+        message: 'bar - Query_me'
+      },
+      {
+        message: 'foo - Query_topPosts'
+      },
+      {
+        message: 'bar - Query_topPosts'
+      },
+      {
+        message: 'foo - EntitiesQuery'
+      },
+      {
+        message: 'bar - EntitiesQuery'
+      },
+      {
+        message: 'foo - EntitiesQuery'
+      },
+      {
+        message: 'bar - EntitiesQuery'
+      }
+    ]
+  })
+})
+
+test('preExecution hooks should be able to modify the request document', async t => {
+  t.plan(5)
+  const app = await createTestGatewayServer(t)
+
+  app.graphql.addHook('preExecution', async (schema, document, context) => {
+    t.ok('preExecution called')
+    if (document.definitions[0].name.value === 'EntitiesQuery') {
+      if (document.definitions[0].selectionSet.selections[0].selectionSet.selections[1].selectionSet.selections[0].arguments[0]) {
+        const documentClone = JSON.parse(JSON.stringify(document))
+        documentClone.definitions[0].selectionSet.selections[0].selectionSet.selections[1].selectionSet.selections[0].arguments[0].value.value = 1
+        return {
+          document: documentClone
+        }
+      }
+    }
+  })
+
+  await app.listen(0)
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        topPosts: [
+          {
+            pid: 'p1',
+            author: {
+              id: 'u1'
+            }
+          }
+        ]
+      },
+      topPosts: [
+        {
+          pid: 'p1'
+        },
+        {
+          pid: 'p2'
+        }
+      ]
+    }
   })
 })
 
