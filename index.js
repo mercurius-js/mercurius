@@ -38,6 +38,7 @@ const {
   MER_ERR_METHOD_NOT_ALLOWED,
   MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
+const tracer = require('./lib/tracer')
 
 const kLoaders = Symbol('mercurius.loaders')
 const kFactory = Symbol('mercurius.loadersFactory')
@@ -386,12 +387,18 @@ const plugin = fp(async function (app, opts) {
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
+    const span = tracer.startSpan('mercurius - graphql', { parent: tracer.getCurrentSpan() })
+
     context = Object.assign({ app: this, lruGatewayResolvers }, context)
     const reply = context.reply
 
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
     let document = null
+
+    // Add opentelemetry attributes
+    span.setAttribute('mercurius.cached', !!cached)
+
     if (!cached) {
       // We use two caches to avoid errors bust the good
       // cache. This is a protection against DoS attacks
@@ -401,6 +408,7 @@ const plugin = fp(async function (app, opts) {
         // this query errored
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = cachedError.validationErrors
+        span.end()
         throw err
       }
 
@@ -409,6 +417,7 @@ const plugin = fp(async function (app, opts) {
       } catch (syntaxError) {
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = [syntaxError]
+        span.end()
         throw err
       }
 
@@ -429,6 +438,7 @@ const plugin = fp(async function (app, opts) {
         }
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = validationErrors
+        span.end()
         throw err
       }
 
@@ -438,6 +448,7 @@ const plugin = fp(async function (app, opts) {
         if (queryDepthErrors.length > 0) {
           const err = new MER_ERR_GQL_VALIDATION()
           err.errors = queryDepthErrors
+          span.end()
           throw err
         }
       }
@@ -455,6 +466,7 @@ const plugin = fp(async function (app, opts) {
       if (operationAST.operation !== 'query') {
         const err = new MER_ERR_METHOD_NOT_ALLOWED()
         err.errors = [new Error('Operation cannot be performed via a GET request')]
+        span.end()
         throw err
       }
     }
@@ -467,7 +479,9 @@ const plugin = fp(async function (app, opts) {
     if (cached && cached.jit !== null) {
       const execution = await cached.jit.query(root, context, variables || {})
 
-      return maybeFormatErrors(execution, context)
+      const resWithFormatedErrors = maybeFormatErrors(execution, context)
+      span.end()
+      return resWithFormatedErrors
     }
 
     // Validate variables
@@ -476,6 +490,7 @@ const plugin = fp(async function (app, opts) {
       if (Array.isArray(executionContext)) {
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = executionContext
+        span.end()
         throw err
       }
     }
@@ -489,7 +504,9 @@ const plugin = fp(async function (app, opts) {
       operationName
     )
 
-    return maybeFormatErrors(execution, context)
+    const resWithFormatedErrors = maybeFormatErrors(execution, context)
+    span.end()
+    return resWithFormatedErrors
   }
 
   function maybeFormatErrors (execution, context) {
