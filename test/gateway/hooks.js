@@ -3,9 +3,10 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const { GraphQLSchema, parse } = require('graphql')
+const { promisify } = require('util')
 const GQL = require('../..')
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = promisify(setTimeout)
 
 async function createTestService (t, schema, resolvers = {}) {
   const service = Fastify()
