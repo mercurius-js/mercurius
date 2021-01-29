@@ -17,7 +17,6 @@ By using hooks you can interact directly with the GraphQL lifecycle of Mercurius
 
 ## GraphQL Request Hooks
 
-<!-- TODO -->
 It is pretty easy to understand where each hook is executed by looking at the [lifecycle page](lifecycle.md).<br>
 
 There are four different hooks that you can use in GraphQL Request *(in order of execution)*:
@@ -30,8 +29,7 @@ await fastify.ready()
 
 ### preParsing
 
-<!-- TODO -->
-If you are using the `preParsing` hook, you can transform the GraphQL query string before it is parsed. It receives the schema and context objects as other hooks.
+If you are using the `preParsing` hook, you can access the GraphQL query string before it is parsed. It receives the schema and context objects as other hooks.
 
 For instance, you can register some tracing events:
 
@@ -101,7 +99,7 @@ If you get an error during the execution of your hook, you can just throw an err
 **Notice:** there is one exception to this with the `preGatewayExecution` hook, which will continue execution of the rest of the query and append the error to the errors array in the response.
 
 ```js
-fastify.addHook('onResponse', async (request, reply) => {
+fastify.addHook('preParsing', async (schema, source, context) => {
   throw new Error('Some error')
 })
 ```
@@ -132,7 +130,7 @@ Note, the original query will still execute. Adding the above will result in the
 ```json
 {
   "data": {
-    ...
+    foo: "bar"
   },
   "errors": [
     {
