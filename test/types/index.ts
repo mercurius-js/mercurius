@@ -463,3 +463,35 @@ query hello {
   helloWorld
 }
 `)
+
+app.graphql.addHook('preParsing', async function (schema, source, context) {
+  console.log('preParsing called')
+})
+
+app.graphql.addHook('preValidation', async function (schema, document, context) {
+  console.log('preValidation called')
+})
+
+app.graphql.addHook('preExecution', async function (schema, document, context) {
+  console.log('preExecution called')
+  return {
+    document,
+    errors: [
+      new Error('foo')
+    ]
+  }
+})
+
+app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
+  console.log('preGatewayExecution called')
+  return {
+    document,
+    errors: [
+      new Error('foo')
+    ]
+  }
+})
+
+app.graphql.addHook('onResolution', async function (execution, context) {
+  console.log('onResolution called')
+})

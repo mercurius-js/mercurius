@@ -399,7 +399,7 @@ const plugin = fp(async function (app, opts) {
     const reply = context.reply
 
     // Trigger preParsing hook
-    await preParsingHandler(source, context, variables, operationName)
+    await preParsingHandler({ schema: fastifyGraphQl.schema, source, context })
 
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
@@ -425,7 +425,7 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Trigger preValidation hook
-      await preValidationHandler(document, context, variables, operationName)
+      await preValidationHandler({ schema: fastifyGraphQl.schema, document, context })
 
       // Validate
       let validationRules = []
@@ -495,12 +495,9 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
-    // TODO: Trigger preExecution hook for non-gateway services here
+    // TODO: Trigger preExecution hook here
     const request = { schema: fastifyGraphQl.schema, document, context }
-    if (!gateway) {
-      // TODO: Maybe assign document here
-      await preExecutionHandler(request)
-    }
+    await preExecutionHandler(request)
 
     const execution = await execute(
       fastifyGraphQl.schema,
@@ -528,7 +525,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     // TODO: trigger onResolution hook here
-    await onResolutionHandler(execution, context)
+    await onResolutionHandler({ execution, context })
     return execution
   }
 }, {
