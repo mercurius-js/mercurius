@@ -272,7 +272,7 @@ test('preExecutionHookRunner - Promises can modify a query document', (t) => {
 
   function done (err, request, executionResult) {
     t.error(err)
-    t.deepEqual(request, { schema: 'schema', document: { new: 'new' }, context: 'context' })
+    t.deepEqual(request, { schema: 'schema', document: { new: 'new' }, context: 'context', modifiedQuery: true })
     t.deepEqual(executionResult, {})
   }
 })

@@ -495,7 +495,7 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
-    // TODO: Trigger preExecution hook here
+    // Trigger preExecution hook
     const request = { schema: fastifyGraphQl.schema, document, context }
     await preExecutionHandler(request)
 
@@ -524,7 +524,7 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
-    // TODO: trigger onResolution hook here
+    // Trigger onResolution hook
     await onResolutionHandler({ execution, context })
     return execution
   }
