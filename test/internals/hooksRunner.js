@@ -202,9 +202,8 @@ test('preExecutionHooksRunner - Promises that resolve to a value do not change t
   t.plan(10)
 
   const originalRequest = { schema: 'schema', document: 'document', context: 'context' }
-  const request = clone(originalRequest)
 
-  await preExecutionHooksRunner([fn1, fn2, fn3], request)
+  await preExecutionHooksRunner([fn1, fn2, fn3], originalRequest)
 
   function fn1 (schema, document, context) {
     t.strictEqual(schema, 'schema')
@@ -227,19 +226,15 @@ test('preExecutionHooksRunner - Promises that resolve to a value do not change t
     return Promise.resolve({ object: true })
   }
 
-  function clone (obj) {
-    return JSON.parse(JSON.stringify(obj))
-  }
-
-  t.deepEqual(originalRequest, request)
+  t.deepEqual(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
 })
 
 test('preExecutionHooksRunner - Promises can modify a query document', async (t) => {
-  t.plan(4)
+  t.plan(5)
 
   const originalRequest = { schema: 'schema', document: { old: 'old' }, context: 'context' }
 
-  await preExecutionHooksRunner([fn1], originalRequest)
+  const { modifiedDocument } = await preExecutionHooksRunner([fn1], originalRequest)
 
   function fn1 (schema, document, context) {
     t.strictEqual(schema, 'schema')
@@ -248,7 +243,8 @@ test('preExecutionHooksRunner - Promises can modify a query document', async (t)
     return Promise.resolve({ document: { new: 'new' } })
   }
 
-  t.deepEqual(originalRequest, { schema: 'schema', document: { new: 'new' }, context: 'context', modifiedQuery: true })
+  t.deepEqual(originalRequest, { schema: 'schema', document: { old: 'old' }, context: 'context' })
+  t.deepEqual(modifiedDocument, { new: 'new' })
 })
 
 test('preExecutionHooksRunner - Promises can add to existing execution errors', async (t) => {

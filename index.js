@@ -496,12 +496,11 @@ const plugin = fp(async function (app, opts) {
     }
 
     // Trigger preExecution hook
-    const request = { schema: fastifyGraphQl.schema, document, context }
-    await preExecutionHandler(request)
+    const { modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context })
 
     const execution = await execute(
       fastifyGraphQl.schema,
-      request.document,
+      modifiedDocument || document,
       root,
       context,
       variables,
