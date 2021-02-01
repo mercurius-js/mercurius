@@ -3,9 +3,10 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
 const { parse, GraphQLSchema } = require('graphql')
+const { promisify } = require('util')
 const GQL = require('..')
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const immediate = promisify(setImmediate)
 
 process.removeAllListeners('warning')
 
@@ -26,16 +27,11 @@ const resolvers = {
 
 const query = '{ add(x: 2, y: 2) }'
 
-async function createTestServer (t, customResolvers = resolvers) {
+function createTestServer (t, customResolvers = resolvers) {
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
-  })
+  t.tearDown(() => app.close())
 
   app.register(GQL, { schema, resolvers: customResolvers })
-
-  // needed so that graphql is defined
-  await app.ready()
 
   return app
 }
@@ -48,7 +44,7 @@ test('hooks', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.is(source, query)
     t.type(context, 'object')
@@ -56,7 +52,7 @@ test('hooks', async t => {
   })
 
   app.graphql.addHook('preValidation', async function (schema, document, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.deepEqual(document, parse(query))
     t.type(context, 'object')
@@ -64,7 +60,7 @@ test('hooks', async t => {
   })
 
   app.graphql.addHook('preExecution', async function (schema, document, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.deepEqual(document, parse(query))
     t.type(context, 'object')
@@ -72,18 +68,15 @@ test('hooks', async t => {
   })
 
   app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
-    await sleep(1)
     t.fail('this should not be called')
   })
 
   app.graphql.addHook('onResolution', async function (execution, context) {
-    await sleep(1)
+    await immediate()
     t.type(execution, 'object')
     t.type(context, 'object')
     t.ok('onResolution called')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -104,7 +97,7 @@ test('hooks can be called multiple times', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.is(source, query)
     t.type(context, 'object')
@@ -112,14 +105,12 @@ test('hooks can be called multiple times', async t => {
   })
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.is(source, query)
     t.type(context, 'object')
     t.ok('preParsing called again')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -200,8 +191,6 @@ test('preParsing hooks should handle errors', async t => {
     t.fail('this should not be called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -236,8 +225,6 @@ test('preParsing hooks should be able to put values onto the context', async t =
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -279,8 +266,6 @@ test('preValidation hooks should handle errors', async t => {
     t.fail('this should not be called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -315,8 +300,6 @@ test('preValidation hooks should be able to put values onto the context', async 
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -354,8 +337,6 @@ test('preExecution hooks should handle errors', async t => {
     t.fail('this should not be called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -390,8 +371,6 @@ test('preExecution hooks should be able to put values onto the context', async t
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -461,8 +440,6 @@ test('preExecution hooks should be able to modify the query document AST', async
     }
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -500,8 +477,6 @@ test('preExecution hooks should be able to add to the errors array', async t => 
       errors: [new Error('bar')]
     }
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -557,8 +532,6 @@ test('preExecution hooks should be able to add to the errors array that is alrea
     }
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -597,8 +570,6 @@ test('preGatewayExecution hooks should never be called in a non-gateway graphql 
     t.fail('this should not be called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -629,8 +600,6 @@ test('onResolution hooks should handle errors', async t => {
   app.graphql.addHook('onResolution', async (execution, context) => {
     t.fail('this should not be called')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -664,8 +633,6 @@ test('onResolution hooks should be able to put values onto the context', async t
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',

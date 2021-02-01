@@ -6,7 +6,7 @@ const { GraphQLSchema, parse } = require('graphql')
 const { promisify } = require('util')
 const GQL = require('../..')
 
-const sleep = promisify(setTimeout)
+const immediate = promisify(setImmediate)
 
 async function createTestService (t, schema, resolvers = {}) {
   const service = Fastify()
@@ -157,7 +157,6 @@ async function createTestGatewayServer (t) {
       }]
     }
   })
-  await gateway.ready()
   return gateway
 }
 
@@ -169,7 +168,7 @@ test('gateway - hooks', async (t) => {
   const app = await createTestGatewayServer(t)
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.is(source, query)
     t.type(context, 'object')
@@ -177,7 +176,7 @@ test('gateway - hooks', async (t) => {
   })
 
   app.graphql.addHook('preValidation', async function (schema, document, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.deepEqual(document, parse(query))
     t.type(context, 'object')
@@ -185,7 +184,7 @@ test('gateway - hooks', async (t) => {
   })
 
   app.graphql.addHook('preExecution', async function (schema, document, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.deepEqual(document, parse(query))
     t.type(context, 'object')
@@ -198,7 +197,7 @@ test('gateway - hooks', async (t) => {
   //  - once for reference type topPosts on User
   //  - once for reference type author on Post
   app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
-    await sleep(1)
+    await immediate()
     t.type(schema, GraphQLSchema)
     t.true(document, 'object')
     t.type(context, 'object')
@@ -206,13 +205,11 @@ test('gateway - hooks', async (t) => {
   })
 
   app.graphql.addHook('onResolution', async function (execution, context) {
-    await sleep(1)
+    await immediate()
     t.type(execution, 'object')
     t.type(context, 'object')
     t.ok('onResolution called')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -318,8 +315,6 @@ test('gateway - preParsing hooks should handle errors', async t => {
     t.fail('this should not be called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -354,8 +349,6 @@ test('gateway - preParsing hooks should be able to put values onto the context',
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -419,11 +412,8 @@ test('gateway - preValidation hooks should handle errors', async t => {
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    await sleep(1)
     t.fail('this should not be called')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -459,8 +449,6 @@ test('gateway - preValidation hooks should be able to put values onto the contex
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -523,8 +511,6 @@ test('gateway - preExecution hooks should handle errors', async t => {
     t.fail('this should not be called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -559,8 +545,6 @@ test('gateway - preExecution hooks should be able to put values onto the context
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -617,8 +601,6 @@ test('gateway - preExecution hooks should be able to modify the request document
     }
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -673,8 +655,6 @@ test('gateway - preExecution hooks should be able to add to the errors array', a
       errors: [new Error('bar')]
     }
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -748,8 +728,6 @@ test('gateway - preGatewayExecution hooks should handle errors', async t => {
     t.ok('onResolution called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -794,8 +772,6 @@ test('gateway - preGatewayExecution hooks should be able to put values onto the 
     t.type(context, 'object')
     t.is(context[document.definitions[0].name.value], 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -859,8 +835,6 @@ test('gateway - preGatewayExecution hooks should be able to add to the errors ar
       errors: [new Error(`bar - ${document.definitions[0].name.value}`)]
     }
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
@@ -947,8 +921,6 @@ test('gateway - preGatewayExecution hooks should be able to modify the request d
     }
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -999,8 +971,6 @@ test('gateway - onResolution hooks should handle errors', async t => {
     t.fail('this should not be called')
   })
 
-  await app.listen(0)
-
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -1033,8 +1003,6 @@ test('gateway - onResolution hooks should be able to put values onto the context
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
-
-  await app.listen(0)
 
   const res = await app.inject({
     method: 'POST',
