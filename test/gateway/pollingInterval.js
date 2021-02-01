@@ -1012,7 +1012,6 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
 
   const userService = Fastify()
   const gateway = Fastify()
-  const userServicePort = 3001
 
   userService.register(GQL, {
     schema: oldSchema,
@@ -1027,7 +1026,9 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     federationMetadata: true
   })
 
-  await userService.listen(userServicePort)
+  await userService.listen(0)
+
+  const userServicePort = userService.server.address().port
 
   gateway.register(GQL, {
     gateway: {
@@ -1070,7 +1071,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     }
   })
 
-  userService.close()
+  await userService.close()
 
   const restartedUserService = Fastify()
 
