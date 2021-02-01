@@ -399,7 +399,9 @@ const plugin = fp(async function (app, opts) {
     const reply = context.reply
 
     // Trigger preParsing hook
-    await preParsingHandler({ schema: fastifyGraphQl.schema, source, context })
+    if (context.preParsing !== null) {
+      await preParsingHandler({ schema: fastifyGraphQl.schema, source, context })
+    }
 
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
@@ -425,7 +427,9 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Trigger preValidation hook
-      await preValidationHandler({ schema: fastifyGraphQl.schema, document, context })
+      if (context.preValidation !== null) {
+        await preValidationHandler({ schema: fastifyGraphQl.schema, document, context })
+      }
 
       // Validate
       let validationRules = []
@@ -496,7 +500,10 @@ const plugin = fp(async function (app, opts) {
     }
 
     // Trigger preExecution hook
-    const { modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context })
+    let modifiedDocument
+    if (context.preExecution !== null) {
+      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+    }
 
     const execution = await execute(
       fastifyGraphQl.schema,
@@ -524,7 +531,9 @@ const plugin = fp(async function (app, opts) {
     }
 
     // Trigger onResolution hook
-    await onResolutionHandler({ execution, context })
+    if (context.onResolution !== null) {
+      await onResolutionHandler({ execution, context })
+    }
     return execution
   }
 }, {
