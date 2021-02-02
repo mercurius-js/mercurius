@@ -30,6 +30,8 @@ The previous name of this module was [fastify-gql](http://npm.im/fastify-gql) (<
   - [makeExecutableSchema support](#makeexecutableschema-support)
 - [Context](#context)
 - [API](#api)
+- [Lifecycle](#lifecycle)
+- [Hooks](#hooks)
 - [Federation](#federation)
 - [Subscriptions](#subscriptions)
 - [Batched Queries](#batched-queries)
@@ -119,6 +121,14 @@ app.listen(3000)
 ## API
 
 [More info](docs/api/options.md)
+
+## Lifecycle
+
+[More info](docs/lifecycle.md)
+
+## Hooks
+
+[More info](docs/hooks.md)
 
 ## Federation
 
