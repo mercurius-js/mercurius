@@ -31,6 +31,7 @@ const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 const {
   ErrorWithProps,
   defaultErrorFormatter,
+  addErrorsToExecutionResult,
   MER_ERR_GQL_INVALID_SCHEMA,
   MER_ERR_GQL_GATEWAY,
   MER_ERR_GQL_VALIDATION,
@@ -38,9 +39,9 @@ const {
   MER_ERR_METHOD_NOT_ALLOWED,
   MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
-
-const kLoaders = Symbol('mercurius.loaders')
-const kFactory = Symbol('mercurius.loadersFactory')
+const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
+const { kLoaders, kFactory, kHooks } = require('./lib/symbols')
+const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler } = require('./lib/handlers')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -385,9 +386,22 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.transformSchema(opts.schemaTransforms)
   }
 
+  fastifyGraphQl[kHooks] = new Hooks()
+
+  // Wrapper that we expose to the user for GraphQL hooks handling
+  fastifyGraphQl.addHook = function (name, fn) {
+    this[kHooks].add(name, fn)
+  }
+
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this, lruGatewayResolvers }, context)
+    context = Object.assign({ app: this, lruGatewayResolvers, errors: null }, context)
+    context = assignLifeCycleHooksToContext(fastifyGraphQl[kHooks], context)
     const reply = context.reply
+
+    // Trigger preParsing hook
+    if (context.preParsing !== null) {
+      await preParsingHandler({ schema: fastifyGraphQl.schema, source, context })
+    }
 
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
@@ -410,6 +424,11 @@ const plugin = fp(async function (app, opts) {
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = [syntaxError]
         throw err
+      }
+
+      // Trigger preValidation hook
+      if (context.preValidation !== null) {
+        await preValidationHandler({ schema: fastifyGraphQl.schema, document, context })
       }
 
       // Validate
@@ -480,9 +499,15 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
+    // Trigger preExecution hook
+    let modifiedDocument
+    if (context.preExecution !== null) {
+      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+    }
+
     const execution = await execute(
       fastifyGraphQl.schema,
-      document,
+      modifiedDocument || document,
       root,
       context,
       variables,
@@ -492,7 +517,9 @@ const plugin = fp(async function (app, opts) {
     return maybeFormatErrors(execution, context)
   }
 
-  function maybeFormatErrors (execution, context) {
+  async function maybeFormatErrors (execution, context) {
+    execution = addErrorsToExecutionResult(execution, context.errors)
+
     if (execution.errors) {
       const { reply } = context
       const { statusCode, response: { data, errors } } = errorFormatter(execution, context)
@@ -501,6 +528,11 @@ const plugin = fp(async function (app, opts) {
       if (reply) {
         reply.code(statusCode)
       }
+    }
+
+    // Trigger onResolution hook
+    if (context.onResolution !== null) {
+      await onResolutionHandler({ execution, context })
     }
     return execution
   }

@@ -61,6 +61,71 @@ export interface MercuriusLoaders<TContext extends Record<string, any> = Mercuri
   };
 }
 
+// ---------------
+// Lifecycle hooks
+// ---------------
+
+/**
+ * `preParsing` is the first hook to be executed in the GraphQL request lifecycle. The next hook will be `preValidation`.
+ */
+export interface preParsingHookHandler<TContext = MercuriusContext> {
+  (
+    schema: GraphQLSchema,
+    source: string,
+    context: TContext,
+  ): Promise<void>;
+}
+
+/**
+ * `preValidation` is the second hook to be executed in the GraphQL request lifecycle. The previous hook was `preParsing`, the next hook will be `preExecution`.
+ */
+export interface preValidationHookHandler<TContext = MercuriusContext> {
+  (
+    schema: GraphQLSchema,
+    source: DocumentNode,
+    context: TContext,
+  ): Promise<void>;
+}
+
+/**
+ * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`, the next hook will be `preGatewayExecution`.
+ * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
+ *  - `document`
+ *  - `errors`
+ */
+export interface preExecutionHookHandler<TContext = MercuriusContext, TError extends Error = Error> {
+  (
+    schema: GraphQLSchema,
+    source: DocumentNode,
+    context: TContext,
+  ): Promise<PreExecutionHookResponse<TError> | void>;
+}
+
+/**
+ * `preGatewayExecution` is the fourth hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`, the next hook will be `onResolution`.
+ * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
+ *  - `document`
+ *  - `errors`
+ * This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
+ */
+export interface preGatewayExecutionHookHandler<TContext = MercuriusContext, TError extends Error = Error> {
+  (
+    schema: GraphQLSchema,
+    source: DocumentNode,
+    context: TContext,
+  ): Promise<PreExecutionHookResponse<TError> | void>;
+}
+
+/**
+ * `onResolution` is the fifth and final hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`.
+ */
+export interface onResolutionHookHandler<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext> {
+  (
+    execution: ExecutionResult<TData>,
+    context: TContext,
+  ): Promise<void>;
+}
+
 interface ServiceConfig {
   setSchema: (schema: string) => ServiceConfig;
 }
@@ -118,6 +183,42 @@ interface MercuriusPlugin {
   schema: GraphQLSchema;
 
   gateway: Gateway;
+
+  // addHook: overloads
+
+  // Lifecycle addHooks
+
+  /**
+   * `preParsing` is the first hook to be executed in the GraphQL request lifecycle. The next hook will be `preValidation`.
+   */
+  addHook<TContext = MercuriusContext>(name: 'preParsing', hook: preParsingHookHandler<TContext>): void;
+
+  /**
+   * `preValidation` is the second hook to be executed in the GraphQL request lifecycle. The previous hook was `preParsing`, the next hook will be `preExecution`.
+   */
+  addHook<TContext = MercuriusContext>(name: 'preValidation', hook: preValidationHookHandler<TContext>): void;
+
+  /**
+   * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`, the next hook will be `preGatewayExecution`.
+   * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
+   *  - `document`
+   *  - `errors`
+   */
+  addHook<TContext = MercuriusContext, TError extends Error = Error>(name: 'preExecution', hook: preExecutionHookHandler<TContext, TError>): void;
+
+  /**
+   * `preGatewayExecution` is the fourth hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`, the next hook will be `onResolution`.
+   * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
+   *  - `document`
+   *  - `errors`
+   * This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
+   */
+  addHook<TContext = MercuriusContext, TError extends Error = Error>(name: 'preGatewayExecution', hook: preGatewayExecutionHookHandler<TContext, TError>): void;
+
+  /**
+   * `onResolution` is the fifth and final hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`.
+   */
+  addHook<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext>(name: 'onResolution', hook: onResolutionHookHandler<TData, TContext>): void;
 }
 
 interface QueryRequest {
@@ -578,3 +679,8 @@ type ValidationRules =
       variables?: Record<string, any>;
       operationName?: string;
     }) => ValidationRule[]);
+
+export interface PreExecutionHookResponse<TError extends Error> {
+  document?: DocumentNode
+  errors?: TError[]
+}

@@ -12,6 +12,8 @@
   * [Error extensions](/docs/api/options#use-errors-extension-to-provide-additional-information-to-query-errors)
 * [Context](/docs/context)
 * [Loaders](/docs/loaders)
+* [Hooks](/docs/hooks)
+* [Lifecycle](/docs/lifecycle)
 * [Federation](/docs/federation)
 * [Subscriptions](/docs/subscriptions)
 * [Batched Queries](/docs/batched-queries)
