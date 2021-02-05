@@ -20,7 +20,7 @@
 * [Persisted Queries](/docs/persisted-queries)
 * [TypeScript Usage](/docs/typescript)
 * [Integrations](/docs/integrations/)
-  * [@nexus/schema](/docs/integrations/nexus-schema)
+  * [nexus](/docs/integrations/nexus)
   * [Testing](/docs/integrations/mercurius-integration-testing)
   * [Tracing - OpenTelemetry](/docs/integrations/open-telemetry)
 * [Related plugins](/docs/plugins)
