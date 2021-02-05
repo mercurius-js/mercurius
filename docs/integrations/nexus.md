@@ -1,28 +1,30 @@
-# Integrating Nexus Schema with Mercurius
+# Integrating Nexus with Mercurius
 
-You can easily use [Nexus schema](https://github.com/graphql-nexus/schema) in combination with Mercurius.
+You can easily use [Nexus](https://github.com/graphql-nexus/nexus) in combination with Mercurius.
 This allows you to follow a code first approach instead of the SDL first.
 
 ## Installation
 
 ```bash
-npm install --save @nexus/schema
+npm install --save nexus
 ```
 
 Now you can define a schema.
 
 ```js
 // schema.js
-const { objectType, intArg } = require("@nexus/schema");
+const { objectType, intArg, nonNull } = require("nexus");
 const args = {
-  x: intArg({
-    required: true,
-    description: "value of x",
-  }),
-  y: intArg({
-    required: true,
-    description: "value of y",
-  }),
+  x: nonNull(
+    intArg({
+      description: 'value of x',
+    })
+  ),
+  y: nonNull(
+    intArg({
+      description: 'value of y',
+    })
+  ),
 };
 exports.Query = objectType({
   name: "Query",
@@ -45,7 +47,7 @@ This can be linked to the Mercurius plugin:
 const Fastify = require("fastify");
 const mercurius = require("mercurius");
 const path = require("path");
-const { makeSchema } = require("@nexus/schema");
+const { makeSchema } = require("nexus");
 const types = require("./schema");
 
 const schema = makeSchema({
