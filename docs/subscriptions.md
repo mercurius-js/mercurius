@@ -324,17 +324,12 @@ app.register(mercurius, {
 
 ### Subscriptions with fastify-websocket
 
-Mercurius uses `fastify-websocket` internally, but you can still use it by registering before `mercurius` plugin. If so, it is recommened to set appropriate `handle` and `options.maxPayload` like this:
+Mercurius uses `fastify-websocket` internally, but you can still use it by registering before `mercurius` plugin. If so, it is recommened to set the appropriate `options.maxPayload` like this:
 
 ```js
 const fastifyWebsocket = require('fastify-websocket')
 
-function handle (conn) {
-  conn.end(JSON.stringify({ error: 'unknown route' }))
-}
-
 app.register(fastifyWebsocket, {
-  handle,
   options: {
     maxPayload: 1048576
   }

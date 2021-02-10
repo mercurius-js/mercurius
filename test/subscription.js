@@ -598,43 +598,6 @@ test('subscription server sends update to subscriptions with custom context', t 
   })
 })
 
-test('subscription server register handle function arg is not empty', t => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const resolvers = {
-    add: async ({ x, y }) => x + y
-  }
-
-  t.tearDown(app.close)
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    subscription: true
-  })
-
-  app.listen(0, err => {
-    t.error(err)
-
-    const url = 'ws://localhost:' + (app.server.address()).port + '/'
-    const ws = new WebSocket(url)
-    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
-
-    client.setEncoding('utf8')
-    client.on('data', chunk => {
-      t.equal(chunk, '{"error":"unknown route"}')
-      client.end()
-      t.end()
-    })
-  })
-})
-
 test('subscription socket protocol different than graphql-ws, protocol = foobar', t => {
   const app = Fastify()
   const schema = `
@@ -1758,12 +1721,7 @@ test('subscription server works with fastify-websocket', t => {
   t.tearDown(() => app.close())
   t.plan(3)
 
-  function handle (conn) {
-    conn.end(JSON.stringify({ error: 'unknown route' }))
-  }
-
   app.register(fastifyWebsocket, {
-    handle,
     options: {
       maxPayload: 1048576
     }
