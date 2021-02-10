@@ -3,7 +3,6 @@
 const fp = require('fastify-plugin')
 const LRU = require('tiny-lru')
 const routes = require('./lib/routes')
-const { BadRequest, MethodNotAllowed } = require('http-errors')
 const { compileQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
 const {
@@ -27,12 +26,22 @@ const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
 const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
-const { PubSub } = require('./lib/subscriber')
-const { ErrorWithProps, defaultErrorFormatter } = require('./lib/errors')
+const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
-
-const kLoaders = Symbol('mercurius.loaders')
-const kFactory = Symbol('mercurius.loadersFactory')
+const {
+  ErrorWithProps,
+  defaultErrorFormatter,
+  addErrorsToExecutionResult,
+  MER_ERR_GQL_INVALID_SCHEMA,
+  MER_ERR_GQL_GATEWAY,
+  MER_ERR_GQL_VALIDATION,
+  MER_ERR_INVALID_OPTS,
+  MER_ERR_METHOD_NOT_ALLOWED,
+  MER_ERR_INVALID_METHOD
+} = require('./lib/errors')
+const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
+const { kLoaders, kFactory, kHooks } = require('./lib/symbols')
+const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler } = require('./lib/handlers')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -46,7 +55,7 @@ function buildCache (opts) {
       // cache size as specified
       return LRU(opts.cache)
     } else if (!isBoolean && !isNumber) {
-      throw new Error('Cache type is not supported')
+      throw new MER_ERR_INVALID_OPTS('Cache type is not supported')
     }
   }
 
@@ -74,27 +83,27 @@ const plugin = fp(async function (app, opts) {
       opts.persistedQueryProvider = persistedQueryDefaults.prepared(opts.persistedQueries)
     }
   } else if (opts.onlyPersisted) {
-    throw new Error('onlyPersisted is true but there are no persistedQueries')
+    throw new MER_ERR_INVALID_OPTS('onlyPersisted is true but there are no persistedQueries')
   }
 
   if (opts.persistedQueryProvider) {
     if (opts.persistedQueryProvider.getHash) {
       if (!opts.persistedQueryProvider.getQueryFromHash) {
-        throw new Error('persistedQueryProvider: getQueryFromHash is required when getHash is provided')
+        throw new MER_ERR_INVALID_OPTS('persistedQueryProvider: getQueryFromHash is required when getHash is provided')
       }
     } else {
-      throw new Error('persistedQueryProvider: getHash is required')
+      throw new MER_ERR_INVALID_OPTS('persistedQueryProvider: getHash is required')
     }
 
     if (opts.persistedQueryProvider.getHashForQuery) {
       if (!opts.persistedQueryProvider.saveQuery) {
-        throw new Error('persistedQueryProvider: saveQuery is required when getHashForQuery is provided')
+        throw new MER_ERR_INVALID_OPTS('persistedQueryProvider: saveQuery is required when getHashForQuery is provided')
       }
     }
   }
 
   if (typeof minJit !== 'number') {
-    throw new Error('the jit option must be a number')
+    throw new MER_ERR_INVALID_OPTS('the jit option must be a number')
   }
 
   const root = {}
@@ -107,23 +116,30 @@ const plugin = fp(async function (app, opts) {
   let verifyClient
   let subscriptionContextFn
   let onConnect
+  let onDisconnect
 
   if (typeof subscriptionOpts === 'object') {
-    emitter = subscriptionOpts.emitter || mq()
+    if (subscriptionOpts.pubsub) {
+      subscriber = subscriptionOpts.pubsub
+    } else {
+      emitter = subscriptionOpts.emitter || mq()
+      subscriber = new PubSub(emitter)
+    }
     verifyClient = subscriptionOpts.verifyClient
     subscriptionContextFn = subscriptionOpts.context
     onConnect = subscriptionOpts.onConnect
+    onDisconnect = subscriptionOpts.onDisconnect
   } else if (subscriptionOpts === true) {
     emitter = mq()
+    subscriber = new PubSub(emitter)
   }
 
   if (subscriptionOpts) {
-    subscriber = new PubSub(emitter)
     fastifyGraphQl.pubsub = subscriber
   }
 
   if (gateway && (schema || opts.resolvers || opts.loaders)) {
-    throw new Error('Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
+    throw new MER_ERR_INVALID_OPTS('Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 
   if (Array.isArray(schema)) {
@@ -189,7 +205,7 @@ const plugin = fp(async function (app, opts) {
     if (schemaValidationErrors.length === 1) {
       throw schemaValidationErrors[0]
     } else if (schemaValidationErrors.length > 1) {
-      const err = new Error('Schema issues, check out the .errors property on the Error.')
+      const err = new MER_ERR_GQL_INVALID_SCHEMA()
       err.errors = schemaValidationErrors
       throw err
     }
@@ -204,15 +220,16 @@ const plugin = fp(async function (app, opts) {
       errorFormatter: opts.errorFormatter,
       ide: optsIde,
       ideSettings: opts.playgroundSettings,
+      playgroundHeaders: opts.playgroundHeaders,
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
       persistedQueryProvider: opts.persistedQueryProvider,
       allowBatchedQueries: opts.allowBatchedQueries,
-      schema: fastifyGraphQl.schema,
       subscriber,
       verifyClient,
       onConnect,
+      onDisconnect,
       lruGatewayResolvers,
       entityResolversFactory,
       subscriptionContextFn
@@ -234,7 +251,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.replaceSchema = function (s) {
     if (!s || typeof s !== 'object') {
-      throw new Error('Must provide valid Document AST')
+      throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
     }
 
     fastifyGraphQl.schema = s
@@ -246,13 +263,16 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.extendSchema = function (s) {
     if (gateway) {
-      throw new Error('Calling extendSchema method when plugin is running in gateway mode is not allowed')
+      throw new MER_ERR_GQL_GATEWAY('Calling extendSchema method when plugin is running in gateway mode is not allowed')
+    }
+    if (opts.federationMetadata) {
+      throw new MER_ERR_INVALID_METHOD('Calling extendSchema method when federationMetadata is enabled is not allowed')
     }
 
     if (typeof s === 'string') {
       s = parse(s)
     } else if (!s || typeof s !== 'object') {
-      throw new Error('Must provide valid Document AST')
+      throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
     }
 
     fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
@@ -260,7 +280,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
     if (gateway) {
-      throw new Error('Calling defineResolvers method when plugin is running in gateway mode is not allowed')
+      throw new MER_ERR_GQL_GATEWAY('Calling defineResolvers method when plugin is running in gateway mode is not allowed')
     }
 
     for (const name of Object.keys(resolvers)) {
@@ -286,7 +306,7 @@ const plugin = fp(async function (app, opts) {
           } else if (fields[prop]) {
             fields[prop].resolve = resolver[prop]
           } else {
-            throw new Error(`Cannot find field ${prop} of type ${type}`)
+            throw new MER_ERR_INVALID_OPTS(`Cannot find field ${prop} of type ${type}`)
           }
         }
       } else if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
@@ -298,7 +318,7 @@ const plugin = fp(async function (app, opts) {
         const resolver = resolvers[name]
         type.resolveType = resolver.resolveType
       } else {
-        throw new Error(`Cannot find type ${name}`)
+        throw new MER_ERR_INVALID_OPTS(`Cannot find type ${name}`)
       }
     }
   }
@@ -307,7 +327,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.defineLoaders = function (loaders) {
     if (gateway) {
-      throw new Error('Calling defineLoaders method when plugin is running in gateway mode is not allowed')
+      throw new MER_ERR_GQL_GATEWAY('Calling defineLoaders method when plugin is running in gateway mode is not allowed')
     }
 
     // set up the loaders factory
@@ -321,7 +341,7 @@ const plugin = fp(async function (app, opts) {
       // async needed because of throw
       return async function (obj, params, { reply }) {
         if (!reply) {
-          throw new Error('loaders only work via reply.graphql()')
+          throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
         return reply[kLoaders][name]({ obj, params })
       }
@@ -366,9 +386,22 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.transformSchema(opts.schemaTransforms)
   }
 
+  fastifyGraphQl[kHooks] = new Hooks()
+
+  // Wrapper that we expose to the user for GraphQL hooks handling
+  fastifyGraphQl.addHook = function (name, fn) {
+    this[kHooks].add(name, fn)
+  }
+
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this, lruGatewayResolvers }, context)
+    context = Object.assign({ app: this, lruGatewayResolvers, errors: null }, context)
+    context = assignLifeCycleHooksToContext(fastifyGraphQl[kHooks], context)
     const reply = context.reply
+
+    // Trigger preParsing hook
+    if (context.preParsing !== null) {
+      await preParsingHandler({ schema: fastifyGraphQl.schema, source, context })
+    }
 
     // Parse, with a little lru
     const cached = lru !== null && lru.get(source)
@@ -380,7 +413,7 @@ const plugin = fp(async function (app, opts) {
 
       if (cachedError) {
         // this query errored
-        const err = new BadRequest()
+        const err = new MER_ERR_GQL_VALIDATION()
         err.errors = cachedError.validationErrors
         throw err
       }
@@ -388,9 +421,14 @@ const plugin = fp(async function (app, opts) {
       try {
         document = parse(source)
       } catch (syntaxError) {
-        const err = new BadRequest()
+        const err = new MER_ERR_GQL_VALIDATION()
         err.errors = [syntaxError]
         throw err
+      }
+
+      // Trigger preValidation hook
+      if (context.preValidation !== null) {
+        await preValidationHandler({ schema: fastifyGraphQl.schema, document, context })
       }
 
       // Validate
@@ -408,7 +446,7 @@ const plugin = fp(async function (app, opts) {
         if (lruErrors) {
           lruErrors.set(source, { document, validationErrors })
         }
-        const err = new BadRequest()
+        const err = new MER_ERR_GQL_VALIDATION()
         err.errors = validationErrors
         throw err
       }
@@ -417,7 +455,7 @@ const plugin = fp(async function (app, opts) {
         const queryDepthErrors = queryDepth(document.definitions, queryDepthLimit)
 
         if (queryDepthErrors.length > 0) {
-          const err = new BadRequest()
+          const err = new MER_ERR_GQL_VALIDATION()
           err.errors = queryDepthErrors
           throw err
         }
@@ -434,7 +472,7 @@ const plugin = fp(async function (app, opts) {
       // let's validate we cannot do mutations here
       const operationAST = getOperationAST(document, operationName)
       if (operationAST.operation !== 'query') {
-        const err = new MethodNotAllowed()
+        const err = new MER_ERR_METHOD_NOT_ALLOWED()
         err.errors = [new Error('Operation cannot be performed via a GET request')]
         throw err
       }
@@ -455,15 +493,21 @@ const plugin = fp(async function (app, opts) {
     if (variables !== undefined) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
       if (Array.isArray(executionContext)) {
-        const err = new BadRequest()
+        const err = new MER_ERR_GQL_VALIDATION()
         err.errors = executionContext
         throw err
       }
     }
 
+    // Trigger preExecution hook
+    let modifiedDocument
+    if (context.preExecution !== null) {
+      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+    }
+
     const execution = await execute(
       fastifyGraphQl.schema,
-      document,
+      modifiedDocument || document,
       root,
       context,
       variables,
@@ -473,7 +517,9 @@ const plugin = fp(async function (app, opts) {
     return maybeFormatErrors(execution, context)
   }
 
-  function maybeFormatErrors (execution, context) {
+  async function maybeFormatErrors (execution, context) {
+    execution = addErrorsToExecutionResult(execution, context.errors)
+
     if (execution.errors) {
       const { reply } = context
       const { statusCode, response: { data, errors } } = errorFormatter(execution, context)
@@ -482,6 +528,11 @@ const plugin = fp(async function (app, opts) {
       if (reply) {
         reply.code(statusCode)
       }
+    }
+
+    // Trigger onResolution hook
+    if (context.onResolution !== null) {
+      await onResolutionHandler({ execution, context })
     }
     return execution
   }
@@ -494,5 +545,6 @@ plugin.ErrorWithProps = ErrorWithProps
 plugin.defaultErrorFormatter = defaultErrorFormatter
 plugin.persistedQueryDefaults = persistedQueryDefaults
 plugin.buildFederationSchema = buildFederationSchema
+plugin.withFilter = withFilter
 
 module.exports = plugin

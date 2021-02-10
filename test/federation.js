@@ -72,7 +72,7 @@ test('federation support using schema from buildFederationSchema', async (t) => 
     extend type Query {
       me: User
     }
-    
+
     extend type Mutation {
       add(a: Int, b: Int): Int
     }
@@ -527,6 +527,40 @@ test('buildFederationSchema works correctly with multiple type extensions', asyn
 
     extend type User @key(fields: "id") {
       other: String
+    }
+  `
+  try {
+    buildFederationSchema(schema)
+    t.pass('schema built without errors')
+  } catch (err) {
+    t.fail('it should not throw errors', err)
+  }
+})
+
+test('buildFederationSchema ignores UniqueDirectivesPerLocationRule when validating', async (t) => {
+  const schema = `
+    directive @upper on FIELD_DEFINITION
+
+    extend type Query {
+      topPosts: [Post]
+    }
+
+    type Post @key(fields: "id") {
+      id: ID!
+      title: String @upper
+      content: String
+      author: User
+    }
+
+    directive @upper on FIELD_DEFINITION
+
+    extend type User @key(fields: "id") {
+      id: ID! @external
+      posts: [Post]
+    }
+
+    extend type User @key(fields: "id") {
+      other: String @upper
     }
   `
   try {

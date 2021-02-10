@@ -61,7 +61,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
   })
 })
 
-test('subscripction connection sends error message when message is not json string', async (t) => {
+test('subscription connection sends error message when message is not json string', async (t) => {
   t.plan(1)
 
   const sc = new SubscriptionConnection({

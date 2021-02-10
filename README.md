@@ -2,7 +2,7 @@
 
 ![CI workflow](https://github.com/fastify/fastify-oauth2/workflows/CI%20workflow/badge.svg)
 
-Mercurius is [**GraphQL**](https://graphql.org/) adapter for [**Fastify**](https://www.fastify.io)
+Mercurius is a [**GraphQL**](https://graphql.org/) adapter for [**Fastify**](https://www.fastify.io)
 
 Features:
 
@@ -11,17 +11,18 @@ Features:
 - Just-In-Time compiler via [graphql-jit](http://npm.im/graphql-jit).
 - Subscriptions.
 - Federation support.
+- Federated subscriptions support.
 - Gateway implementation, including Subscriptions.
 - Batched query support.
 - Customisable persisted queries.
 
 ## Install
 
-```
+```bash
 npm i fastify mercurius
 ```
 
-The previous name of this module is [fastify-gql](http://npm.im/fastify-gql) (< 6.0.0).
+The previous name of this module was [fastify-gql](http://npm.im/fastify-gql) (< 6.0.0).
 
 ---
 - [Install](#install)
@@ -29,6 +30,8 @@ The previous name of this module is [fastify-gql](http://npm.im/fastify-gql) (< 
   - [makeExecutableSchema support](#makeexecutableschema-support)
 - [Context](#context)
 - [API](#api)
+- [Lifecycle](#lifecycle)
+- [Hooks](#hooks)
 - [Federation](#federation)
 - [Subscriptions](#subscriptions)
 - [Batched Queries](#batched-queries)
@@ -83,7 +86,7 @@ See test.js for more examples, docs are coming.
 
 const Fastify = require('fastify')
 const mercurius = require('mercurius')
-const { makeExecutableSchema } = require('graphql-tools')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 const app = Fastify()
 
@@ -119,6 +122,14 @@ app.listen(3000)
 
 [More info](docs/api/options.md)
 
+## Lifecycle
+
+[More info](docs/lifecycle.md)
+
+## Hooks
+
+[More info](docs/hooks.md)
+
 ## Federation
 
 [More info](docs/federation.md)
@@ -149,7 +160,7 @@ The project is kindly sponsored by:
 
 - [NearForm](https://www.nearform.com) for [Matteo](https://github.com/mcollina)'s time in maintaining this module.
 
-The mercurius name was gracefully donated by [Marco Castelluccio](https://github.com/marco-c).
+The Mercurius name was gracefully donated by [Marco Castelluccio](https://github.com/marco-c).
 The usage of that library was described in https://hacks.mozilla.org/2015/12/web-push-notifications-from-irssi/, and
 you can find that codebase in https://github.com/marco-c/mercurius.
 

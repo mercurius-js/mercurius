@@ -969,11 +969,214 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
     t.deepEqual(updatedUser, {
       id: 'u1',
-      name: 'John'
+      name: 'John',
+      lastName: 'Doe'
     })
   }
 
   t.equal(ws2.readyState, WebSocket.OPEN)
 
+  clock.uninstall()
+})
+
+test('Polling schemas (should properly regenerate the schema when a downstream service restarts)', async (t) => {
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 40
+  })
+  const oldSchema = `
+    directive @extends on INTERFACE | OBJECT
+
+    directive @external on FIELD_DEFINITION | OBJECT
+
+    directive @key(fields: String!) on INTERFACE | OBJECT
+
+    directive @provides(fields: String!) on FIELD_DEFINITION
+
+    directive @requires(fields: String!) on FIELD_DEFINITION
+
+    type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `
+  const user = {
+    id: 'u1',
+    name: 'John',
+    lastName: 'Doe'
+  }
+
+  const userService = Fastify()
+  const gateway = Fastify()
+
+  userService.register(GQL, {
+    schema: oldSchema,
+    resolvers: {
+      Query: {
+        me: (root, args, context, info) => user
+      },
+      User: {
+        __resolveReference: (user, args, context, info) => user
+      }
+    },
+    federationMetadata: true
+  })
+
+  await userService.listen(0)
+
+  const userServicePort = userService.server.address().port
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ],
+      pollingInterval: 2000
+    }
+  })
+
+  await gateway.listen(0)
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        query MainQuery {
+          me {
+            id
+            name
+          }
+        }
+      `
+    })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
+
+  await userService.close()
+
+  const restartedUserService = Fastify()
+
+  const refreshedSchema = `
+    directive @extends on INTERFACE | OBJECT
+
+    directive @external on FIELD_DEFINITION | OBJECT
+
+    directive @key(fields: String!) on INTERFACE | OBJECT
+
+    directive @provides(fields: String!) on FIELD_DEFINITION
+    
+    directive @requires(fields: String!) on FIELD_DEFINITION
+
+    type User @key(fields: "id") {
+      id: ID!
+      lastName: String!
+      name: String!
+    }
+
+    type Mutation {
+      create: User!
+    }
+
+    type Query {
+      me2: User
+    }
+  `
+
+  restartedUserService.register(GQL, {
+    schema: refreshedSchema,
+    resolvers: {
+      Query: {
+        me2: (root, args, context, info) => user
+      },
+      Mutation: {
+        create: (root, args, context, info) => user
+      },
+      User: {
+        __resolveReference: (user, args, context, info) => user
+      }
+    },
+    federationMetadata: true
+  })
+
+  await restartedUserService.listen(userServicePort)
+
+  await clock.tickAsync(4000)
+
+  const res2 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        query MainQuery {
+          me {
+            id
+            name
+          }
+        }
+      `
+    })
+  })
+
+  t.deepEqual(JSON.parse(res2.body), {
+    errors: [
+      {
+        message: 'Cannot query field "me" on type "Query". Did you mean "me2"?',
+        locations: [{ line: 3, column: 11 }]
+      }
+    ],
+    data: null
+  })
+
+  const res3 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        mutation NewMutation {
+          create {
+            id
+            name
+          }
+        }
+      `
+    })
+  })
+
+  t.deepEqual(JSON.parse(res3.body), {
+    data: {
+      create: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
+
+  await gateway.close()
+  await restartedUserService.close()
   clock.uninstall()
 })

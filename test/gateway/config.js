@@ -22,7 +22,7 @@ test('"schema" option not allowed in gateway mode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Invalid options: Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 })
 
@@ -39,7 +39,7 @@ test('"resolvers" option not allowed in gateway mode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Invalid options: Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 })
 
@@ -56,6 +56,6 @@ test('"loaders" option not allowed in gateway mode', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.is(err.message, 'Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
+    t.is(err.message, 'Invalid options: Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
   }
 })

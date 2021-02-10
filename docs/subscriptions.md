@@ -4,8 +4,11 @@
 
 - [Subscriptions](#subscriptions)
   - [Subscription support (simple)](#subscription-support-simple)
+  - [Subscription filters](#subscription-filters)
   - [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
   - [Subscription support (with redis)](#subscription-support-with-redis)
+  - [Subscriptions with custom PubSub](#subscriptions-with-custom-pubsub)
+  - [Subscriptions with custom PubSub](#subscriptions-with-fastify-websocket)
 
 ### Subscription support (simple)
 
@@ -66,6 +69,80 @@ const resolvers = {
       subscribe: async (root, args, { pubsub }) =>
         await pubsub.subscribe('NOTIFICATION_ADDED')
     }
+  }
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: true
+})
+```
+
+### Subscription filters
+
+
+```js
+const schema = `
+  type Notification {
+    id: ID!
+    message: String
+  }
+
+  type Query {
+    notifications: [Notification]
+  }
+
+  type Mutation {
+    addNotification(message: String): Notification
+  }
+
+  type Subscription {
+    notificationAdded(contains: String): Notification
+  }
+`
+
+let idCount = 1
+const notifications = [
+  {
+    id: idCount,
+    message: 'Notification message'
+  }
+]
+
+const { withFilter } = mercurius
+
+const resolvers = {
+  Query: {
+    notifications: () => notifications
+  },
+  Mutation: {
+    addNotification: async (_, { message }, { pubsub }) => {
+      const id = idCount++
+      const notification = {
+        id,
+        message
+      }
+      notifications.push(notification)
+      await pubsub.publish({
+        topic: 'NOTIFICATION_ADDED',
+        payload: {
+          notificationAdded: notification
+        }
+      })
+
+      return notification
+    }
+  },
+  Subscription: {
+    notificationAdded: {
+      subscribe: withFilter(
+        (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED'),
+        (payload, { contains }) => {
+          if (!contains) return true
+          return payload.notificationAdded.message.includes(contains)
+        }
+      )
   }
 }
 
@@ -202,5 +279,76 @@ app.register(mercurius, {
       next(true) // the connection is allowed
     }
   }
+})
+```
+
+### Subscriptions with custom PubSub
+> Note that when passing both `pubsub` and `emitter` options, `emitter` will be ignored.
+
+```js
+class CustomPubSub {
+  constructor () {
+    this.emitter = new EventEmitter()
+  }
+
+  async subscribe (topic, queue) {
+    const listener = (value) => {
+      queue.push(value)
+    }
+
+    const close = () => {
+      this.emitter.removeListener(topic, listener)
+    }
+
+    this.emitter.on(topic, listener)
+    queue.close = close
+  }
+
+  publish (event, callback) {
+    this.emitter.emit(event.topic, event.payload)
+    callback()
+  }
+}
+
+const pubsub = new CustomPubSub()
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
+    pubsub
+  }
+})
+
+```
+
+### Subscriptions with fastify-websocket
+
+Mercurius uses `fastify-websocket` internally, but you can still use it by registering before `mercurius` plugin. If so, it is recommened to set appropriate `handle` and `options.maxPayload` like this:
+
+```js
+const fastifyWebsocket = require('fastify-websocket')
+
+function handle (conn) {
+  conn.end(JSON.stringify({ error: 'unknown route' }))
+}
+
+app.register(fastifyWebsocket, {
+  handle,
+  options: {
+    maxPayload: 1048576
+  }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: true
+})
+
+app.get('/', { websocket: true }, (connection, req) => {
+  connection.socket.on('message', message => {
+    connection.socket.send('hi from server')
+  })
 })
 ```

@@ -1,14 +1,13 @@
 # mercurius
 
-
 - [Federation metadata support](#federation-metadata-support)
 - [Federation with \_\_resolveReference caching](#federation-with-__resolvereference-caching)
 - [Use GraphQL server as a Gateway for federated schemas](#use-graphql-server-as-a-gateway-for-federated-schemas)
   - [Periodically refresh federated schemas in Gateway mode](#periodically-refresh-federated-schemas-in-gateway-mode)
   - [Programmatically refresh federated schemas in Gateway mode](#programmatically-refresh-federated-schemas-in-gateway-mode)
-  - [Flag a service as mandatory in Gateway mode](#flag-a-service-as-mandatory-in-gateway-mode)
+  - [Using Gateway mode with a schema registry](#using-gateway-mode-with-a-schema-registry)
+  - [Flag service as mandatory in Gateway mode](#flag-service-as-mandatory-in-gateway-mode)
   - [Using a custom errorHandler for handling downstream service errors in Gateway mode](#using-a-custom-errorhandler-for-handling-downstream-service-errors-in-gateway-mode)
-- [Use errors extension to provide additional information to query errors](#use-errors-extension-to-provide-additional-information-to-query-errors)
 
 ## Federation
 
@@ -77,7 +76,7 @@ app.listen(3000)
 
 ### Federation with \_\_resolveReference caching
 
-Just like standard resolvers, the `__resolveReference` resolver can be a performance bottleneck. To avoid this, the it is strongly recommended to define the `__resolveReference` function for an entity as a [loader](#defineLoaders).
+Just like standard resolvers, the `__resolveReference` resolver can be a performance bottleneck. To avoid this, the it is strongly recommended to define the `__resolveReference` function for an entity as a [loader](docs/loaders).
 
 ```js
 'use strict'
@@ -254,6 +253,73 @@ setTimeout(async () => {
 }, 10000)
 ```
 
+#### Using Gateway mode with a schema registry
+
+The service acting as the Gateway can use supplied schema definitions instead of relying on the gateway to query each service. These can be updated using `application.graphql.gateway.serviceMap.serviceName.setSchema()` and then refreshing and replacing the schema.
+
+```js
+const Fastify = require('fastify')
+const mercurius = require('mercurius')
+
+const server = Fastify()
+
+server.register(mercurius, {
+  graphiql: 'playground',
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:3000/graphql',
+        schema: `
+          extend type Query {
+            me: User
+          }
+
+          type User @key(fields: "id") {
+            id: ID!
+            name: String
+          }
+        `
+      },
+      {
+        name: 'company',
+        url: 'http://localhost:3001/graphql',
+        schema: `
+          extend type Query {
+            company: Company
+          }
+
+          type Company @key(fields: "id") {
+            id: ID!
+            name: String
+          }
+        `
+      }
+    ]
+  }
+})
+
+await server.listen(3002)
+
+server.graphql.gateway.serviceMap.user.setSchema(`
+  extend type Query {
+    me: User
+  }
+
+  type User @key(fields: "id") {
+    id: ID!
+    name: String
+    username: String
+  }
+`)
+
+const schema = await server.graphql.gateway.refresh()
+
+if (schema !== null) {
+  server.graphql.replaceSchema(schema)
+}
+```
+
 #### Flag service as mandatory in Gateway mode
 
 Gateway service can handle federated services in 2 different modes, `mandatory` or not by utilizing the `gateway.services.mandatory` configuration flag. If a service is not mandatory, creating the federated schema will succeed even if the service isn't capable of delivering a schema. By default, services are not mandatory. Note: At least 1 service is necessary to create a valid federated schema.
@@ -322,60 +388,3 @@ server.listen(3002)
 ```
 
 _Note: The default behavior of `errorHandler` is call `errorFormatter` to send the result. When is provided an `errorHandler` make sure to **call `errorFormatter` manually if needed**._
-
-### Use errors extension to provide additional information to query errors
-
-GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
-
-```js
-'use strict'
-
-const Fastify = require('fastify')
-const mercurius = require('mercurius')
-const { ErrorWithProps } = mercurius
-
-const users = {
-  1: {
-    id: '1',
-    name: 'John'
-  },
-  2: {
-    id: '2',
-    name: 'Jane'
-  }
-}
-
-const app = Fastify()
-const schema = `
-  type Query {
-    findUser(id: String!): User
-  }
-
-  type User {
-    id: ID!
-    name: String
-  }
-`
-
-const resolvers = {
-  Query: {
-    findUser: (_, { id }) => {
-      const user = users[id]
-      if (user) return users[id]
-      else
-        throw new ErrorWithProps('Invalid User ID', {
-          id,
-          code: 'USER_ID_INVALID',
-          timestamp: Math.round(new Date().getTime() / 1000)
-        })
-    }
-  }
-}
-
-app.register(mercurius, {
-  schema,
-  resolvers
-})
-
-app.listen(3000)
-```

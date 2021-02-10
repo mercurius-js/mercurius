@@ -9,11 +9,13 @@
   - [GET /playground](#get-playground)
 - [Decorators](#decorators)
   - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
-  - [app.graphql.extendSchema(schema) and app.graphql.defineResolvers(resolvers)](#appgraphqlextendschemaschema-and-appgraphqldefineresolversresolvers)
+  - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
   - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
   - [app.graphql.schema](#appgraphqlschema)
+  - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
   - [app.graphql.defineLoaders(loaders)](#appgraphqldefineloadersloaders)
   - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
+- [Error extensions](#use-errors-extension-to-provide-additional-information-to-query-errors)
 
 ## API
 
@@ -29,12 +31,16 @@
   details.
 - `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
 - `graphiql`: boolean | string. Serve
-  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`, or
-  [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground` if `'playground'`
-  and if `routes` is `true`. Leave empty or `false` to disable.
+  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. If `'playground'` is provided it will serve [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground`. Leave empty or `false` to disable.
   _only applies if `onlyPersisted` option is not `true`_
+
+  **Note:** If you are working with subscription is recommended to set 'playground' for testing proposes. See [283](https://github.com/mercurius-js/mercurius/issues/283).
+
+  **Note**: If `routes` is false, set `playground` does not have effects.
+
 - `playgroundSettings` Object. that allow you to configure GraphQL Playground with [playground
   options](https://github.com/prisma-labs/graphql-playground#usage). it works if the graphiql is set to `'playground'`.
+- `playgroundHeaders` Object | Function. It provides HTTP headers to GraphQL Playground. If it is an object, it is provided as-is. If it is a function, it is serialized, injected in the generated HTML and invoked with the `window` object as the argument. Useful to read authorization token from browser's storage. See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
 - `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -48,10 +54,12 @@
 - `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE (or Playground IDE) sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
 - `validationRules`: `Function` or `Function[]`. Optional additional validation rules that the queries must satisfy in addition to those defined by the GraphQL specification. When using `Function`, arguments include additional data from graphql request and the return value must be validation rules `Function[]`.
 - `subscription`: Boolean | Object. Enable subscriptions. It uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true and exposes the pubsub interface to `app.graphql.pubsub`. To use a custom emitter set the value to an object containing the emitter.
-  - `subscription.emitter`: Custom emitter
+  - `subscription.emitter`: Custom emitter.
+  - `subscription.pubsub`: Custom pubsub, see [Subscriptions with custom PubSub](/docs/subscriptions.md#subscriptions-with-custom-pubsub) for more details. Note that when passing both `emitter` and `pubsub` options, `emitter` will be ignored.
   - `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
   - `subscription.context`: `Function` Result of function is passed to subscription resolvers as a custom GraphQL context. The function receives the `connection` and `request` as parameters.
   - `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. If it returns an object the subscription context will be extended with the returned object.
+    - `subscription.onDisconnect`: `Function` A function which is called with the subscription context of the connection after the connection gets disconnected.
 - `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 - `gateway`: Object. Run the GraphQL server in gateway mode.
 
@@ -144,7 +152,7 @@ payload must conform to the following JSON schema:
 
 For code from [example](#example) use:
 
-```sh
+```bash
 curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, y: 2) }"}' http://localhost:3000/graphql
 ```
 
@@ -155,7 +163,7 @@ payload contains the GraphQL query.
 
 For code from [example](#example) use:
 
-```sh
+```bash
 curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }" http://localhost:3000/graphql
 ```
 
@@ -222,9 +230,9 @@ async function run() {
 run()
 ```
 
-#### app.graphql.extendSchema(schema) and app.graphql.defineResolvers(resolvers)
+#### app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)
 
-It is possible to add schemas and resolvers in separate fastify plugins, like so:
+It is possible to add schemas, resolvers and loaders in separate fastify plugins, like so:
 
 ```js
 const Fastify = require('fastify')
@@ -232,14 +240,52 @@ const mercurius = require('mercurius')
 
 const app = Fastify()
 const schema = `
+  type Human {
+    name: String!
+  }
+
+  type Dog {
+    name: String!
+    owner: Human
+  }
+
   extend type Query {
+    dogs: [Dog]
     add(x: Int, y: Int): Int
   }
 `
 
+const dogs = [
+  { name: 'Max' },
+  { name: 'Charlie' },
+  { name: 'Buddy' },
+  { name: 'Max' }
+]
+
+const owners = {
+  Max: {
+    name: 'Jennifer'
+  },
+  Charlie: {
+    name: 'Sarah'
+  },
+  Buddy: {
+    name: 'Tracy'
+  }
+}
+
 const resolvers = {
   Query: {
-    add: async (_, { x, y }) => x + y
+    dogs: async (_, args, context, info) => dogs,
+     add: async (_, { x, y }) => x + y
+  }
+}
+
+const loaders = {
+  Dog: {
+    async owner(queries, { reply }) {
+      return queries.map(({ obj }) => owners[obj.name])
+    }
   }
 }
 
@@ -248,6 +294,7 @@ app.register(mercurius)
 app.register(async function (app) {
   app.graphql.extendSchema(schema)
   app.graphql.defineResolvers(resolvers)
+  app.graphql.defineLoaders(loaders)
 })
 
 async function run() {
@@ -270,6 +317,8 @@ async function run() {
 run()
 ```
 
+Note: `app.graphql.extendSchema` is not allowed if `federationMetadata` is enabled.
+
 #### app.graphql.replaceSchema(schema)
 
 It is possible to replace schema and resolvers using `makeSchemaExecutable` function in separate fastify plugins, like so:
@@ -277,7 +326,7 @@ It is possible to replace schema and resolvers using `makeSchemaExecutable` func
 ```js
 const Fastify = require('fastify')
 const mercurius = require('mercurius')
-const { makeExecutableSchema } = require('graphql-tools')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 const app = Fastify()
 
@@ -349,67 +398,6 @@ app.graphql.transformSchema(directive()) // or [directive()]
 
 Provides access to the built `GraphQLSchema` object that `mercurius` will use to execute queries. This property will reflect any updates made by `extendSchema` or `replaceSchema` as well.
 
-#### app.graphql.defineLoaders(loaders)
-
-A loader is an utility to avoid the 1 + N query problem of GraphQL.
-Each defined loader will register a resolver that coalesces each of the
-request and combines them into a single, bulk query. Morever, it can
-also cache the results, so that other parts of the GraphQL do not have
-to fetch the same data.
-
-Each loader function has the signature `loader(queries, context)`.
-`queries` is an array of objects defined as `{ obj, params }` where
-`obj` is the current object and `params` are the GraphQL params (those
-are the first two parameters of a normal resolver). The `context` is the
-GraphQL context, and it includes a `reply` object.
-
-Example:
-
-```js
-const loaders = {
-  Dog: {
-    async owner(queries, { reply }) {
-      return queries.map(({ obj }) => owners[obj.name])
-    }
-  }
-}
-
-app.register(mercurius, {
-  schema,
-  resolvers,
-  loaders
-})
-```
-
-It is also possible disable caching with:
-
-```js
-const loaders = {
-  Dog: {
-    owner: {
-      async loader(queries, { reply }) {
-        return queries.map(({ obj }) => owners[obj.name])
-      },
-      opts: {
-        cache: false
-      }
-    }
-  }
-}
-
-app.register(mercurius, {
-  schema,
-  resolvers,
-  loaders
-})
-```
-
-Disabling caching has the advantage to avoid the serialization at
-the cost of more objects to fetch in the resolvers.
-
-Internally, it uses
-[single-user-cache](http://npm.im/single-user-cache).
-
 #### reply.graphql(source, context, variables, operationName)
 
 Decorate [Reply](https://www.fastify.io/docs/latest/Reply/) with a
@@ -456,4 +444,61 @@ async function run() {
 }
 
 run()
+```
+
+### Use errors extension to provide additional information to query errors
+
+GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
+
+```js
+'use strict'
+
+const Fastify = require('fastify')
+const mercurius = require('mercurius')
+const { ErrorWithProps } = mercurius
+
+const users = {
+  1: {
+    id: '1',
+    name: 'John'
+  },
+  2: {
+    id: '2',
+    name: 'Jane'
+  }
+}
+
+const app = Fastify()
+const schema = `
+  type Query {
+    findUser(id: String!): User
+  }
+
+  type User {
+    id: ID!
+    name: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    findUser: (_, { id }) => {
+      const user = users[id]
+      if (user) return users[id]
+      else
+        throw new ErrorWithProps('Invalid User ID', {
+          id,
+          code: 'USER_ID_INVALID',
+          timestamp: Math.round(new Date().getTime() / 1000)
+        })
+    }
+  }
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers
+})
+
+app.listen(3000)
 ```

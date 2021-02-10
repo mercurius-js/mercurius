@@ -1596,6 +1596,197 @@ test('connection is not allowed when onConnect callback throws', t => {
   })
 })
 
+test('onDisconnect is called with connection context when connection gets disconnected', t => {
+  t.plan(1)
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      onConnect (data) {
+        return {
+          test: 'custom'
+        }
+      },
+      onDisconnect (context) {
+        t.equal(context.test, 'custom')
+      }
+    }
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client.on('data', data => {
+      client.destroy()
+    })
+  })
+})
+
+test('promise returned from onDisconnect resolves', t => {
+  t.plan(1)
+
+  const app = Fastify()
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      onConnect (data) {
+        return {
+          test: 'custom'
+        }
+      },
+      async onDisconnect (context) {
+        t.equal(context.test, 'custom')
+      }
+    }
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client.on('data', data => {
+      client.destroy()
+    })
+  })
+})
+
+test('error thrown from onDisconnect is logged', t => {
+  t.plan(1)
+
+  const error = new Error('error')
+
+  const app = Fastify()
+  app.log.error = (e) => { t.deepEqual(error, e) }
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      onDisconnect () {
+        throw error
+      }
+    }
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client.on('data', data => {
+      client.destroy()
+    })
+  })
+})
+
+test('promise rejection from onDisconnect is logged', t => {
+  t.plan(1)
+
+  const error = new Error('error')
+
+  const app = Fastify()
+  app.log.error = (e) => { t.deepEqual(error, e) }
+  t.tearDown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      async onDisconnect () {
+        throw error
+      }
+    }
+  })
+
+  app.listen(0, () => {
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client.on('data', data => {
+      client.destroy()
+    })
+  })
+})
+
 test('cached errors', async (t) => {
   const app = Fastify()
 
@@ -1857,6 +2048,134 @@ test('if ide is playground, and playgroundSettings is set, serve init.js with pl
     playgroundSettings: {
       'editor.theme': 'light',
       'editor.fontSize': 17
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is an object, serve init.js with playground headers options', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: {
+      authorization: 'bearer token'
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is a method, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders (window) {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is a named function, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: function headers (window) {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is an anonymous function, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: function (window) {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
+    },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/playground/init.js'
+  })
+  t.strictEqual(res.statusCode, 200)
+  t.strictEqual(res.headers['content-type'], 'application/javascript')
+  t.matchSnapshot(res.body)
+})
+
+test('if ide is playground, and playgroundHeaders is an arrow function, serve init.js with playground headers as iife', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'playground',
+    playgroundHeaders: window => {
+      return {
+        authorization: `bearer ${window.localStorage.getItem('token')}`
+      }
     },
     schema
   })
