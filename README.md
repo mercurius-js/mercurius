@@ -28,16 +28,16 @@ The previous name of this module was [fastify-gql](http://npm.im/fastify-gql) (<
 - [Install](#install)
 - [Example](#example)
   - [makeExecutableSchema support](#makeexecutableschema-support)
-- [Context](#context)
-- [API](#api)
-- [Lifecycle](#lifecycle)
-- [Hooks](#hooks)
-- [Federation](#federation)
-- [Subscriptions](#subscriptions)
-- [Batched Queries](#batched-queries)
-- [Persisted Queries](#persisted-queries)
-- [Plugins](#plugins)
-- [Integrations](#integrations)
+- [Context](docs/context.md)
+- [API](docs/api/options.md)
+- [Lifecycle](docs/lifecycle.md)
+- [Hooks](docs/hooks.md)
+- [Federation](docs/federation.md)
+- [Subscriptions](docs/subscriptions.md)
+- [Batched Queries](docs/batched-queries.md)
+- [Persisted Queries](docs/persisted-queries.md)
+- [Plugins](docs/plugins.md)
+- [Integrations](docs/integrations/)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 ---
@@ -113,46 +113,6 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 ```
-
-## Context
-
-[More info](docs/context.md)
-
-## API
-
-[More info](docs/api/options.md)
-
-## Lifecycle
-
-[More info](docs/lifecycle.md)
-
-## Hooks
-
-[More info](docs/hooks.md)
-
-## Federation
-
-[More info](docs/federation.md)
-
-## Subscriptions
-
-[More info](docs/subscriptions.md)
-
-## Batched Queries
-
-[More info](docs/batched-queries.md)
-
-## Persisted Queries
-
-[More info](docs/persisted-queries.md)
-
-## Plugins
-
-[More info](docs/plugins.md)
-
-## Integrations
-
-[More info](docs/integrations/)
 
 ## Acknowledgements
 
