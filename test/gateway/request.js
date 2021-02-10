@@ -4,7 +4,7 @@ const { sendRequest, buildRequest } = require('../../lib/gateway/request')
 
 test('sendRequest method rejects when request errs', t => {
   const url = new URL('http://localhost:3001')
-  const { request } = buildRequest({})
+  const { request } = buildRequest({ url })
   t.rejects(sendRequest(request, url)({
     method: 'POST',
     body: JSON.stringify({
@@ -29,7 +29,7 @@ test('sendRequest method rejects when response is not valid json', async (t) => 
   await app.listen(0)
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
-  const { request, close } = buildRequest({})
+  const { request, close } = buildRequest({ url })
   t.tearDown(() => {
     close()
     app.close()
@@ -59,7 +59,7 @@ test('sendRequest method rejects when response contains errors', async (t) => {
   await app.listen(0)
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
-  const { request, close } = buildRequest({})
+  const { request, close } = buildRequest({ url })
   t.tearDown(() => {
     close()
     app.close()
