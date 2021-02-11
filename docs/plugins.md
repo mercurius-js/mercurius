@@ -41,3 +41,37 @@ app.listen(3000)
 And it will be available at `http://localhost:3000/altair` 🎉
 
 Check [here](https://github.com/imolorhe/altair/tree/staging/packages/altair-fastify-plugin) for more information.
+
+## mercurius-apollo-registry
+
+A Mercurius plugin for schema reporting to Apollo Studio.
+
+Check [https://github.com/nearform/mercurius-apollo-registry](https://github.com/nearform/mercurius-apollo-registry) for usage and readme.
+
+```bash
+npm install mercurius-apollo-registry
+```
+
+```js
+const app = Fastify()
+const mercurius = require('mercurius')
+const mercuriusApolloRegistry = require('mercurius-apollo-registry')
+
+const schema = `define schema here`
+const resolvers = { 
+  // ... 
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  graphiql: true
+})
+
+app.register(mercuriusApolloRegistry, {
+  schema,
+  apiKey: 'REPLACE-THIS-VALUE-WITH-APOLLO-API-KEY'
+})
+
+app.listen(3000)
+```
