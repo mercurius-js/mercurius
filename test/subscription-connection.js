@@ -92,7 +92,7 @@ test('subscription connection handles GQL_CONNECTION_TERMINATE message correctly
   }))
 })
 
-test('subscription connection handles GQL_STOP message correctly', async (t) => {
+test('subscription connection closes context on GQL_STOP message correctly', async (t) => {
   t.plan(2)
   const sc = new SubscriptionConnection({
     on () {},
@@ -113,6 +113,29 @@ test('subscription connection handles GQL_STOP message correctly', async (t) => 
   }))
 
   t.equal(sc.subscriptionContexts.size, 0)
+})
+
+test('subscription connection completes resolver iterator on GQL_STOP message correctly', async (t) => {
+  t.plan(2)
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {}
+  }, {})
+
+  sc.subscriptionIters = new Map()
+  sc.subscriptionIters.set(1, {
+    return () {
+      t.pass()
+    }
+  })
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'stop'
+  }))
+
+  t.equal(sc.subscriptionIters.size, 0)
 })
 
 test('handles error in send and closes connection', async t => {
