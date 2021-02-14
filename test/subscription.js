@@ -1868,7 +1868,6 @@ test('subscription server works with fastify-websocket', t => {
           }
         }))
         subscriptionClient.end()
-        t.end()
       } else {
         sendTestMutation()
       }
