@@ -738,9 +738,9 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   const userService = Fastify()
   const gateway = Fastify()
 
-  t.tearDown(() => {
-    userService.close()
-    gateway.close()
+  t.tearDown(async () => {
+    await userService.close()
+    await gateway.close()
   })
 
   userService.register(GQL, {
@@ -799,9 +799,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     objectMode: true
   })
 
-  t.tearDown(() => {
-    client.destroy()
-  })
+  t.tearDown(() => client.destroy())
 
   client.setEncoding('utf8')
 
@@ -911,9 +909,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     objectMode: true
   })
 
-  t.tearDown(() => {
-    client2.destroy()
-  })
+  t.tearDown(() => client2.destroy())
 
   client2.setEncoding('utf8')
 
@@ -976,6 +972,8 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   t.equal(ws2.readyState, WebSocket.OPEN)
 
+  await gateway.close()
+  await userService.close()
   clock.uninstall()
 })
 
@@ -1041,8 +1039,6 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
       pollingInterval: 2000
     }
   })
-
-  await gateway.listen(0)
 
   const res = await gateway.inject({
     method: 'POST',
