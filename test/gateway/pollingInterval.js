@@ -143,7 +143,11 @@ test('Polling schemas', async (t) => {
   userService.graphql.defineResolvers(resolvers)
 
   await clock.tickAsync(2000)
-  await clock.tickAsync()
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
 
   const res3 = await gateway.inject({
     method: 'POST',
@@ -634,7 +638,12 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     }
   })
 
-  await clock.tickAsync(2000)
+  await clock.tickAsync(10000)
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
 
   const res2 = await gateway.inject({
     method: 'POST',
@@ -1115,7 +1124,12 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
 
   await restartedUserService.listen(userServicePort)
 
-  await clock.tickAsync(4000)
+  await clock.tickAsync(10000)
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
 
   const res2 = await gateway.inject({
     method: 'POST',
