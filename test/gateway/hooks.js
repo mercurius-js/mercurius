@@ -2,7 +2,7 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
-const { GraphQLSchema, parse } = require('graphql')
+const { GraphQLSchema } = require('graphql')
 const { promisify } = require('util')
 const GQL = require('../..')
 
@@ -178,7 +178,7 @@ test('gateway - hooks', async (t) => {
   app.graphql.addHook('preValidation', async function (schema, document, context) {
     await immediate()
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     t.ok('preValidation called')
   })
@@ -186,7 +186,7 @@ test('gateway - hooks', async (t) => {
   app.graphql.addHook('preExecution', async function (schema, document, context) {
     await immediate()
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     t.ok('preExecution called')
   })
@@ -199,7 +199,7 @@ test('gateway - hooks', async (t) => {
   app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
     await immediate()
     t.type(schema, GraphQLSchema)
-    t.true(document, 'object')
+    t.type(document, 'object')
     t.type(context, 'object')
     t.ok('preGatewayExecution called')
   })
@@ -398,7 +398,7 @@ test('gateway - preValidation hooks should handle errors', async t => {
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     throw new Error('a preValidation error occured')
   })
@@ -438,14 +438,14 @@ test('gateway - preValidation hooks should be able to put values onto the contex
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
@@ -498,7 +498,7 @@ test('gateway - preExecution hooks should handle errors', async t => {
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     throw new Error('a preExecution error occured')
   })
@@ -534,14 +534,14 @@ test('gateway - preExecution hooks should be able to put values onto the context
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     t.is(context.foo, 'bar')
   })
@@ -591,7 +591,7 @@ test('gateway - preExecution hooks should be able to modify the request document
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     t.ok('preExecution called')
     const documentClone = JSON.parse(JSON.stringify(document))
@@ -638,7 +638,7 @@ test('gateway - preExecution hooks should be able to add to the errors array', a
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     t.ok('preExecution called for foo error')
     return {
@@ -648,7 +648,7 @@ test('gateway - preExecution hooks should be able to add to the errors array', a
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.type(document, 'object')
     t.type(context, 'object')
     t.ok('preExecution called for foo error')
     return {

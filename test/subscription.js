@@ -1825,27 +1825,6 @@ test('subscription server works with fastify-websocket', t => {
     t.tearDown(subscriptionClient.destroy.bind(subscriptionClient))
     subscriptionClient.setEncoding('utf8')
 
-    client.write('hi from client')
-
-    subscriptionClient.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-
-    subscriptionClient.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: `
-          subscription {
-            notificationAdded {
-              id
-              message
-            }
-          }
-        `
-      }
-    }))
-
     client.on('data', chunk => {
       t.equal(chunk, 'hi from server')
       client.end()
@@ -1872,5 +1851,26 @@ test('subscription server works with fastify-websocket', t => {
         sendTestMutation()
       }
     })
+
+    client.write('hi from client')
+
+    subscriptionClient.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    subscriptionClient.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
   })
 })
