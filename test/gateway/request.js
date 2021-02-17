@@ -32,7 +32,7 @@ test('sendRequest method rejects when response is not valid json', async (t) => 
   const { request, close } = buildRequest({ url })
   t.tearDown(() => {
     close()
-    app.close()
+    return app.close()
   })
   t.rejects(sendRequest(request, url)({
     method: 'POST',
@@ -62,7 +62,7 @@ test('sendRequest method rejects when response contains errors', async (t) => {
   const { request, close } = buildRequest({ url })
   t.tearDown(() => {
     close()
-    app.close()
+    return app.close()
   })
   t.rejects(
     sendRequest(

@@ -683,8 +683,8 @@ test('subscription server sends update to subscriptions with custom async contex
   })
 
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
+  t.tearDown(async () => {
+    await app.close()
     clock.uninstall()
   })
 
@@ -870,8 +870,8 @@ test('subscription connection is closed if async context function throws', t => 
   })
 
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
+  t.tearDown(async () => {
+    await app.close()
     clock.uninstall()
   })
 

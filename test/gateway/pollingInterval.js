@@ -748,8 +748,8 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   const gateway = Fastify()
 
   t.tearDown(async () => {
-    await userService.close()
     await gateway.close()
+    await userService.close()
   })
 
   userService.register(GQL, {
@@ -923,45 +923,49 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   client2.setEncoding('utf8')
 
-  client2.write(
-    JSON.stringify({
-      type: 'connection_init'
-    })
-  )
+  process.nextTick(() => {
+    client2.write(
+      JSON.stringify({
+        type: 'connection_init'
+      })
+    )
 
-  client2.write(
-    JSON.stringify({
-      id: 2,
-      type: 'start',
-      payload: {
-        query: `
-          subscription {
-            updatedUser {
-              id
-              name
-              lastName
+    client2.write(
+      JSON.stringify({
+        id: 2,
+        type: 'start',
+        payload: {
+          query: `
+            subscription {
+              updatedUser {
+                id
+                name
+                lastName
+              }
             }
-          }
-        `
-      }
-    })
-  )
+          `
+        }
+      })
+    )
+  })
 
   {
     const [chunk] = await once(client2, 'data')
     const data = JSON.parse(chunk)
     t.equal(data.type, 'connection_ack')
 
-    await gateway.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
-          mutation {
-            triggerUser
-          }
-        `
-      }
+    process.nextTick(() => {
+      gateway.inject({
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
+            mutation {
+              triggerUser
+            }
+          `
+        }
+      })
     })
   }
 

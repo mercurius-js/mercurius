@@ -1118,9 +1118,7 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
 
 test('calling extendSchema throws an error if federationMetadata is enabled', async (t) => {
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
+  t.tearDown(() => service.close())
   service.register(GQL, {
     schema: `
       extend type Query {
