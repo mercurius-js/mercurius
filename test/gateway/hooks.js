@@ -16,7 +16,7 @@ async function createTestService (t, schema, resolvers = {}) {
     federationMetadata: true
   })
   await service.listen(0)
-  return service
+  return [service, service.server.address().port]
 }
 
 const users = {
@@ -98,8 +98,7 @@ async function createTestGatewayServer (t) {
       }
     }
   }
-  const userService = await createTestService(t, userServiceSchema, userServiceResolvers)
-  const userServicePort = userService.server.address().port
+  const [userService, userServicePort] = await createTestService(t, userServiceSchema, userServiceResolvers)
 
   // Post service
   const postServiceSchema = `
@@ -137,8 +136,7 @@ async function createTestGatewayServer (t) {
       topPosts: (root, { count = 2 }) => Object.values(posts).slice(0, count)
     }
   }
-  const postService = await createTestService(t, postServiceSchema, postServiceResolvers)
-  const postServicePort = postService.server.address().port
+  const [postService, postServicePort] = await createTestService(t, postServiceSchema, postServiceResolvers)
 
   const gateway = Fastify()
   t.tearDown(async () => {
