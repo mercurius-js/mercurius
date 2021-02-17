@@ -18,6 +18,7 @@ test('Polling schemas', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.tearDown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -36,6 +37,10 @@ test('Polling schemas', async (t) => {
 
   const userService = Fastify()
   const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
 
   userService.register(GQL, {
     schema: `
@@ -67,8 +72,6 @@ test('Polling schemas', async (t) => {
       pollingInterval: 2000
     }
   })
-
-  await gateway.listen(0)
 
   const res = await gateway.inject({
     method: 'POST',
@@ -177,10 +180,6 @@ test('Polling schemas', async (t) => {
       }
     }
   })
-
-  await gateway.close()
-  await userService.close()
-  clock.uninstall()
 })
 
 test('Polling schemas (gateway.polling interval is not a number)', async (t) => {
@@ -252,6 +251,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.tearDown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -308,7 +308,6 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     }
   })
 
-  await gateway.listen(0)
   await clock.tickAsync()
 
   {
@@ -408,8 +407,6 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       data: null
     })
   }
-
-  clock.uninstall()
 })
 
 test('Polling schemas (if service is mandatory, exception should be thrown)', async (t) => {
@@ -430,6 +427,10 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
 
   const userService = Fastify()
   const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
 
   userService.register(GQL, {
     schema: `
@@ -461,8 +462,6 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
       ]
     }
   })
-
-  await gateway.listen(0)
 
   {
     const { body } = await gateway.inject({
@@ -531,8 +530,6 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
   t.rejects(async () => {
     await gateway.graphql.gateway.refresh()
   })
-
-  await gateway.close()
 })
 
 test('Polling schemas (cache should be cleared)', async (t) => {
@@ -540,6 +537,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.tearDown(() => clock.uninstall())
 
   const user = {
     id: 'u1',
@@ -549,6 +547,10 @@ test('Polling schemas (cache should be cleared)', async (t) => {
 
   const userService = Fastify()
   const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
 
   userService.register(GQL, {
     schema: `
@@ -699,297 +701,6 @@ test('Polling schemas (cache should be cleared)', async (t) => {
       }
     }
   })
-
-  await gateway.close()
-  await userService.close()
-  clock.uninstall()
-})
-
-test('Polling schemas (subscriptions should be handled)', async (t) => {
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-
-  const user = {
-    id: 'u1',
-    name: 'John',
-    lastName: 'Doe'
-  }
-
-  const resolvers = {
-    Query: {
-      me: (root, args, context, info) => user
-    },
-    Mutation: {
-      triggerUser: async (root, args, { pubsub }) => {
-        await pubsub.publish({
-          topic: 'UPDATED.USER',
-          payload: {
-            updatedUser: user
-          }
-        })
-
-        return true
-      }
-    },
-    Subscription: {
-      updatedUser: {
-        subscribe: async (root, args, { pubsub }) =>
-          pubsub.subscribe('UPDATED.USER')
-      }
-    },
-    User: {
-      __resolveReference: (user, args, context, info) => user
-    }
-  }
-
-  const userService = Fastify()
-  const gateway = Fastify()
-
-  t.tearDown(async () => {
-    await gateway.close()
-    await userService.close()
-  })
-
-  userService.register(GQL, {
-    schema: `
-      extend type Query {
-        me: User
-      }
-
-      extend type Subscription {
-        updatedUser: User
-      }
-
-      extend type Mutation {
-        triggerUser: Boolean
-      }
-
-      type User @key(fields: "id") {
-        id: ID!
-        name: String!
-      }
-    `,
-    resolvers: resolvers,
-    federationMetadata: true,
-    subscription: true
-  })
-
-  await userService.listen(0)
-
-  const userServicePort = userService.server.address().port
-
-  gateway.register(GQL, {
-    subscription: true,
-    gateway: {
-      services: [
-        {
-          name: 'user',
-          url: `http://localhost:${userServicePort}/graphql`,
-          wsUrl: `ws://localhost:${userServicePort}/graphql`
-        }
-      ],
-      pollingInterval: 2000
-    }
-  })
-
-  await gateway.listen(0)
-
-  const ws = new WebSocket(
-    `ws://localhost:${gateway.server.address().port}/graphql`,
-    'graphql-ws'
-  )
-
-  t.equal(ws.readyState, WebSocket.CONNECTING)
-
-  const client = WebSocket.createWebSocketStream(ws, {
-    encoding: 'utf8',
-    objectMode: true
-  })
-
-  t.tearDown(() => client.destroy())
-
-  client.setEncoding('utf8')
-
-  client.write(
-    JSON.stringify({
-      type: 'connection_init'
-    })
-  )
-
-  client.write(
-    JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: `
-          subscription {
-            updatedUser {
-              id
-              name
-            }
-          }
-        `
-      }
-    })
-  )
-
-  {
-    const [chunk] = await once(client, 'data')
-    const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
-
-    await gateway.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
-          mutation {
-            triggerUser
-          }
-        `
-      }
-    })
-  }
-
-  {
-    const [chunk] = await once(client, 'data')
-    const data = JSON.parse(chunk)
-    client.end()
-    t.equal(data.type, 'data')
-    t.equal(data.id, 1)
-
-    const { payload: { data: { updatedUser = {} } = {} } = {} } = data
-
-    t.deepEqual(updatedUser, {
-      id: 'u1',
-      name: 'John'
-    })
-  }
-
-  userService.graphql.replaceSchema(
-    buildFederationSchema(`
-      extend type Query {
-        me: User
-      }
-
-      extend type Subscription {
-        updatedUser: User
-      }
-
-      extend type Mutation {
-        triggerUser: Boolean
-      }
-
-      type User @key(fields: "id") {
-        id: ID!
-        name: String!
-        lastName: String
-      }
-    `)
-  )
-
-  userService.graphql.defineResolvers(resolvers)
-
-  await clock.tickAsync(10000)
-
-  // We need the event loop to actually spin twice to
-  // be able to propagate the change
-  await immediate()
-  await immediate()
-
-  t.deepEqual(Object.keys(gateway.graphql.schema.getType('User').getFields()), [
-    'id',
-    'name',
-    'lastName'
-  ])
-
-  // t.equal(ws.readyState, WebSocket.OPEN)
-
-  const ws2 = new WebSocket(
-    `ws://localhost:${gateway.server.address().port}/graphql`,
-    'graphql-ws'
-  )
-
-  t.equal(ws2.readyState, WebSocket.CONNECTING)
-
-  const client2 = WebSocket.createWebSocketStream(ws2, {
-    encoding: 'utf8',
-    objectMode: true
-  })
-
-  t.tearDown(() => client2.destroy())
-
-  client2.setEncoding('utf8')
-
-  process.nextTick(() => {
-    client2.write(
-      JSON.stringify({
-        type: 'connection_init'
-      })
-    )
-
-    client2.write(
-      JSON.stringify({
-        id: 2,
-        type: 'start',
-        payload: {
-          query: `
-            subscription {
-              updatedUser {
-                id
-                name
-                lastName
-              }
-            }
-          `
-        }
-      })
-    )
-  })
-
-  {
-    const [chunk] = await once(client2, 'data')
-    const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
-
-    process.nextTick(() => {
-      gateway.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
-            mutation {
-              triggerUser
-            }
-          `
-        }
-      })
-    })
-  }
-
-  {
-    const [chunk] = await once(client2, 'data')
-    const data = JSON.parse(chunk)
-    client2.end()
-    t.equal(data.type, 'data')
-    t.equal(data.id, 2)
-
-    const { payload: { data: { updatedUser = {} } = {} } = {} } = data
-
-    t.deepEqual(updatedUser, {
-      id: 'u1',
-      name: 'John',
-      lastName: 'Doe'
-    })
-  }
-
-  t.equal(ws2.readyState, WebSocket.OPEN)
-
-  await gateway.close()
-  await userService.close()
-  clock.uninstall()
 })
 
 test('Polling schemas (should properly regenerate the schema when a downstream service restarts)', async (t) => {
@@ -997,6 +708,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.tearDown(() => clock.uninstall())
   const oldSchema = `
     directive @extends on INTERFACE | OBJECT
 
@@ -1085,6 +797,11 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
   await userService.close()
 
   const restartedUserService = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+    await restartedUserService.close()
+  })
 
   const refreshedSchema = `
     directive @extends on INTERFACE | OBJECT
@@ -1191,8 +908,291 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
       }
     }
   })
+})
+
+test('Polling schemas (subscriptions should be handled)', async (t) => {
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 40
+  })
+  t.teardown(() => clock.uninstall())
+
+  const user = {
+    id: 'u1',
+    name: 'John',
+    lastName: 'Doe'
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => user
+    },
+    Mutation: {
+      triggerUser: async (root, args, { pubsub }) => {
+        await pubsub.publish({
+          topic: 'UPDATED.USER',
+          payload: {
+            updatedUser: user
+          }
+        })
+
+        return true
+      }
+    },
+    Subscription: {
+      updatedUser: {
+        subscribe: async (root, args, { pubsub }) =>
+          pubsub.subscribe('UPDATED.USER')
+      }
+    },
+    User: {
+      __resolveReference: (user, args, context, info) => user
+    }
+  }
+
+  const userService = Fastify()
+  const gateway = Fastify()
+
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
+
+  userService.register(GQL, {
+    schema: `
+      extend type Query {
+        me: User
+      }
+
+      extend type Subscription {
+        updatedUser: User
+      }
+
+      extend type Mutation {
+        triggerUser: Boolean
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+      }
+    `,
+    resolvers: resolvers,
+    federationMetadata: true,
+    subscription: true
+  })
+
+  await userService.listen(0)
+
+  const userServicePort = userService.server.address().port
+
+  gateway.register(GQL, {
+    subscription: true,
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`,
+          wsUrl: `ws://localhost:${userServicePort}/graphql`
+        }
+      ],
+      pollingInterval: 2000
+    }
+  })
+
+  await gateway.listen(0)
+
+  const ws = new WebSocket(
+    `ws://localhost:${gateway.server.address().port}/graphql`,
+    'graphql-ws'
+  )
+
+  t.equal(ws.readyState, WebSocket.CONNECTING)
+
+  const client = WebSocket.createWebSocketStream(ws, {
+    encoding: 'utf8',
+    objectMode: true
+  })
+  t.tearDown(client.destroy.bind(client))
+  client.setEncoding('utf8')
+
+  process.nextTick(() => {
+    client.write(
+      JSON.stringify({
+        type: 'connection_init'
+      })
+    )
+
+    client.write(
+      JSON.stringify({
+        id: 1,
+        type: 'start',
+        payload: {
+          query: `
+            subscription {
+              updatedUser {
+                id
+                name
+              }
+            }
+          `
+        }
+      })
+    )
+  })
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
+
+    process.nextTick(() => {
+      gateway.inject({
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
+            mutation {
+              triggerUser
+            }
+          `
+        }
+      })
+    })
+  }
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    client.end()
+    t.equal(data.type, 'data')
+    t.equal(data.id, 1)
+
+    const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+
+    t.deepEqual(updatedUser, {
+      id: 'u1',
+      name: 'John'
+    })
+  }
+
+  userService.graphql.replaceSchema(
+    buildFederationSchema(`
+      extend type Query {
+        me: User
+      }
+
+      extend type Subscription {
+        updatedUser: User
+      }
+
+      extend type Mutation {
+        triggerUser: Boolean
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+        lastName: String
+      }
+    `)
+  )
+
+  userService.graphql.defineResolvers(resolvers)
+
+  await clock.tickAsync(10000)
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
+
+  t.deepEqual(Object.keys(gateway.graphql.schema.getType('User').getFields()), [
+    'id',
+    'name',
+    'lastName'
+  ])
+
+  // t.equal(ws.readyState, WebSocket.OPEN)
+
+  const ws2 = new WebSocket(
+    `ws://localhost:${gateway.server.address().port}/graphql`,
+    'graphql-ws'
+  )
+
+  t.equal(ws2.readyState, WebSocket.CONNECTING)
+
+  const client2 = WebSocket.createWebSocketStream(ws2, {
+    encoding: 'utf8',
+    objectMode: true
+  })
+  t.tearDown(client2.destroy.bind(client2))
+  client2.setEncoding('utf8')
+
+  process.nextTick(() => {
+    client2.write(
+      JSON.stringify({
+        type: 'connection_init'
+      })
+    )
+
+    client2.write(
+      JSON.stringify({
+        id: 2,
+        type: 'start',
+        payload: {
+          query: `
+            subscription {
+              updatedUser {
+                id
+                name
+                lastName
+              }
+            }
+          `
+        }
+      })
+    )
+  })
+
+  {
+    const [chunk] = await once(client2, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
+
+    process.nextTick(() => {
+      gateway.inject({
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
+            mutation {
+              triggerUser
+            }
+          `
+        }
+      })
+    })
+  }
+
+  {
+    const [chunk] = await once(client2, 'data')
+    const data = JSON.parse(chunk)
+    client2.end()
+    t.equal(data.type, 'data')
+    t.equal(data.id, 2)
+
+    const { payload: { data: { updatedUser = {} } = {} } = {} } = data
+
+    t.deepEqual(updatedUser, {
+      id: 'u1',
+      name: 'John',
+      lastName: 'Doe'
+    })
+  }
+
+  t.equal(ws2.readyState, WebSocket.OPEN)
 
   await gateway.close()
-  await restartedUserService.close()
-  clock.uninstall()
+  await userService.close()
 })

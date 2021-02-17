@@ -621,6 +621,7 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'foobar')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
     client.setEncoding('utf8')
     ws.on('close', () => {
       client.end()
@@ -661,6 +662,7 @@ test('subscription connection is closed if context function throws', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
 
     client.write(JSON.stringify({
       type: 'connection_init'

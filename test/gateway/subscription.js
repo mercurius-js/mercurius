@@ -452,7 +452,7 @@ test('gateway forwards the connection_init payload to the federated service on g
       t.error(err)
       const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
       const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-      t.tearDown(() => client.destroy())
+      t.tearDown(client.destroy.bind(client))
       client.setEncoding('utf8')
 
       client.write(JSON.stringify({
