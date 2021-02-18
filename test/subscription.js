@@ -621,6 +621,7 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'foobar')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
     client.setEncoding('utf8')
     ws.on('close', () => {
       client.end()
@@ -661,6 +662,7 @@ test('subscription connection is closed if context function throws', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.tearDown(client.destroy.bind(client))
 
     client.write(JSON.stringify({
       type: 'connection_init'
@@ -683,8 +685,8 @@ test('subscription server sends update to subscriptions with custom async contex
   })
 
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
+  t.tearDown(async () => {
+    await app.close()
     clock.uninstall()
   })
 
@@ -870,8 +872,8 @@ test('subscription connection is closed if async context function throws', t => 
   })
 
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
+  t.tearDown(async () => {
+    await app.close()
     clock.uninstall()
   })
 
@@ -1825,27 +1827,6 @@ test('subscription server works with fastify-websocket', t => {
     t.tearDown(subscriptionClient.destroy.bind(subscriptionClient))
     subscriptionClient.setEncoding('utf8')
 
-    client.write('hi from client')
-
-    subscriptionClient.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-
-    subscriptionClient.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: `
-          subscription {
-            notificationAdded {
-              id
-              message
-            }
-          }
-        `
-      }
-    }))
-
     client.on('data', chunk => {
       t.equal(chunk, 'hi from server')
       client.end()
@@ -1868,10 +1849,30 @@ test('subscription server works with fastify-websocket', t => {
           }
         }))
         subscriptionClient.end()
-        t.end()
       } else {
         sendTestMutation()
       }
     })
+
+    client.write('hi from client')
+
+    subscriptionClient.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    subscriptionClient.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
   })
 })

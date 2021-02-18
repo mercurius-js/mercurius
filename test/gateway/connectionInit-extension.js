@@ -28,10 +28,10 @@ test('connectionInit extension e2e testing', t => {
   const userService = Fastify()
   const notificationService = Fastify()
   const gateway = Fastify()
-  t.tearDown(() => {
-    userService.close()
-    notificationService.close()
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+    await notificationService.close()
   })
 
   let userId = 1

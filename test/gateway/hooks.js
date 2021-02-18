@@ -10,17 +10,13 @@ const immediate = promisify(setImmediate)
 
 async function createTestService (t, schema, resolvers = {}) {
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
   service.register(GQL, {
     schema,
     resolvers,
     federationMetadata: true
   })
   await service.listen(0)
-
-  return service.server.address().port
+  return [service, service.server.address().port]
 }
 
 const users = {
@@ -102,7 +98,7 @@ async function createTestGatewayServer (t) {
       }
     }
   }
-  const userServicePort = await createTestService(t, userServiceSchema, userServiceResolvers)
+  const [userService, userServicePort] = await createTestService(t, userServiceSchema, userServiceResolvers)
 
   // Post service
   const postServiceSchema = `
@@ -140,11 +136,13 @@ async function createTestGatewayServer (t) {
       topPosts: (root, { count = 2 }) => Object.values(posts).slice(0, count)
     }
   }
-  const postServicePort = await createTestService(t, postServiceSchema, postServiceResolvers)
+  const [postService, postServicePort] = await createTestService(t, postServiceSchema, postServiceResolvers)
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+    await postService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -199,7 +197,7 @@ test('gateway - hooks', async (t) => {
   app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
     await immediate()
     t.type(schema, GraphQLSchema)
-    t.true(document, 'object')
+    t.type(document, 'object')
     t.type(context, 'object')
     t.ok('preGatewayExecution called')
   })

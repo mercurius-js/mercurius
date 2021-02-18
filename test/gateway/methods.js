@@ -6,9 +6,6 @@ const GQL = require('../..')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
   service.register(GQL, {
     schema,
     resolvers,
@@ -16,11 +13,11 @@ async function createService (t, schema, resolvers = {}) {
   })
   await service.listen(0)
 
-  return service.server.address().port
+  return [service, service.server.address().port]
 }
 
 test('calling defineLoaders throws an error in gateway mode', async (t) => {
-  const port = await createService(t, `
+  const [service, port] = await createService(t, `
     extend type Query {
       me: User
     }
@@ -32,8 +29,9 @@ test('calling defineLoaders throws an error in gateway mode', async (t) => {
   `)
 
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
+  t.tearDown(async () => {
+    await app.close()
+    await service.close()
   })
 
   app.register(GQL, {
@@ -59,7 +57,7 @@ test('calling defineLoaders throws an error in gateway mode', async (t) => {
 })
 
 test('calling defineResolvers throws an error in gateway mode', async (t) => {
-  const port = await createService(t, `
+  const [service, port] = await createService(t, `
     extend type Query {
       me: User
     }
@@ -71,8 +69,9 @@ test('calling defineResolvers throws an error in gateway mode', async (t) => {
   `)
 
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
+  t.tearDown(async () => {
+    await app.close()
+    await service.close()
   })
 
   app.register(GQL, {
@@ -98,7 +97,7 @@ test('calling defineResolvers throws an error in gateway mode', async (t) => {
 })
 
 test('calling extendSchema throws an error in gateway mode', async (t) => {
-  const port = await createService(t, `
+  const [service, port] = await createService(t, `
     extend type Query {
       me: User
     }
@@ -110,8 +109,9 @@ test('calling extendSchema throws an error in gateway mode', async (t) => {
   `)
 
   const app = Fastify()
-  t.tearDown(() => {
-    app.close()
+  t.tearDown(async () => {
+    await app.close()
+    await service.close()
   })
 
   app.register(GQL, {

@@ -6,9 +6,6 @@ const GQL = require('../..')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
   service.register(GQL, {
     schema,
     resolvers,
@@ -16,7 +13,7 @@ async function createService (t, schema, resolvers = {}) {
   })
   await service.listen(0)
 
-  return service.server.address().port
+  return [service, service.server.address().port]
 }
 
 const users = {
@@ -46,7 +43,7 @@ const posts = {
 }
 
 test('gateway handles @extends directive correctly', async (t) => {
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type Query @extends {
       me: User
     }
@@ -68,7 +65,7 @@ test('gateway handles @extends directive correctly', async (t) => {
     }
   })
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     type Post @key(fields: "pid") {
       pid: ID!
       title: String
@@ -111,8 +108,10 @@ test('gateway handles @extends directive correctly', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -188,7 +187,7 @@ test('gateway passes field arguments through to types labeled by @extends direct
     }
   }
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type Query @extends {
       me: User
     }
@@ -210,7 +209,7 @@ test('gateway passes field arguments through to types labeled by @extends direct
     }
   })
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     type Post @key(fields: "pid") {
       pid: ID!
       author: User
@@ -240,8 +239,10 @@ test('gateway passes field arguments through to types labeled by @extends direct
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -335,7 +336,7 @@ test('gateway distributes query correctly to services when querying with inline 
     }
   }
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type Query @extends {
       me: UserUnion
     }
@@ -363,7 +364,7 @@ test('gateway distributes query correctly to services when querying with inline 
     }
   })
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     type Post @key(fields: "pid") {
       pid: ID!
       author: User
@@ -393,8 +394,10 @@ test('gateway distributes query correctly to services when querying with inline 
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {

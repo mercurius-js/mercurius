@@ -6,9 +6,6 @@ const GQL = require('../..')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
   service.register(GQL, {
     schema,
     resolvers,
@@ -16,7 +13,7 @@ async function createService (t, schema, resolvers = {}) {
   })
   await service.listen(0)
 
-  return service.server.address().port
+  return [service, service.server.address().port]
 }
 
 test('It builds the gateway schema correctly', async (t) => {
@@ -62,7 +59,7 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   }
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     directive @customDirective on FIELD_DEFINITION
 
     extend type Query {
@@ -98,7 +95,7 @@ test('It builds the gateway schema correctly', async (t) => {
     }
   })
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     type Post @key(fields: "pid") {
       pid: ID!
       title: String
@@ -142,8 +139,10 @@ test('It builds the gateway schema correctly', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -312,7 +311,7 @@ test('It support variable inside nested arguments', async (t) => {
     }
   }
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     directive @customDirective on FIELD_DEFINITION
 
     extend type Query {
@@ -347,8 +346,9 @@ test('It support variable inside nested arguments', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -427,7 +427,7 @@ test('Should not throw on nullable reference', async (t) => {
     }
   ]
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     extend type Query {
       topPosts: [Post]
     }
@@ -457,7 +457,7 @@ test('Should not throw on nullable reference', async (t) => {
     }
   })
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type User @key(fields: "id") {
       id: ID!
       name: String
@@ -473,8 +473,10 @@ test('Should not throw on nullable reference', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -550,7 +552,7 @@ test('Should handle InlineFragment', async (t) => {
     }
   ]
 
-  const productServicePort = await createService(t, `
+  const [productService, productServicePort] = await createService(t, `
     extend type Query {
       products: [Product]
     }
@@ -582,8 +584,9 @@ test('Should handle InlineFragment', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await productService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -665,7 +668,7 @@ test('Should support array references with _entities query', async (t) => {
     }
   ]
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     extend type Query {
       topPosts: [Post]
     }
@@ -695,7 +698,7 @@ test('Should support array references with _entities query', async (t) => {
     }
   })
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type User @key(fields: "id") {
       id: ID!
       name: String
@@ -711,8 +714,10 @@ test('Should support array references with _entities query', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -786,7 +791,7 @@ test('Should support array references with _entities query', async (t) => {
 })
 
 test('Should support multiple `extends` of the same type in the service SDL', async (t) => {
-  const productServicePort = await createService(t, `
+  const [productService, productServicePort] = await createService(t, `
     extend type Query {
       ping: Int
     }
@@ -805,8 +810,9 @@ test('Should support multiple `extends` of the same type in the service SDL', as
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await productService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -885,7 +891,7 @@ test('Should support array references with _entities query and empty response', 
     }
   ]
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     extend type Query {
       topPosts: [Post]
     }
@@ -915,7 +921,7 @@ test('Should support array references with _entities query and empty response', 
     }
   })
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type User @key(fields: "id") {
       id: ID!
       name: String
@@ -931,8 +937,10 @@ test('Should support array references with _entities query and empty response', 
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -1022,7 +1030,7 @@ test('Should support array references with _entities query and empty response an
     }
   ]
 
-  const postServicePort = await createService(t, `
+  const [postService, postServicePort] = await createService(t, `
     extend type Query {
       topPosts: [Post]
     }
@@ -1052,7 +1060,7 @@ test('Should support array references with _entities query and empty response an
     }
   })
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type User @key(fields: "id") {
       id: ID!
       name: String
@@ -1068,8 +1076,10 @@ test('Should support array references with _entities query and empty response an
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -1142,7 +1152,7 @@ test('Should handle union with InlineFragment', async (t) => {
     }
   ]
 
-  const productServicePort = await createService(t, `
+  const [productService, productServicePort] = await createService(t, `
     extend type Query {
       products: [Product]
       shelve: Shelve
@@ -1180,8 +1190,9 @@ test('Should handle union with InlineFragment', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await productService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -1245,9 +1256,6 @@ test('Should handle union with InlineFragment', async (t) => {
 test('Gateway sends initHeaders with _service sdl query', async (t) => {
   t.plan(1)
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
   service.register(GQL, {
     schema: `
       extend type Query {
@@ -1271,8 +1279,9 @@ test('Gateway sends initHeaders with _service sdl query', async (t) => {
   await service.listen(0)
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await service.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -1294,9 +1303,6 @@ test('Gateway sends initHeaders with _service sdl query', async (t) => {
 test('Gateway sends initHeaders function result with _service sdl query', async (t) => {
   t.plan(1)
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
   service.register(GQL, {
     schema: `
       extend type Query {
@@ -1320,8 +1326,9 @@ test('Gateway sends initHeaders function result with _service sdl query', async 
   await service.listen(0)
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await service.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -1356,7 +1363,7 @@ test('Should handle interface', async (t) => {
     }
   ]
 
-  const productServicePort = await createService(t, `
+  const [productService, productServicePort] = await createService(t, `
     extend type Query {
       products: [Product]
       shelve: Shelve
@@ -1400,8 +1407,9 @@ test('Should handle interface', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await productService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -1493,7 +1501,7 @@ test('Should handle interface referenced multiple times in different services', 
     }
   ]
 
-  const bookServicePort = await createService(t, `
+  const [bookService, bookServicePort] = await createService(t, `
     extend type Query {
       books: [Book]
     }
@@ -1525,7 +1533,7 @@ test('Should handle interface referenced multiple times in different services', 
       }
     }
   })
-  const dictionariesServicePort = await createService(t, `
+  const [dictionariesService, dictionariesServicePort] = await createService(t, `
     extend type Query {
       dictionaries: [Dictionary]
     }
@@ -1559,8 +1567,10 @@ test('Should handle interface referenced multiple times in different services', 
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await dictionariesService.close()
+    await bookService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -1736,7 +1746,7 @@ test('Should handle complex and nested interfaces with external types', async (t
     }
   `
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     type User @key(fields: "id") {
       id: ID!
       name: String!
@@ -1757,7 +1767,7 @@ test('Should handle complex and nested interfaces with external types', async (t
       }
     }
   })
-  const configABServicePort = await createService(t, `
+  const [configABService, configABServicePort] = await createService(t, `
     ${configInterface}
     type ConfigA implements ConfigInterface {
       type: EConfig!
@@ -1801,7 +1811,7 @@ test('Should handle complex and nested interfaces with external types', async (t
       }
     }
   })
-  const configCServicePort = await createService(t, `
+  const [configCService, configCServicePort] = await createService(t, `
     ${configInterface}
     type ConfigC implements ConfigInterface {
       type: EConfig!
@@ -1844,8 +1854,11 @@ test('Should handle complex and nested interfaces with external types', async (t
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await configCService.close()
+    await configABService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -2013,7 +2026,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
     }
   }
 
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     directive @customDirective on FIELD_DEFINITION
 
     extend type Query {
@@ -2070,7 +2083,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
     }
   `
 
-  const postServicePort = await createService(t, postServiceSdl, {
+  const [postService, postServicePort] = await createService(t, postServiceSdl, {
     Post: {
       __resolveReference: (post, args, context, info) => {
         return posts[post.pid]
@@ -2097,8 +2110,10 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {
@@ -2252,11 +2267,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
 })
 
 test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
-  const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
-  })
-  const brokenServicePort = await createService(t, `
+  const [brokenService, brokenServicePort] = await createService(t, `
     extend type Query {
       _service: String
     }
@@ -2268,7 +2279,7 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
     }
   })
 
-  const workingServicePort = await createService(t, `
+  const [workingService, workingServicePort] = await createService(t, `
     extend type Query {
       hello: String!
     }
@@ -2278,6 +2289,12 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
     }
   })
 
+  const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await brokenService.close()
+    await workingService.close()
+  })
   gateway.register(GQL, {
     gateway: {
       services: [{
@@ -2311,11 +2328,6 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
 })
 
 test('Update the schema', async (t) => {
-  const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
-  })
-
   const schema = `
     extend type Query {
       hello: String!
@@ -2329,13 +2341,18 @@ test('Update the schema', async (t) => {
     }
   `
 
-  const servicePort = await createService(t, fullSchema, {
+  const [service, servicePort] = await createService(t, fullSchema, {
     Query: {
       hello: () => 'world',
       world: () => 'hello'
     }
   })
 
+  const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await service.close()
+  })
   gateway.register(GQL, {
     gateway: {
       services: [{
@@ -2388,23 +2405,23 @@ test('Update the schema', async (t) => {
 })
 
 test('Update the schema without any changes', async (t) => {
-  const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
-  })
-
   const schema = `
     extend type Query {
       hello: String!
     }
   `
 
-  const servicePort = await createService(t, schema, {
+  const [service, servicePort] = await createService(t, schema, {
     Query: {
       hello: () => 'world'
     }
   })
 
+  const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await service.close()
+  })
   gateway.register(GQL, {
     gateway: {
       services: [{

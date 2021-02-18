@@ -6,9 +6,6 @@ const GQL = require('../..')
 
 async function createService (t, schema, resolvers = {}) {
   const service = Fastify()
-  t.tearDown(() => {
-    service.close()
-  })
   service.register(GQL, {
     schema,
     resolvers,
@@ -16,7 +13,7 @@ async function createService (t, schema, resolvers = {}) {
   })
   await service.listen(0)
 
-  return service.server.address().port
+  return [service, service.server.address().port]
 }
 
 const users = {
@@ -52,7 +49,7 @@ const posts = {
 }
 
 test('gateway handles @requires directive correctly', async (t) => {
-  const userServicePort = await createService(t, `
+  const [userService, userServicePort] = await createService(t, `
     extend type Query {
       me: User
     }
@@ -86,7 +83,7 @@ test('gateway handles @requires directive correctly', async (t) => {
     }
   })
 
-  const biographyServicePort = await createService(t, `
+  const [biographyService, biographyServicePort] = await createService(t, `
     type User @key(fields: "id") @extends {
       id: ID! @external
       name: String @external
@@ -102,8 +99,10 @@ test('gateway handles @requires directive correctly', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(() => {
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await biographyService.close()
+    await userService.close()
   })
   gateway.register(GQL, {
     gateway: {

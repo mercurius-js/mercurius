@@ -18,6 +18,7 @@ test('Polling schemas', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.tearDown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -36,6 +37,10 @@ test('Polling schemas', async (t) => {
 
   const userService = Fastify()
   const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
 
   userService.register(GQL, {
     schema: `
@@ -67,8 +72,6 @@ test('Polling schemas', async (t) => {
       pollingInterval: 2000
     }
   })
-
-  await gateway.listen(0)
 
   const res = await gateway.inject({
     method: 'POST',
@@ -143,7 +146,11 @@ test('Polling schemas', async (t) => {
   userService.graphql.defineResolvers(resolvers)
 
   await clock.tickAsync(2000)
-  await clock.tickAsync()
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
 
   const res3 = await gateway.inject({
     method: 'POST',
@@ -173,10 +180,6 @@ test('Polling schemas', async (t) => {
       }
     }
   })
-
-  await gateway.close()
-  await userService.close()
-  clock.uninstall()
 })
 
 test('Polling schemas (gateway.polling interval is not a number)', async (t) => {
@@ -248,6 +251,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.tearDown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -304,7 +308,6 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     }
   })
 
-  await gateway.listen(0)
   await clock.tickAsync()
 
   {
@@ -404,8 +407,6 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       data: null
     })
   }
-
-  clock.uninstall()
 })
 
 test('Polling schemas (if service is mandatory, exception should be thrown)', async (t) => {
@@ -426,6 +427,10 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
 
   const userService = Fastify()
   const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
 
   userService.register(GQL, {
     schema: `
@@ -457,8 +462,6 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
       ]
     }
   })
-
-  await gateway.listen(0)
 
   {
     const { body } = await gateway.inject({
@@ -527,8 +530,6 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
   t.rejects(async () => {
     await gateway.graphql.gateway.refresh()
   })
-
-  await gateway.close()
 })
 
 test('Polling schemas (cache should be cleared)', async (t) => {
@@ -536,6 +537,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.tearDown(() => clock.uninstall())
 
   const user = {
     id: 'u1',
@@ -545,6 +547,10 @@ test('Polling schemas (cache should be cleared)', async (t) => {
 
   const userService = Fastify()
   const gateway = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
 
   userService.register(GQL, {
     schema: `
@@ -634,7 +640,12 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     }
   })
 
-  await clock.tickAsync(2000)
+  await clock.tickAsync(10000)
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
 
   const res2 = await gateway.inject({
     method: 'POST',
@@ -690,10 +701,213 @@ test('Polling schemas (cache should be cleared)', async (t) => {
       }
     }
   })
+})
 
-  await gateway.close()
+test('Polling schemas (should properly regenerate the schema when a downstream service restarts)', async (t) => {
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 40
+  })
+  t.tearDown(() => clock.uninstall())
+  const oldSchema = `
+    directive @extends on INTERFACE | OBJECT
+
+    directive @external on FIELD_DEFINITION | OBJECT
+
+    directive @key(fields: String!) on INTERFACE | OBJECT
+
+    directive @provides(fields: String!) on FIELD_DEFINITION
+
+    directive @requires(fields: String!) on FIELD_DEFINITION
+
+    type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `
+  const user = {
+    id: 'u1',
+    name: 'John',
+    lastName: 'Doe'
+  }
+
+  const userService = Fastify()
+  const gateway = Fastify()
+
+  userService.register(GQL, {
+    schema: oldSchema,
+    resolvers: {
+      Query: {
+        me: (root, args, context, info) => user
+      },
+      User: {
+        __resolveReference: (user, args, context, info) => user
+      }
+    },
+    federationMetadata: true
+  })
+
+  await userService.listen(0)
+
+  const userServicePort = userService.server.address().port
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ],
+      pollingInterval: 2000
+    }
+  })
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        query MainQuery {
+          me {
+            id
+            name
+          }
+        }
+      `
+    })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
+
   await userService.close()
-  clock.uninstall()
+
+  const restartedUserService = Fastify()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
+    await restartedUserService.close()
+  })
+
+  const refreshedSchema = `
+    directive @extends on INTERFACE | OBJECT
+
+    directive @external on FIELD_DEFINITION | OBJECT
+
+    directive @key(fields: String!) on INTERFACE | OBJECT
+
+    directive @provides(fields: String!) on FIELD_DEFINITION
+    
+    directive @requires(fields: String!) on FIELD_DEFINITION
+
+    type User @key(fields: "id") {
+      id: ID!
+      lastName: String!
+      name: String!
+    }
+
+    type Mutation {
+      create: User!
+    }
+
+    type Query {
+      me2: User
+    }
+  `
+
+  restartedUserService.register(GQL, {
+    schema: refreshedSchema,
+    resolvers: {
+      Query: {
+        me2: (root, args, context, info) => user
+      },
+      Mutation: {
+        create: (root, args, context, info) => user
+      },
+      User: {
+        __resolveReference: (user, args, context, info) => user
+      }
+    },
+    federationMetadata: true
+  })
+
+  await restartedUserService.listen(userServicePort)
+
+  await clock.tickAsync(10000)
+
+  // We need the event loop to actually spin twice to
+  // be able to propagate the change
+  await immediate()
+  await immediate()
+
+  const res2 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        query MainQuery {
+          me {
+            id
+            name
+          }
+        }
+      `
+    })
+  })
+
+  t.deepEqual(JSON.parse(res2.body), {
+    errors: [
+      {
+        message: 'Cannot query field "me" on type "Query". Did you mean "me2"?',
+        locations: [{ line: 3, column: 11 }]
+      }
+    ],
+    data: null
+  })
+
+  const res3 = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        mutation NewMutation {
+          create {
+            id
+            name
+          }
+        }
+      `
+    })
+  })
+
+  t.deepEqual(JSON.parse(res3.body), {
+    data: {
+      create: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
 })
 
 test('Polling schemas (subscriptions should be handled)', async (t) => {
@@ -701,6 +915,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+  t.teardown(() => clock.uninstall())
 
   const user = {
     id: 'u1',
@@ -738,9 +953,9 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   const userService = Fastify()
   const gateway = Fastify()
 
-  t.tearDown(() => {
-    userService.close()
-    gateway.close()
+  t.tearDown(async () => {
+    await gateway.close()
+    await userService.close()
   })
 
   userService.register(GQL, {
@@ -798,57 +1013,58 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     encoding: 'utf8',
     objectMode: true
   })
-
-  t.tearDown(() => {
-    client.destroy()
-  })
-
+  t.tearDown(client.destroy.bind(client))
   client.setEncoding('utf8')
 
-  client.write(
-    JSON.stringify({
-      type: 'connection_init'
-    })
-  )
+  process.nextTick(() => {
+    client.write(
+      JSON.stringify({
+        type: 'connection_init'
+      })
+    )
 
-  client.write(
-    JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: `
-          subscription {
-            updatedUser {
-              id
-              name
+    client.write(
+      JSON.stringify({
+        id: 1,
+        type: 'start',
+        payload: {
+          query: `
+            subscription {
+              updatedUser {
+                id
+                name
+              }
             }
-          }
-        `
-      }
-    })
-  )
+          `
+        }
+      })
+    )
+  })
 
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
     t.equal(data.type, 'connection_ack')
 
-    await gateway.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
-          mutation {
-            triggerUser
-          }
-        `
-      }
+    process.nextTick(() => {
+      gateway.inject({
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
+            mutation {
+              triggerUser
+            }
+          `
+        }
+      })
     })
   }
 
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
+    client.end()
     t.equal(data.type, 'data')
     t.equal(data.id, 1)
 
@@ -910,58 +1126,59 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     encoding: 'utf8',
     objectMode: true
   })
-
-  t.tearDown(() => {
-    client2.destroy()
-  })
-
+  t.tearDown(client2.destroy.bind(client2))
   client2.setEncoding('utf8')
 
-  client2.write(
-    JSON.stringify({
-      type: 'connection_init'
-    })
-  )
+  process.nextTick(() => {
+    client2.write(
+      JSON.stringify({
+        type: 'connection_init'
+      })
+    )
 
-  client2.write(
-    JSON.stringify({
-      id: 2,
-      type: 'start',
-      payload: {
-        query: `
-          subscription {
-            updatedUser {
-              id
-              name
-              lastName
+    client2.write(
+      JSON.stringify({
+        id: 2,
+        type: 'start',
+        payload: {
+          query: `
+            subscription {
+              updatedUser {
+                id
+                name
+                lastName
+              }
             }
-          }
-        `
-      }
-    })
-  )
+          `
+        }
+      })
+    )
+  })
 
   {
     const [chunk] = await once(client2, 'data')
     const data = JSON.parse(chunk)
     t.equal(data.type, 'connection_ack')
 
-    await gateway.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
-          mutation {
-            triggerUser
-          }
-        `
-      }
+    process.nextTick(() => {
+      gateway.inject({
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
+            mutation {
+              triggerUser
+            }
+          `
+        }
+      })
     })
   }
 
   {
     const [chunk] = await once(client2, 'data')
     const data = JSON.parse(chunk)
+    client2.end()
     t.equal(data.type, 'data')
     t.equal(data.id, 2)
 
@@ -976,207 +1193,6 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   t.equal(ws2.readyState, WebSocket.OPEN)
 
-  clock.uninstall()
-})
-
-test('Polling schemas (should properly regenerate the schema when a downstream service restarts)', async (t) => {
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-  const oldSchema = `
-    directive @extends on INTERFACE | OBJECT
-
-    directive @external on FIELD_DEFINITION | OBJECT
-
-    directive @key(fields: String!) on INTERFACE | OBJECT
-
-    directive @provides(fields: String!) on FIELD_DEFINITION
-
-    directive @requires(fields: String!) on FIELD_DEFINITION
-
-    type Query {
-      me: User
-    }
-
-    type User @key(fields: "id") {
-      id: ID!
-      name: String!
-    }
-  `
-  const user = {
-    id: 'u1',
-    name: 'John',
-    lastName: 'Doe'
-  }
-
-  const userService = Fastify()
-  const gateway = Fastify()
-
-  userService.register(GQL, {
-    schema: oldSchema,
-    resolvers: {
-      Query: {
-        me: (root, args, context, info) => user
-      },
-      User: {
-        __resolveReference: (user, args, context, info) => user
-      }
-    },
-    federationMetadata: true
-  })
-
-  await userService.listen(0)
-
-  const userServicePort = userService.server.address().port
-
-  gateway.register(GQL, {
-    gateway: {
-      services: [
-        {
-          name: 'user',
-          url: `http://localhost:${userServicePort}/graphql`
-        }
-      ],
-      pollingInterval: 2000
-    }
-  })
-
-  await gateway.listen(0)
-
-  const res = await gateway.inject({
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    url: '/graphql',
-    body: JSON.stringify({
-      query: `
-        query MainQuery {
-          me {
-            id
-            name
-          }
-        }
-      `
-    })
-  })
-
-  t.deepEqual(JSON.parse(res.body), {
-    data: {
-      me: {
-        id: 'u1',
-        name: 'John'
-      }
-    }
-  })
-
-  await userService.close()
-
-  const restartedUserService = Fastify()
-
-  const refreshedSchema = `
-    directive @extends on INTERFACE | OBJECT
-
-    directive @external on FIELD_DEFINITION | OBJECT
-
-    directive @key(fields: String!) on INTERFACE | OBJECT
-
-    directive @provides(fields: String!) on FIELD_DEFINITION
-    
-    directive @requires(fields: String!) on FIELD_DEFINITION
-
-    type User @key(fields: "id") {
-      id: ID!
-      lastName: String!
-      name: String!
-    }
-
-    type Mutation {
-      create: User!
-    }
-
-    type Query {
-      me2: User
-    }
-  `
-
-  restartedUserService.register(GQL, {
-    schema: refreshedSchema,
-    resolvers: {
-      Query: {
-        me2: (root, args, context, info) => user
-      },
-      Mutation: {
-        create: (root, args, context, info) => user
-      },
-      User: {
-        __resolveReference: (user, args, context, info) => user
-      }
-    },
-    federationMetadata: true
-  })
-
-  await restartedUserService.listen(userServicePort)
-
-  await clock.tickAsync(4000)
-
-  const res2 = await gateway.inject({
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    url: '/graphql',
-    body: JSON.stringify({
-      query: `
-        query MainQuery {
-          me {
-            id
-            name
-          }
-        }
-      `
-    })
-  })
-
-  t.deepEqual(JSON.parse(res2.body), {
-    errors: [
-      {
-        message: 'Cannot query field "me" on type "Query". Did you mean "me2"?',
-        locations: [{ line: 3, column: 11 }]
-      }
-    ],
-    data: null
-  })
-
-  const res3 = await gateway.inject({
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    url: '/graphql',
-    body: JSON.stringify({
-      query: `
-        mutation NewMutation {
-          create {
-            id
-            name
-          }
-        }
-      `
-    })
-  })
-
-  t.deepEqual(JSON.parse(res3.body), {
-    data: {
-      create: {
-        id: 'u1',
-        name: 'John'
-      }
-    }
-  })
-
   await gateway.close()
-  await restartedUserService.close()
-  clock.uninstall()
+  await userService.close()
 })
