@@ -256,9 +256,15 @@ const plugin = fp(async function (app, opts) {
 
     fastifyGraphQl.schema = s
 
-    lru.clear()
-    lruErrors.clear()
-    lruGatewayResolvers.clear()
+    if (lru) {
+      lru.clear()
+    }
+    if (lruErrors) {
+      lruErrors.clear()
+    }
+    if (lruGatewayResolvers) {
+      lruGatewayResolvers.clear()
+    }
   }
 
   fastifyGraphQl.extendSchema = function (s) {
