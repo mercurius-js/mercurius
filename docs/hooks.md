@@ -44,7 +44,7 @@ fastify.graphql.addHook('preParsing', async (schema, source, context) => {
 By the time the `preValidation` hook triggers, the query string has been parsed into a GraphQL Document AST.
 
 ```js
-fastify.addHook('preValidation', async (schema, document, context) => {
+fastify.graphql.addHook('preValidation', async (schema, document, context) => {
   await asyncMethod()
 })
 ```
@@ -56,7 +56,7 @@ In the `preExecution` hook, you can modify the following items by returning them
   - `errors`
 
 ```js
-fastify.addHook('preExecution', async (schema, document, context) => {
+fastify.graphql.addHook('preExecution', async (schema, document, context) => {
   const { modifiedDocument, errors } = await asyncMethod(document)
 
   return {
@@ -75,7 +75,7 @@ In the `preGatewayExecution` hook, you can modify the following items by returni
 This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
 
 ```js
-fastify.addHook('preGatewayExecution', async (schema, document, context) => {
+fastify.graphql.addHook('preGatewayExecution', async (schema, document, context) => {
   const { modifiedDocument, errors } = await asyncMethod(document)
 
   return {
@@ -88,7 +88,7 @@ fastify.addHook('preGatewayExecution', async (schema, document, context) => {
 ### onResolution
 
 ```js
-fastify.addHook('onResolution', async (execution, context) => {
+fastify.graphql.addHook('onResolution', async (execution, context) => {
   await asyncMethod()
 })
 ```
@@ -99,7 +99,7 @@ If you get an error during the execution of your hook, you can just throw an err
 **Notice:** there is one exception to this with the `preGatewayExecution` hook, which will continue execution of the rest of the query and append the error to the errors array in the response.
 
 ```js
-fastify.addHook('preParsing', async (schema, source, context) => {
+fastify.graphql.addHook('preParsing', async (schema, source, context) => {
   throw new Error('Some error')
 })
 ```
@@ -112,13 +112,13 @@ The following hooks support adding errors to the GraphQL response. These are:
  - `preGatewayExecution`
 
 ```js
-fastify.addHook('preExecution', async (schema, document, context) => {
+fastify.graphql.addHook('preExecution', async (schema, document, context) => {
   return {
     errors: [new Error('foo')]
   }
 })
 
-fastify.addHook('preExecution', async (schema, document, context) => {
+fastify.graphql.addHook('preExecution', async (schema, document, context) => {
   return {
     errors: [new Error('bar')]
   }
