@@ -52,7 +52,6 @@ const resolvers: IResolvers = {
 declare module '../../' {
   interface MercuriusContext {
     request: FastifyRequest
-    reply: FastifyReply
   }
 }
 
@@ -74,10 +73,9 @@ app.register(mercurius, {
   },
   queryDepth: 8,
   cache: true,
-  context: (request, reply) => {
+  context: (request) => {
     return {
-      request,
-      reply
+      request
     }
   },
   schemaTransforms: (schema) => schema
