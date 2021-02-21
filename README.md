@@ -1,6 +1,6 @@
 # mercurius
 
-![CI workflow](https://github.com/fastify/fastify-oauth2/workflows/CI%20workflow/badge.svg)
+![CI workflow](https://github.com/mercurius-js/mercurius/workflows/CI%20workflow/badge.svg)
 
 Mercurius is a [**GraphQL**](https://graphql.org/) adapter for [**Fastify**](https://www.fastify.io)
 
