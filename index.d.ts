@@ -26,6 +26,7 @@ export interface PubSub {
 
 export interface MercuriusContext {
   app: FastifyInstance;
+  reply: FastifyReply;
   /**
    * __Caution__: Only available if `subscriptions` are enabled
    */
