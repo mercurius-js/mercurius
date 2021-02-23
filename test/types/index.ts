@@ -493,3 +493,19 @@ app.graphql.addHook('preGatewayExecution', async function (schema, document, con
 app.graphql.addHook('onResolution', async function (execution, context) {
   console.log('onResolution called')
 })
+
+app.graphql.addHook('preSubscriptionParsing', async function (schema, source, context) {
+  console.log('preSubscriptionParsing called')
+})
+
+app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context) {
+  console.log('preSubscriptionExecution called')
+})
+
+app.graphql.addHook('preGatewaySubscriptionExecution', async function (schema, document, context) {
+  console.log('preGatewaySubscriptionExecution called')
+})
+
+app.graphql.addHook('onSubscriptionResolution', async function (execution, context) {
+  console.log('onSubscriptionResolution called')
+})

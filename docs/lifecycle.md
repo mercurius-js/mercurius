@@ -55,3 +55,30 @@ Incoming GraphQL Request
                                                                      │
                                                                      └─▶ onResolution Hook
 ```
+
+## Subscription lifecycle
+
+```
+Incoming GraphQL Websocket subscription data
+  │
+  └─▶ Routing
+           │
+  errors ◀─┴─▶ preSubscriptionParsing Hook
+                  │
+         errors ◀─┴─▶ Subscription Parsing
+                        │
+               errors ◀─┴─▶ preSubscriptionExecution Hook
+                              │
+                     errors ◀─┴─▶ Subscription Execution
+                                    │
+                                    │
+                                    └─▶ preGatewaySubscriptionExecution Hook(s)
+                                            │
+                                   errors ◀─┴─▶ Gateway Subscription Execution(s)
+                                                  │
+                                      wait for subscription data
+                                                  │
+                   subscription closed on error ◀─┴─▶ Subscription Resolution (when subscription data is received)
+                                                        │
+                                                        └─▶ onSubscriptionResolution Hook
+```

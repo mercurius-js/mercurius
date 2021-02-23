@@ -62,9 +62,9 @@ export interface MercuriusLoaders<TContext extends Record<string, any> = Mercuri
   };
 }
 
-// ---------------
-// Lifecycle hooks
-// ---------------
+// ------------------------
+// Request Lifecycle hooks
+// ------------------------
 
 /**
  * `preParsing` is the first hook to be executed in the GraphQL request lifecycle. The next hook will be `preValidation`.
@@ -121,6 +121,57 @@ export interface preGatewayExecutionHookHandler<TContext = MercuriusContext, TEr
  * `onResolution` is the fifth and final hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`.
  */
 export interface onResolutionHookHandler<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext> {
+  (
+    execution: ExecutionResult<TData>,
+    context: TContext,
+  ): Promise<void>;
+}
+
+// -----------------------------
+// Subscription Lifecycle hooks
+// -----------------------------
+
+/**
+ * `preSubscriptionParsing` is the first hook to be executed in the GraphQL subscription lifecycle. The next hook will be `preSubscriptionExecution`.
+ * This hook will only be triggered when subscriptions are enabled.
+ */
+export interface preSubscriptionParsingHookHandler<TContext = MercuriusContext> {
+  (
+    schema: GraphQLSchema,
+    source: string,
+    context: TContext,
+  ): Promise<void>;
+}
+
+/**
+ * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`, the next hook will be `preGatewaySubscriptionExecution`.
+ * This hook will only be triggered when subscriptions are enabled.
+ */
+export interface preSubscriptionExecutionHookHandler<TContext = MercuriusContext> {
+  (
+    schema: GraphQLSchema,
+    source: DocumentNode,
+    context: TContext,
+  ): Promise<void>;
+}
+
+/**
+ * `preGatewaySubscriptionExecution` is the third hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionExecution`, the next hook will be `onSubscriptionResolution`.
+ * This hook will only be triggered in gateway mode when subscriptions are enabled.
+ */
+export interface preGatewaySubscriptionExecutionHookHandler<TContext = MercuriusContext> {
+  (
+    schema: GraphQLSchema,
+    source: DocumentNode,
+    context: TContext,
+  ): Promise<void>;
+}
+
+/**
+ * `onSubscriptionResolution` is the fourth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preGatewaySubscriptionExecution`.
+ * This hook will only be triggered when subscriptions are enabled.
+ */
+export interface onSubscriptionResolutionHookHandler<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext> {
   (
     execution: ExecutionResult<TData>,
     context: TContext,
@@ -187,7 +238,7 @@ interface MercuriusPlugin {
 
   // addHook: overloads
 
-  // Lifecycle addHooks
+  // Request lifecycle addHooks
 
   /**
    * `preParsing` is the first hook to be executed in the GraphQL request lifecycle. The next hook will be `preValidation`.
@@ -220,6 +271,32 @@ interface MercuriusPlugin {
    * `onResolution` is the fifth and final hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`.
    */
   addHook<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext>(name: 'onResolution', hook: onResolutionHookHandler<TData, TContext>): void;
+
+  // Subscription lifecycle addHooks
+
+  /**
+   * `preSubscriptionParsing` is the first hook to be executed in the GraphQL subscription lifecycle. The next hook will be `preSubscriptionExecution`.
+   * This hook will only be triggered when subscriptions are enabled.
+   */
+  addHook<TContext = MercuriusContext>(name: 'preSubscriptionParsing', hook: preSubscriptionParsingHookHandler<TContext>): void;
+
+  /**
+   * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`, the next hook will be `preGatewaySubscriptionExecution`.
+   * This hook will only be triggered when subscriptions are enabled.
+   */
+  addHook<TContext = MercuriusContext>(name: 'preSubscriptionExecution', hook: preSubscriptionExecutionHookHandler<TContext>): void;
+
+  /**
+   * `preGatewaySubscriptionExecution` is the third hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionExecution`, the next hook will be `onSubscriptionResolution`.
+   * This hook will only be triggered in gateway mode when subscriptions are enabled.
+   */
+  addHook<TContext = MercuriusContext>(name: 'preGatewaySubscriptionExecution', hook: preGatewaySubscriptionExecutionHookHandler<TContext>): void;
+
+  /**
+   * `onSubscriptionResolution` is the fourth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preGatewaySubscriptionExecution`.
+   * This hook will only be triggered when subscriptions are enabled.
+   */
+  addHook<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext>(name: 'onSubscriptionResolution', hook: onSubscriptionResolutionHookHandler<TData, TContext>): void;
 }
 
 interface QueryRequest {
