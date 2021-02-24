@@ -136,18 +136,16 @@ test('subscription - hooks basic', async t => {
 
   const { client } = createWebSocketClient(t, app)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -155,9 +153,7 @@ test('subscription - hooks basic', async t => {
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    sendTestMutation(app)
-  })
+  sendTestMutation(app)
 
   {
     const [chunk] = await once(client, 'data')
@@ -201,11 +197,9 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
 
   const { client } = createWebSocketClient(t, app)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -213,15 +207,13 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -255,11 +247,9 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
 
   const { client } = createWebSocketClient(t, app)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -267,15 +257,13 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -307,18 +295,16 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
 
   const { client, ws } = createWebSocketClient(t, app)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: query
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: query
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -326,9 +312,7 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    sendTestMutation(app)
-  })
+  sendTestMutation(app)
 
   await once(client, 'end')
   t.is(ws.readyState, WebSocket.CLOSED)

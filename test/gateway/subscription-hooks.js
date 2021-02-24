@@ -238,18 +238,16 @@ test('gateway subscription - hooks basic', async t => {
 
   const { client } = createWebSocketClient(t, gateway)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: subscriptionQuery
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: subscriptionQuery
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -257,24 +255,22 @@ test('gateway subscription - hooks basic', async t => {
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    gateway.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
-          mutation {
-            sendMessage(message: {
-              text: "Hi there u1",
-              fromUserId: "u2",
-              toUserId: "u1"
-            }) {
-              id
-            }
+  gateway.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: `
+        mutation {
+          sendMessage(message: {
+            text: "Hi there u1",
+            fromUserId: "u2",
+            toUserId: "u1"
+          }) {
+            id
           }
-        `
-      }
-    })
+        }
+      `
+    }
   })
 
   {
@@ -334,11 +330,9 @@ test('gateway - preSubscriptionParsing hooks should handle errors', async t => {
 
   const { client } = createWebSocketClient(t, gateway)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -346,15 +340,13 @@ test('gateway - preSubscriptionParsing hooks should handle errors', async t => {
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: query('u1')
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: query('u1')
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -394,11 +386,9 @@ test('gateway - preSubscriptionExecution hooks should handle errors', async t =>
 
   const { client } = createWebSocketClient(t, gateway)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -406,15 +396,13 @@ test('gateway - preSubscriptionExecution hooks should handle errors', async t =>
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: query('u1')
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: query('u1')
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -449,11 +437,9 @@ test('gateway - preGatewaySubscriptionExecution hooks should handle errors', asy
 
   const { client } = createWebSocketClient(t, gateway)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -461,15 +447,13 @@ test('gateway - preGatewaySubscriptionExecution hooks should handle errors', asy
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: query('u1')
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: query('u1')
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -501,18 +485,16 @@ test('gateway - onSubscriptionResolution hooks should handle errors', async t =>
 
   const { client, ws } = createWebSocketClient(t, gateway)
 
-  process.nextTick(() => {
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: query('u1')
-      }
-    }))
-  })
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: query('u1')
+    }
+  }))
 
   {
     const [chunk] = await once(client, 'data')
@@ -520,24 +502,22 @@ test('gateway - onSubscriptionResolution hooks should handle errors', async t =>
     t.is(data.type, 'connection_ack')
   }
 
-  process.nextTick(() => {
-    gateway.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
-          mutation {
-            sendMessage(message: {
-              text: "Hi there u1",
-              fromUserId: "u2",
-              toUserId: "u1"
-            }) {
-              id
-            }
+  gateway.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: `
+        mutation {
+          sendMessage(message: {
+            text: "Hi there u1",
+            fromUserId: "u2",
+            toUserId: "u1"
+          }) {
+            id
           }
-        `
-      }
-    })
+        }
+      `
+    }
   })
 
   await once(client, 'end')
