@@ -271,7 +271,7 @@ export interface MercuriusSchemaOptions {
   /**
    * The GraphQL schema. String schema will be parsed
    */
-  schema: GraphQLSchema | string | string[];
+  schema?: GraphQLSchema | string | string[];
   /**
    * Object with resolver functions
    */
