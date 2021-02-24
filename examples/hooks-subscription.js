@@ -70,6 +70,10 @@ async function start () {
     console.log('onSubscriptionResolution called')
   })
 
+  app.graphql.addHook('onSubscriptionEnd', async function (context) {
+    console.log('onSubscriptionEnd called')
+  })
+
   await app.listen(3000)
 }
 

@@ -200,11 +200,21 @@ fastify.graphql.addHook('onSubscriptionResolution', async (execution, context) =
 })
 ```
 
+### onSubscriptionEnd
+
+This hook will be triggered when a subscription ends.
+
+```js
+fastify.graphql.addHook('onSubscriptionEnd', async (context) => {
+  await asyncMethod()
+})
+```
+
 ### Manage Errors from a subscription hook
 
 If you get an error during the execution of your subscription hook, you can just throw an error and Mercurius will send the appropriate errors to the user along the websocket.`
 
-**Notice:** there is one exception to this with the `onSubscriptionResolution` hook, which will close the subscription connection if an error occurs.
+**Notice:** there are exceptions to this with the `onSubscriptionResolution` and `onSubscriptionEnd` hooks, which will close the subscription connection if an error occurs.
 
 ```js
 fastify.graphql.addHook('preSubscriptionParsing', async (schema, source, context) => {

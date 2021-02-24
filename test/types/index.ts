@@ -509,3 +509,7 @@ app.graphql.addHook('preGatewaySubscriptionExecution', async function (schema, d
 app.graphql.addHook('onSubscriptionResolution', async function (execution, context) {
   console.log('onSubscriptionResolution called')
 })
+
+app.graphql.addHook('onSubscriptionEnd', async function (context) {
+  console.log('onSubscriptionEnd called')
+})

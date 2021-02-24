@@ -81,4 +81,10 @@ Incoming GraphQL Websocket subscription data
                    subscription closed on error ◀─┴─▶ Subscription Resolution (when subscription data is received)
                                                         │
                                                         └─▶ onSubscriptionResolution Hook
+                                                              │
+                                              keeping processing until subscription ended
+                                                              │
+                               subscription closed on error ◀─┴─▶ Subscription End (when subscription stop is received)
+                                                                    │
+                                                                    └─▶ onSubscriptionEnd Hook
 ```

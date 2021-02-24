@@ -168,12 +168,22 @@ export interface preGatewaySubscriptionExecutionHookHandler<TContext = Mercurius
 }
 
 /**
- * `onSubscriptionResolution` is the fourth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preGatewaySubscriptionExecution`.
+ * `onSubscriptionResolution` is the fourth hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preGatewaySubscriptionExecution`, the next hook will be `onSubscriptionEnd`.
  * This hook will only be triggered when subscriptions are enabled.
  */
 export interface onSubscriptionResolutionHookHandler<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext> {
   (
     execution: ExecutionResult<TData>,
+    context: TContext,
+  ): Promise<void>;
+}
+
+/**
+ * `onSubscriptionEnd` is the fifth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `onSubscriptionResolution`.
+ * This hook will only be triggered when subscriptions are enabled.
+ */
+export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
+  (
     context: TContext,
   ): Promise<void>;
 }
@@ -297,6 +307,12 @@ interface MercuriusPlugin {
    * This hook will only be triggered when subscriptions are enabled.
    */
   addHook<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext>(name: 'onSubscriptionResolution', hook: onSubscriptionResolutionHookHandler<TData, TContext>): void;
+
+  /**
+   * `onSubscriptionEnd` is the fifth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `onSubscriptionResolution`.
+   * This hook will only be triggered when subscriptions are enabled.
+   */
+  addHook<TContext = MercuriusContext>(name: 'onSubscriptionEnd', hook: onSubscriptionEndHookHandler<TContext>): void;
 }
 
 interface QueryRequest {

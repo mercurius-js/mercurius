@@ -523,3 +523,89 @@ test('gateway - onSubscriptionResolution hooks should handle errors', async t =>
   await once(client, 'end')
   t.is(ws.readyState, WebSocket.CLOSED)
 })
+
+// -----------------
+// onSubscriptionEnd
+// -----------------
+test('gateway - should call onSubscriptionEnd when subscription ends', async t => {
+  t.plan(4)
+  const gateway = await createTestGatewayServer(t)
+
+  gateway.graphql.addHook('onSubscriptionEnd', async (context) => {
+    t.type(context, 'object')
+    t.ok('onSubscriptionEnd called')
+  })
+
+  await gateway.listen(0)
+
+  const { client } = createWebSocketClient(t, gateway)
+
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: query('u1')
+    }
+  }))
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.is(data.type, 'connection_ack')
+  }
+
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'stop',
+    payload: {
+      query: query
+    }
+  }))
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.is(data.type, 'complete')
+  }
+})
+
+test('gateway - should handle onSubscriptionEnd hook errors', async t => {
+  t.plan(2)
+  const gateway = await createTestGatewayServer(t)
+
+  gateway.graphql.addHook('onSubscriptionEnd', async (context) => {
+    throw new Error('kaboom')
+  })
+
+  await gateway.listen(0)
+
+  const { client, ws } = createWebSocketClient(t, gateway)
+
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: query('u1')
+    }
+  }))
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.is(data.type, 'connection_ack')
+  }
+
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'stop'
+  }))
+
+  await once(client, 'end')
+  t.is(ws.readyState, WebSocket.CLOSED)
+})
