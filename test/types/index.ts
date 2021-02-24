@@ -131,6 +131,10 @@ app.register(mercurius, {
   subscription: true
 })
 
+// all params are optional
+const opts: MercuriusOptions = {}
+app.register(mercurius, opts)
+
 app.register(async function (app) {
   app.graphql.extendSchema(`
     type Human {
