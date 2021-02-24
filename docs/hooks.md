@@ -17,6 +17,8 @@ By using hooks you can interact directly with the GraphQL lifecycle of Mercurius
   - [preSubscriptionExecution](#presubscriptionexecution)
   - [preGatewaySubscriptionExecution](#pregatewaysubscriptionexecution)
   - [onSubscriptionResolution](#onsubscriptionresolution)
+  - [onSubscriptionEnd](#onsubscriptionend)
+
 
 **Notice:** these hooks are only supported with `async`/`await` or returning a `Promise`.
 
@@ -152,7 +154,7 @@ Note, the original query will still execute. Adding the above will result in the
 
 It is pretty easy to understand where each hook is executed by looking at the [lifecycle page](lifecycle.md).<br>
 
-There are four different hooks that you can use in GraphQL Subscriptions *(in order of execution)*:
+There are five different hooks that you can use in GraphQL Subscriptions *(in order of execution)*:
 
 When registering hooks, you must make sure that subscriptions are enabled and you must wait for Mercurius to be registered in Fastify.
 
