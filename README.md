@@ -26,8 +26,10 @@ The previous name of this module was [fastify-gql](http://npm.im/fastify-gql) (<
 
 ---
 - [Install](#install)
-- [Example](#example)
-  - [makeExecutableSchema support](#makeexecutableschema-support)
+- [Examples](#examples)
+  - [Quick Start](/#quick-start)
+  - [Executable Schema](#executable-schema)
+  - [More Examples](#more-examples)
 - [Context](docs/context.md)
 - [API](docs/api/options.md)
 - [Lifecycle](docs/lifecycle.md)
@@ -42,7 +44,9 @@ The previous name of this module was [fastify-gql](http://npm.im/fastify-gql) (<
 - [License](#license)
 ---
 
-## Example
+## Examples
+
+### Quick Start
 
 ```js
 'use strict'
@@ -77,9 +81,9 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
-See test.js for more examples, docs are coming.
+### Executable Schema
 
-### makeExecutableSchema support
+The `makeExecutableSchema` from `graphql-tools` library might be helpful to build a schema from type definitions and resolvers. [Docs](https://www.graphql-tools.com/docs/generate-schema/)
 
 ```js
 'use strict'
@@ -113,6 +117,10 @@ app.get('/', async function (req, reply) {
 
 app.listen(3000)
 ```
+
+### More Examples
+
+Check [GitHub repo](https://github.com/mercurius-js/mercurius/tree/master/examples) for more examples.
 
 ## Acknowledgements
 
