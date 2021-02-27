@@ -16,6 +16,27 @@ Features:
 - Batched query support.
 - Customisable persisted queries.
 
+## Docs
+
+- [Install](#install)
+- [Quick Start](#quick-start)
+- [Examples](#examples)
+- [API](docs/api/options.md)
+- [Context](docs/context.md)
+- [Loaders](docs/loaders.md)
+- [Hooks](docs/hooks.md)
+- [Lifecycle](docs/lifecycle.md)
+- [Federation](docs/federation.md)
+- [Subscriptions](docs/subscriptions.md)
+- [Batched Queries](docs/batched-queries.md)
+- [Persisted Queries](docs/persisted-queries.md)
+- [TypeScript Usage](/docs/typescript.md)
+- [Integrations](docs/integrations/)
+- [Related Plugins](docs/plugins.md)
+- [Protocol Extensions](/docs/protocol-extension.md)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+
 ## Install
 
 ```bash
@@ -24,29 +45,7 @@ npm i fastify mercurius
 
 The previous name of this module was [fastify-gql](http://npm.im/fastify-gql) (< 6.0.0).
 
----
-- [Install](#install)
-- [Examples](#examples)
-  - [Quick Start](/#quick-start)
-  - [Executable Schema](#executable-schema)
-  - [More Examples](#more-examples)
-- [Context](docs/context.md)
-- [API](docs/api/options.md)
-- [Lifecycle](docs/lifecycle.md)
-- [Hooks](docs/hooks.md)
-- [Federation](docs/federation.md)
-- [Subscriptions](docs/subscriptions.md)
-- [Batched Queries](docs/batched-queries.md)
-- [Persisted Queries](docs/persisted-queries.md)
-- [Plugins](docs/plugins.md)
-- [Integrations](docs/integrations/)
-- [Acknowledgements](#acknowledgements)
-- [License](#license)
----
-
-## Examples
-
-### Quick Start
+## Quick Start
 
 ```js
 'use strict'
@@ -81,44 +80,7 @@ app.get('/', async function (req, reply) {
 app.listen(3000)
 ```
 
-### Executable Schema
-
-The `makeExecutableSchema` from `graphql-tools` library might be helpful to build a schema from type definitions and resolvers. [Docs](https://www.graphql-tools.com/docs/generate-schema/)
-
-```js
-'use strict'
-
-const Fastify = require('fastify')
-const mercurius = require('mercurius')
-const { makeExecutableSchema } = require('@graphql-tools/schema')
-
-const app = Fastify()
-
-const typeDefs = `
-  type Query {
-    add(x: Int, y: Int): Int
-  }
-`
-
-const resolvers = {
-  Query: {
-    add: async (_, { x, y }) => x + y
-  }
-}
-
-app.register(mercurius, {
-  schema: makeExecutableSchema({ typeDefs, resolvers })
-})
-
-app.get('/', async function (req, reply) {
-  const query = '{ add(x: 2, y: 2) }'
-  return reply.graphql(query)
-})
-
-app.listen(3000)
-```
-
-### More Examples
+## Examples
 
 Check [GitHub repo](https://github.com/mercurius-js/mercurius/tree/master/examples) for more examples.
 
