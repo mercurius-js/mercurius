@@ -1,8 +1,10 @@
 
 * [**Home**](/)
   * [Install](/#install)
-  * [Example](/#example)
-    * [Executable schema](/#makeexecutableschema-support)
+  * [Examples](/#examples)
+    * [Quick Start](/#quick-start)
+    * [Executable Schema](#executable-schema)
+    * [More Examples](#more-examples)
   * [Acknowledgements](/#acknowledgements)
   * [License](/#license)
 * [API](/docs/api/options)
