@@ -467,7 +467,7 @@ test('gateway - preGatewaySubscriptionExecution hooks should handle errors', asy
 })
 
 test('gateway subscription - preGatewaySubscriptionExecution hooks should contain service metadata', async t => {
-  t.plan(7)
+  t.plan(8)
   const gateway = await createTestGatewayServer(t)
 
   const subscriptionQuery = query('u1')
@@ -476,9 +476,8 @@ test('gateway subscription - preGatewaySubscriptionExecution hooks should contai
     t.type(schema, GraphQLSchema)
     t.type(document, 'object')
     t.type(context, 'object')
-    t.deepEqual(service, {
-      name: 'message'
-    })
+    t.type(service, 'object')
+    t.is(service.name, 'message')
     t.ok('preGatewaySubscriptionExecution called')
   })
 

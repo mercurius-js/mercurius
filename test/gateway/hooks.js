@@ -967,13 +967,9 @@ test('gateway - preGatewayExecution hooks should contain service metadata', asyn
     t.type(document, 'object')
     t.type(context, 'object')
     if (typeof service === 'object' && service.name === 'user') {
-      t.deepEqual(service, {
-        name: 'user'
-      })
+      t.is(service.name, 'user')
     } else if (typeof service === 'object' && service.name === 'post') {
-      t.deepEqual(service, {
-        name: 'post'
-      })
+      t.is(service.name, 'post')
     } else {
       t.fail('service metadata should be correctly populated')
       return
