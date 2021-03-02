@@ -62,6 +62,13 @@ export interface MercuriusLoaders<TContext extends Record<string, any> = Mercuri
   };
 }
 
+/**
+ * Federated GraphQL Service metadata
+ */
+export interface MercuriusServiceMetadata {
+  name: string;
+}
+
 // ------------------------
 // Request Lifecycle hooks
 // ------------------------
@@ -108,12 +115,16 @@ export interface preExecutionHookHandler<TContext = MercuriusContext, TError ext
  *  - `document`
  *  - `errors`
  * This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
+ *
+ * Because it is a gateway hook, this hook contains service metadata in the `service` parameter:
+ *  - `name`: service name
  */
 export interface preGatewayExecutionHookHandler<TContext = MercuriusContext, TError extends Error = Error> {
   (
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
+    service: MercuriusServiceMetadata
   ): Promise<PreExecutionHookResponse<TError> | void>;
 }
 
@@ -158,12 +169,16 @@ export interface preSubscriptionExecutionHookHandler<TContext = MercuriusContext
 /**
  * `preGatewaySubscriptionExecution` is the third hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionExecution`, the next hook will be `onSubscriptionResolution`.
  * This hook will only be triggered in gateway mode when subscriptions are enabled.
+ *
+ * Because it is a gateway hook, this hook contains service metadata in the `service` parameter:
+ *  - `name`: service name
  */
 export interface preGatewaySubscriptionExecutionHookHandler<TContext = MercuriusContext> {
   (
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
+    service: MercuriusServiceMetadata
   ): Promise<void>;
 }
 

@@ -466,6 +466,87 @@ test('gateway - preGatewaySubscriptionExecution hooks should handle errors', asy
   }
 })
 
+test('gateway subscription - preGatewaySubscriptionExecution hooks should contain service metadata', async t => {
+  t.plan(7)
+  const gateway = await createTestGatewayServer(t)
+
+  const subscriptionQuery = query('u1')
+
+  gateway.graphql.addHook('preGatewaySubscriptionExecution', async (schema, document, context, service) => {
+    t.type(schema, GraphQLSchema)
+    t.type(document, 'object')
+    t.type(context, 'object')
+    t.deepEqual(service, {
+      name: 'message'
+    })
+    t.ok('preGatewaySubscriptionExecution called')
+  })
+
+  await gateway.listen(0)
+
+  const { client } = createWebSocketClient(t, gateway)
+
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: subscriptionQuery
+    }
+  }))
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.is(data.type, 'connection_ack')
+  }
+
+  gateway.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: `
+        mutation {
+          sendMessage(message: {
+            text: "Hi there u1",
+            fromUserId: "u2",
+            toUserId: "u1"
+          }) {
+            id
+          }
+        }
+      `
+    }
+  })
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.deepEqual(data, {
+      id: 1,
+      type: 'data',
+      payload: {
+        data: {
+          newMessage: {
+            id: '2',
+            text: 'Hi there u1',
+            from: {
+              id: 'u2',
+              name: 'Jane'
+            },
+            to: {
+              id: 'u1',
+              name: 'John'
+            }
+          }
+        }
+      }
+    })
+  }
+})
+
 // -------------------------
 // onSubscriptionResolution
 // -------------------------

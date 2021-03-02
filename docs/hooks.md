@@ -81,8 +81,11 @@ In the `preGatewayExecution` hook, you can modify the following items by returni
 
 This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
 
+Note, this hook contains service metadata in the `service` parameter:
+- `name`: service name
+
 ```js
-fastify.graphql.addHook('preGatewayExecution', async (schema, document, context) => {
+fastify.graphql.addHook('preGatewayExecution', async (schema, document, context, service) => {
   const { modifiedDocument, errors } = await asyncMethod(document)
 
   return {
@@ -188,8 +191,11 @@ fastify.graphql.addHook('preSubscriptionExecution', async (schema, document, con
 
 This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger when creating a subscription with a federated service.
 
+Note, this hook contains service metadata in the `service` parameter:
+- `name`: service name
+
 ```js
-fastify.graphql.addHook('preGatewaySubscriptionExecution', async (schema, document, context) => {
+fastify.graphql.addHook('preGatewaySubscriptionExecution', async (schema, document, context, service) => {
   await asyncMethod()
 })
 ```
