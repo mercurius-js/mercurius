@@ -202,8 +202,8 @@ async function start () {
     }
   })
 
-  gateway.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
-    console.log('preGatewayExecution called')
+  gateway.graphql.addHook('preGatewayExecution', async function (schema, document, context, service) {
+    console.log('preGatewayExecution called', service.name)
     return {
       document,
       errors: [

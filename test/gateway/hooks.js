@@ -952,6 +952,70 @@ test('gateway - preGatewayExecution hooks should be able to modify the request d
   })
 })
 
+test('gateway - preGatewayExecution hooks should contain service metadata', async (t) => {
+  t.plan(21)
+  const app = await createTestGatewayServer(t)
+
+  // Execution events:
+  //  - user service: once for user service query
+  //  - post service: once for post service query
+  //  - post service: once for reference type topPosts on User
+  //  - user service: once for reference type author on Post
+  app.graphql.addHook('preGatewayExecution', async function (schema, document, context, service) {
+    await immediate()
+    t.type(schema, GraphQLSchema)
+    t.type(document, 'object')
+    t.type(context, 'object')
+    if (typeof service === 'object' && service.name === 'user') {
+      t.is(service.name, 'user')
+    } else if (typeof service === 'object' && service.name === 'post') {
+      t.is(service.name, 'post')
+    } else {
+      t.fail('service metadata should be correctly populated')
+      return
+    }
+    t.ok('preGatewayExecution called')
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        topPosts: [
+          {
+            pid: 'p1',
+            author: {
+              id: 'u1'
+            }
+          },
+          {
+            pid: 'p3',
+            author: {
+              id: 'u1'
+            }
+          }
+        ]
+      },
+      topPosts: [
+        {
+          pid: 'p1'
+        },
+        {
+          pid: 'p2'
+        }
+      ]
+    }
+  })
+})
+
 // -------------
 // onResolution
 // -------------
