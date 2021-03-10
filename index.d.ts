@@ -539,10 +539,12 @@ export interface MercuriusCommonOptions {
    * It provides HTTP headers to GraphQL Playground. If it is an object,
    * it is provided as-is. If it is a function, it is serialized, injected
    * in the generated HTML and invoked with the `window` object as the argument.
+   * The window parameter is typed as unknown because it might not be available as
+   * Window is not present in Node.js.
    * Useful to read authorization token from browser's storage.
    * See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
    */
-  playgroundHeaders?: ((window: Window) => object) | object;
+  playgroundHeaders?: ((window: unknown) => object) | object;
 }
 
 export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
