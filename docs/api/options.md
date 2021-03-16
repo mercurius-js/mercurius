@@ -149,7 +149,7 @@ payload must conform to the following JSON schema:
 }
 ```
 
-For code from [example](/#examples) use:
+For code from [example](/#quick-start) use:
 
 ```bash
 curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, y: 2) }"}' http://localhost:3000/graphql
@@ -160,7 +160,7 @@ curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, 
 Executes the GraphQL query or mutation described in the body. `operationName` and `variables` can not be passed using this method. The
 payload contains the GraphQL query.
 
-For code from [example](/#examples) use:
+For code from [example](/#quick-start) use:
 
 ```bash
 curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }" http://localhost:3000/graphql
