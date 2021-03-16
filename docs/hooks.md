@@ -10,7 +10,7 @@ By using hooks you can interact directly with the GraphQL lifecycle of Mercurius
   - [preExecution](#preexecution)
   - [preGatewayExecution](#pregatewayexecution)
   - [onResolution](#onresolution)
-  - [Manage Errors from a hook](#manage-errors-from-a-hook)
+  - [Manage Errors from a request hook](#manage-errors-from-a-request-hook)
   - [Add errors to the GraphQL response from a hook](#add-errors-to-the-graphql-response-from-a-hook)
 - [GraphQL Subscription Hooks](#graphql-subscription-hooks)
   - [preSubscriptionParsing](#presubscriptionparsing)
@@ -18,13 +18,14 @@ By using hooks you can interact directly with the GraphQL lifecycle of Mercurius
   - [preGatewaySubscriptionExecution](#pregatewaysubscriptionexecution)
   - [onSubscriptionResolution](#onsubscriptionresolution)
   - [onSubscriptionEnd](#onsubscriptionend)
+  - [Manage Errors from a subscription hook](#manage-errors-from-a-subscription-hook)
 
 
 **Notice:** these hooks are only supported with `async`/`await` or returning a `Promise`.
 
 ## GraphQL Request Hooks
 
-It is pretty easy to understand where each hook is executed by looking at the [lifecycle page](lifecycle.md).<br>
+It is pretty easy to understand where each hook is executed by looking at the [lifecycle page](/docs/lifecycle.md).<br>
 
 There are five different hooks that you can use in a GraphQL Request *(in order of execution)*:
 
@@ -155,7 +156,7 @@ Note, the original query will still execute. Adding the above will result in the
 
 ## GraphQL Subscription Hooks
 
-It is pretty easy to understand where each hook is executed by looking at the [lifecycle page](lifecycle.md).<br>
+It is pretty easy to understand where each hook is executed by looking at the [lifecycle page](/docs/lifecycle.md).<br>
 
 There are five different hooks that you can use in GraphQL Subscriptions *(in order of execution)*:
 
