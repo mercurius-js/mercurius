@@ -11,9 +11,8 @@
   - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
   - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
   - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
-  - [app.graphql.schema](#appgraphqlschema)
   - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
-  - [app.graphql.defineLoaders(loaders)](#appgraphqldefineloadersloaders)
+  - [app.graphql.schema](#appgraphqlschema)
   - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
 - [Error extensions](#use-errors-extension-to-provide-additional-information-to-query-errors)
 
@@ -27,7 +26,7 @@
   definition](https://graphql.org/graphql-js/type/#graphqlschema). The graphql schema.
   The string will be parsed.
 - `resolvers`: Object. The graphql resolvers.
-- `loaders`: Object. See [defineLoaders](#defineLoaders) for more
+- `loaders`: Object. See [defineLoaders](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders) for more
   details.
 - `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
 - `graphiql`: boolean | string. Serve
@@ -150,7 +149,7 @@ payload must conform to the following JSON schema:
 }
 ```
 
-For code from [example](#example) use:
+For code from [example](/#examples) use:
 
 ```bash
 curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, y: 2) }"}' http://localhost:3000/graphql
@@ -161,7 +160,7 @@ curl -H "Content-Type:application/json" -XPOST -d '{"query": "query { add(x: 2, 
 Executes the GraphQL query or mutation described in the body. `operationName` and `variables` can not be passed using this method. The
 payload contains the GraphQL query.
 
-For code from [example](#example) use:
+For code from [example](/#examples) use:
 
 ```bash
 curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }" http://localhost:3000/graphql

@@ -21,6 +21,7 @@
 * [TypeScript Usage](/docs/typescript)
 * [Integrations](/docs/integrations/)
   * [nexus](/docs/integrations/nexus)
+  * [TypeGraphQL](/docs/integrations/type-graphql)
   * [Testing](/docs/integrations/mercurius-integration-testing)
   * [Tracing - OpenTelemetry](/docs/integrations/open-telemetry)
 * [Related Plugins](/docs/plugins)
