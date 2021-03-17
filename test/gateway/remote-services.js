@@ -1,3 +1,5 @@
+'use strict'
+
 const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
@@ -38,7 +40,7 @@ test('Throws an Error if there are no valid services', async (t) => {
   gateway.register(GQL, {
     gateway: {
       services: [{
-        name: 'working',
+        name: 'not-working',
         url: `http://localhost:${servicePort}/graphql`
       }]
     }
