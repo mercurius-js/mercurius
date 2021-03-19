@@ -84,7 +84,15 @@ test('Does not error if at least one service schema is valid', async (t) => {
   const [service, servicePort] = await createRemoteService(validSchema)
   const [invalidService, invalidServicePort] = await createRemoteService(invalidSchema)
 
-  const gateway = Fastify()
+  const gateway = Fastify({
+    logger: true
+  })
+
+  let warnCalled = 0
+  gateway.log.warn = (message) => {
+    warnCalled++
+    t.matchSnapshot(message)
+  }
 
   t.tearDown(async () => {
     await gateway.close()
@@ -112,4 +120,5 @@ test('Does not error if at least one service schema is valid', async (t) => {
   } catch (err) {
     t.error(err)
   }
+  t.equal(warnCalled, 1, 'Warning is called')
 })
