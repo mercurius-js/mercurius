@@ -633,3 +633,329 @@ test('directives with array of typeDefs in schema option', async (t) => {
     }]
   })
 })
+
+test('should support truthy skip directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.tearDown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldSkip: true,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldSkip: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @skip(if: $shouldSkip) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
+})
+
+test('should support falsy skip directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.tearDown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldSkip: false,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldSkip: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @skip(if: $shouldSkip) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        metadata: {
+          info: 'hello'
+        }
+      }
+    }
+  })
+})
+
+test('should support truthy include directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.tearDown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldInclude: true,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldInclude: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @include(if: $shouldInclude) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        metadata: {
+          info: 'hello'
+        }
+      }
+    }
+  })
+})
+
+test('should support falsy include directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.tearDown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldInclude: false,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldInclude: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @include(if: $shouldInclude) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.deepEqual(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
+})
