@@ -46,7 +46,7 @@ generator client {
 If you wish to use a different database, you can jump to [switching database providers](#switching-database-providers).
 ## Create database tables with Prisma Migrate
 
-Add the following models to your `prisma.schema` file:
+Add the following model to your `prisma.schema` file:
 
 ```prisma
 model Post {
