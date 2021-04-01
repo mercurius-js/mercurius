@@ -1,12 +1,12 @@
 # Integrating Prisma with Mercurius
 
-[Prisma](https://prisma.io) is an [open-source](https://github.com/prisma/prisma) ORM for Node.Js and TypeScript. 
+[Prisma](https://prisma.io) is an [open-source](https://github.com/prisma/prisma) ORM for Node.js and TypeScript. 
 It can be used as an _alternative_ to writing plain SQL, or using another database access tool such as SQL query builders (e.g. [knex.js](https://knexjs.org/)) or ORMs (like [TypeORM](https://typeorm.io/) and [Sequelize](https://sequelize.org/)).
 Prisma currently supports PostgreSQL, MySQL, SQL Server and SQLite.
 
 You can easily combine Prisma and Mercurius to build your GraphQL server that connects to a database. Prisma is agnostic to the GraphQL tools you use when building your GraphQL server. 
 
-Prisma can be used with plain JavaScript because it embraces TypeScript and provides a level to type-safety that goes beyond the guarantees other ORMs in the TypeScript ecosystem. You can find an in-depth comparison of Prisma against other ORMs [here](https://www.prisma.io/docs/concepts/more/comparisons)
+Prisma can be used with plain JavaScript and it embraces TypeScript and provides a level to type-safety that goes beyond the guarantees other ORMs in the TypeScript ecosystem. You can find an in-depth comparison of Prisma against other ORMs [here](https://www.prisma.io/docs/concepts/more/comparisons)
 
 ## Installation
 
