@@ -13,8 +13,8 @@ Prisma can be used with plain JavaScript and it embraces TypeScript and provides
 Install [Prisma CLI](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-cli) as a development dependency in your project:
 
 ```bash
-npm install prisma@^2.20.1 --save-dev
-npm install @prisma/client@^2.20.1
+npm install prisma@2.20.1 --save-dev
+npm install @prisma/client@2.20.1
 ```
 
 [Prisma Client](https://www.prisma.io/docs/reference/api-reference/prisma-client-reference) is an auto-generated database client that allows you to interact with your database in a type-safe way.
