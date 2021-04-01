@@ -13,8 +13,8 @@ Prisma can be used with plain JavaScript and it embraces TypeScript and provides
 Install [Prisma CLI](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-cli) as a development dependency in your project:
 
 ```bash
-npm install prisma@~2.20.1 --save-dev
-npm install @prisma/client@~2.20.1
+npm install prisma@^2.20.1 --save-dev
+npm install @prisma/client@^2.20.1
 ```
 
 [Prisma Client](https://www.prisma.io/docs/reference/api-reference/prisma-client-reference) is an auto-generated database client that allows you to interact with your database in a type-safe way.
@@ -169,7 +169,7 @@ For PostgreSQL, the connection URL has the following structure:
 ```prisma
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=SCHEMA"
+  url      = env("DATABASE_URL")
 }
 ```
 
@@ -178,7 +178,7 @@ Here is an example connection string with a local PostgreSQL database:
 ```prisma
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://janedoe:mypassword@localhost:5432/notesapi?schema=public"
+  url      = env("DATABASE_URL")
 }
 ```
 
@@ -189,7 +189,7 @@ For MySQL, the connection URL has the following structure:
 ```prisma
 datasource db {
   provider = "mysql"
-  url      = "mysql://USER:PASSWORD@HOST:PORT/DATABASE"
+  url      = env("DATABASE_URL")
 }
 ```
 
@@ -198,7 +198,7 @@ Here is an example connection string with a local MySQL database:
 ```prisma
 datasource db {
   provider = "mysql"
-  url      = "mysql://janedoe:mypassword@localhost:3306/notesapi"
+  url      = env("DATABASE_URL")
 }
 ```
 
@@ -209,7 +209,7 @@ Here is an example connection string with a local Microsoft SQL Server database:
 ```prisma
 datasource db {
   provider = "sqlserver"
-  url      = "sqlserver://localhost:1433;initial catalog=sample;user=sa;password=mypassword;"
+  url      = env("DATABASE_URL")
 }
 ```
 
