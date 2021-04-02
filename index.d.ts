@@ -705,8 +705,6 @@ export interface IResolverOptions<TSource = any, TContext = MercuriusContext, TA
   fragment?: string;
   resolve?: IFieldResolver<TSource, TContext, TArgs>;
   subscribe?: IFieldResolver<TSource, TContext, TArgs>;
-  __resolveType?: GraphQLTypeResolver<TSource, TContext>;
-  __isTypeOf?: GraphQLIsTypeOfFn<TSource, TContext>;
 }
 
 type IEnumResolver = {

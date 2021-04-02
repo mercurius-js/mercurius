@@ -1178,7 +1178,6 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   {
     const [chunk] = await once(client2, 'data')
     const data = JSON.parse(chunk)
-    client2.end()
     t.equal(data.type, 'data')
     t.equal(data.id, 2)
 
@@ -1192,6 +1191,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   }
 
   t.equal(ws2.readyState, WebSocket.OPEN)
+  client2.end()
 
   await gateway.close()
   await userService.close()
