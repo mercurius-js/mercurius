@@ -33,7 +33,7 @@
     "@types/ws": "^7.4.0",
     "@typescript-eslint/eslint-plugin": "^3.6.1",
     "@typescript-eslint/parser": "^3.6.1",
-    "autocannon": "^6.0.0",
+    "autocannon": "^7.0.5",
     "docsify-cli": "^4.4.1",
     "fastify": "^3.0.2",
     "graphql-middleware": "^6.0.2",
