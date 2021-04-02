@@ -28,7 +28,7 @@
     "@graphql-tools/merge": "^6.2.4",
     "@graphql-tools/schema": "^6.2.4",
     "@graphql-tools/utils": "^6.2.4",
-    "@sinonjs/fake-timers": "^6.0.1",
+    "@sinonjs/fake-timers": "^7.0.2",
     "@types/node": "^14.14.20",
     "@types/ws": "^7.4.0",
     "@typescript-eslint/eslint-plugin": "^3.6.1",
