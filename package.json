@@ -52,7 +52,7 @@
     "@types/isomorphic-form-data": "^2.0.0",
     "end-of-stream": "^1.4.4",
     "events.on": "^1.0.1",
-    "fastify-error": "^0.2.0",
+    "fastify-error": "^0.3.0",
     "fastify-plugin": "^3.0.0",
     "fastify-static": "^4.0.1",
     "fastify-websocket": "^3.0.0",
