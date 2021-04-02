@@ -122,7 +122,7 @@ test('automatic POST new query', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: { add: 3 } })
 })
 
 test('automatic POST new query, null result hashing a query is handled', async (t) => {
@@ -160,7 +160,7 @@ test('automatic POST new query, null result hashing a query is handled', async (
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: { add: 3 } })
 })
 
 test('automatic POST new query, error on saveQuery is handled', async (t) => {
@@ -198,7 +198,7 @@ test('automatic POST new query, error on saveQuery is handled', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: { add: 3 } })
 })
 
 test('automatic POST new persisted query and error', async (t) => {
@@ -235,7 +235,7 @@ test('automatic POST new persisted query and error', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotFound' }] })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotFound' }] })
 })
 
 test('automatic POST invalid version persisted query and error', async (t) => {
@@ -272,7 +272,7 @@ test('automatic POST invalid version persisted query and error', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
 test('automatic POST invalid extension and error', async (t) => {
@@ -303,7 +303,7 @@ test('automatic POST invalid extension and error', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Unknown query' }] })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Unknown query' }] })
 })
 
 test('automatic POST invalid extension without persistedQueries and error', async (t) => {
@@ -337,7 +337,7 @@ test('automatic POST invalid extension without persistedQueries and error', asyn
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
 test('automatic POST persisted query after priming', async (t) => {
@@ -372,7 +372,7 @@ test('automatic POST persisted query after priming', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: { add: 3 } })
 
   res = await app.inject({
     method: 'POST',
@@ -389,7 +389,7 @@ test('automatic POST persisted query after priming', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: { add: 3 } })
 })
 
 test('automatic POST persisted query after priming, with extension set in both payloads', async (t) => {
@@ -430,7 +430,7 @@ test('automatic POST persisted query after priming, with extension set in both p
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: { add: 3 } })
 
   res = await app.inject({
     method: 'POST',
@@ -447,7 +447,7 @@ test('automatic POST persisted query after priming, with extension set in both p
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: { add: 3 } })
 })
 
 // persistedQueryProvider
@@ -479,7 +479,7 @@ test('GET route with query, variables & persisted', async (t) => {
     url: '/graphql?query=248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602&persisted=true'
   })
 
-  t.deepEqual(JSON.parse(res1.body), {
+  t.same(JSON.parse(res1.body), {
     data: {
       add: 2
     }
@@ -490,7 +490,7 @@ test('GET route with query, variables & persisted', async (t) => {
     url: '/graphql?query=495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf&variables={"x":2,"y":2}&persisted=true'
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       add: 4
     }
@@ -501,7 +501,7 @@ test('GET route with query, variables & persisted', async (t) => {
     url: '/graphql?query=03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e&persisted=true'
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       add: 6
     }
@@ -539,7 +539,7 @@ test('POST route with query, variables & persisted', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res1.body), {
+  t.same(JSON.parse(res1.body), {
     data: {
       add: 2
     }
@@ -555,7 +555,7 @@ test('POST route with query, variables & persisted', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       add: 4
     }
@@ -570,7 +570,7 @@ test('POST route with query, variables & persisted', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       add: 6
     }
@@ -608,7 +608,7 @@ test('preparedOnly POST route with query, variables & persisted', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res1.body), {
+  t.same(JSON.parse(res1.body), {
     data: {
       add: 2
     }
@@ -624,7 +624,7 @@ test('preparedOnly POST route with query, variables & persisted', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       add: 4
     }
@@ -639,7 +639,7 @@ test('preparedOnly POST route with query, variables & persisted', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       add: 6
     }
@@ -672,7 +672,7 @@ test('preparedOnly reject unknown queries with 400 for GET route', async (t) => 
     url: '/graphql?query={add(x:2,y:2)}' // custom/unknown query
   })
 
-  t.is(res.statusCode, 400)
+  t.equal(res.statusCode, 400)
 })
 
 test('preparedOnly reject unknown queries with 400 for POST route', async (t) => {
@@ -735,7 +735,7 @@ test('persistedQueries GET route with query, variables & persisted', async (t) =
     url: '/graphql?query=248eb276edb4f22aced0a2848c539810b55f79d89abc531b91145e76838f5602&persisted=true'
   })
 
-  t.deepEqual(JSON.parse(res1.body), {
+  t.same(JSON.parse(res1.body), {
     data: {
       add: 2
     }
@@ -746,7 +746,7 @@ test('persistedQueries GET route with query, variables & persisted', async (t) =
     url: '/graphql?query=495ccd73abc8436544cfeedd65f24beee660d2c7be2c32536e3fbf911f935ddf&variables={"x":2,"y":2}&persisted=true'
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       add: 4
     }
@@ -757,7 +757,7 @@ test('persistedQueries GET route with query, variables & persisted', async (t) =
     url: '/graphql?query=03ec1635d1a0ea530672bf33f28f3533239a5a7021567840c541c31d5e28c65e&persisted=true'
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       add: 6
     }
@@ -795,7 +795,7 @@ test('persistedQueries POST route with query, variables & persisted', async (t) 
     }
   })
 
-  t.deepEqual(JSON.parse(res1.body), {
+  t.same(JSON.parse(res1.body), {
     data: {
       add: 2
     }
@@ -811,7 +811,7 @@ test('persistedQueries POST route with query, variables & persisted', async (t) 
     }
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       add: 4
     }
@@ -826,7 +826,7 @@ test('persistedQueries POST route with query, variables & persisted', async (t) 
     }
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       add: 6
     }
@@ -865,7 +865,7 @@ test('onlyPersisted POST route with query, variables & persisted', async (t) => 
     }
   })
 
-  t.deepEqual(JSON.parse(res1.body), {
+  t.same(JSON.parse(res1.body), {
     data: {
       add: 2
     }
@@ -881,7 +881,7 @@ test('onlyPersisted POST route with query, variables & persisted', async (t) => 
     }
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       add: 4
     }
@@ -896,7 +896,7 @@ test('onlyPersisted POST route with query, variables & persisted', async (t) => 
     }
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       add: 6
     }
@@ -930,7 +930,7 @@ test('onlyPersisted reject unknown queries with 400 for GET route', async (t) =>
     url: '/graphql?query={add(x:2,y:2)}' // custom/unknown query
   })
 
-  t.is(res.statusCode, 400)
+  t.equal(res.statusCode, 400)
 })
 
 test('onlyPersisted reject unknown queries with 400 for POST route', async (t) => {

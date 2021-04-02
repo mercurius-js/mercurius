@@ -176,7 +176,7 @@ test('gateway subscription handling works correctly', t => {
   function runSubscription () {
     const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(async () => {
+    t.teardown(async () => {
       client.destroy()
       await gateway.close()
       await messageService.close()
@@ -287,7 +287,7 @@ test('gateway subscription handling works correctly', t => {
 
 test('gateway wsConnectionParams object is passed to SubscriptionClient', t => {
   function onConnect (data) {
-    t.deepEqual(data.payload, connectionInitPayload)
+    t.same(data.payload, connectionInitPayload)
     t.end()
   }
 
@@ -311,7 +311,7 @@ test('gateway wsConnectionParams object is passed to SubscriptionClient', t => {
     const testServicePort = testService.server.address().port
 
     const gateway = Fastify()
-    t.tearDown(async () => {
+    t.teardown(async () => {
       await gateway.close()
       await testService.close()
     })
@@ -334,7 +334,7 @@ test('gateway wsConnectionParams object is passed to SubscriptionClient', t => {
 
 test('gateway wsConnectionParams function is passed to SubscriptionClient', t => {
   function onConnect (data) {
-    t.deepEqual(data.payload, connectionInitPayload)
+    t.same(data.payload, connectionInitPayload)
     t.end()
   }
 
@@ -358,7 +358,7 @@ test('gateway wsConnectionParams function is passed to SubscriptionClient', t =>
     const testServicePort = testService.server.address().port
 
     const gateway = Fastify()
-    t.tearDown(async () => {
+    t.teardown(async () => {
       await gateway.close()
       await testService.close()
     })
@@ -385,7 +385,7 @@ test('gateway forwards the connection_init payload to the federated service on g
   t.plan(3)
   function onConnect (data) {
     if (data && data.payload && Object.entries(data.payload).length) {
-      t.deepEqual(data.payload, connectionInitPayload)
+      t.same(data.payload, connectionInitPayload)
     }
 
     return true
@@ -433,7 +433,7 @@ test('gateway forwards the connection_init payload to the federated service on g
     const testServicePort = testService.server.address().port
 
     const gateway = Fastify()
-    t.tearDown(async () => {
+    t.teardown(async () => {
       await gateway.close()
       await testService.close()
     })
@@ -452,7 +452,7 @@ test('gateway forwards the connection_init payload to the federated service on g
       t.error(err)
       const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
       const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-      t.tearDown(client.destroy.bind(client))
+      t.teardown(client.destroy.bind(client))
       client.setEncoding('utf8')
 
       client.write(JSON.stringify({

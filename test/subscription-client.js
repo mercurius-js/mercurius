@@ -27,7 +27,7 @@ test('subscription client calls the publish method with the correct payload', (t
     serviceName: 'test-service',
     connectionCallback: () => {
       client.createSubscription('query', {}, (data) => {
-        t.deepEqual(data, {
+        t.same(data, {
           topic: 'test-service_1',
           payload: {
             foo: 'bar'
@@ -62,7 +62,7 @@ test('subscription client calls the publish method with null after GQL_COMPLETE 
     serviceName: 'test-service',
     connectionCallback: () => {
       client.createSubscription('query', {}, (data) => {
-        t.deepEqual(data, {
+        t.same(data, {
           topic: 'test-service_1',
           payload: null
         })
@@ -84,7 +84,7 @@ test('subscription client tries to reconnect when server closes', (t) => {
 
   function createSubscription () {
     client.createSubscription('query', {}, (data) => {
-      t.deepEqual(data, {
+      t.same(data, {
         topic: 'test-service_1',
         payload: null
       })
@@ -251,7 +251,7 @@ test('subscription client connectionInitPayload is correctly passed', (t) => {
     ws.on('message', function incoming (message) {
       const data = JSON.parse(message)
       if (data.type === 'connection_init') {
-        t.deepEqual(data.payload, connectionInitPayload)
+        t.same(data.payload, connectionInitPayload)
         client.close()
         server.close()
         t.end()
@@ -297,7 +297,7 @@ test('subscription client sending empty object payload on connection init', (t) 
     ws.on('message', function incoming (message) {
       const data = JSON.parse(message)
       if (data.type === 'connection_init') {
-        t.deepEqual(data.payload, {})
+        t.same(data.payload, {})
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
     })
@@ -324,7 +324,7 @@ test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type p
   const clock = FakeTimers.createClock()
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
-  t.tearDown(() => {
+  t.teardown(() => {
     server.close()
   })
 
@@ -349,7 +349,7 @@ test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type p
     serviceName: 'test-service',
     connectionCallback: () => {
       client.createSubscription('query', {}, (data) => {
-        t.deepEqual(data, {
+        t.same(data, {
           topic: 'test-service_1',
           payload: null
         })
@@ -413,7 +413,7 @@ test('subscription client should pass the error payload to failedConnectionCallb
     maxReconnectAttempts: 0,
     serviceName: 'test-service',
     failedConnectionCallback: (err) => {
-      t.deepEqual(err, errorPayload)
+      t.same(err, errorPayload)
 
       server.close()
       client.close()

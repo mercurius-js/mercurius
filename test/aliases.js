@@ -51,7 +51,7 @@ const resolvers = {
 
 function createTestServer (t, customResolvers = resolvers) {
   const app = Fastify()
-  t.tearDown(app.close.bind(app))
+  t.teardown(app.close.bind(app))
   app.register(GQL, { schema, resolvers: customResolvers })
   return app
 }
@@ -90,7 +90,7 @@ test('should support aliases', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       user: {
         id: 'u1',

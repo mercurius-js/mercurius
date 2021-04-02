@@ -112,7 +112,7 @@ async function createTestGatewayServer (t) {
   const [postService, postServicePort] = await createTestService(t, postServiceSchema, postServiceResolvers)
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
     await postService.close()
@@ -171,7 +171,7 @@ test('gateway - should support aliases', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       user: {
         id: 'u1',

@@ -139,7 +139,7 @@ async function createTestGatewayServer (t) {
   const [postService, postServicePort] = await createTestService(t, postServiceSchema, postServiceResolvers)
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
     await postService.close()
@@ -168,7 +168,7 @@ test('gateway - hooks', async (t) => {
   app.graphql.addHook('preParsing', async function (schema, source, context) {
     await immediate()
     t.type(schema, GraphQLSchema)
-    t.is(source, query)
+    t.equal(source, query)
     t.type(context, 'object')
     t.ok('preParsing called')
   })
@@ -176,7 +176,7 @@ test('gateway - hooks', async (t) => {
   app.graphql.addHook('preValidation', async function (schema, document, context) {
     await immediate()
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     t.ok('preValidation called')
   })
@@ -184,7 +184,7 @@ test('gateway - hooks', async (t) => {
   app.graphql.addHook('preExecution', async function (schema, document, context) {
     await immediate()
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     t.ok('preExecution called')
   })
@@ -216,7 +216,7 @@ test('gateway - hooks', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -255,7 +255,7 @@ test('gateway - hooks validation should handle invalid hook names', async (t) =>
   try {
     app.graphql.addHook('unsupportedHook', async () => {})
   } catch (e) {
-    t.strictEqual(e.message, 'unsupportedHook hook not supported!')
+    t.equal(e.message, 'unsupportedHook hook not supported!')
   }
 })
 
@@ -266,8 +266,8 @@ test('gateway - hooks validation should handle invalid hook name types', async (
   try {
     app.graphql.addHook(1, async () => {})
   } catch (e) {
-    t.strictEqual(e.code, 'MER_ERR_HOOK_INVALID_TYPE')
-    t.strictEqual(e.message, 'The hook name must be a string')
+    t.equal(e.code, 'MER_ERR_HOOK_INVALID_TYPE')
+    t.equal(e.message, 'The hook name must be a string')
   }
 })
 
@@ -278,8 +278,8 @@ test('gateway - hooks validation should handle invalid hook handlers', async (t)
   try {
     app.graphql.addHook('preParsing', 'not a function')
   } catch (e) {
-    t.strictEqual(e.code, 'MER_ERR_HOOK_INVALID_HANDLER')
-    t.strictEqual(e.message, 'The hook callback must be a function')
+    t.equal(e.code, 'MER_ERR_HOOK_INVALID_HANDLER')
+    t.equal(e.message, 'The hook callback must be a function')
   }
 })
 
@@ -292,7 +292,7 @@ test('gateway - preParsing hooks should handle errors', async t => {
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
     t.type(schema, GraphQLSchema)
-    t.is(source, query)
+    t.equal(source, query)
     t.type(context, 'object')
     throw new Error('a preParsing error occured')
   })
@@ -320,7 +320,7 @@ test('gateway - preParsing hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -336,16 +336,16 @@ test('gateway - preParsing hooks should be able to put values onto the context',
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
     t.type(schema, GraphQLSchema)
-    t.is(source, query)
+    t.equal(source, query)
     t.type(context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
     t.type(schema, GraphQLSchema)
-    t.is(source, query)
+    t.equal(source, query)
     t.type(context, 'object')
-    t.is(context.foo, 'bar')
+    t.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -355,7 +355,7 @@ test('gateway - preParsing hooks should be able to put values onto the context',
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -396,7 +396,7 @@ test('gateway - preValidation hooks should handle errors', async t => {
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     throw new Error('a preValidation error occured')
   })
@@ -420,7 +420,7 @@ test('gateway - preValidation hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -436,16 +436,16 @@ test('gateway - preValidation hooks should be able to put values onto the contex
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
-    t.is(context.foo, 'bar')
+    t.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -455,7 +455,7 @@ test('gateway - preValidation hooks should be able to put values onto the contex
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -496,7 +496,7 @@ test('gateway - preExecution hooks should handle errors', async t => {
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     throw new Error('a preExecution error occured')
   })
@@ -516,7 +516,7 @@ test('gateway - preExecution hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -532,16 +532,16 @@ test('gateway - preExecution hooks should be able to put values onto the context
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
-    t.is(context.foo, 'bar')
+    t.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -551,7 +551,7 @@ test('gateway - preExecution hooks should be able to put values onto the context
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -589,7 +589,7 @@ test('gateway - preExecution hooks should be able to modify the request document
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     t.ok('preExecution called')
     const documentClone = JSON.parse(JSON.stringify(document))
@@ -606,7 +606,7 @@ test('gateway - preExecution hooks should be able to modify the request document
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -636,7 +636,7 @@ test('gateway - preExecution hooks should be able to add to the errors array', a
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     t.ok('preExecution called for foo error')
     return {
@@ -646,7 +646,7 @@ test('gateway - preExecution hooks should be able to add to the errors array', a
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(query))
+    t.same(document, parse(query))
     t.type(context, 'object')
     t.ok('preExecution called for foo error')
     return {
@@ -661,7 +661,7 @@ test('gateway - preExecution hooks should be able to add to the errors array', a
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -733,7 +733,7 @@ test('gateway - preGatewayExecution hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: null,
       topPosts: null
@@ -768,7 +768,7 @@ test('gateway - preGatewayExecution hooks should be able to put values onto the 
     t.type(schema, GraphQLSchema)
     t.type(document, 'object')
     t.type(context, 'object')
-    t.is(context[document.definitions[0].name.value], 'bar')
+    t.equal(context[document.definitions[0].name.value], 'bar')
   })
 
   const res = await app.inject({
@@ -778,7 +778,7 @@ test('gateway - preGatewayExecution hooks should be able to put values onto the 
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -841,7 +841,7 @@ test('gateway - preGatewayExecution hooks should be able to add to the errors ar
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -926,7 +926,7 @@ test('gateway - preGatewayExecution hooks should be able to modify the request d
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -967,9 +967,9 @@ test('gateway - preGatewayExecution hooks should contain service metadata', asyn
     t.type(document, 'object')
     t.type(context, 'object')
     if (typeof service === 'object' && service.name === 'user') {
-      t.is(service.name, 'user')
+      t.equal(service.name, 'user')
     } else if (typeof service === 'object' && service.name === 'post') {
-      t.is(service.name, 'post')
+      t.equal(service.name, 'post')
     } else {
       t.fail('service metadata should be correctly populated')
       return
@@ -984,7 +984,7 @@ test('gateway - preGatewayExecution hooks should contain service metadata', asyn
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -1040,7 +1040,7 @@ test('gateway - onResolution hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -1063,7 +1063,7 @@ test('gateway - onResolution hooks should be able to put values onto the context
   app.graphql.addHook('onResolution', async (execution, context) => {
     t.type(execution, 'object')
     t.type(context, 'object')
-    t.is(context.foo, 'bar')
+    t.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -1073,7 +1073,7 @@ test('gateway - onResolution hooks should be able to put values onto the context
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',

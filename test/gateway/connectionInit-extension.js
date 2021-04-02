@@ -28,7 +28,7 @@ test('connectionInit extension e2e testing', t => {
   const userService = Fastify()
   const notificationService = Fastify()
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
     await notificationService.close()
@@ -233,7 +233,7 @@ test('connectionInit extension e2e testing', t => {
       const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
       client1.setEncoding('utf8')
       client2.setEncoding('utf8')
-      t.tearDown(() => {
+      t.teardown(() => {
         client1.destroy()
         client2.destroy()
       })
@@ -279,11 +279,11 @@ test('connectionInit extension e2e testing', t => {
             case 'data':
               switch (data.id) {
                 case 1:
-                  t.deepEqual(data.payload.data, { notificationAdded: { id: '2', message: 'test' } })
+                  t.same(data.payload.data, { notificationAdded: { id: '2', message: 'test' } })
                   terminateCallback(clientNb)
                   break
                 case 2:
-                  t.deepEqual(data.payload.data, { userAdded: { id: '2', name: 'titi' } })
+                  t.same(data.payload.data, { userAdded: { id: '2', name: 'titi' } })
                   break
               }
               break

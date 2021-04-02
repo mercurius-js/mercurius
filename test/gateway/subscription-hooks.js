@@ -156,7 +156,7 @@ async function createTestGatewayServer (t) {
   const [messageService, messageServicePort] = await createTestService(t, messageSchema, messageResolvers)
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
     await messageService.close()
@@ -181,7 +181,7 @@ async function createTestGatewayServer (t) {
 function createWebSocketClient (t, app) {
   const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
   const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-  t.tearDown(client.destroy.bind(client))
+  t.teardown(client.destroy.bind(client))
   client.setEncoding('utf8')
   return { client, ws }
 }
@@ -201,7 +201,7 @@ test('gateway subscription - hooks basic', async t => {
 
   gateway.graphql.addHook('preSubscriptionExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
-    t.deepEqual(document, parse(subscriptionQuery))
+    t.same(document, parse(subscriptionQuery))
     t.type(context, 'object')
     t.ok('preSubscriptionExecution called')
   })
@@ -214,7 +214,7 @@ test('gateway subscription - hooks basic', async t => {
   })
 
   gateway.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
-    t.deepEqual(execution, {
+    t.same(execution, {
       data: {
         newMessage: {
           id: '1',
@@ -252,7 +252,7 @@ test('gateway subscription - hooks basic', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   gateway.inject({
@@ -276,7 +276,7 @@ test('gateway subscription - hooks basic', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.deepEqual(data, {
+    t.same(data, {
       id: 1,
       type: 'data',
       payload: {
@@ -337,7 +337,7 @@ test('gateway - preSubscriptionParsing hooks should handle errors', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -351,7 +351,7 @@ test('gateway - preSubscriptionParsing hooks should handle errors', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.deepEqual(data, {
+    t.same(data, {
       id: 1,
       type: 'error',
       payload: 'a preSubscriptionParsing error occurred'
@@ -393,7 +393,7 @@ test('gateway - preSubscriptionExecution hooks should handle errors', async t =>
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -407,7 +407,7 @@ test('gateway - preSubscriptionExecution hooks should handle errors', async t =>
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.deepEqual(data, {
+    t.same(data, {
       id: 1,
       type: 'error',
       payload: 'a preSubscriptionExecution error occurred'
@@ -444,7 +444,7 @@ test('gateway - preGatewaySubscriptionExecution hooks should handle errors', asy
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -458,7 +458,7 @@ test('gateway - preGatewaySubscriptionExecution hooks should handle errors', asy
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.deepEqual(data, {
+    t.same(data, {
       id: 1,
       type: 'error',
       payload: 'a preGatewaySubscriptionExecution error occurred'
@@ -477,7 +477,7 @@ test('gateway subscription - preGatewaySubscriptionExecution hooks should contai
     t.type(document, 'object')
     t.type(context, 'object')
     t.type(service, 'object')
-    t.is(service.name, 'message')
+    t.equal(service.name, 'message')
     t.ok('preGatewaySubscriptionExecution called')
   })
 
@@ -499,7 +499,7 @@ test('gateway subscription - preGatewaySubscriptionExecution hooks should contai
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   gateway.inject({
@@ -523,7 +523,7 @@ test('gateway subscription - preGatewaySubscriptionExecution hooks should contai
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.deepEqual(data, {
+    t.same(data, {
       id: 1,
       type: 'data',
       payload: {
@@ -579,7 +579,7 @@ test('gateway - onSubscriptionResolution hooks should handle errors', async t =>
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   gateway.inject({
@@ -601,7 +601,7 @@ test('gateway - onSubscriptionResolution hooks should handle errors', async t =>
   })
 
   await once(client, 'end')
-  t.is(ws.readyState, WebSocket.CLOSED)
+  t.equal(ws.readyState, WebSocket.CLOSED)
 })
 
 // -----------------
@@ -634,7 +634,7 @@ test('gateway - should call onSubscriptionEnd when subscription ends', async t =
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -648,7 +648,7 @@ test('gateway - should call onSubscriptionEnd when subscription ends', async t =
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'complete')
+    t.equal(data.type, 'complete')
   }
 })
 
@@ -678,7 +678,7 @@ test('gateway - should handle onSubscriptionEnd hook errors', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.is(data.type, 'connection_ack')
+    t.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -687,5 +687,5 @@ test('gateway - should handle onSubscriptionEnd hook errors', async t => {
   }))
 
   await once(client, 'end')
-  t.is(ws.readyState, WebSocket.CLOSED)
+  t.equal(ws.readyState, WebSocket.CLOSED)
 })
