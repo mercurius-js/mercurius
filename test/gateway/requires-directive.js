@@ -99,7 +99,7 @@ test('gateway handles @requires directive correctly', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await biographyService.close()
     await userService.close()
@@ -140,7 +140,7 @@ test('gateway handles @requires directive correctly', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         friends: [

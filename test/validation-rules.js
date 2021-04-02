@@ -75,7 +75,7 @@ test('validationRules array - passes when no errors', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules array - works with empty validationRules', async (t) => {
@@ -92,7 +92,7 @@ test('validationRules array - works with empty validationRules', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - reports an error', async (t) => {
@@ -148,7 +148,7 @@ test('validationRules - passes when no errors', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - works with empty validationRules', async (t) => {
@@ -165,7 +165,7 @@ test('validationRules - works with empty validationRules', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - works with missing validationRules', async (t) => {
@@ -182,7 +182,7 @@ test('validationRules - works with missing validationRules', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - includes graphql request metadata', async (t) => {
@@ -200,8 +200,8 @@ test('validationRules - includes graphql request metadata', async (t) => {
     resolvers,
     validationRules: function ({ source, variables, operationName }) {
       t.equal(source, query)
-      t.deepEqual(variables, { x: 2, y: 2 })
-      t.deepEqual(operationName, 'Add')
+      t.same(variables, { x: 2, y: 2 })
+      t.same(operationName, 'Add')
       return [
         // validation rule that reports no errors
         function (_context) {
@@ -219,5 +219,5 @@ test('validationRules - includes graphql request metadata', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query, null, { x: 2, y: 2 }, 'Add')
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })

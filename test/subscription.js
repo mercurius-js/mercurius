@@ -10,7 +10,7 @@ const FakeTimers = require('@sinonjs/fake-timers')
 
 test('subscription server replies with connection_ack', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const schema = `
     type Query {
@@ -36,7 +36,7 @@ test('subscription server replies with connection_ack', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -54,7 +54,7 @@ test('subscription server replies with connection_ack', t => {
 
 test('subscription server sends update to subscriptions', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -159,7 +159,7 @@ test('subscription server sends update to subscriptions', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -253,7 +253,7 @@ class CustomPubSub {
 
 test('subscription with custom pubsub', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const pubsub = new CustomPubSub()
 
@@ -354,7 +354,7 @@ test('subscription with custom pubsub', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -424,7 +424,7 @@ test('subscription with custom pubsub', t => {
 
 test('subscription server sends update to subscriptions with custom context', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -530,7 +530,7 @@ test('subscription server sends update to subscriptions with custom context', t 
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -610,7 +610,7 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
     add: async ({ x, y }) => x + y
   }
 
-  t.tearDown(app.close)
+  t.teardown(app.close)
   app.register(GQL, {
     schema,
     resolvers,
@@ -621,7 +621,7 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'foobar')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
     ws.on('close', () => {
       client.end()
@@ -632,7 +632,7 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
 
 test('subscription connection is closed if context function throws', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const schema = `
     type Query {
@@ -662,13 +662,13 @@ test('subscription connection is closed if context function throws', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
 
     client.write(JSON.stringify({
       type: 'connection_init'
     }))
 
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
 
     client.setEncoding('utf8')
     ws.on('close', () => {
@@ -685,7 +685,7 @@ test('subscription server sends update to subscriptions with custom async contex
   })
 
   const app = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await app.close()
     clock.uninstall()
   })
@@ -797,7 +797,7 @@ test('subscription server sends update to subscriptions with custom async contex
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -872,7 +872,7 @@ test('subscription connection is closed if async context function throws', t => 
   })
 
   const app = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await app.close()
     clock.uninstall()
   })
@@ -906,7 +906,7 @@ test('subscription connection is closed if async context function throws', t => 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
 
     client.setEncoding('utf8')
 
@@ -923,7 +923,7 @@ test('subscription connection is closed if async context function throws', t => 
 
 test('subscription server sends correct error if execution throws', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const emitter = mq()
   const schema = `
@@ -964,7 +964,7 @@ test('subscription server sends correct error if execution throws', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1005,7 +1005,7 @@ test('subscription server sends correct error if execution throws', t => {
 
 test('subscription server exposes pubsub', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const schema = `
   type Notification {
@@ -1045,7 +1045,7 @@ test('subscription server exposes pubsub', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1101,7 +1101,7 @@ test('subscription server exposes pubsub', t => {
 
 test('subscription context is extended with onConnect return value if connectionInit extension is defined in gql_start message', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const schema = `
     type Notification {
@@ -1146,7 +1146,7 @@ test('subscription context is extended with onConnect return value if connection
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1183,7 +1183,7 @@ test('subscription context is extended with onConnect return value if connection
 
 test('subscription works properly if onConnect is not defined and connectionInit extension is defined in gql_start message', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const schema = `
     type Notification {
@@ -1225,7 +1225,7 @@ test('subscription works properly if onConnect is not defined and connectionInit
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1263,7 +1263,7 @@ test('subscription works properly if onConnect is not defined and connectionInit
 test('subscription works with `withFilter` tool', t => {
   t.plan(4)
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const { withFilter } = GQL
 
@@ -1332,7 +1332,7 @@ test('subscription works with `withFilter` tool', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1378,7 +1378,7 @@ test('subscription works with `withFilter` tool', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.true(!data.payload.data.notificationAdded.message.includes('filtered'))
+        t.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
         client.end()
       } else if (data.id === 2 && data.type === 'complete') {
         app.inject({
@@ -1415,7 +1415,7 @@ test('subscription works with `withFilter` tool', t => {
 test('subscription handles `withFilter` if filter throws', t => {
   t.plan(4)
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const { withFilter } = GQL
 
@@ -1486,7 +1486,7 @@ test('subscription handles `withFilter` if filter throws', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1532,7 +1532,7 @@ test('subscription handles `withFilter` if filter throws', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.true(!data.payload.data.notificationAdded.message.includes('filtered'))
+        t.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
         client.end()
       } else if (data.id === 2 && data.type === 'complete') {
         app.inject({
@@ -1569,7 +1569,7 @@ test('subscription handles `withFilter` if filter throws', t => {
 test('`withFilter` tool works with async filters', t => {
   t.plan(4)
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
 
   const { withFilter } = GQL
 
@@ -1638,7 +1638,7 @@ test('`withFilter` tool works with async filters', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1684,7 +1684,7 @@ test('`withFilter` tool works with async filters', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.true(!data.payload.data.notificationAdded.message.includes('filtered'))
+        t.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
         client.end()
       } else if (data.id === 2 && data.type === 'complete') {
         app.inject({
@@ -1720,7 +1720,7 @@ test('`withFilter` tool works with async filters', t => {
 
 test('subscription server works with fastify-websocket', t => {
   const app = Fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
   t.plan(3)
 
   app.register(fastifyWebsocket, {
@@ -1819,12 +1819,12 @@ test('subscription server works with fastify-websocket', t => {
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/fastify-websocket')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
     client.setEncoding('utf8')
 
     const subscriptionWs = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const subscriptionClient = WebSocket.createWebSocketStream(subscriptionWs, { encoding: 'utf8', objectMode: true })
-    t.tearDown(subscriptionClient.destroy.bind(subscriptionClient))
+    t.teardown(subscriptionClient.destroy.bind(subscriptionClient))
     subscriptionClient.setEncoding('utf8')
 
     client.on('data', chunk => {

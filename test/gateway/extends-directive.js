@@ -108,7 +108,7 @@ test('gateway handles @extends directive correctly', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -148,7 +148,7 @@ test('gateway handles @extends directive correctly', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -239,7 +239,7 @@ test('gateway passes field arguments through to types labeled by @extends direct
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -284,7 +284,7 @@ test('gateway passes field arguments through to types labeled by @extends direct
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -394,7 +394,7 @@ test('gateway distributes query correctly to services when querying with inline 
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -442,7 +442,7 @@ test('gateway distributes query correctly to services when querying with inline 
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',

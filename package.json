@@ -6,7 +6,7 @@
   "types": "index.d.ts",
   "scripts": {
     "docs": "docsify serve",
-    "unit": "tap --100 test/*.js test/gateway/*.js test/internals/*.js",
+    "unit": "tap test/*.js test/gateway/*.js test/internals/*.js",
     "cov": "tap  --coverage-report=html -J test/*.js test/gateway/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:standard": "standard | snazzy",
@@ -44,7 +44,7 @@
     "snazzy": "^8.0.0",
     "split2": "^3.1.1",
     "standard": "^14.0.0",
-    "tap": "^14.11.0",
+    "tap": "^15.0.0",
     "tsd": "^0.13.1",
     "typescript": "^4.0.3"
   },

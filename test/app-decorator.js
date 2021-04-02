@@ -34,7 +34,7 @@ test('basic GQL', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 4
     }
@@ -67,7 +67,7 @@ test('support context in resolver', async (t) => {
   const query = '{ ctx }'
   const res = await app.graphql(query, { num: 42 })
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       ctx: 42
     }
@@ -100,7 +100,7 @@ test('variables', async (t) => {
     y: 2
   })
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 4
     }
@@ -141,7 +141,7 @@ test('operationName', async (t) => {
     y: 1 // useless
   }, 'Double')
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 4
     }
@@ -189,7 +189,7 @@ test('replaceSchema with makeSchemaExecutable', async (t) => {
   const query = '{ add(x: 2, y: 2, z: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 6
     }
@@ -224,7 +224,7 @@ test('replaceSchema (clearing cache)', async (t) => {
   query = '{ subtract(x: 4, y: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       subtract: 2
     }
@@ -282,7 +282,7 @@ test('replaceSchema (without cache)', async (t) => {
   query = '{ subtract(x: 4, y: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       subtract: 2
     }
@@ -370,7 +370,7 @@ test('extendSchema and defineResolvers for query', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 4
     }
@@ -407,7 +407,7 @@ test('extendSchema changes reflected in schema access', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  t.notEqual(beforeSchema, app.graphql.schema)
+  t.not(beforeSchema, app.graphql.schema)
   t.end()
 })
 
@@ -440,7 +440,7 @@ test('extendSchema and defineResolvers with mutation definition', async (t) => {
   const mutation = 'mutation { sub(x: 2, y: 2) }'
   const res = await app.graphql(mutation)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       sub: 0
     }
@@ -486,7 +486,7 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
   try {
     await app.graphql(mutation)
   } catch (e) {
-    t.is(e instanceof GraphQLError, true)
+    t.equal(e instanceof GraphQLError, true)
     t.end()
   }
 })
@@ -515,7 +515,7 @@ test('basic GQL no cache', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 4
     }
@@ -569,7 +569,7 @@ test('complex types', async (t) => {
   const query = '{ people { name, friends { name } } }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       people: [{
         name: 'matteo',
@@ -609,7 +609,7 @@ test('makeSchemaExecutable', async (t) => {
   await app.ready()
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 4
     }
@@ -658,7 +658,7 @@ test('scalar should be supported', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 4
     }
@@ -701,7 +701,7 @@ test('enum should be supported', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       add: 'YES'
     }
@@ -776,7 +776,7 @@ test('interfaces should be supported with isTypeOf', async (t) => {
   }`
   const resPoly = await app.graphql(queryPoly)
 
-  t.deepEqual(resPoly, {
+  t.same(resPoly, {
     data: {
       getGeometryPolygon: {
         type: 'Polygon',
@@ -795,7 +795,7 @@ test('interfaces should be supported with isTypeOf', async (t) => {
   }`
   const resMultiPoly = await app.graphql(queryMultiPoly)
 
-  t.deepEqual(resMultiPoly, {
+  t.same(resMultiPoly, {
     data: {
       getGeometryMultiPolygon: {
         type: 'MultiPolygon',
@@ -868,7 +868,7 @@ test('interfaces should be supported with resolveType', async (t) => {
   }`
   const resPoly = await app.graphql(queryPoly)
 
-  t.deepEqual(resPoly, {
+  t.same(resPoly, {
     data: {
       getGeometryPolygon: {
         type: 'Polygon',
@@ -887,7 +887,7 @@ test('interfaces should be supported with resolveType', async (t) => {
   }`
   const resMultiPoly = await app.graphql(queryMultiPoly)
 
-  t.deepEqual(resMultiPoly, {
+  t.same(resMultiPoly, {
     data: {
       getGeometryMultiPolygon: {
         type: 'MultiPolygon',
@@ -958,7 +958,7 @@ test('union should be supported with resolveType', async (t) => {
   }`
   const resPoly = await app.graphql(queryPoly)
 
-  t.deepEqual(resPoly, {
+  t.same(resPoly, {
     data: {
       getGeometryPolygon: {
         type: 'Polygon',
@@ -977,7 +977,7 @@ test('union should be supported with resolveType', async (t) => {
   }`
   const resMultiPoly = await app.graphql(queryMultiPoly)
 
-  t.deepEqual(resMultiPoly, {
+  t.same(resMultiPoly, {
     data: {
       getGeometryMultiPolygon: {
         type: 'MultiPolygon',
@@ -1176,7 +1176,7 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
 
 test('calling extendSchema throws an error if federationMetadata is enabled', async (t) => {
   const service = Fastify()
-  t.tearDown(() => service.close())
+  t.teardown(() => service.close())
   service.register(GQL, {
     schema: `
       extend type Query {
@@ -1199,7 +1199,7 @@ test('calling extendSchema throws an error if federationMetadata is enabled', as
       }
     `)
   } catch (err) {
-    t.is(err.message, 'Invalid method: Calling extendSchema method when federationMetadata is enabled is not allowed')
+    t.equal(err.message, 'Invalid method: Calling extendSchema method when federationMetadata is enabled is not allowed')
     t.end()
   }
 })

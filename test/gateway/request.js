@@ -30,7 +30,7 @@ test('sendRequest method rejects when response is not valid json', async (t) => 
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
   const { request, close } = buildRequest({ url })
-  t.tearDown(() => {
+  t.teardown(() => {
     close()
     return app.close()
   })
@@ -60,7 +60,7 @@ test('sendRequest method rejects when response contains errors', async (t) => {
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
   const { request, close } = buildRequest({ url })
-  t.tearDown(() => {
+  t.teardown(() => {
     close()
     return app.close()
   })

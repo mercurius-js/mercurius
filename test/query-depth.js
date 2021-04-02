@@ -152,7 +152,7 @@ test('queryDepth - test total depth is within queryDepth parameter', async (t) =
 
   const res = await app.graphql(query)
 
-  t.deepEqual(res, goodResponse)
+  t.same(res, goodResponse)
 })
 
 test('queryDepth - test total depth is over queryDepth parameter', async (t) => {
@@ -175,7 +175,7 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   try {
     await app.graphql(query)
   } catch (error) {
-    t.deepEqual(error, err)
+    t.same(error, err)
   }
 })
 
@@ -193,7 +193,7 @@ test('queryDepth - queryDepth is not number', async (t) => {
 
   const res = await app.graphql(query)
 
-  t.deepEqual(res, goodResponse)
+  t.same(res, goodResponse)
 })
 
 test('queryDepth - definition.kind and definition.name change', async (t) => {
@@ -231,7 +231,7 @@ test('queryDepth - definition.kind and definition.name change', async (t) => {
 
   const res = await app.graphql(localQuery)
 
-  t.deepEqual(res, goodResponse)
+  t.same(res, goodResponse)
 })
 
 test('queryDepth - ensure query depth is correctly calculated', async (t) => {
@@ -390,7 +390,7 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, {
+  t.same(res, {
     data: {
       flavors: [
         {

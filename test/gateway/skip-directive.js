@@ -105,7 +105,7 @@ async function createTestGatewayServer (t) {
   const [postService, postServicePort] = await createTestService(t, postServiceSchema, postServiceResolvers)
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
     await postService.close()
@@ -153,7 +153,7 @@ test('gateway - should support truthy skip directive', async (t) => {
     body: JSON.stringify({ query, variables })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -192,7 +192,7 @@ test('gateway - should support falsy skip directive', async (t) => {
     body: JSON.stringify({ query, variables })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',

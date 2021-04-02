@@ -154,11 +154,11 @@ test('custom directives should work', async (t) => {
 
   let query = 'query { foo }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('custom directives should work with single transform function', async (t) => {
@@ -201,11 +201,11 @@ test('custom directives should work with single transform function', async (t) =
 
   let query = 'query { foo }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('custom directives should work with executable schema', async (t) => {
@@ -252,11 +252,11 @@ test('custom directives should work with executable schema', async (t) => {
 
   let query = 'query { foo }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('directives with extendSchema', async (t) => {
@@ -308,7 +308,7 @@ test('directives with extendSchema', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
@@ -367,7 +367,7 @@ test('directives with transformSchema', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
@@ -418,15 +418,15 @@ test('federation support and custom directives', async (t) => {
 
   let query = '{ _service { sdl } }'
   let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
+  t.same(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
 
   query = 'query { foo }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('federation support using schema from buildFederationSchema and custom directives', async (t) => {
@@ -461,11 +461,11 @@ test('federation support using schema from buildFederationSchema and custom dire
 
   let query = '{ _service { sdl } }'
   let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
+  t.same(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
 
   query = 'query { foo }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 })
 
 test('max length directive validation works', async (t) => {
@@ -527,11 +527,11 @@ test('max length directive validation works', async (t) => {
 
   let query = 'query { foo(value: "bar") }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'bar' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'bar' } })
 
   query = 'query { foo(value: "bar-too-long") }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: { foo: null },
     errors: [{
       message: 'expected length 12 to be at most 5',
@@ -543,11 +543,11 @@ test('max length directive validation works', async (t) => {
 
   query = 'query { user(id: "1") { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'foo' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'foo' } } })
 
   query = 'query { user(id: "2") { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: { user: { id: 2, name: null } },
     errors: [{
       message: 'expected length 8 to be at most 5',
@@ -559,12 +559,12 @@ test('max length directive validation works', async (t) => {
 
   query = 'mutation { createUser(input: {id: "3", name: "bar"}) { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { createUser: { id: '3', name: 'bar' } } })
+  t.same(JSON.parse(res.body), { data: { createUser: { id: '3', name: 'bar' } } })
   t.ok(users.find(user => user.id === '3'))
 
   query = 'mutation { createUser(input: {id: "4", name: "too-long"}) { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
@@ -624,7 +624,7 @@ test('directives with array of typeDefs in schema option', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
@@ -679,7 +679,7 @@ type User {
   }
 
   const app = Fastify()
-  t.tearDown(app.close.bind(app))
+  t.teardown(app.close.bind(app))
   await app.register(mercurius, { schema, resolvers })
 
   const variables = {
@@ -704,7 +704,7 @@ type User {
     body: JSON.stringify({ query, variables })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -759,7 +759,7 @@ type User {
   }
 
   const app = Fastify()
-  t.tearDown(app.close.bind(app))
+  t.teardown(app.close.bind(app))
   await app.register(mercurius, { schema, resolvers })
 
   const variables = {
@@ -784,7 +784,7 @@ type User {
     body: JSON.stringify({ query, variables })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -842,7 +842,7 @@ type User {
   }
 
   const app = Fastify()
-  t.tearDown(app.close.bind(app))
+  t.teardown(app.close.bind(app))
   await app.register(mercurius, { schema, resolvers })
 
   const variables = {
@@ -867,7 +867,7 @@ type User {
     body: JSON.stringify({ query, variables })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -925,7 +925,7 @@ type User {
   }
 
   const app = Fastify()
-  t.tearDown(app.close.bind(app))
+  t.teardown(app.close.bind(app))
   await app.register(mercurius, { schema, resolvers })
 
   const variables = {
@@ -950,7 +950,7 @@ type User {
     body: JSON.stringify({ query, variables })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',

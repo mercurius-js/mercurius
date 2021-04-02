@@ -27,7 +27,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
   })
 
   const app = fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
   app.register(subscription, {
     getOptions: {
       url: '/graphql',
@@ -48,7 +48,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
 
     client.on('error', () => {})
     client.setEncoding('utf8')
@@ -56,7 +56,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
       type: 'connection_init_error'
     }))
     ws.on('close', () => {
-      t.is(handleConnectionCloseCalled, true)
+      t.equal(handleConnectionCloseCalled, true)
     })
   })
 })
@@ -285,8 +285,8 @@ test('subscription connection extends context with onConnect return value', asyn
   })
 
   await sc.handleConnectionInit({})
-  t.is(sc.context.data, true)
-  t.is(sc.context.a, 1)
+  t.equal(sc.context.data, true)
+  t.equal(sc.context.a, 1)
 })
 
 test('subscription connection send GQL_ERROR message if connectionInit extension is defined and onConnect returns a falsy value', async (t) => {
@@ -294,7 +294,7 @@ test('subscription connection send GQL_ERROR message if connectionInit extension
     on () { },
     close () { },
     send (message) {
-      t.deepEquals(JSON.parse(message), {
+      t.sames(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Forbidden'
@@ -356,7 +356,7 @@ test('subscription connection send GQL_ERROR on unknown extension', async (t) =>
     on () { },
     close () { },
     send (message) {
-      t.deepEquals(JSON.parse(message), {
+      t.sames(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Unknown extension unknown'
@@ -399,7 +399,7 @@ test('subscription connection handleConnectionInitExtension returns the onConnec
   sc.isReady = true
   const res = await sc.handleConnectionInitExtension({ type: 'connectionInit' })
 
-  t.deepEqual(res, onConnectResult)
+  t.same(res, onConnectResult)
 })
 
 test('subscription connection externds the context with the connection_init payload', async (t) => {
@@ -414,5 +414,5 @@ test('subscription connection externds the context with the connection_init payl
 
   await sc.handleConnectionInit({ type: 'connection_init', payload: connectionInitPayload })
 
-  t.deepEqual(sc.context._connectionInit, connectionInitPayload)
+  t.same(sc.context._connectionInit, connectionInitPayload)
 })

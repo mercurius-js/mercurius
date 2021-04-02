@@ -65,7 +65,7 @@ test('loaders create batching resolvers', async (t) => {
     Dog: {
       async owner (queries, { reply }) {
         // note that the second entry for max is cached
-        t.deepEqual(queries, [{
+        t.same(queries, [{
           obj: {
             name: 'Max'
           },
@@ -101,7 +101,7 @@ test('loaders create batching resolvers', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -136,7 +136,7 @@ test('disable cache for each loader', async (t) => {
       owner: {
         async loader (queries, { reply }) {
           // note that the second entry for max is NOT cached
-          t.deepEqual(queries, [{
+          t.same(queries, [{
             obj: {
               name: 'Max'
             },
@@ -181,7 +181,7 @@ test('disable cache for each loader', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -237,7 +237,7 @@ test('defineLoaders method, if factory exists', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -302,7 +302,7 @@ test('support context in loader', async (t) => {
     }
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -473,9 +473,9 @@ test('loaders support custom context', async (t) => {
   const loaders = {
     Dog: {
       async owner (queries, { reply, test }) {
-        t.is(test, 'custom')
+        t.equal(test, 'custom')
         // note that the second entry for max is cached
-        t.deepEqual(queries, [{
+        t.same(queries, [{
           obj: {
             name: 'Max'
           },
@@ -516,7 +516,7 @@ test('loaders support custom context', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
