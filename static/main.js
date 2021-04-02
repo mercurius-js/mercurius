@@ -42,7 +42,7 @@ if ('serviceWorker' in navigator) {
     .serviceWorker
     .register('./graphiql/sw.js')
     .then(function () {
-      var link = document.createElement('link')
+      const link = document.createElement('link')
       link.href = 'https://unpkg.com/graphiql@0.12.0/graphiql.css'
       link.type = 'text/css'
       link.rel = 'stylesheet'
