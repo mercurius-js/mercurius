@@ -158,10 +158,12 @@ const plugin = fp(async function (app, opts) {
         name: 'Query',
         fields: {}
       }),
-      mutation: opts.defineMutation ? new GraphQLObjectType({
-        name: 'Mutation',
-        fields: {}
-      }) : undefined
+      mutation: opts.defineMutation
+        ? new GraphQLObjectType({
+            name: 'Mutation',
+            fields: {}
+          })
+        : undefined
     })
   }
 
