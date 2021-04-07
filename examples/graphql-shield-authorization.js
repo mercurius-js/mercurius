@@ -70,7 +70,7 @@ const users = {
 }
 
 function getUser (req) {
-  const auth = req.headers.authorization // Headers can be provided within GraphQL Playground, e.g { "authorization": "alice" }
+  const auth = req.headers.authorization
   if (users[auth]) {
     return users[auth]
   } else {
@@ -116,7 +116,7 @@ const schemaWithMiddleware = applyMiddleware(schema, permissions)
 
 app.register(mercurius, {
   schema: schemaWithMiddleware,
-  graphiql: 'playground',
+  graphiql: true,
   context: (req) => ({
     ...req,
     user: getUser(req)

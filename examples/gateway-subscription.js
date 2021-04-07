@@ -9,7 +9,7 @@ async function createService (port, schema, resolvers = {}) {
     schema,
     resolvers,
     federationMetadata: true,
-    ide: 'playground',
+    ide: true,
     routes: true,
     jit: 1,
     subscription: true
@@ -254,7 +254,7 @@ async function start () {
   const gateway = Fastify()
   gateway.register(mercurius, {
     routes: true,
-    ide: 'playground',
+    ide: true,
     subscription: true,
     jit: 1,
     gateway: {

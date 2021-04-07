@@ -62,7 +62,7 @@ const app = Fastify();
 
 app.register(mercurius, {
   schema,
-  graphiql: "playground",
+  graphiql: true,
 });
 
 app.get("/", async function (req, reply) {
