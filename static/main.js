@@ -43,16 +43,16 @@ if ('serviceWorker' in navigator) {
     .register('./graphiql/sw.js')
     .then(function () {
       const link = document.createElement('link')
-      link.href = 'https://unpkg.com/graphiql@0.12.0/graphiql.css'
+      link.href = 'https://unpkg.com/graphiql@1.4.0/graphiql.css'
       link.type = 'text/css'
       link.rel = 'stylesheet'
       link.media = 'screen,print'
       document.getElementsByTagName('head')[0].appendChild(link)
 
       return importer.urls([
-        'https://unpkg.com/react@15.6.2/dist/react.min.js',
-        'https://unpkg.com/react-dom@15.6.2/dist/react-dom.min.js',
-        'https://unpkg.com/graphiql@0.12.0/graphiql.min.js'
+        'https://unpkg.com/react@16.8.0/dist/react.min.js',
+        'https://unpkg.com/react-dom@16.8.0/dist/react-dom.min.js',
+        'https://unpkg.com/graphiql@1.4.0/graphiql.min.js'
       ])
     }).then(render)
 } else {
