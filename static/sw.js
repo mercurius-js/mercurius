@@ -6,8 +6,8 @@ self.addEventListener('install', function (e) {
       return cache.addAll([
         './main.js',
         'https://unpkg.com/graphiql@1.4.0/graphiql.css',
-        'https://unpkg.com/react@16.8.0/dist/react.min.js',
-        'https://unpkg.com/react-dom@16.8.0/dist/react-dom.min.js',
+        'https://unpkg.com/react@16.8.0/umd/react.production.min.js',
+        'https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js',
         'https://unpkg.com/graphiql@1.4.0/graphiql.min.js'
       ])
     })

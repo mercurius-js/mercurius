@@ -50,8 +50,8 @@ if ('serviceWorker' in navigator) {
       document.getElementsByTagName('head')[0].appendChild(link)
 
       return importer.urls([
-        'https://unpkg.com/react@16.8.0/dist/react.min.js',
-        'https://unpkg.com/react-dom@16.8.0/dist/react-dom.min.js',
+        'https://unpkg.com/react@16.8.0/umd/react.production.min.js',
+        'https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js',
         'https://unpkg.com/graphiql@1.4.0/graphiql.min.js'
       ])
     }).then(render)
