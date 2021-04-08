@@ -168,7 +168,7 @@ gateway.register(mercurius, {
       {
         name: 'user',
         url: 'http://localhost:4001/graphql',
-        rewriteHeaders: (headers, context) => {
+        rewriteHeaders: (headers, context = undefined) => {
           if (headers.authorization) {
             return {
               authorization: headers.authorization
