@@ -42,7 +42,7 @@ async function createUserService ({ hooks } = {}) {
   return await createTestService(schema, resolvers, hooks)
 }
 
-test('gateway - rewriteHeaders', async (t) => {
+test('gateway - service rewriteHeaders', async (t) => {
   t.test('rewriteHeaders is called as expected', async (t) => {
     t.plan(5)
 
