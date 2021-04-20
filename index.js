@@ -495,19 +495,10 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
-    // minJit is 0 by default
-    if (cached && cached.count++ === minJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
-    }
-
-    if (cached && cached.jit !== null) {
-      const execution = await cached.jit.query(root, context, variables || {})
-
-      return maybeFormatErrors(execution, context)
-    }
+    const shouldCompileJit = cached && cached.count++ === minJit
 
     // Validate variables
-    if (variables !== undefined) {
+    if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
       if (Array.isArray(executionContext)) {
         const err = new MER_ERR_GQL_VALIDATION()
@@ -520,6 +511,17 @@ const plugin = fp(async function (app, opts) {
     let modifiedDocument
     if (context.preExecution !== null) {
       ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+    }
+
+    // minJit is 0 by default
+    if (shouldCompileJit) {
+      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+    }
+
+    if (cached && cached.jit !== null) {
+      const execution = await cached.jit.query(root, context, variables || {})
+
+      return maybeFormatErrors(execution, context)
     }
 
     const execution = await execute(
