@@ -203,6 +203,23 @@ export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
   ): Promise<void>;
 }
 
+// ----------------------------
+// Application Lifecycle hooks
+// ----------------------------
+
+/**
+ * `onGatewayReplaceSchema` is an application lifeycle hook will be triggered every time the periodic gateway refresh builds a new schema. It is called just before the old schema is replaced with the new one.
+ * This hook will only be triggered in gateway mode. It has the following parameters:
+ *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
+ *  - `schema` - The new schema that has been built from the gateway refresh.
+ */
+export interface onGatewayReplaceSchemaHookHandler {
+  (
+    instance: FastifyInstance,
+    schema: GraphQLSchema
+  ): Promise<void>;
+}
+
 interface ServiceConfig {
   setSchema: (schema: string) => ServiceConfig;
 }
@@ -328,6 +345,16 @@ interface MercuriusPlugin {
    * This hook will only be triggered when subscriptions are enabled.
    */
   addHook<TContext = MercuriusContext>(name: 'onSubscriptionEnd', hook: onSubscriptionEndHookHandler<TContext>): void;
+
+  // Application lifecycle addHooks
+
+  /**
+   * `onGatewayReplaceSchema` is an application lifeycle hook will be triggered every time the periodic gateway refresh builds a new schema. It is called just before the old schema is replaced with the new one.
+   * This hook will only be triggered in gateway mode. It has the following parameters:
+   *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
+   *  - `schema` - The new schema that has been built from the gateway refresh.
+   */
+  addHook(name: 'onGatewayReplaceSchema', hook: onGatewayReplaceSchemaHookHandler): void;
 }
 
 interface QueryRequest {
