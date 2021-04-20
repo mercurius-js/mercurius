@@ -233,7 +233,7 @@ fastify.graphql.addHook('preSubscriptionParsing', async (schema, source, context
 
 ## GraphQL Application lifecycle Hooks
 
-There is one hook that you can use in a GraphQL application:
+There is one hook that you can use in a GraphQL application.
 
 When registering hooks, you must wait for Mercurius to be registered in Fastify.
 
@@ -243,7 +243,7 @@ await fastify.ready()
 
 ### onGatewayReplaceSchema
 
-The `onGatewayReplaceSchema` hook will be triggered every time the periodic gateway refresh builds a new schema. It is called just before the old schema is replaced with the new one.
+When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
 
 This hook will only be triggered in gateway mode. It has the following parameters:
 
