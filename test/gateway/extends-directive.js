@@ -125,8 +125,6 @@ test('gateway handles @extends directive correctly', async (t) => {
     }
   })
 
-  await gateway.listen(0)
-
   const query = `
     query {
       me {
@@ -255,8 +253,6 @@ test('gateway passes field arguments through to types labeled by @extends direct
       }]
     }
   })
-
-  await gateway.listen(0)
 
   const query = `
     query {
@@ -559,8 +555,6 @@ test('gateway handles missing @key', async (t) => {
       }]
     }
   })
-
-  await gateway.listen(0)
 
   const query = `
     query {
