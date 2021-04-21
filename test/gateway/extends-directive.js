@@ -125,8 +125,6 @@ test('gateway handles @extends directive correctly', async (t) => {
     }
   })
 
-  await gateway.listen(0)
-
   const query = `
     query {
       me {
@@ -255,8 +253,6 @@ test('gateway passes field arguments through to types labeled by @extends direct
       }]
     }
   })
-
-  await gateway.listen(0)
 
   const query = `
     query {
@@ -473,5 +469,132 @@ test('gateway distributes query correctly to services when querying with inline 
         ]
       }
     }
+  })
+})
+
+test('gateway handles missing @key', async (t) => {
+  // This service is missing a @key
+  const [userService, userServicePort] = await createService(t, `
+    type Query @extends {
+      me: User
+    }
+
+    type User {
+      id: ID!
+      name: String!
+    }
+  `, {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      __resolveReference: (user, args, context, info) => {
+        return users[user.id]
+      }
+    }
+  })
+
+  const [postService, postServicePort] = await createService(t, `
+    type Post @key(fields: "pid") {
+      pid: ID!
+      title: String
+      content: String
+      author: User @requires(fields: "title")
+    }
+
+    extend type Query {
+      topPosts(count: Int): [Post]
+    }
+
+    type User @key(fields: "id") @extends {
+      id: ID! @external
+      posts: [Post]
+      numberOfPosts: Int
+    }
+  `, {
+    Post: {
+      __resolveReference: (post, args, context, info) => {
+        return posts[post.pid]
+      },
+      author: (post, args, context, info) => {
+        return {
+          __typename: 'User',
+          id: post.authorId
+        }
+      }
+    },
+    User: {
+      posts: (user, args, context, info) => {
+        return Object.values(posts).filter(p => p.authorId === user.id)
+      },
+      numberOfPosts: (user) => {
+        return Object.values(posts).filter(p => p.authorId === user.id).length
+      }
+    },
+    Query: {
+      topPosts: (root, { count = 2 }) => Object.values(posts).slice(0, count)
+    }
+  })
+
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
+  })
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'user',
+        url: `http://localhost:${userServicePort}/graphql`
+      }, {
+        name: 'post',
+        url: `http://localhost:${postServicePort}/graphql`
+      }]
+    }
+  })
+
+  const query = `
+    query {
+      me {
+        id
+        name
+        numberOfPosts
+      }
+    }
+  `
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query
+    })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        numberOfPosts: null
+      }
+    },
+    errors: [{
+      message: 'Missing @key directive in User type',
+      locations: [{
+        line: 6,
+        column: 9
+      }],
+      path: [
+        'me',
+        'numberOfPosts'
+      ]
+    }]
   })
 })
