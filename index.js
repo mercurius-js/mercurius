@@ -39,9 +39,9 @@ const {
   MER_ERR_METHOD_NOT_ALLOWED,
   MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
-const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
+const { Hooks, assignLifeCycleHooksToContext, assignApplicationLifecycleHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kHooks } = require('./lib/symbols')
-const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler } = require('./lib/handlers')
+const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler, onGatewayReplaceSchemaHandler } = require('./lib/handlers')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -179,9 +179,18 @@ const plugin = fp(async function (app, opts) {
     if (gateway.pollingInterval !== undefined) {
       if (typeof gateway.pollingInterval === 'number') {
         gatewayInterval = setInterval(async () => {
-          const schema = await gateway.refresh()
-          if (schema !== null) {
-            fastifyGraphQl.replaceSchema(schema)
+          try {
+            const context = assignApplicationLifecycleHooksToContext(fastifyGraphQl[kHooks], {})
+            const schema = await gateway.refresh()
+            if (schema !== null) {
+              // Trigger onGatewayReplaceSchema hook
+              if (context.onGatewayReplaceSchema !== null) {
+                await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
+              }
+              fastifyGraphQl.replaceSchema(schema)
+            }
+          } catch (error) {
+            app.log.error(error)
           }
         }, gateway.pollingInterval)
       } else {
@@ -486,19 +495,10 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
-    // minJit is 0 by default
-    if (cached && cached.count++ === minJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
-    }
-
-    if (cached && cached.jit !== null) {
-      const execution = await cached.jit.query(root, context, variables || {})
-
-      return maybeFormatErrors(execution, context)
-    }
+    const shouldCompileJit = cached && cached.count++ === minJit
 
     // Validate variables
-    if (variables !== undefined) {
+    if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
       if (Array.isArray(executionContext)) {
         const err = new MER_ERR_GQL_VALIDATION()
@@ -511,6 +511,17 @@ const plugin = fp(async function (app, opts) {
     let modifiedDocument
     if (context.preExecution !== null) {
       ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+    }
+
+    // minJit is 0 by default
+    if (shouldCompileJit) {
+      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+    }
+
+    if (cached && cached.jit !== null) {
+      const execution = await cached.jit.query(root, context, variables || {})
+
+      return maybeFormatErrors(execution, context)
     }
 
     const execution = await execute(

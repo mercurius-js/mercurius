@@ -1,13 +1,14 @@
+import { expectAssignable } from 'tsd'
 /* eslint-disable no-unused-expressions */
 import { EventEmitter } from 'events'
 // eslint-disable-next-line no-unused-vars
-import Fastify, { FastifyReply, FastifyRequest } from 'fastify'
+import Fastify, { FastifyReply, FastifyRequest, FastifyInstance } from 'fastify'
 // eslint-disable-next-line no-unused-vars
 import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
-import mercurius, { MercuriusOptions, IResolvers } from '../..'
+import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata } from '../..'
 // eslint-disable-next-line no-unused-vars
-import { ValidationContext, ValidationRule } from 'graphql'
+import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from '@graphql-tools/schema'
 import { mapSchema } from '@graphql-tools/utils'
 import mq from 'mqemitter'
@@ -467,15 +468,21 @@ query hello {
 `)
 
 app.graphql.addHook('preParsing', async function (schema, source, context) {
-  console.log('preParsing called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<string>(source)
+  expectAssignable<MercuriusContext>(context)
 })
 
 app.graphql.addHook('preValidation', async function (schema, document, context) {
-  console.log('preValidation called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<DocumentNode>(document)
+  expectAssignable<MercuriusContext>(context)
 })
 
 app.graphql.addHook('preExecution', async function (schema, document, context) {
-  console.log('preExecution called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<DocumentNode>(document)
+  expectAssignable<MercuriusContext>(context)
   return {
     document,
     errors: [
@@ -485,7 +492,9 @@ app.graphql.addHook('preExecution', async function (schema, document, context) {
 })
 
 app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
-  console.log('preGatewayExecution called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<DocumentNode>(document)
+  expectAssignable<MercuriusContext>(context)
   return {
     document,
     errors: [
@@ -494,35 +503,56 @@ app.graphql.addHook('preGatewayExecution', async function (schema, document, con
   }
 })
 
+// GraphQL Request lifecycle hooks
 app.graphql.addHook('onResolution', async function (execution, context) {
-  console.log('onResolution called')
+  expectAssignable<ExecutionResult>(execution)
+  expectAssignable<MercuriusContext>(context)
 })
 
 app.graphql.addHook('preSubscriptionParsing', async function (schema, source, context) {
-  console.log('preSubscriptionParsing called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<string>(source)
+  expectAssignable<MercuriusContext>(context)
 })
 
 app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context) {
-  console.log('preSubscriptionExecution called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<DocumentNode>(document)
+  expectAssignable<MercuriusContext>(context)
 })
 
 app.graphql.addHook('preGatewaySubscriptionExecution', async function (schema, document, context) {
-  console.log('preGatewaySubscriptionExecution called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<DocumentNode>(document)
+  expectAssignable<MercuriusContext>(context)
 })
 
 app.graphql.addHook('onSubscriptionResolution', async function (execution, context) {
-  console.log('onSubscriptionResolution called')
+  expectAssignable<ExecutionResult>(execution)
+  expectAssignable<MercuriusContext>(context)
 })
 
 app.graphql.addHook('onSubscriptionEnd', async function (context) {
-  console.log('onSubscriptionEnd called')
+  expectAssignable<MercuriusContext>(context)
 })
 
 // Hooks containing service metadata
 app.graphql.addHook('preGatewayExecution', async function (schema, document, context, service) {
-  console.log('preGatewayExecution called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<DocumentNode>(document)
+  expectAssignable<MercuriusContext>(context)
+  expectAssignable<MercuriusServiceMetadata>(service)
 })
 
 app.graphql.addHook('preGatewaySubscriptionExecution', async function (schema, document, context, service) {
-  console.log('preGatewaySubscriptionExecution called')
+  expectAssignable<GraphQLSchema>(schema)
+  expectAssignable<DocumentNode>(document)
+  expectAssignable<MercuriusContext>(context)
+  expectAssignable<MercuriusServiceMetadata>(service)
+})
+
+// GraphQL Application lifecycle hooks
+app.graphql.addHook('onGatewayReplaceSchema', async function (instance, schema) {
+  expectAssignable<FastifyInstance>(instance)
+  expectAssignable<GraphQLSchema>(schema)
 })

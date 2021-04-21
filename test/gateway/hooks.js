@@ -75,7 +75,7 @@ const query = `
   }
 `
 
-async function createTestGatewayServer (t) {
+async function createTestGatewayServer (t, opts = {}) {
   // User service
   const userServiceSchema = `
   type Query @extends {
@@ -145,6 +145,7 @@ async function createTestGatewayServer (t) {
     await postService.close()
   })
   gateway.register(GQL, {
+    ...opts,
     gateway: {
       services: [{
         name: 'user',
@@ -280,6 +281,136 @@ test('gateway - hooks validation should handle invalid hook handlers', async (t)
   } catch (e) {
     t.equal(e.code, 'MER_ERR_HOOK_INVALID_HANDLER')
     t.equal(e.message, 'The hook callback must be a function')
+  }
+})
+
+test('gateway - hooks should trigger when JIT is enabled', async (t) => {
+  t.plan(60)
+  const app = await createTestGatewayServer(t, { jit: 1 })
+
+  app.graphql.addHook('preParsing', async function (schema, source, context) {
+    await immediate()
+    t.type(schema, GraphQLSchema)
+    t.equal(source, query)
+    t.type(context, 'object')
+    t.ok('preParsing called')
+  })
+
+  // preValidation is not triggered a second time
+  app.graphql.addHook('preValidation', async function (schema, document, context) {
+    await immediate()
+    t.type(schema, GraphQLSchema)
+    t.same(document, parse(query))
+    t.type(context, 'object')
+    t.ok('preValidation called')
+  })
+
+  app.graphql.addHook('preExecution', async function (schema, document, context) {
+    await immediate()
+    t.type(schema, GraphQLSchema)
+    t.same(document, parse(query))
+    t.type(context, 'object')
+    t.ok('preExecution called')
+  })
+
+  // Execution events:
+  //  - once for user service query
+  //  - once for post service query
+  //  - once for reference type topPosts on User
+  //  - once for reference type author on Post
+  app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
+    await immediate()
+    t.type(schema, GraphQLSchema)
+    t.type(document, 'object')
+    t.type(context, 'object')
+    t.ok('preGatewayExecution called')
+  })
+
+  app.graphql.addHook('onResolution', async function (execution, context) {
+    await immediate()
+    t.type(execution, 'object')
+    t.type(context, 'object')
+    t.ok('onResolution called')
+  })
+
+  {
+    const res = await app.inject({
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      url: '/graphql',
+      body: JSON.stringify({ query })
+    })
+
+    t.same(JSON.parse(res.body), {
+      data: {
+        me: {
+          id: 'u1',
+          name: 'John',
+          topPosts: [
+            {
+              pid: 'p1',
+              author: {
+                id: 'u1'
+              }
+            },
+            {
+              pid: 'p3',
+              author: {
+                id: 'u1'
+              }
+            }
+          ]
+        },
+        topPosts: [
+          {
+            pid: 'p1'
+          },
+          {
+            pid: 'p2'
+          }
+        ]
+      }
+    })
+  }
+
+  {
+    const res = await app.inject({
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      url: '/graphql',
+      body: JSON.stringify({ query })
+    })
+
+    t.same(JSON.parse(res.body), {
+      data: {
+        me: {
+          id: 'u1',
+          name: 'John',
+          topPosts: [
+            {
+              pid: 'p1',
+              author: {
+                id: 'u1'
+              }
+            },
+            {
+              pid: 'p3',
+              author: {
+                id: 'u1'
+              }
+            }
+          ]
+        },
+        topPosts: [
+          {
+            pid: 'p1'
+          },
+          {
+            pid: 'p2'
+          }
+        ]
+      }
+    })
   }
 })
 

@@ -39,14 +39,20 @@ async function createUserService ({ hooks } = {}) {
     }
   }
 
-  return await createTestService(schema, resolvers, hooks)
+  return createTestService(schema, resolvers, hooks)
 }
 
 test('gateway - service rewriteHeaders', async (t) => {
   t.test('rewriteHeaders is called as expected', async (t) => {
     t.plan(5)
 
+    const [users, usersPort] = await createUserService()
+
     const gateway = Fastify()
+    t.teardown(async () => {
+      await gateway.close()
+      await users.close()
+    })
 
     const rewriteHeaders = (headers, context = 'not-passed') => {
       t.ok(headers != null, 'Headers is never undefined/null')
@@ -56,14 +62,8 @@ test('gateway - service rewriteHeaders', async (t) => {
       t.ok(context === 'not-passed' || context.app === gateway)
     }
 
-    const [users, usersPort] = await createUserService()
     const url = `http://localhost:${usersPort}/graphql`
     gateway.register(GQL, { gateway: { services: [{ name: 'user', url, rewriteHeaders }] } })
-
-    t.teardown(async () => {
-      await users.close()
-      await gateway.close()
-    })
 
     const res = await gateway.inject({
       method: 'POST',
@@ -85,15 +85,16 @@ test('gateway - service rewriteHeaders', async (t) => {
     }
 
     const [users, usersPort] = await createUserService({ hooks: { onRequest } })
-    const url = `http://localhost:${usersPort}/graphql`
-    const gateway = Fastify()
-    const rewriteHeaders = () => ({ 'x-custom': custom })
-    gateway.register(GQL, { gateway: { services: [{ name: 'user', url, rewriteHeaders }] } })
 
+    const gateway = Fastify()
     t.teardown(async () => {
-      await users.close()
       await gateway.close()
+      await users.close()
     })
+
+    const rewriteHeaders = () => ({ 'x-custom': custom })
+    const url = `http://localhost:${usersPort}/graphql`
+    gateway.register(GQL, { gateway: { services: [{ name: 'user', url, rewriteHeaders }] } })
 
     const res = await gateway.inject({
       method: 'POST',
