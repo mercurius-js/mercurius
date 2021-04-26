@@ -718,3 +718,39 @@ test('onResolution hooks should be able to put values onto the context', async t
     }
   })
 })
+
+test('onResolution hooks should be able to add extensions data', async t => {
+  t.plan(5)
+
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onResolution', async (execution, context) => {
+    t.type(execution, 'object')
+
+    execution.extensions = {
+      extensionKey: 'extensionValue'
+    }
+  })
+
+  app.graphql.addHook('onResolution', async (execution, context) => {
+    t.type(execution, 'object')
+    t.type(execution.extensions, 'object')
+    t.equal(execution.extensions.extensionKey, 'extensionValue')
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      add: 4
+    },
+    extensions: {
+      extensionKey: 'extensionValue'
+    }
+  })
+})
