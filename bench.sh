@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# from https://github.com/mercurius-js/auth/tree/main/bench
+
 echo '=============================='
 echo '= Normal Mode                ='
 echo '=============================='

@@ -8,7 +8,13 @@ test('sendRequest method rejects when request errs', t => {
   t.rejects(sendRequest(request, url)({
     method: 'POST',
     body: JSON.stringify({
-      query: 'invalid query'
+      query: `
+      query ServiceInfo {
+        _service {
+          sdl
+        }
+      }
+      `
     })
   }))
   t.end()
