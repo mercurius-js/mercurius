@@ -321,3 +321,131 @@ test('gateway handles @requires directive correctly from different services', as
     })
   })
 })
+
+test('gateway handles @requires directive correctly apart of other directives', async (t) => {
+  const regions = [{
+    id: 1,
+    city: 'London'
+  }, {
+    id: 2,
+    city: 'Paris'
+  }]
+
+  const sizes = [{
+    id: 1,
+    cpus: 10,
+    memory: 10
+  }, {
+    id: 2,
+    cpus: 20,
+    memory: 20
+  }, {
+    id: 3,
+    cpus: 30,
+    memory: 30
+  }]
+
+  const dictService = await createService(`
+    directive @custom on OBJECT | FIELD_DEFINITION
+
+    type Size @key(fields: "id") {
+      id: Int!
+      cpus: Int!
+      memory: Int!
+    }
+
+    type Region @key(fields: "id") {
+      id: Int!
+      city: String!
+    }
+
+    type Metadata @key(fields: "id") {
+      id: Int!
+      description: String!
+    }
+
+    extend type Host @key(fields: "id") {
+      id: Int! @external
+      size: Int! @external
+      region: Int! @external
+      metadata: Metadata @custom
+      sizeData: Size! @requires(fields: "size")
+      regionData: Region! @requires(fields: "region")
+    }`, {
+    Host: {
+      regionData (host) {
+        return host.region && regions.find(r => r.id === host.region)
+      },
+      sizeData (host) {
+        return host.size && sizes.find(s => s.id === host.size)
+      }
+    }
+  })
+
+  const hosts = [{
+    id: 1,
+    name: 'test1',
+    region: 1,
+    size: 1
+  }, {
+    id: 1,
+    name: 'test2',
+    region: 2,
+    size: 2
+  }]
+
+  const hostService = await createService(`
+    extend type Query {
+      hosts: [Host]
+    }
+
+    type Host @key(fields: "id") {
+      id: Int!
+      name: String!
+      region: Int!
+      size: Int!
+    }`, {
+    Query: {
+      hosts (parent, args, context, info) {
+        return hosts
+      }
+    }
+  })
+
+  const { gateway, teardown } = await createGateway(hostService, dictService)
+  t.teardown(teardown)
+
+  const query = `
+    query {
+      hosts {
+        name
+        sizeData {
+          cpus
+        }
+        metadata {
+          description
+        }        
+      }
+    }`
+  const res = await gatewayRequest(gateway, query)
+  t.same(JSON.parse(res.body), {
+    data: {
+      hosts: [
+        {
+          name: 'test1',
+          sizeData: {
+            cpus: 10
+          },
+          metadata: null
+        },
+        {
+          name: 'test2',
+          sizeData: {
+            cpus: 20
+          },
+          metadata: null
+        }
+      ]
+    }
+  })
+})
