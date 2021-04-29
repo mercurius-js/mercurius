@@ -668,7 +668,7 @@ declare namespace mercurius {
       args: TArgs,
       context: TContext,
       info: GraphQLResolveInfo & {
-        mergeInfo: MergeInfo
+        mergeInfo?: MergeInfo
       }
     ) => boolean | Promise<boolean>
   ) => (
@@ -676,7 +676,7 @@ declare namespace mercurius {
     args: TArgs,
     context: TContext,
     info: GraphQLResolveInfo & {
-      mergeInfo: MergeInfo
+      mergeInfo?: MergeInfo
     }
   ) => AsyncGenerator<TPayload>
 }
@@ -744,7 +744,7 @@ export interface IFieldResolver<TSource, TContext = MercuriusContext, TArgs = Re
     args: TArgs,
     context: TContext,
     info: GraphQLResolveInfo & {
-      mergeInfo: MergeInfo;
+      mergeInfo?: MergeInfo;
     }
   ): any;
 }
