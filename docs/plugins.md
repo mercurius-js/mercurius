@@ -2,6 +2,16 @@
 
 Related plugins for mercurius
 
+- [mercurius-auth](#mercurius-auth)
+- [mercurius-upload](#mercurius-upload)
+- [altair-fastify-plugin](#altair-fastify-plugin)
+
+## mercurius-auth
+
+Mercurius Auth is a plugin for [Mercurius](https://mercurius.dev) that adds configurable Authentication and Authorization support.
+
+Check the [`mercurius-auth` documentation](https://github.com/mercurius-js/auth) for detailed usage.
+
 ## mercurius-upload
 
 Implementation of [graphql-upload](https://github.com/jaydenseric/graphql-upload) for File upload support.

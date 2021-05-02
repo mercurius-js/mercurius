@@ -26,6 +26,7 @@
   * [Testing](/docs/integrations/mercurius-integration-testing)
   * [Tracing - OpenTelemetry](/docs/integrations/open-telemetry)
 * [Related Plugins](/docs/plugins)
+  * [mercurius-auth](/docs/plugins#mercurius-auth)
   * [mercurius-upload](/docs/plugins#mercurius-upload)
   * [altair-fastify-plugin](/docs/plugins#altair-fastify-plugin)
 * [Protocol Extensions](/docs/protocol-extension)
