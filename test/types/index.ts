@@ -245,7 +245,8 @@ gateway.register(mercurius, {
         keepAliveMaxTimeout: 10000,
         mandatory: true,
         rejectUnauthorized: true,
-        rewriteHeaders: (headers) => {
+        rewriteHeaders: (headers, context) => {
+          expectAssignable<MercuriusContext>(context)
           return {
             authorization: headers.authorization
           }
