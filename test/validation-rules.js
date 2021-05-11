@@ -102,6 +102,7 @@ test('validationRules - reports an error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: () => [
       // validation rule that reports an error
       function (context) {
@@ -132,6 +133,7 @@ test('validationRules - passes when no errors', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: () => [
       // validation rule that reports no errors
       function (_context) {
@@ -158,6 +160,7 @@ test('validationRules - works with empty validationRules', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: () => []
   })
 
@@ -198,6 +201,7 @@ test('validationRules - includes graphql request metadata', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: function ({ source, variables, operationName }) {
       t.equal(source, query)
       t.same(variables, { x: 2, y: 2 })
@@ -220,4 +224,24 @@ test('validationRules - includes graphql request metadata', async (t) => {
 
   const res = await app.graphql(query, null, { x: 2, y: 2 }, 'Add')
   t.same(res, { data: { add: 4 } })
+})
+
+test('validationRules - errors if cache is used with the function', async (t) => {
+  t.plan(1)
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    cache: true,
+    validationRules: () => []
+  })
+
+  // needed so that graphql is defined
+
+  try {
+    await app.ready()
+  } catch (e) {
+    t.equal(e.message, 'Invalid options: Using a function for the validationRules is incompatible with query caching')
+  }
 })
