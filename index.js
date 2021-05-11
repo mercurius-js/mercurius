@@ -68,6 +68,10 @@ const plugin = fp(async function (app, opts) {
   const lruErrors = buildCache(opts)
   const lruGatewayResolvers = buildCache(opts)
 
+  if (lru && opts.validationRules && typeof opts.validationRules === 'function') {
+    throw new MER_ERR_INVALID_OPTS('Using a function for the validationRules is incompatible with query caching')
+  }
+
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
   const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
