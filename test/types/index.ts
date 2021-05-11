@@ -262,7 +262,11 @@ gateway.register(mercurius, {
           },
           failedReconnectCallback: () => {},
           maxReconnectAttempts: 10,
-          reconnect: true
+          reconnect: true,
+          rewriteConnectionInitPayload: (payload, context) => {
+            expectAssignable<MercuriusContext>(context)
+            return {}
+          }
         }
       },
       {
@@ -279,7 +283,11 @@ gateway.register(mercurius, {
             },
             failedReconnectCallback: () => {},
             maxReconnectAttempts: 10,
-            reconnect: true
+            reconnect: true,
+            rewriteConnectionInitPayload: (payload, context) => {
+              expectAssignable<MercuriusContext>(context)
+              return {}
+            }
           }
         }
       }

@@ -373,6 +373,7 @@ interface WsConnectionParams {
   connectionCallback?: () => void;
   failedConnectionCallback?: (err: { message: string }) => void | Promise<void>;
   failedReconnectCallback?: () => void;
+  rewriteConnectionInitPayload?:  <TContext extends MercuriusContext = MercuriusContext>(payload: Record<string, any> | undefined, context: TContext) => Record<string, any>;
 }
 
 export interface MercuriusGatewayService {

@@ -483,3 +483,125 @@ test('gateway forwards the connection_init payload to the federated service on g
     })
   })
 })
+
+test('connection_init payload is overwritten at gateway and forwarded to the federated service', t => {
+  t.plan(6)
+  const initialPayload = { token: 'some-token' }
+  const rewritePayload = { user: { id: '1' } }
+
+  function onConnectGateway (data) {
+    if (data && data.payload && Object.entries(data.payload).length) {
+      t.same(data.payload, initialPayload)
+    }
+
+    return rewritePayload
+  }
+
+  function rewriteConnectionInitPayload (payload, context) {
+    t.same(payload, initialPayload)
+    t.has(context, rewritePayload)
+    return { user: context.user }
+  }
+
+  function onConnectService (data) {
+    if (data && data.payload && Object.entries(data.payload).length) {
+      t.same(data.payload, rewritePayload)
+    }
+
+    return true
+  }
+
+  const testService = Fastify()
+
+  testService.register(GQL, {
+    schema: `
+      type Notification {
+        id: ID!
+        message: String
+      }
+
+      type Query {
+        notifications: [Notification]
+      }
+
+      type Subscription {
+        notificationAdded: Notification
+      }
+    `,
+    resolvers: {
+      Query: {
+        notifications: () => []
+      },
+      Subscription: {
+        notificationAdded: {
+          subscribe: (root, args, { pubsub, topic, hello }) => {
+            t.end()
+          }
+        }
+      }
+    },
+    federationMetadata: true,
+    subscription: { onConnect: onConnectService }
+  })
+
+  testService.listen(0, async err => {
+    t.error(err)
+
+    const testServicePort = testService.server.address().port
+
+    const gateway = Fastify()
+    t.teardown(async () => {
+      await gateway.close()
+      await testService.close()
+    })
+    gateway.register(GQL, {
+      subscription: {
+        onConnect: onConnectGateway
+      },
+      gateway: {
+        services: [{
+          name: 'test',
+          url: `http://localhost:${testServicePort}/graphql`,
+          wsUrl: `ws://localhost:${testServicePort}/graphql`,
+          wsConnectionParams: {
+            rewriteConnectionInitPayload
+          }
+        }]
+      }
+    })
+
+    gateway.listen(0, async err => {
+      t.error(err)
+      const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+      const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+      t.teardown(client.destroy.bind(client))
+      client.setEncoding('utf8')
+
+      client.write(JSON.stringify({
+        type: 'connection_init',
+        payload: initialPayload
+      }))
+
+      client.on('data', chunk => {
+        const data = JSON.parse(chunk)
+        if (data.type === 'connection_ack') {
+          client.write(JSON.stringify({
+            id: 1,
+            type: 'start',
+            payload: {
+              query: `
+                subscription {
+                  notificationAdded {
+                    id
+                    message
+                  }
+                }
+              `
+            }
+          }))
+          client.destroy()
+        }
+      })
+    })
+  })
+})
