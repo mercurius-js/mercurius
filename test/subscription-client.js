@@ -459,30 +459,3 @@ test('subscription client does not send message if operation is already started'
 
   function publish (data) { }
 })
-
-test('subscription client does call rewriteConnectionInitPayload with empty object if connection_init payload is not defined', (t) => {
-  const server = new WS.Server({ port: 0 })
-  const port = server.address().port
-
-  server.on('connection', function connection (ws) {
-    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-  })
-
-  const client = new SubscriptionClient(`ws://localhost:${port}`, {
-    reconnect: true,
-    maxReconnectAttempts: 10,
-    serviceName: 'test-service',
-    connectionCallback: async () => {
-      client.createSubscription('query', {}, publish)
-      server.close()
-      client.close()
-      t.end()
-    },
-    rewriteConnectionInitPayload: (payload, context) => {
-      t.same(payload, {})
-      return payload
-    }
-  })
-
-  function publish (data) { }
-})
