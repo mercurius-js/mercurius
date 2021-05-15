@@ -911,6 +911,8 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
 })
 
 test('Polling schemas (subscriptions should be handled)', async (t) => {
+  t.plan(12)
+
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
@@ -1016,12 +1018,16 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   t.teardown(client.destroy.bind(client))
   client.setEncoding('utf8')
 
-  process.nextTick(() => {
-    client.write(
-      JSON.stringify({
-        type: 'connection_init'
-      })
-    )
+  client.write(
+    JSON.stringify({
+      type: 'connection_init'
+    })
+  )
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
 
     client.write(
       JSON.stringify({
@@ -1039,25 +1045,22 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         }
       })
     )
-  })
 
-  {
-    const [chunk] = await once(client, 'data')
-    const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    // We need the event loop to spin twice
+    // for the subscription to be created
+    await immediate()
+    await immediate()
 
-    process.nextTick(() => {
-      gateway.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
-            mutation {
-              triggerUser
-            }
-          `
-        }
-      })
+    gateway.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            triggerUser
+          }
+        `
+      }
     })
   }
 
@@ -1129,12 +1132,16 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   t.teardown(client2.destroy.bind(client2))
   client2.setEncoding('utf8')
 
-  process.nextTick(() => {
-    client2.write(
-      JSON.stringify({
-        type: 'connection_init'
-      })
-    )
+  client2.write(
+    JSON.stringify({
+      type: 'connection_init'
+    })
+  )
+
+  {
+    const [chunk] = await once(client2, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
 
     client2.write(
       JSON.stringify({
@@ -1153,25 +1160,22 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         }
       })
     )
-  })
 
-  {
-    const [chunk] = await once(client2, 'data')
-    const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    // We need the event loop to spin twice
+    // for the subscription to be created
+    await immediate()
+    await immediate()
 
-    process.nextTick(() => {
-      gateway.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
-            mutation {
-              triggerUser
-            }
-          `
-        }
-      })
+    gateway.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            triggerUser
+          }
+        `
+      }
     })
   }
 
