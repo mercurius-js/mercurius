@@ -290,11 +290,13 @@ test('subscription connection extends context with onConnect return value', asyn
 })
 
 test('subscription connection send GQL_ERROR message if connectionInit extension is defined and onConnect returns a falsy value', async (t) => {
+  t.plan(1)
+
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
     send (message) {
-      t.sames(JSON.parse(message), {
+      t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Forbidden'
@@ -352,11 +354,13 @@ test('subscription connection does not create subscription if connectionInit ext
 })
 
 test('subscription connection send GQL_ERROR on unknown extension', async (t) => {
+  t.plan(2)
+
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
     send (message) {
-      t.sames(JSON.parse(message), {
+      t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Unknown extension unknown'

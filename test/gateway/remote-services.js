@@ -27,7 +27,7 @@ async function createRemoteService (schema) {
   return [service, service.server.address().port]
 }
 
-test('Throws an Error if there are no valid services', async (t) => {
+test('Throws an Error and cleans up service connections correctly if there are no valid services', { timeout: 4000 }, async (t) => {
   const [service, servicePort] = await createRemoteService(invalidSchema)
 
   const gateway = Fastify()
