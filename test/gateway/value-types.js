@@ -260,7 +260,7 @@ test('Should be able to query with value types', async (t) => {
     })
   })
 
-  t.same(JSON.parse(usersRes.body), usersData)
+  t.same(usersRes.json(), usersData)
 
   const postsRes = await gateway.inject({
     method: 'POST',
@@ -273,7 +273,7 @@ test('Should be able to query with value types', async (t) => {
     })
   })
 
-  t.same(JSON.parse(postsRes.body), postsData)
+  t.same(postsRes.json(), postsData)
 
   const commentsRes = await gateway.inject({
     method: 'POST',
@@ -286,7 +286,7 @@ test('Should be able to query with value types', async (t) => {
     })
   })
 
-  t.same(JSON.parse(commentsRes.body), commentsData)
+  t.same(commentsRes.json(), commentsData)
 })
 
 test('Should be able to query with value types and polling', async (t) => {
@@ -336,7 +336,7 @@ test('Should be able to query with value types and polling', async (t) => {
     })
   })
 
-  t.same(JSON.parse(postsRes.body), postsData)
+  t.same(postsRes.json(), postsData)
 
   const helloQuery = `
     query {
@@ -355,7 +355,7 @@ test('Should be able to query with value types and polling', async (t) => {
     })
   })
 
-  t.same(JSON.parse(helloRes.body), {
+  t.same(helloRes.json(), {
     errors: [
       {
         message:
@@ -400,11 +400,77 @@ test('Should be able to query with value types and polling', async (t) => {
     })
   })
 
-  t.same(JSON.parse(postsRes2.body), {
+  t.same(postsRes2.json(), {
     data: {
       hello: 'world'
     }
   })
 })
 
-test('Should not register value types if field ', async (t) => {})
+test('Should be able to query with value types and polling', async (t) => {
+  const [userServiceA, userServicePortA] = await createService(t, `   
+    type User @key(fields: "id") {
+      id: ID!
+    }
+  `, {})
+
+  const [userServiceB, userServicePortB] = await createService(t, `
+    extend type Query {
+        user: User!
+    }
+   
+    type User @key(fields: "id") {
+      id: ID!
+    }
+  `, {
+    Query: {
+      user: () => {
+        return { id: '1' }
+      }
+    }
+  })
+
+  const gateway = Fastify()
+
+  t.teardown(async () => {
+    await gateway.close()
+    await userServiceA.close()
+    await userServiceB.close()
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'userB',
+        url: `http://localhost:${userServicePortA}/graphql`
+      }, {
+        name: 'userA',
+        url: `http://localhost:${userServicePortB}/graphql`
+      }]
+    }
+  })
+
+  const usersRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        query {
+          user {
+            id
+          }
+        }`
+    })
+  })
+
+  t.same(usersRes.json(), {
+    data: {
+      user: {
+        id: '1'
+      }
+    }
+  })
+})
