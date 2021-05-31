@@ -407,7 +407,7 @@ test('Should be able to query with value types and polling', async (t) => {
   })
 })
 
-test('Should be able to query with value types and polling', async (t) => {
+test('Should use last service in list for duplicate entity types', async (t) => {
   const [userServiceA, userServicePortA] = await createService(t, `   
     type User @key(fields: "id") {
       id: ID!
