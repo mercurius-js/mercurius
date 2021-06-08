@@ -19,9 +19,22 @@ async function createService (t, schema, resolvers = {}) {
   return [service, service.server.address().port]
 }
 
+const returnTypeValue = {
+  someValue: 'test'
+}
+
 const userSchema = `
     extend type Query {
       users: UserConnection!
+      userServiceInfo: SomeReturnType!
+    }
+    
+    extend type Mutation {
+      userMutation: SomeReturnType!
+    }
+    
+    type SomeReturnType {
+      someValue: String!
     }
     
     type UserConnection {
@@ -59,6 +72,12 @@ const usersData = {
   }
 }
 
+const userMutationData = {
+  data: {
+    userMutation: returnTypeValue
+  }
+}
+
 const userResolvers = {
   User: {
     __resolveReference: (post, args, context, info) => {
@@ -68,6 +87,14 @@ const userResolvers = {
   Query: {
     users: (root, args, context, info) => {
       return usersData.data.users
+    },
+    userServiceInfo: (root, args, context, info) => {
+      return returnTypeValue
+    }
+  },
+  Mutation: {
+    userMutation: () => {
+      return returnTypeValue
     }
   }
 }
@@ -84,11 +111,37 @@ const usersQuery = `
         }
       }
     }
-  }`
+  }
+`
+
+const userServiceInfoQuery = `
+  query {
+    userServiceInfo {
+      someValue
+    }
+  }
+`
+
+const userMutation = `
+  mutation {
+    userMutation {
+      someValue
+    }
+  }  
+`
 
 const postSchema = `
     extend type Query {
       posts: PostConnection!
+      postServiceInfo: SomeReturnType!
+    }
+    
+    extend type Mutation {
+      postMutation: SomeReturnType!
+    }
+    
+    type SomeReturnType {
+      someValue: String!
     }
     
     type PostConnection {
@@ -126,6 +179,12 @@ const postsData = {
   }
 }
 
+const postMutationData = {
+  data: {
+    postMutation: returnTypeValue
+  }
+}
+
 const postResolvers = {
   Post: {
     __resolveReference: (post, args, context, info) => {
@@ -135,6 +194,14 @@ const postResolvers = {
   Query: {
     posts: (root, args, context, info) => {
       return postsData.data.posts
+    },
+    postServiceInfo: (root, args, context, info) => {
+      return returnTypeValue
+    }
+  },
+  Mutation: {
+    postMutation: () => {
+      return returnTypeValue
     }
   }
 }
@@ -153,9 +220,34 @@ const postsQuery = `
     }
 }`
 
+const postServiceInfoQuery = `
+  query {
+    postServiceInfo {
+      someValue
+    }
+  }
+`
+
+const postMutation = `
+  mutation {
+    postMutation {
+      someValue
+    }
+  }  
+`
+
 const commentSchema = `
     extend type Query {
       comments: CommentConnection!
+      commentServiceInfo: SomeReturnType!
+    }
+    
+    extend type Mutation {
+      commentMutation: SomeReturnType!
+    }
+    
+    type SomeReturnType {
+      someValue: String!
     }
     
     type CommentConnection {
@@ -193,6 +285,12 @@ const commentsData = {
   }
 }
 
+const commentMutationData = {
+  data: {
+    commentMutation: returnTypeValue
+  }
+}
+
 const commentResolvers = {
   Comment: {
     __resolveReference: (post, args, context, info) => {
@@ -202,6 +300,14 @@ const commentResolvers = {
   Query: {
     comments: (root, args, context, info) => {
       return commentsData.data.comments
+    },
+    commentServiceInfo: (root, args, context, info) => {
+      return returnTypeValue
+    }
+  },
+  Mutation: {
+    commentMutation: () => {
+      return returnTypeValue
     }
   }
 }
@@ -219,6 +325,22 @@ const commentsQuery = `
       }
     }
 }`
+
+const commentServiceInfoQuery = `
+  query {
+    commentServiceInfo {
+      someValue
+    }
+  }
+`
+
+const commentMutation = `
+  mutation {
+    commentMutation {
+      someValue
+    }
+  }  
+`
 
 test('Should be able to query with value types', async (t) => {
   const [userService, userServicePort] = await createService(t, userSchema, userResolvers)
@@ -287,6 +409,156 @@ test('Should be able to query with value types', async (t) => {
   })
 
   t.same(commentsRes.json(), commentsData)
+})
+
+test('Should be able to mutate with value types', async (t) => {
+  const [userService, userServicePort] = await createService(t, userSchema, userResolvers)
+  const [postService, postServicePort] = await createService(t, postSchema, postResolvers)
+  const [commentService, commentServicePort] = await createService(t, commentSchema, commentResolvers)
+
+  const gateway = Fastify()
+
+  t.teardown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
+    await commentService.close()
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'user',
+        url: `http://localhost:${userServicePort}/graphql`
+      }, {
+        name: 'post',
+        url: `http://localhost:${postServicePort}/graphql`
+      }, {
+        name: 'comment',
+        url: `http://localhost:${commentServicePort}/graphql`
+      }]
+    }
+  })
+
+  const usersRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: userMutation
+    })
+  })
+
+  t.same(usersRes.json(), userMutationData)
+
+  const postsRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: postMutation
+    })
+  })
+
+  t.same(postsRes.json(), postMutationData)
+
+  const commentsRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: commentMutation
+    })
+  })
+
+  t.same(commentsRes.json(), commentMutationData)
+})
+
+test('Should be able to query top-level with value types', async (t) => {
+  const [userService, userServicePort] = await createService(t, userSchema, userResolvers)
+  const [postService, postServicePort] = await createService(t, postSchema, postResolvers)
+  const [commentService, commentServicePort] = await createService(t, commentSchema, commentResolvers)
+
+  const gateway = Fastify()
+
+  t.teardown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
+    await commentService.close()
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'user',
+        url: `http://localhost:${userServicePort}/graphql`
+      }, {
+        name: 'post',
+        url: `http://localhost:${postServicePort}/graphql`
+      }, {
+        name: 'comment',
+        url: `http://localhost:${commentServicePort}/graphql`
+      }]
+    }
+  })
+
+  const usersRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: userServiceInfoQuery
+    })
+  })
+
+  t.same(usersRes.json(), {
+    data: {
+      userServiceInfo: returnTypeValue
+    }
+  })
+
+  const postsRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: postServiceInfoQuery
+    })
+  })
+
+  t.same(postsRes.json(), {
+    data: {
+      postServiceInfo: returnTypeValue
+    }
+  })
+
+  const commentsRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: commentServiceInfoQuery
+    })
+  })
+
+  t.same(commentsRes.json(), {
+    data: {
+      commentServiceInfo: returnTypeValue
+    }
+  })
 })
 
 test('Should be able to query with value types and polling', async (t) => {
@@ -411,6 +683,7 @@ test('Should use last service in list for duplicate entity types', async (t) => 
   const [userServiceA, userServicePortA] = await createService(t, `   
     type User @key(fields: "id") {
       id: ID!
+      name: String!
     }
   `, {})
 
@@ -421,11 +694,12 @@ test('Should use last service in list for duplicate entity types', async (t) => 
    
     type User @key(fields: "id") {
       id: ID!
+      name: String!
     }
   `, {
     Query: {
       user: () => {
-        return { id: '1' }
+        return { id: '1', name: 'Test' }
       }
     }
   })
@@ -461,6 +735,7 @@ test('Should use last service in list for duplicate entity types', async (t) => 
         query {
           user {
             id
+            name
           }
         }`
     })
@@ -469,7 +744,8 @@ test('Should use last service in list for duplicate entity types', async (t) => 
   t.same(usersRes.json(), {
     data: {
       user: {
-        id: '1'
+        id: '1',
+        name: 'Test'
       }
     }
   })
