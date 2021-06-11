@@ -49,11 +49,56 @@ const userSchema = `
     type UserEdge {
       node: User!
     }
+    
+    type FileConnection {
+      pageInfo: PageInfo!
+      edges: [FileEdge!]!
+    }
+    
+    type FileEdge {
+      node: File!
+    }
+    
+    type File {
+      id: String!
+      name: String!
+    }
 
     type User @key(fields: "id") {
       id: ID!
+      files: FileConnection!
     }
 `
+
+const usersWithFilesData = {
+  data: {
+    users: {
+      pageInfo: {
+        hasNextPage: false
+      },
+      edges: [
+        {
+          node: {
+            id: '1',
+            files: {
+              pageInfo: {
+                hasNextPage: false
+              },
+              edges: [
+                {
+                  node: {
+                    id: '1',
+                    name: 'test.txt'
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
 
 const usersData = {
   data: {
@@ -86,7 +131,7 @@ const userResolvers = {
   },
   Query: {
     users: (root, args, context, info) => {
-      return usersData.data.users
+      return usersWithFilesData.data.users
     },
     userServiceInfo: (root, args, context, info) => {
       return returnTypeValue
@@ -108,6 +153,32 @@ const usersQuery = `
       edges {
         node {
           id
+        }
+      }
+    }
+  }
+`
+
+const usersWithFilesQuery = `
+  query {
+    users {
+      pageInfo {
+        hasNextPage
+      }
+      edges {
+        node {
+          id
+          files {
+            pageInfo {
+              hasNextPage
+            }
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
         }
       }
     }
@@ -156,11 +227,56 @@ const postSchema = `
     type PostEdge {
       node: Post!
     }
+    
+    type FileConnection {
+      pageInfo: PageInfo!
+      edges: [FileEdge!]!
+    }
+    
+    type FileEdge {
+      node: File!
+    }
+    
+    type File {
+      id: String!
+      name: String!
+    }
 
     type Post @key(fields: "id") {
       id: ID!
+      files: FileConnection!
     }
 `
+
+const postsWithFilesData = {
+  data: {
+    posts: {
+      pageInfo: {
+        hasNextPage: false
+      },
+      edges: [
+        {
+          node: {
+            id: '1',
+            files: {
+              pageInfo: {
+                hasNextPage: false
+              },
+              edges: [
+                {
+                  node: {
+                    id: '1',
+                    name: 'testfile.txt'
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
 
 const postsData = {
   data: {
@@ -193,7 +309,7 @@ const postResolvers = {
   },
   Query: {
     posts: (root, args, context, info) => {
-      return postsData.data.posts
+      return postsWithFilesData.data.posts
     },
     postServiceInfo: (root, args, context, info) => {
       return returnTypeValue
@@ -218,7 +334,34 @@ const postsQuery = `
         }
       }
     }
-}`
+  }
+`
+
+const postsWithFilesQuery = `
+  query {
+    posts {
+      pageInfo {
+        hasNextPage
+      }
+      edges {
+        node {
+          id
+          files {
+            pageInfo {
+              hasNextPage
+            }
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
 
 const postServiceInfoQuery = `
   query {
@@ -749,4 +892,60 @@ test('Should use last service in list for duplicate entity types', async (t) => 
       }
     }
   })
+})
+
+test('Should be able to query nested value types', async (t) => {
+  const [userService, userServicePort] = await createService(t, userSchema, userResolvers)
+  const [postService, postServicePort] = await createService(t, postSchema, postResolvers)
+  const [commentService, commentServicePort] = await createService(t, commentSchema, commentResolvers)
+
+  const gateway = Fastify()
+
+  t.teardown(async () => {
+    await gateway.close()
+    await postService.close()
+    await userService.close()
+    await commentService.close()
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'user',
+        url: `http://localhost:${userServicePort}/graphql`
+      }, {
+        name: 'post',
+        url: `http://localhost:${postServicePort}/graphql`
+      }, {
+        name: 'comment',
+        url: `http://localhost:${commentServicePort}/graphql`
+      }]
+    }
+  })
+
+  const usersRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: usersWithFilesQuery
+    })
+  })
+
+  t.same(usersRes.json(), usersWithFilesData)
+
+  const postsRes = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: postsWithFilesQuery
+    })
+  })
+
+  t.same(postsRes.json(), postsWithFilesData)
 })
