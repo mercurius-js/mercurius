@@ -364,7 +364,10 @@ const plugin = fp(async function (app, opts) {
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
-        return reply[kLoaders][name]({ obj, params })
+        
+        if (reply[kLoaders] && reply[kLoaders][name]) {
+          return reply[kLoaders][name]({ obj, params })
+        }
       }
     }
 
