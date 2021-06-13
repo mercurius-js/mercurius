@@ -358,16 +358,18 @@ const plugin = fp(async function (app, opts) {
       app.decorate(kFactory, factory)
     }
 
-    function defineLoader (name) {
+    function defineLoader (name, prop) {
       // async needed because of throw
       return async function (obj, params, { reply }) {
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
-        
+
         if (reply[kLoaders] && reply[kLoaders][name]) {
           return reply[kLoaders][name]({ obj, params })
         }
+
+        return obj[prop]
       }
     }
 
@@ -377,7 +379,7 @@ const plugin = fp(async function (app, opts) {
       resolvers[typeKey] = {}
       for (const prop of Object.keys(type)) {
         const name = typeKey + '-' + prop
-        resolvers[typeKey][prop] = defineLoader(name)
+        resolvers[typeKey][prop] = defineLoader(name, prop)
         if (typeof type[prop] === 'function') {
           factory.add(name, type[prop])
         } else {
