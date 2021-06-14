@@ -364,7 +364,7 @@ const plugin = fp(async function (app, opts) {
       app.decorate(kSubscriptionFactory, subscriptionFactory)
     }
 
-    function defineLoader (name, prop) {
+    function defineLoader (name) {
       // async needed because of throw
       return async function (obj, params, { reply }) {
         if (!reply) {
@@ -381,7 +381,7 @@ const plugin = fp(async function (app, opts) {
       resolvers[typeKey] = {}
       for (const prop of Object.keys(type)) {
         const name = typeKey + '-' + prop
-        resolvers[typeKey][prop] = defineLoader(name, prop)
+        resolvers[typeKey][prop] = defineLoader(name)
         if (typeof type[prop] === 'function') {
           factory.add(name, type[prop])
           subscriptionFactory.add(name, { cache: false }, type[prop])
