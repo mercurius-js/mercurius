@@ -549,7 +549,7 @@ test('loaders support custom context', async (t) => {
   })
 })
 
-test('undefined loaders shouldnt limit subscription payloads given all necessary data', t => {
+test('subscriptions properly execute loaders', t => {
   const app = Fastify()
   const emitter = mq()
   t.teardown(() => app.close())
@@ -565,16 +565,13 @@ test('undefined loaders shouldnt limit subscription payloads given all necessary
     },
     loaders: {
       Dog: {
-        owner: async () => [owners[0]]
+        owner: async () => [owners[dogs[0].name]]
       }
     },
     subscription: {
       emitter
     }
   })
-
-  const expectedDog = dogs[0]
-  expectedDog.owner = owners[dogs[0].name]
 
   app.listen(0, err => {
     t.error(err)
@@ -611,11 +608,13 @@ test('undefined loaders shouldnt limit subscription payloads given all necessary
       if (data.type === 'connection_ack') {
         app.graphql.pubsub.publish({
           topic: 'PINGED_DOG',
-          payload: { onPingDog: expectedDog }
+          payload: { onPingDog: dogs[0] }
         })
       } else if (data.id === 1) {
-        t.same(data.payload.data.onPingDog, expectedDog)
+        const expectedDog = dogs[0]
+        expectedDog.owner = owners[dogs[0].name]
 
+        t.same(data.payload.data.onPingDog, expectedDog)
         client.end()
         t.end()
       } else {
