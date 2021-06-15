@@ -2,6 +2,8 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
+const WebSocket = require('ws')
+const mq = require('mqemitter')
 const GQL = require('..')
 
 const dogs = [{
@@ -38,6 +40,10 @@ const schema = `
 
   type Query {
     dogs: [Dog]
+  }
+
+  type Subscription {
+    onPingDog: Dog
   }
 `
 
@@ -540,5 +546,80 @@ test('loaders support custom context', async (t) => {
         }
       }]
     }
+  })
+})
+
+test('subscriptions properly execute loaders', t => {
+  const app = Fastify()
+  const emitter = mq()
+  t.teardown(() => app.close())
+
+  app.register(GQL, {
+    schema,
+    resolvers: {
+      Subscription: {
+        onPingDog: {
+          subscribe: (_, params, { pubsub }) => pubsub.subscribe('PINGED_DOG')
+        }
+      }
+    },
+    loaders: {
+      Dog: {
+        owner: async () => [owners[dogs[0].name]]
+      }
+    },
+    subscription: {
+      emitter
+    }
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            onPingDog {
+              name
+              owner {
+                name
+              }
+            }
+          }
+        `
+      }
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.type === 'connection_ack') {
+        app.graphql.pubsub.publish({
+          topic: 'PINGED_DOG',
+          payload: { onPingDog: dogs[0] }
+        })
+      } else if (data.id === 1) {
+        const expectedDog = dogs[0]
+        expectedDog.owner = owners[dogs[0].name]
+
+        t.same(data.payload.data.onPingDog, expectedDog)
+        client.end()
+        t.end()
+      } else {
+        t.fail()
+      }
+    })
   })
 })

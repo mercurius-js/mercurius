@@ -40,7 +40,7 @@ const {
   MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
 const { Hooks, assignLifeCycleHooksToContext, assignApplicationLifecycleHooksToContext } = require('./lib/hooks')
-const { kLoaders, kFactory, kHooks } = require('./lib/symbols')
+const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
 const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler, onGatewayReplaceSchemaHandler } = require('./lib/handlers')
 
 function buildCache (opts) {
@@ -345,6 +345,7 @@ const plugin = fp(async function (app, opts) {
   }
 
   let factory
+  let subscriptionFactory
 
   fastifyGraphQl.defineLoaders = function (loaders) {
     if (gateway) {
@@ -358,12 +359,18 @@ const plugin = fp(async function (app, opts) {
       app.decorate(kFactory, factory)
     }
 
+    if (!subscriptionFactory) {
+      subscriptionFactory = new Factory()
+      app.decorate(kSubscriptionFactory, subscriptionFactory)
+    }
+
     function defineLoader (name) {
       // async needed because of throw
       return async function (obj, params, { reply }) {
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
+
         return reply[kLoaders][name]({ obj, params })
       }
     }
@@ -377,8 +384,10 @@ const plugin = fp(async function (app, opts) {
         resolvers[typeKey][prop] = defineLoader(name)
         if (typeof type[prop] === 'function') {
           factory.add(name, type[prop])
+          subscriptionFactory.add(name, { cache: false }, type[prop])
         } else {
           factory.add(name, type[prop].opts, type[prop].loader)
+          subscriptionFactory.add(name, Object.assign({}, type[prop].opts, { cache: false }), type[prop].loader)
         }
       }
     }
