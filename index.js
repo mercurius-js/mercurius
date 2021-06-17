@@ -184,7 +184,7 @@ const plugin = fp(async function (app, opts) {
       if (typeof gateway.pollingInterval === 'number') {
         gatewayInterval = setInterval(async () => {
           try {
-            const context = assignApplicationLifecycleHooksToContext(fastifyGraphQl[kHooks], {})
+            const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
             const schema = await gateway.refresh()
             if (schema !== null) {
               // Trigger onGatewayReplaceSchema hook
@@ -254,7 +254,11 @@ const plugin = fp(async function (app, opts) {
   app.decorateReply(graphqlCtx, null)
 
   app.decorateReply('graphql', function (source, context, variables, operationName) {
-    context = Object.assign({ reply: this, app }, context)
+    if (!context) {
+      context = {}
+    }
+
+    context = Object.assign(context, { reply: this, app })
     if (app[kFactory]) {
       this[kLoaders] = factory.create(context)
     }
@@ -424,8 +428,12 @@ const plugin = fp(async function (app, opts) {
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this, lruGatewayResolvers, errors: null }, context)
-    context = assignLifeCycleHooksToContext(fastifyGraphQl[kHooks], context)
+    if (!context) {
+      context = {}
+    }
+
+    context = Object.assign(context, { app: this, lruGatewayResolvers, errors: null })
+    context = assignLifeCycleHooksToContext(context, fastifyGraphQl[kHooks])
     const reply = context.reply
 
     // Trigger preParsing hook
