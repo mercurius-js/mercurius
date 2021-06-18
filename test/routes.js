@@ -1411,6 +1411,74 @@ test('routes with custom context', async (t) => {
   })
 })
 
+test('routes with custom class-based context', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+    type Query {
+      test: String
+    }
+  `
+
+  class CustomContext {
+    constructor () {
+      this.test = 'custom'
+    }
+
+    method () {
+      return this.test
+    }
+  }
+
+  const resolvers = {
+    test: async (args, ctx) => {
+      t.type(ctx, 'object')
+      t.type(ctx.reply, 'object')
+      t.type(ctx.app, 'object')
+      t.type(ctx.method, 'function')
+      t.equal(ctx.test, 'custom')
+      t.equal(ctx.method(), 'custom')
+      t.equal(ctx.constructor, CustomContext)
+      return ctx.method()
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    context: (request, reply) => {
+      t.type(request, 'object')
+      t.type(reply, 'object')
+      return new CustomContext()
+    }
+  })
+
+  const get = await app.inject({
+    method: 'GET',
+    url: '/graphql?query=query { test }'
+  })
+
+  t.same(JSON.parse(get.body), {
+    data: {
+      test: 'custom'
+    }
+  })
+
+  const post = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: 'query { test }'
+    }
+  })
+
+  t.same(JSON.parse(post.body), {
+    data: {
+      test: 'custom'
+    }
+  })
+})
+
 test('connection is not allowed when verifyClient callback called with `false`', t => {
   t.plan(2)
   const app = Fastify()
