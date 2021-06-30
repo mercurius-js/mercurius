@@ -67,7 +67,7 @@
     "secure-json-parse": "^2.2.0",
     "single-user-cache": "^0.4.0",
     "tiny-lru": "^7.0.2",
-    "undici": "^3.0.0",
+    "undici": "^4.1.0",
     "ws": "^7.4.2"
   },
   "tsd": {
