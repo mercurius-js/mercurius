@@ -51,7 +51,7 @@ const resolvers: IResolvers = {
 
 // declare module 'mercurius' {
 declare module '../../' {
-  interface MercuriusContext {
+  interface MercuriusContext { // eslint-disable-line
     request: FastifyRequest
   }
 }
