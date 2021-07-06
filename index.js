@@ -80,7 +80,7 @@ const plugin = fp(async function (app, opts) {
     if (opts.onlyPersisted) {
       opts.persistedQueryProvider = persistedQueryDefaults.preparedOnly(opts.persistedQueries)
 
-      // Disable GraphiQL and GraphQL Playground
+      // Disable GraphiQL
       opts.graphiql = false
       opts.ide = false
     } else {
@@ -234,8 +234,6 @@ const plugin = fp(async function (app, opts) {
       errorHandler: opts.errorHandler,
       errorFormatter: opts.errorFormatter,
       ide: optsIde,
-      ideSettings: opts.playgroundSettings,
-      playgroundHeaders: opts.playgroundHeaders,
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,

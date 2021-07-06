@@ -130,8 +130,7 @@ test('gateway subscription handling works correctly', t => {
       schema: userSchema,
       resolvers: userResolvers,
       federationMetadata: true,
-      subscription: true,
-      ide: 'playground'
+      subscription: true
     })
     userService.listen(0, callback)
   }
@@ -142,8 +141,7 @@ test('gateway subscription handling works correctly', t => {
       schema: messageSchema,
       resolvers: messageResolvers,
       federationMetadata: true,
-      subscription: true,
-      ide: 'playground'
+      subscription: true
     })
     messageService.listen(0, callback)
   }
@@ -155,7 +153,6 @@ test('gateway subscription handling works correctly', t => {
     gateway = Fastify()
     gateway.register(GQL, {
       subscription: true,
-      ide: 'playground',
       jit: 1,
       gateway: {
         services: [{

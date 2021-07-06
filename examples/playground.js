@@ -23,12 +23,7 @@ const resolvers = {
 app.register(mercurius, {
   schema,
   resolvers,
-  graphiql: 'playground',
-  playgroundHeaders (window) {
-    return {
-      authorization: `bearer ${window.sessionStorage.getItem('token')}`
-    }
-  }
+  graphiql: true
 })
 
 app.get('/', async function (req, reply) {

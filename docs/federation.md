@@ -227,7 +227,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {
@@ -264,7 +264,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {
@@ -331,7 +331,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {
@@ -362,7 +362,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {

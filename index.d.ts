@@ -424,7 +424,7 @@ export interface MercuriusSchemaOptions {
 
 export interface MercuriusCommonOptions {
   /**
-   * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
+   * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
    */
   graphiql?: boolean | string;
   ide?: boolean | string;
@@ -538,41 +538,6 @@ export interface MercuriusCommonOptions {
    * receive an array of responses within a single request.
    */
   allowBatchedQueries?: boolean;
-
-  /**
-   * Settings for GraphQL Playground. These settings only apply if `graphiql` parameter is set to 'playground'.
-   * The most current GraphQL Playground code is loaded via CDN, so new configuration settings may be available.
-   * See https://github.com/prisma-labs/graphql-playground#usage for the most up-to-date list.
-   */
-  playgroundSettings?: {
-    ['editor.cursorShape']: 'line' | 'block' | 'underline';
-    ['editor.fontFamily']: string;
-    ['editor.fontSize']: number;
-    ['editor.reuseHeaders']: boolean;
-    ['editor.theme']: 'dark' | 'light';
-    ['general.betaUpdates']: boolean;
-    ['prettier.printWidth']: number;
-    ['prettier.tabWidth']: number;
-    ['prettier.useTabs']: boolean;
-    ['request.credentials']: 'omit' | 'include' | 'same-origin';
-    ['schema.disableComments']: boolean;
-    ['schema.polling.enable']: boolean;
-    ['schema.polling.endpointFilter']: string;
-    ['schema.polling.interval']: number;
-    ['tracing.hideTracingResponse']: boolean;
-    ['tracing.tracingSupported']: boolean;
-  };
-
-  /**
-   * It provides HTTP headers to GraphQL Playground. If it is an object,
-   * it is provided as-is. If it is a function, it is serialized, injected
-   * in the generated HTML and invoked with the `window` object as the argument.
-   * The window parameter is typed as unknown because it might not be available as
-   * Window is not present in Node.js.
-   * Useful to read authorization token from browser's storage.
-   * See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
-   */
-  playgroundHeaders?: ((window: unknown) => object) | object;
 }
 
 export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)

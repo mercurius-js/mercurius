@@ -6,7 +6,6 @@
   - [POST /graphql](#post-graphql)
   - [POST /graphql with Content-type: application/graphql](#post-graphql-with-content-type-applicationgraphql)
   - [GET /graphiql](#get-graphiql)
-  - [GET /playground](#get-playground)
 - [Decorators](#decorators)
   - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
   - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
@@ -30,16 +29,11 @@
   details.
 - `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
 - `graphiql`: boolean | string. Serve
-  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. If `'playground'` is provided it will serve [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground`. Leave empty or `false` to disable.
+  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. Leave empty or `false` to disable.
   _only applies if `onlyPersisted` option is not `true`_
 
-  **Note:** If you are working with subscription is recommended to set 'playground' for testing proposes. See [283](https://github.com/mercurius-js/mercurius/issues/283).
+  **Note**: If `routes` is false, this option does not have effects.
 
-  **Note**: If `routes` is false, set `playground` does not have effects.
-
-- `playgroundSettings` Object. that allow you to configure GraphQL Playground with [playground
-  options](https://github.com/prisma-labs/graphql-playground#usage). it works if the graphiql is set to `'playground'`.
-- `playgroundHeaders` Object | Function. It provides HTTP headers to GraphQL Playground. If it is an object, it is provided as-is. If it is a function, it is serialized, injected in the generated HTML and invoked with the `window` object as the argument. Useful to read authorization token from browser's storage. See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
 - `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -50,7 +44,7 @@
 - `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 - `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 - `errorFormatter`: `Function`. Change the default error formatter. Allows the status code of the response to be set, and a GraphQL response for the error to be defined. This can be used to format errors for batched queries, which return a successful response overall but individual errors, or to obfuscate or format internal errors. The first argument is the error object, while the second one _might_ be the context if it is available.
-- `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE (or Playground IDE) sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
+- `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
 - `validationRules`: `Function` or `Function[]`. Optional additional validation rules that the queries must satisfy in addition to those defined by the GraphQL specification. When using `Function`, arguments include additional data from graphql request and the return value must be validation rules `Function[]`.
 - `subscription`: Boolean | Object. Enable subscriptions. It uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true and exposes the pubsub interface to `app.graphql.pubsub`. To use a custom emitter set the value to an object containing the emitter.
   - `subscription.emitter`: Custom emitter.
@@ -84,7 +78,7 @@
       - `wsConnectionParams.rewriteConnectionInitPayload`: `Function` A function that gets the original `connection_init` payload along with the context as a parameter and returns an object that replaces the original `connection_init` payload before forwarding it to the federated service
 
 - `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash. Overrides `persistedQueryProvider`.
-- `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.
+- `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.
 - `persistedQueryProvider`
   - `isPersistedQuery: (request: object) => boolean`: Return true if a given request matches the desired persisted query format.
   - `getHash: (request: object) => string`: Return the hash from a given request, or falsy if this request format is not supported.
@@ -174,11 +168,6 @@ curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }"
 #### GET /graphiql
 
 Serves [GraphiQL](https://www.npmjs.com/package/graphiql) if enabled by
-the options.
-
-#### GET /playground
-
-Serves [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) if enabled by
 the options.
 
 ### Decorators

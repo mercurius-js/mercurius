@@ -856,40 +856,6 @@ test('GET graphiql endpoint with boolean', async (t) => {
     url: '/graphiql'
   })
   t.equal(res.statusCode, 200)
-
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/playground'
-  })
-  t.equal(res2.statusCode, 404)
-})
-
-test('GET graphiql endpoint with property priority', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'graphiql',
-    graphiql: 'playground',
-    routes: true,
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground'
-  })
-  t.equal(res.statusCode, 200)
-
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/graphiql'
-  })
-  t.equal(res2.statusCode, 404)
-  t.not(res2.headers.location, '/graphiql.html')
 })
 
 test('Disable ide endpoint', async (t) => {
@@ -908,12 +874,7 @@ test('Disable ide endpoint', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/playground'
-  })
   t.equal(res.statusCode, 404)
-  t.equal(res2.statusCode, 404)
 })
 
 test('Disable ide endpoint by leaving empty', async (t) => {
@@ -929,12 +890,7 @@ test('Disable ide endpoint by leaving empty', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/playground'
-  })
   t.equal(res.statusCode, 404)
-  t.equal(res2.statusCode, 404)
 })
 
 test('GET graphiql endpoint with prefix', async (t) => {
@@ -981,74 +937,6 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
   const res = await app.inject({
     method: 'GET',
     url: '/test-wrapper-prefix/graphiql'
-  })
-
-  t.equal(res.statusCode, 200)
-})
-
-test('GET graphql playground endpoint', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground'
-  })
-  t.equal(res.statusCode, 200)
-})
-
-test('GET graphql playground endpoint with prefix', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    prefix: '/test-prefix',
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/test-prefix/playground'
-  })
-
-  t.equal(res.statusCode, 200)
-})
-
-test('GET graphql playground endpoint with prefixed wrapper', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const resolvers = {
-    add: async ({ x, y }) => x + y
-  }
-
-  app.register(async function (app, opts) {
-    app.register(GQL, {
-      schema,
-      resolvers,
-      ide: 'playground'
-    })
-  }, { prefix: '/test-wrapper-prefix' })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/test-wrapper-prefix/playground'
   })
 
   t.equal(res.statusCode, 200)
@@ -1912,7 +1800,7 @@ test('cached errors', async (t) => {
   })
 })
 
-test('disable GET graphiql if ide is not "graphiql" or "playground"', async (t) => {
+test('disable GET graphiql if ide is not "graphiql"', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -1929,12 +1817,6 @@ test('disable GET graphiql if ide is not "graphiql" or "playground"', async (t) 
     url: '/graphiql'
   })
   t.equal(res.statusCode, 404)
-
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/playground'
-  })
-  t.equal(res2.statusCode, 404)
 })
 
 test('render graphiql if graphiql: true', async (t) => {
@@ -1954,12 +1836,6 @@ test('render graphiql if graphiql: true', async (t) => {
     url: '/graphiql'
   })
   t.equal(res.statusCode, 200)
-
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/playground'
-  })
-  t.equal(res2.statusCode, 404)
 })
 
 test('if ide is graphiql, always serve main.js and sw.js', async (t) => {
@@ -1985,53 +1861,6 @@ test('if ide is graphiql, always serve main.js and sw.js', async (t) => {
     url: '/graphiql/sw.js'
   })
   t.equal(res2.statusCode, 200)
-})
-
-test('if ide is playground, do not serve main.js and sw.js', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphiql/main.js'
-  })
-  t.equal(res.statusCode, 404)
-
-  const res2 = await app.inject({
-    method: 'GET',
-    url: '/graphiql/sw.js'
-  })
-  t.equal(res2.statusCode, 404)
-})
-
-test('if ide is playground, serve init.js with the correct endpoint', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    path: '/app/graphql',
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground/init.js'
-  })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
 })
 
 test('if ide is graphiql, serve config.js with the correct endpoint', async (t) => {
@@ -2102,159 +1931,6 @@ test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js w
   t.equal(res.statusCode, 200)
   t.equal(res.headers['content-type'], 'application/javascript')
   t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\'')
-})
-
-test('if ide is playground, and playgroundSettings is set, serve init.js with playground editor options ', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    playgroundSettings: {
-      'editor.theme': 'light',
-      'editor.fontSize': 17
-    },
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground/init.js'
-  })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
-})
-
-test('if ide is playground, and playgroundHeaders is an object, serve init.js with playground headers options', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    playgroundHeaders: {
-      authorization: 'bearer token'
-    },
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground/init.js'
-  })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
-})
-
-test('if ide is playground, and playgroundHeaders is a method, serve init.js with playground headers as iife', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    playgroundHeaders (window) {
-      return {
-        authorization: `bearer ${window.localStorage.getItem('token')}`
-      }
-    },
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground/init.js'
-  })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
-})
-
-test('if ide is playground, and playgroundHeaders is a named function, serve init.js with playground headers as iife', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    playgroundHeaders: function headers (window) {
-      return {
-        authorization: `bearer ${window.localStorage.getItem('token')}`
-      }
-    },
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground/init.js'
-  })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
-})
-
-test('if ide is playground, and playgroundHeaders is an anonymous function, serve init.js with playground headers as iife', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    playgroundHeaders: function (window) {
-      return {
-        authorization: `bearer ${window.localStorage.getItem('token')}`
-      }
-    },
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground/init.js'
-  })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
-})
-
-test('if ide is playground, and playgroundHeaders is an arrow function, serve init.js with playground headers as iife', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-  app.register(GQL, {
-    ide: 'playground',
-    playgroundHeaders: window => {
-      return {
-        authorization: `bearer ${window.localStorage.getItem('token')}`
-      }
-    },
-    schema
-  })
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/playground/init.js'
-  })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
 })
 
 test('if operationName is null, it should work fine', async (t) => {
