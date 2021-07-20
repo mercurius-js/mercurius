@@ -32,7 +32,11 @@ function render () {
   }
 
   ReactDOM.render(
-    React.createElement(GraphiQL, { fetcher }),
+    React.createElement(GraphiQL, {
+      fetcher,
+      headerEditorEnabled: true,
+      shouldPersistHeaders: true
+    }),
     document.getElementById('main')
   )
 }
