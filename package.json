@@ -25,7 +25,7 @@
   },
   "homepage": "https://mercurius.dev",
   "devDependencies": {
-    "@graphql-tools/merge": "^6.2.14",
+    "@graphql-tools/merge": "^7.0.0",
     "@graphql-tools/schema": "^8.0.0",
     "@graphql-tools/utils": "^8.0.0",
     "@sinonjs/fake-timers": "^7.1.2",
