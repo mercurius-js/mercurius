@@ -1,8 +1,9 @@
 'use strict'
 
-const { test } = require('tap')
+const t = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
+const { MER_ERR_GQL_GATEWAY_DUPLICATE_DIRECTIVE } = require('../../lib/errors')
 
 async function createTestService (t, schema, resolvers = {}) {
   const service = Fastify()
@@ -71,10 +72,9 @@ const query = `
   }
 `
 
-async function createTestGatewayServer (t, opts = {}) {
-  // User service
+async function createUserService (directiveDefinition) {
   const userServiceSchema = `
-  directive @custom on OBJECT | FIELD_DEFINITION
+  ${directiveDefinition}
 
   type Query @extends {
     me: User @custom
@@ -96,11 +96,12 @@ async function createTestGatewayServer (t, opts = {}) {
       }
     }
   }
-  const [userService, userServicePort] = await createTestService(t, userServiceSchema, userServiceResolvers)
+  return createTestService(t, userServiceSchema, userServiceResolvers)
+}
 
-  // Post service
+async function createPostService (directiveDefinition) {
   const postServiceSchema = `
-  directive @custom on OBJECT | FIELD_DEFINITION
+  ${directiveDefinition}
 
   type Post @key(fields: "pid") {
     pid: ID! @custom
@@ -136,76 +137,148 @@ async function createTestGatewayServer (t, opts = {}) {
       topPosts: (root, { count = 2 }) => Object.values(posts).slice(0, count)
     }
   }
-  const [postService, postServicePort] = await createTestService(t, postServiceSchema, postServiceResolvers)
-
-  const gateway = Fastify()
-  t.teardown(async () => {
-    await gateway.close()
-    await userService.close()
-    await postService.close()
-  })
-  gateway.register(GQL, {
-    ...opts,
-    gateway: {
-      services: [{
-        name: 'user',
-        url: `http://localhost:${userServicePort}/graphql`
-      }, {
-        name: 'post',
-        url: `http://localhost:${postServicePort}/graphql`
-      }]
-    }
-  })
-  return gateway
+  return createTestService(t, postServiceSchema, postServiceResolvers)
 }
 
-// ---------------------------
-// Gateway - custom directive
-// ---------------------------
-test('gateway - should handle custom directives', async (t) => {
+// -----------------------------------
+// Gateway - custom directive support
+// -----------------------------------
+t.test('gateway', t => {
   t.plan(2)
-  const app = await createTestGatewayServer(t)
 
-  const directiveNames = app.graphql.schema.getDirectives().map(directive => directive.name).filter(name => name === 'custom')
+  t.test('should de-duplicate custom directives on the gateway', async (t) => {
+    t.plan(4)
 
-  // Should contain a single representation of the custom directive
-  t.equal(directiveNames, ['custom'])
+    const [userService, userServicePort] = await createUserService('directive @custom(input: ID) on OBJECT | FIELD_DEFINITION')
+    const [postService, postServicePort] = await createPostService('directive @custom(input: ID) on OBJECT | FIELD_DEFINITION')
+    const gateway = Fastify()
+    t.teardown(async () => {
+      await gateway.close()
+      await userService.close()
+      await postService.close()
+    })
+    gateway.register(GQL, {
+      gateway: {
+        services: [{
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }, {
+          name: 'post',
+          url: `http://localhost:${postServicePort}/graphql`
+        }]
+      }
+    })
+    await gateway.ready()
 
-  const res = await app.inject({
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    url: '/graphql',
-    body: JSON.stringify({ query })
-  })
+    const userDirectiveNames = userService.graphql.schema.getDirectives().map(directive => directive.name)
+    t.same(userDirectiveNames, [
+      'include',
+      'skip',
+      'deprecated',
+      'specifiedBy',
+      'external',
+      'requires',
+      'provides',
+      'key',
+      'extends',
+      'custom'
+    ])
 
-  t.same(JSON.parse(res.body), {
-    data: {
-      me: {
-        id: 'u1',
-        name: 'John',
+    const postDirectiveNames = userService.graphql.schema.getDirectives().map(directive => directive.name)
+    t.same(postDirectiveNames, [
+      'include',
+      'skip',
+      'deprecated',
+      'specifiedBy',
+      'external',
+      'requires',
+      'provides',
+      'key',
+      'extends',
+      'custom'
+    ])
+
+    const gatewayDirectiveNames = gateway.graphql.schema.getDirectives().map(directive => directive.name)
+    t.same(gatewayDirectiveNames, [
+      'include',
+      'skip',
+      'deprecated',
+      'specifiedBy',
+      'custom'
+    ])
+
+    const res = await gateway.inject({
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      url: '/graphql',
+      body: JSON.stringify({ query })
+    })
+
+    t.same(JSON.parse(res.body), {
+      data: {
+        me: {
+          id: 'u1',
+          name: 'John',
+          topPosts: [
+            {
+              pid: 'p1',
+              author: {
+                id: 'u1'
+              }
+            },
+            {
+              pid: 'p3',
+              author: {
+                id: 'u1'
+              }
+            }
+          ]
+        },
         topPosts: [
           {
-            pid: 'p1',
-            author: {
-              id: 'u1'
-            }
+            pid: 'p1'
           },
           {
-            pid: 'p3',
-            author: {
-              id: 'u1'
-            }
+            pid: 'p2'
           }
         ]
-      },
-      topPosts: [
-        {
-          pid: 'p1'
-        },
-        {
-          pid: 'p2'
-        }
-      ]
+      }
+    })
+  })
+
+  t.test('should error on startup when different definitions of custom directives with the same name are present in federated services', async (t) => {
+    t.plan(1)
+
+    const [userService, userServicePort] = await createUserService('directive @custom(input: ID) on OBJECT | FIELD_DEFINITION')
+    const [postService, postServicePort] = await createPostService('directive @custom(input: String) on OBJECT | FIELD_DEFINITION')
+    const serviceOpts = {
+      keepAliveTimeout: 10, // milliseconds
+      keepAliveMaxTimeout: 10 // milliseconds
     }
+
+    const gateway = Fastify()
+    t.teardown(async () => {
+      await gateway.close()
+      await userService.close()
+      await postService.close()
+    })
+    gateway.register(GQL, {
+      gateway: {
+        services: [
+          {
+            ...serviceOpts,
+            name: 'user',
+            url: `http://localhost:${userServicePort}/graphql`
+          },
+          {
+            ...serviceOpts,
+            name: 'post',
+            url: `http://localhost:${postServicePort}/graphql`
+          }
+        ]
+      }
+    })
+
+    await t.rejects(gateway.ready(), new MER_ERR_GQL_GATEWAY_DUPLICATE_DIRECTIVE('custom'))
   })
 })
