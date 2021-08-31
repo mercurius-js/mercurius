@@ -57,7 +57,7 @@
     "fastify-error": "^0.3.1",
     "fastify-plugin": "^3.0.0",
     "fastify-static": "^4.2.2",
-    "fastify-websocket": "^3.2.0",
+    "fastify-websocket": "^4.0.0",
     "graphql": "^15.5.1",
     "graphql-jit": "^0.5.1",
     "mqemitter": "^4.4.1",
