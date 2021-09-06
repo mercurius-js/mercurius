@@ -24,6 +24,9 @@
     "url": "https://github.com/mercurius-js/mercurius/issues"
   },
   "homepage": "https://mercurius.dev",
+  "peerDependencies": {
+    "graphql": "^15.5.1"
+  },
   "devDependencies": {
     "@graphql-tools/merge": "^8.0.0",
     "@graphql-tools/schema": "^8.0.0",
@@ -37,6 +40,7 @@
     "concurrently": "^6.2.0",
     "docsify-cli": "^4.4.3",
     "fastify": "^3.18.1",
+    "graphql": "^15.5.1",
     "graphql-middleware": "^6.0.10",
     "graphql-shield": "^7.5.0",
     "graphql-tools": "^8.0.0",
@@ -58,7 +62,6 @@
     "fastify-plugin": "^3.0.0",
     "fastify-static": "^4.2.2",
     "fastify-websocket": "^4.0.0",
-    "graphql": "^15.5.1",
     "graphql-jit": "^0.5.1",
     "mqemitter": "^4.4.1",
     "p-map": "^4.0.0",
