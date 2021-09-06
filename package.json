@@ -1,6 +1,6 @@
 {
   "name": "mercurius",
-  "version": "8.1.3",
+  "version": "8.2.0",
   "description": "Fastify GraphQL adapter with gateway and subscription support",
   "main": "index.js",
   "types": "index.d.ts",
