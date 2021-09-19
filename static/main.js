@@ -17,20 +17,31 @@ const importer = {
 }
 
 function render () {
-  async function fetcher (params, opts) {
-    const res = await fetch(window.GRAPHQL_ENDPOINT, {
-      method: 'post',
-      headers: {
-        ...opts.headers,
-        Accept: 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(params),
-      credentials: 'include'
-    })
+  // async function fetcher (params, opts) {
+  //   const res = await fetch(window.GRAPHQL_ENDPOINT, {
+  //     method: 'post',
+  //     headers: {
+  //       ...opts.headers,
+  //       Accept: 'application/json',
+  //       'Content-Type': 'application/json'
+  //     },
+  //     body: JSON.stringify(params),
+  //     credentials: 'include'
+  //   })
 
-    return res.json()
-  }
+  //   return res.json()
+  // }
+
+  const host = window.location.host;
+
+  const url = `http://${host}${window.GRAPHQL_ENDPOINT}`;
+  const subscriptionUrl = `ws://${host}${window.GRAPHQL_ENDPOINT}`
+  console.log(url, subscriptionUrl)
+
+  const fetcher = GraphiQL.createFetcher({
+    url,
+    subscriptionUrl
+  })
 
   ReactDOM.render(
     React.createElement(GraphiQL, {
@@ -41,6 +52,8 @@ function render () {
     document.getElementById('main')
   )
 }
+
+var exports = {}
 
 if ('serviceWorker' in navigator) {
   navigator
