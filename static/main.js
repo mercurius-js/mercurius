@@ -1,4 +1,4 @@
-/* global fetch:false React:false ReactDOM:false GraphiQL:false */
+/* global React:false ReactDOM:false GraphiQL:false */
 
 const importer = {
   url: (url) => {
@@ -32,9 +32,9 @@ function render () {
   //   return res.json()
   // }
 
-  const host = window.location.host;
+  const host = window.location.host
 
-  const url = `http://${host}${window.GRAPHQL_ENDPOINT}`;
+  const url = `http://${host}${window.GRAPHQL_ENDPOINT}`
   const subscriptionUrl = `ws://${host}${window.GRAPHQL_ENDPOINT}`
   console.log(url, subscriptionUrl)
 
@@ -53,15 +53,13 @@ function render () {
   )
 }
 
-var exports = {}
-
 if ('serviceWorker' in navigator) {
   navigator
     .serviceWorker
     .register('./graphiql/sw.js')
     .then(function () {
       const link = document.createElement('link')
-      link.href = 'https://unpkg.com/graphiql@1.4.0/graphiql.css'
+      link.href = 'https://unpkg.com/graphiql@1.4.2/graphiql.css'
       link.type = 'text/css'
       link.rel = 'stylesheet'
       link.media = 'screen,print'
@@ -70,7 +68,7 @@ if ('serviceWorker' in navigator) {
       return importer.urls([
         'https://unpkg.com/react@16.8.0/umd/react.production.min.js',
         'https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js',
-        'https://unpkg.com/graphiql@1.4.0/graphiql.min.js'
+        'https://unpkg.com/graphiql@1.4.2/graphiql.min.js'
       ])
     }).then(render)
 } else {
