@@ -19,7 +19,7 @@ const importer = {
 function render () {
   const host = window.location.host
 
-  const url = `http://${host}${window.GRAPHQL_ENDPOINT}`
+  const url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
   const subscriptionUrl = `ws://${host}${window.GRAPHQL_ENDPOINT}`
 
   const fetcher = GraphiQL.createFetcher({
