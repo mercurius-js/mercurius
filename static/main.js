@@ -19,8 +19,10 @@ const importer = {
 function render () {
   const host = window.location.host
 
+  const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws'
+
   const url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
-  const subscriptionUrl = `ws://${host}${window.GRAPHQL_ENDPOINT}`
+  const subscriptionUrl = `${websocketProtocol}://${host}${window.GRAPHQL_ENDPOINT}`
 
   const fetcher = GraphiQL.createFetcher({
     url,
