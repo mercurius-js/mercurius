@@ -1025,3 +1025,65 @@ test('federation schema is built correctly with type extension', async (t) => {
     }
   })
 })
+
+test('basic federation support with \'schema\' in the schema', async (t) => {
+  const app = Fastify()
+  const schema = `
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String
+      username: String
+    }
+
+    schema {
+      query: Query
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      me: () => {
+        return {
+          id: '1',
+          name: 'John',
+          username: '@john'
+        }
+      }
+    },
+    User: {
+      __resolveReference: (object) => {
+        return {
+          id: object.id,
+          name: 'John',
+          username: '@john'
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    federationMetadata: true
+  })
+
+  await app.ready()
+
+  const query = '{ _service { sdl } }'
+  const res = await app.inject({
+    method: 'GET',
+    url: `/graphql?query=${query}`
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      _service: {
+        sdl: schema
+      }
+    }
+  })
+})
