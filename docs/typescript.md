@@ -61,7 +61,7 @@ app.register(mercurius, {
   context: buildContext
 })
 
-mercuriusCodegen(mercurius, {
+mercuriusCodegen(app, {
   // Commonly relative to your root package.json
   targetPath: './src/graphql/generated.ts'
 }).catch(console.error)
