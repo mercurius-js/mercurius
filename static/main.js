@@ -1,4 +1,4 @@
-/* global fetch:false React:false ReactDOM:false GraphiQL:false */
+/* global React:false ReactDOM:false GraphiQL:false SubscriptionsTransportWs: false */
 
 const importer = {
   url: (url) => {
@@ -17,20 +17,17 @@ const importer = {
 }
 
 function render () {
-  async function fetcher (params, opts) {
-    const res = await fetch(window.GRAPHQL_ENDPOINT, {
-      method: 'post',
-      headers: {
-        ...opts.headers,
-        Accept: 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(params),
-      credentials: 'include'
-    })
+  const host = window.location.host
 
-    return res.json()
-  }
+  const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws'
+
+  const url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
+  const subscriptionUrl = `${websocketProtocol}://${host}${window.GRAPHQL_ENDPOINT}`
+
+  const fetcher = GraphiQL.createFetcher({
+    url,
+    legacyClient: new SubscriptionsTransportWs.SubscriptionClient(subscriptionUrl)
+  })
 
   ReactDOM.render(
     React.createElement(GraphiQL, {
@@ -48,7 +45,7 @@ if ('serviceWorker' in navigator) {
     .register('./graphiql/sw.js')
     .then(function () {
       const link = document.createElement('link')
-      link.href = 'https://unpkg.com/graphiql@1.4.0/graphiql.css'
+      link.href = 'https://unpkg.com/graphiql@1.4.2/graphiql.css'
       link.type = 'text/css'
       link.rel = 'stylesheet'
       link.media = 'screen,print'
@@ -57,7 +54,8 @@ if ('serviceWorker' in navigator) {
       return importer.urls([
         'https://unpkg.com/react@16.8.0/umd/react.production.min.js',
         'https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js',
-        'https://unpkg.com/graphiql@1.4.0/graphiql.min.js'
+        'https://unpkg.com/graphiql@1.4.2/graphiql.min.js',
+        'https://unpkg.com/subscriptions-transport-ws@0.9.19/browser/client.js'
       ])
     }).then(render)
 } else {
