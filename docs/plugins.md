@@ -5,6 +5,8 @@ Related plugins for mercurius
 - [mercurius-auth](#mercurius-auth)
 - [mercurius-upload](#mercurius-upload)
 - [altair-fastify-plugin](#altair-fastify-plugin)
+- [mercurius-apollo-registry](#mercurius-apollo-registry)
+- [mercurius-apollo-tracing](#mercurius-apollo-tracing)
 
 ## mercurius-auth
 
@@ -84,4 +86,21 @@ app.register(mercuriusApolloRegistry, {
 })
 
 app.listen(3000)
+```
+
+## mercurius-apollo-tracing
+
+A Mercurius plugin for reporting performance metrics and errors to Apollo Studio.
+
+```bash
+npm install mercurius-apollo-tracing
+```
+
+```js
+const mercuriusTracing = require('mercurius-apollo-tracing')
+
+app.register(mercuriusTracing, {
+  apiKey: 'REPLACE-THIS-VALUE-WITH-APOLLO-API-KEY', // replace with the one from apollo studio
+  graphRef: 'yourGraph@ref' // replace 'yourGraph@ref'' with the one from apollo studio
+})
 ```
