@@ -3,6 +3,8 @@
 Related plugins for mercurius
 
 - [mercurius-auth](#mercurius-auth)
+- [mercurius-cache](#mercurius-cache)
+- [mercurius-validation](#mercurius-validation)
 - [mercurius-upload](#mercurius-upload)
 - [altair-fastify-plugin](#altair-fastify-plugin)
 - [mercurius-apollo-registry](#mercurius-apollo-registry)
@@ -13,6 +15,18 @@ Related plugins for mercurius
 Mercurius Auth is a plugin for [Mercurius](https://mercurius.dev) that adds configurable Authentication and Authorization support.
 
 Check the [`mercurius-auth` documentation](https://github.com/mercurius-js/auth) for detailed usage.
+
+## mercurius-cache
+
+Mercurius Cache is a plugin for [Mercurius](https://mercurius.dev) that caches the results of your GraphQL resolvers, for Mercurius.
+
+Check the [`mercurius-cache` documentation](https://github.com/mercurius-js/cache) for detailed usage.
+
+## mercurius-validation
+
+Mercurius Validation is a plugin for [Mercurius](https://mercurius.dev) that adds configurable validation support.
+
+Check the [`mercurius-validation` documentation](https://github.com/mercurius-js/validation) for detailed usage.
 
 ## mercurius-upload
 
