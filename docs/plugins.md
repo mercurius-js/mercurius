@@ -3,8 +3,8 @@
 Related plugins for mercurius
 
 - [mercurius-auth](#mercurius-auth)
-- [mercurius-validation](#mercurius-validation)
 - [mercurius-cache](#mercurius-cache)
+- [mercurius-validation](#mercurius-validation)
 - [mercurius-upload](#mercurius-upload)
 - [altair-fastify-plugin](#altair-fastify-plugin)
 - [mercurius-apollo-registry](#mercurius-apollo-registry)
