@@ -10,8 +10,6 @@ import {
   GraphQLSchema,
   Source,
   GraphQLResolveInfo,
-  GraphQLIsTypeOfFn,
-  GraphQLTypeResolver,
   GraphQLScalarType,
   ValidationRule,
 } from "graphql";
@@ -31,6 +29,10 @@ export interface MercuriusContext {
    * __Caution__: Only available if `subscriptions` are enabled
    */
   pubsub: PubSub;
+}
+
+export interface MercuriusError<TError extends Error = Error> extends FastifyError {
+  errors?: TError[]
 }
 
 export interface Loader<
@@ -459,12 +461,12 @@ export interface MercuriusCommonOptions {
   defineMutation?: boolean;
   /**
    * Change the default error handler (Default: true).
-   * If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response).
+   * If a custom error handler is defined, it should send the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response) using `reply.send`.
    * @default true
    */
   errorHandler?:
     | boolean
-    | ((error: FastifyError, request: FastifyRequest, reply: FastifyReply) => ExecutionResult);
+    | ((error: MercuriusError, request: FastifyRequest, reply: FastifyReply) => void | Promise<void>);
   /**
    * Change the default error formatter.
    */

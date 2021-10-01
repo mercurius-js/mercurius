@@ -83,6 +83,34 @@ app.register(mercurius, {
 })
 
 app.register(mercurius, {
+  schema: schema,
+  resolvers,
+  loaders: {},
+  ide: false,
+  jit: 1,
+  routes: true,
+  prefix: '/prefix',
+  defineMutation: false,
+  errorHandler: async function (err, request, reply) {
+    reply.send({ errors: err.errors })
+  },
+  errorFormatter: (result, context) => {
+    context.reply
+    result.data
+    result.errors?.forEach((e) => e.message)
+    return { statusCode: 200, response: result }
+  },
+  queryDepth: 8,
+  cache: true,
+  context: (request) => {
+    return {
+      request
+    }
+  },
+  schemaTransforms: (schema) => schema
+})
+
+app.register(mercurius, {
   schema,
   errorFormatter: mercurius.defaultErrorFormatter,
   schemaTransforms: [(schema) => schema],
