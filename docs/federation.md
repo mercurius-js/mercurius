@@ -374,14 +374,14 @@ server.register(mercurius, {
         name: 'company',
         url: 'http://localhost:3001/graphql'
       }
-    ]
+    ],
+    errorHandler: (error, service) => {
+      if (service.mandatory) {
+        server.log.error(error)
+      }
+    },
   },
-  pollingInterval: 2000,
-  errorHandler: (error, service) => {
-    if (service.mandatory) {
-      logger.error(error)
-    }
-  }
+  pollingInterval: 2000
 })
 
 server.listen(3002)
