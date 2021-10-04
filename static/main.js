@@ -1,4 +1,4 @@
-/* global React:false ReactDOM:false GraphiQL:false SubscriptionsTransportWs: false */
+/* global React:false ReactDOM:false GraphiQL:false */
 
 const importer = {
   url: (url) => {
@@ -26,7 +26,7 @@ function render () {
 
   const fetcher = GraphiQL.createFetcher({
     url,
-    legacyClient: new SubscriptionsTransportWs.SubscriptionClient(subscriptionUrl)
+    subscriptionUrl
   })
 
   ReactDOM.render(
