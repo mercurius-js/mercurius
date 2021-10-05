@@ -6,6 +6,50 @@ const FakeTimers = require('@sinonjs/fake-timers')
 const SubscriptionClient = require('../lib/subscription-client')
 const WS = require('ws')
 
+test('subscription client initialization fails when a not supported protocol is in the options', (t) => {
+  t.plan(1)
+  t.throws(() => new SubscriptionClient('ws://localhost:1234', {
+    protocols: ['unsupported-protocol'],
+    serviceName: 'test-service'
+  }), 'Invalid options: unsupported-protocol is not a valid gateway subscription protocol')
+})
+
+test('subscription client calls the publish method with the correct payload', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+      } else if (data.type === 'subscribe') {
+        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+      }
+    })
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service',
+    protocols: ['graphql-transport-ws'],
+    connectionCallback: () => {
+      client.createSubscription('query', {}, (data) => {
+        t.same(data, {
+          topic: 'test-service_1',
+          payload: {
+            foo: 'bar'
+          }
+        })
+        client.close()
+        server.close()
+        t.end()
+      })
+    }
+  })
+})
+
 test('subscription client calls the publish method with the correct payload', (t) => {
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
