@@ -1,20 +1,26 @@
 # mercurius
 
-- [Plugin options](#plugin-options)
-- [HTTP endpoints](#http-endpoints)
-  - [GET /graphql](#get-graphql)
-  - [POST /graphql](#post-graphql)
-  - [POST /graphql with Content-type: application/graphql](#post-graphql-with-content-type-applicationgraphql)
-  - [GET /graphiql](#get-graphiql)
-- [Decorators](#decorators)
-  - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
-  - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
-  - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
-  - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
-  - [app.graphql.schema](#appgraphqlschema)
-  - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
-- [Error extensions](#use-errors-extension-to-provide-additional-information-to-query-errors)
-
+- [mercurius](#mercurius)
+  - [API](#api)
+    - [Plugin options](#plugin-options)
+      - [queryDepth example](#querydepth-example)
+    - [HTTP endpoints](#http-endpoints)
+      - [GET /graphql](#get-graphql)
+      - [POST /graphql](#post-graphql)
+      - [POST /graphql with Content-type: application/graphql](#post-graphql-with-content-type-applicationgraphql)
+      - [GET /graphiql](#get-graphiql)
+    - [Decorators](#decorators)
+      - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
+      - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
+      - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
+      - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
+      - [app.graphql.schema](#appgraphqlschema)
+      - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
+    - [Errors](#errors)
+    - [ErrorWithProps](#errorwithprops)
+      - [Extensions](#extensions)
+      - [Status code](#status-code)
+    - [Error formatter](#error-formatter)
 ## API
 
 ### Plugin options
@@ -439,7 +445,33 @@ async function run() {
 run()
 ```
 
-### Use errors extension to provide additional information to query errors
+### Errors
+Mercurius help the error handling with two useful tools.
+
+- ErrorWithProps class
+- ErrorFormatter option
+
+### ErrorWithProps
+
+ErrorWithProps can be used to create Errors to be thrown inside the resolvers or plugins.
+
+it takes 3 parameters:
+
+- message
+- extensions
+- statusCode
+
+```js
+'use strict'
+
+throw new ErrorWithProps('message', {
+    ...
+}, 200)
+```
+
+#### Extensions
+
+Use errors `extensions` to provide additional information to query errors
 
 GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
 
@@ -495,3 +527,31 @@ app.register(mercurius, {
 
 app.listen(3000)
 ```
+
+#### Status code
+
+To control the status code for the response, the third optional parameter can be used.
+
+```js
+
+    throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo})
+    // using de defaultErrorFormatter the response statusCode will be 500
+
+    throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 200)
+    // using de defaultErrorFormatter the response statusCode will be 200
+
+    const error = new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 500)
+    error.data = {foo: 'bar'} 
+    throw error
+    // using de defaultErrorFormatter the response status code will be always 200 because error.data is defined
+
+
+```
+
+### Error formatter
+
+Allows the status code of the response to be set, and a GraphQL response for the error to be defined. 
+
+By default uses the defaultErrorFormatter, but it can be overridden in the [mercurius options](/docs/api/options.md#plugin-options) changing the errorFormatter parameter.
+
+**Important**: *using the default formatter, when the error has a data property the response status code will be always 200*
