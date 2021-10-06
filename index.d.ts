@@ -592,11 +592,12 @@ declare namespace mercurius {
    * Extended errors for adding additional information in error responses
    */
   class ErrorWithProps extends Error {
-    constructor(message: string, extensions?: object);
+    constructor(message: string, extensions?: object, statusCode?: number);
     /**
      * Custom additional properties of this error
      */
     extensions?: object;
+    statusCode?: number;
   }
 
   /**

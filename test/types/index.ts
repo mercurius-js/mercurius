@@ -1,4 +1,4 @@
-import { expectAssignable } from 'tsd'
+import { expectAssignable, expectError } from 'tsd'
 /* eslint-disable no-unused-expressions */
 import { EventEmitter } from 'events'
 // eslint-disable-next-line no-unused-vars
@@ -593,3 +593,9 @@ app.graphql.addHook('onGatewayReplaceSchema', async function (instance, schema) 
   expectAssignable<FastifyInstance>(instance)
   expectAssignable<GraphQLSchema>(schema)
 })
+
+expectError(() => {
+  return new mercurius.ErrorWithProps('mess', {}, 'wrong statusCode')
+})
+
+expectAssignable<Error>(new mercurius.ErrorWithProps('mess', {}, 200))

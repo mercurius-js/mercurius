@@ -7,6 +7,11 @@ const { ErrorWithProps } = GQL
 const { FederatedError } = require('../lib/errors')
 const split = require('split2')
 
+test('ErrorWithProps - support status code in the constructor', async (t) => {
+  const error = new ErrorWithProps('error', { }, 500)
+  t.equal(error.statusCode, 500)
+})
+
 test('errors - multiple extended errors', async (t) => {
   const schema = `
     type Query {
@@ -725,4 +730,40 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
   }
 
   t.equal(errors.length, 0)
+})
+
+test('errors - should override statusCode to 200 if the data is present', async (t) => {
+  const schema = `
+    type Query {
+      error: String
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error () {
+        throw new ErrorWithProps('Error', undefined, 500)
+      },
+      successful () {
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={error,successful}'
+  })
+
+  t.equal(res.statusCode, 200)
 })
