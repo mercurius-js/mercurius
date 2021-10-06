@@ -59,8 +59,8 @@ test('subscription client calls the publish method with the correct payload', (t
       const data = JSON.parse(isBinary ? message : message.toString())
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-      } else if (data.type === 'start') {
-        ws.send(JSON.stringify({ id: '1', type: 'data', payload: { data: { foo: 'bar' } } }))
+      } else if (data.type === 'subscribe') {
+        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
       }
     })
   })
@@ -94,7 +94,7 @@ test('subscription client calls the publish method with null after GQL_COMPLETE 
       const data = JSON.parse(isBinary ? message : message.toString())
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-      } else if (data.type === 'start') {
+      } else if (data.type === 'subscribe') {
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
     })
@@ -155,7 +155,7 @@ test('subscription client tries to reconnect when server closes', (t) => {
           const data = JSON.parse(isBinary ? message : message.toString())
           if (data.type === 'connection_init') {
             ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-          } else if (data.type === 'start') {
+          } else if (data.type === 'subscribe') {
             ws.send(JSON.stringify({ id: '1', type: 'complete' }))
           }
         })
@@ -201,7 +201,7 @@ test('subscription client multiple subscriptions is handled by one operation', t
       const data = JSON.parse(isBinary ? message : message.toString())
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-      } else if (data.type === 'start') {
+      } else if (data.type === 'subscribe') {
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
     })
@@ -378,7 +378,7 @@ test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type p
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message, isBinary) {
       const data = JSON.parse(isBinary ? message : message.toString())
-      if (data.type === 'start') {
+      if (data.type === 'subscribe') {
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
     })
@@ -473,7 +473,7 @@ test('subscription client does not send message if operation is already started'
   let sent = false
   class MockSubscriptionClient extends SubscriptionClient {
     sendMessage (operationId, type, payload) {
-      if (operationId && type === 'start') {
+      if (operationId && type === 'subscribe') {
         if (!sent) {
           t.pass()
           sent = true
