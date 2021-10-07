@@ -6,7 +6,7 @@ import Fastify, { FastifyReply, FastifyRequest, FastifyInstance } from 'fastify'
 // eslint-disable-next-line no-unused-vars
 import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
-import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata } from '../..'
+import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata, MercuriusPlugin } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from '@graphql-tools/schema'
@@ -599,3 +599,16 @@ expectError(() => {
 })
 
 expectAssignable<Error>(new mercurius.ErrorWithProps('mess', {}, 200))
+
+expectError(() => {
+  app.register(mercurius, {
+    graphiql: 'nonexistent'
+  })
+})
+
+declare module 'fastify' {
+// eslint-disable-next-line no-unused-vars
+  interface FastifyInstance {
+    graphql: MercuriusPlugin
+  }
+}

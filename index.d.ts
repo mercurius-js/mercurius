@@ -231,7 +231,7 @@ interface Gateway {
   serviceMap: Record<string, ServiceConfig>;
 }
 
-interface MercuriusPlugin {
+export interface MercuriusPlugin {
   <
     TData extends Record<string, any> = Record<string, any>,
     TVariables extends Record<string, any> = Record<string, any>
@@ -428,8 +428,8 @@ export interface MercuriusCommonOptions {
   /**
    * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
    */
-  graphiql?: boolean | string;
-  ide?: boolean | string;
+  graphiql?: boolean | 'graphiql';
+  ide?: boolean | 'graphiql';
   /**
    * The minimum number of execution a query needs to be executed before being jit'ed.
    * @default true
