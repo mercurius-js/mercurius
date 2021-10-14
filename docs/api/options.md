@@ -533,24 +533,21 @@ app.listen(3000)
 To control the status code for the response, the third optional parameter can be used.
 
 ```js
+throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo})
+// using the defaultErrorFormatter, the response statusCode will be 500 when there is a single error
 
-    throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo})
-    // using de defaultErrorFormatter the response statusCode will be 500
+throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 200)
+// using the defaultErrorFormatter, the response statusCode will be 200 when there is a single error
 
-    throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 200)
-    // using de defaultErrorFormatter the response statusCode will be 200
-
-    const error = new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 500)
-    error.data = {foo: 'bar'} 
-    throw error
-    // using de defaultErrorFormatter the response status code will be always 200 because error.data is defined
-
-
+const error = new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 500)
+error.data = {foo: 'bar'} 
+throw error
+// using the defaultErrorFormatter, the response status code will be always 200 because error.data is defined
 ```
 
 ### Error formatter
 
-Allows the status code of the response to be set, and a GraphQL response for the error to be defined. 
+Allows the status code of the response to be set, and a GraphQL response for the error to be defined. You find out how to do this [here](../http.md#custom-behaviour).
 
 By default uses the defaultErrorFormatter, but it can be overridden in the [mercurius options](/docs/api/options.md#plugin-options) changing the errorFormatter parameter.
 

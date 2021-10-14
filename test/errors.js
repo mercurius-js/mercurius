@@ -732,7 +732,9 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
   t.equal(errors.length, 0)
 })
 
-test('errors - should override statusCode to 200 if the data is present', async (t) => {
+test('errors - should default to HTTP Status Code `200 OK` if the data is present', async (t) => {
+  t.plan(2)
+
   const schema = `
     type Query {
       error: String
@@ -752,6 +754,7 @@ test('errors - should override statusCode to 200 if the data is present', async 
   }
 
   const app = Fastify()
+  t.teardown(app.close.bind(app))
 
   app.register(GQL, {
     schema,
@@ -765,5 +768,213 @@ test('errors - should override statusCode to 200 if the data is present', async 
     url: '/graphql?query={error,successful}'
   })
 
+  t.same(JSON.parse(res.body), {
+    data: {
+      error: null,
+      successful: 'Runs OK'
+    },
+    errors: [
+      {
+        message: 'Error',
+        locations: [{ column: 2, line: 1 }],
+        path: ['error']
+      }
+    ]
+  })
   t.equal(res.statusCode, 200)
+})
+
+test('errors - should default to `statusCode` from error if present, when there is a single error and no data in the response', async (t) => {
+  t.plan(2)
+
+  const schema = `
+    type Query {
+      error: String!
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error () {
+        throw new ErrorWithProps('Conflict Error', undefined, 409)
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={error}'
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: null,
+    errors: [
+      {
+        message: 'Conflict Error',
+        locations: [{ line: 1, column: 2 }],
+        path: ['error']
+      }
+    ]
+  })
+  t.equal(res.statusCode, 409)
+})
+
+test('errors - should default to HTTP Status Code `400 Bad Request` if multiple errors are present and no data in the response', async (t) => {
+  t.plan(2)
+
+  const schema = `
+    type Query {
+      errorOne: String
+      errorTwo: String!
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      errorOne () {
+        throw new ErrorWithProps('Error One', undefined, 500)
+      },
+      errorTwo () {
+        throw new ErrorWithProps('Error Two', undefined, 500)
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={errorOne errorTwo}'
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: null,
+    errors: [
+      {
+        message: 'Error One',
+        locations: [{ line: 1, column: 2 }],
+        path: ['errorOne']
+      },
+      {
+        message: 'Error Two',
+        locations: [{ line: 1, column: 11 }],
+        path: ['errorTwo']
+      }
+    ]
+  })
+  t.equal(res.statusCode, 400)
+})
+
+test('errors - should default to HTTP Status Code `400 Bad Request` if GraphQL validation fails', async (t) => {
+  t.plan(2)
+
+  const schema = `
+    type Query {
+      error: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error () {
+        throw new ErrorWithProps('Error', undefined, 500)
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={wrong}'
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: null,
+    errors: [
+      {
+        message: 'Cannot query field "wrong" on type "Query".',
+        locations: [{ line: 1, column: 2 }]
+      }
+    ]
+  })
+  t.equal(res.statusCode, 400)
+})
+
+test('errors - should default to HTTP Status Code `500 Internal Server Error` if single error present but no status code defined', async (t) => {
+  t.plan(2)
+
+  const schema = `
+    type Query {
+      error: String!
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error () {
+        throw new Error('Error')
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={error}'
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: null,
+    errors: [
+      {
+        message: 'Error',
+        locations: [
+          {
+            line: 1,
+            column: 2
+          }
+        ],
+        path: [
+          'error'
+        ]
+      }
+    ]
+  })
+  t.equal(res.statusCode, 500)
 })
