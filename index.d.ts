@@ -380,7 +380,7 @@ interface WsConnectionParams {
 
 export interface MercuriusGatewayService {
   name: string;
-  url: string;
+  url: string | string[];
   schema?: string;
   wsUrl?: string;
   mandatory?: boolean;
