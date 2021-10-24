@@ -73,6 +73,7 @@
     - `service.headersTimeout`: The amount of time the parser will wait to receive the complete HTTP headers, in milliseconds. (Default: `30e3` - 30 seconds)
     - `service.keepAliveMaxTimeout`: The maximum allowed keepAliveTimeout. (Default: `5e3` - 5 seconds)
     - `service.maxHeaderSize`: The maximum length of request headers in bytes. (Default: `16384` - 16KiB)
+    - `service.keepAlive`: The amount of time pass between the keep-alive messages sent from the gateway to the service, if `undefined`, no keep-alive messages will be sent. (Default: `undefined`)
     - `service.wsUrl`: The url of the websocket endpoint
     - `service.wsConnectionParams`: `Function` or `Object`
       - `wsConnectionParams.connectionInitPayload`: `Function` or `Object` An object or a function that returns the `connection_init` payload sent to the service.
