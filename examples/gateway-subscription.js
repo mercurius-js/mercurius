@@ -270,7 +270,8 @@ async function start () {
         wsUrl: 'ws://localhost:4003/graphql',
         wsConnectionParams: {
           protocols: ['graphql-transport-ws'] // optional, if not set, will use the default protocol (graphql-ws)
-        }
+        },
+        keepAlive: 3000
       }]
     }
   })
