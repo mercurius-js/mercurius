@@ -2,6 +2,32 @@
 
 Related plugins for mercurius
 
+- [mercurius-auth](#mercurius-auth)
+- [mercurius-cache](#mercurius-cache)
+- [mercurius-validation](#mercurius-validation)
+- [mercurius-upload](#mercurius-upload)
+- [altair-fastify-plugin](#altair-fastify-plugin)
+- [mercurius-apollo-registry](#mercurius-apollo-registry)
+- [mercurius-apollo-tracing](#mercurius-apollo-tracing)
+
+## mercurius-auth
+
+Mercurius Auth is a plugin for [Mercurius](https://mercurius.dev) that adds configurable Authentication and Authorization support.
+
+Check the [`mercurius-auth` documentation](https://github.com/mercurius-js/auth) for detailed usage.
+
+## mercurius-cache
+
+Mercurius Cache is a plugin for [Mercurius](https://mercurius.dev) that caches the results of your GraphQL resolvers, for Mercurius.
+
+Check the [`mercurius-cache` documentation](https://github.com/mercurius-js/cache) for detailed usage.
+
+## mercurius-validation
+
+Mercurius Validation is a plugin for [Mercurius](https://mercurius.dev) that adds configurable validation support.
+
+Check the [`mercurius-validation` documentation](https://github.com/mercurius-js/validation) for detailed usage.
+
 ## mercurius-upload
 
 Implementation of [graphql-upload](https://github.com/jaydenseric/graphql-upload) for File upload support.
@@ -10,7 +36,7 @@ Check [https://github.com/mercurius-js/mercurius-upload](https://github.com/merc
 
 ## altair-fastify-plugin
 
-[**Altair**](https://altair.sirmuel.design/) plugin. Fully featured GraphQL Client IDE, good alternative of `graphiql` and `graphql-playground`.
+[**Altair**](https://altair.sirmuel.design/) plugin. Fully featured GraphQL Client IDE, good alternative of `graphiql`.
 
 ```bash
 npm install altair-fastify-plugin
@@ -74,4 +100,21 @@ app.register(mercuriusApolloRegistry, {
 })
 
 app.listen(3000)
+```
+
+## mercurius-apollo-tracing
+
+A Mercurius plugin for reporting performance metrics and errors to Apollo Studio.
+
+```bash
+npm install mercurius-apollo-tracing
+```
+
+```js
+const mercuriusTracing = require('mercurius-apollo-tracing')
+
+app.register(mercuriusTracing, {
+  apiKey: 'REPLACE-THIS-VALUE-WITH-APOLLO-API-KEY', // replace with the one from apollo studio
+  graphRef: 'yourGraph@ref' // replace 'yourGraph@ref'' with the one from apollo studio
+})
 ```

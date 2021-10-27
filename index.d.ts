@@ -10,8 +10,6 @@ import {
   GraphQLSchema,
   Source,
   GraphQLResolveInfo,
-  GraphQLIsTypeOfFn,
-  GraphQLTypeResolver,
   GraphQLScalarType,
   ValidationRule,
 } from "graphql";
@@ -31,6 +29,10 @@ export interface MercuriusContext {
    * __Caution__: Only available if `subscriptions` are enabled
    */
   pubsub: PubSub;
+}
+
+export interface MercuriusError<TError extends Error = Error> extends FastifyError {
+  errors?: TError[]
 }
 
 export interface Loader<
@@ -203,6 +205,23 @@ export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
   ): Promise<void>;
 }
 
+// ----------------------------
+// Application Lifecycle hooks
+// ----------------------------
+
+/**
+ * `onGatewayReplaceSchema` is an application lifeycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
+ * This hook will only be triggered in gateway mode. It has the following parameters:
+ *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
+ *  - `schema` - The new schema that has been built from the gateway refresh.
+ */
+export interface onGatewayReplaceSchemaHookHandler {
+  (
+    instance: FastifyInstance,
+    schema: GraphQLSchema
+  ): Promise<void>;
+}
+
 interface ServiceConfig {
   setSchema: (schema: string) => ServiceConfig;
 }
@@ -212,7 +231,7 @@ interface Gateway {
   serviceMap: Record<string, ServiceConfig>;
 }
 
-interface MercuriusPlugin {
+export interface MercuriusPlugin {
   <
     TData extends Record<string, any> = Record<string, any>,
     TVariables extends Record<string, any> = Record<string, any>
@@ -328,6 +347,16 @@ interface MercuriusPlugin {
    * This hook will only be triggered when subscriptions are enabled.
    */
   addHook<TContext = MercuriusContext>(name: 'onSubscriptionEnd', hook: onSubscriptionEndHookHandler<TContext>): void;
+
+  // Application lifecycle addHooks
+
+  /**
+   * `onGatewayReplaceSchema` is an application lifeycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
+   * This hook will only be triggered in gateway mode. It has the following parameters:
+   *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
+   *  - `schema` - The new schema that has been built from the gateway refresh.
+   */
+  addHook(name: 'onGatewayReplaceSchema', hook: onGatewayReplaceSchemaHookHandler): void;
 }
 
 interface QueryRequest {
@@ -346,16 +375,17 @@ interface WsConnectionParams {
   connectionCallback?: () => void;
   failedConnectionCallback?: (err: { message: string }) => void | Promise<void>;
   failedReconnectCallback?: () => void;
+  rewriteConnectionInitPayload?:  <TContext extends MercuriusContext = MercuriusContext>(payload: Record<string, any> | undefined, context: TContext) => Record<string, any>;
 }
 
 export interface MercuriusGatewayService {
   name: string;
-  url: string;
+  url: string | string[];
   schema?: string;
   wsUrl?: string;
   mandatory?: boolean;
   initHeaders?: (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>) | OutgoingHttpHeaders;
-  rewriteHeaders?: (headers: IncomingHttpHeaders) => OutgoingHttpHeaders;
+  rewriteHeaders?: <TContext extends MercuriusContext = MercuriusContext>(headers: IncomingHttpHeaders, context: TContext) => OutgoingHttpHeaders;
   connections?: number;
   keepAliveMaxTimeout?: number;
   rejectUnauthorized?: boolean;
@@ -396,10 +426,10 @@ export interface MercuriusSchemaOptions {
 
 export interface MercuriusCommonOptions {
   /**
-   * Serve GraphiQL on /graphiql if true or 'graphiql', or GraphQL IDE on /playground if 'playground' and if routes is true
+   * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
    */
-  graphiql?: boolean | string;
-  ide?: boolean | string;
+  graphiql?: boolean | 'graphiql';
+  ide?: boolean | 'graphiql';
   /**
    * The minimum number of execution a query needs to be executed before being jit'ed.
    * @default true
@@ -431,12 +461,12 @@ export interface MercuriusCommonOptions {
   defineMutation?: boolean;
   /**
    * Change the default error handler (Default: true).
-   * If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response).
+   * If a custom error handler is defined, it should send the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response) using `reply.send`.
    * @default true
    */
   errorHandler?:
     | boolean
-    | ((error: FastifyError, request: FastifyRequest, reply: FastifyReply) => ExecutionResult);
+    | ((error: MercuriusError, request: FastifyRequest, reply: FastifyReply) => void | Promise<void>);
   /**
    * Change the default error formatter.
    */
@@ -510,41 +540,6 @@ export interface MercuriusCommonOptions {
    * receive an array of responses within a single request.
    */
   allowBatchedQueries?: boolean;
-
-  /**
-   * Settings for GraphQL Playground. These settings only apply if `graphiql` parameter is set to 'playground'.
-   * The most current GraphQL Playground code is loaded via CDN, so new configuration settings may be available.
-   * See https://github.com/prisma-labs/graphql-playground#usage for the most up-to-date list.
-   */
-  playgroundSettings?: {
-    ['editor.cursorShape']: 'line' | 'block' | 'underline';
-    ['editor.fontFamily']: string;
-    ['editor.fontSize']: number;
-    ['editor.reuseHeaders']: boolean;
-    ['editor.theme']: 'dark' | 'light';
-    ['general.betaUpdates']: boolean;
-    ['prettier.printWidth']: number;
-    ['prettier.tabWidth']: number;
-    ['prettier.useTabs']: boolean;
-    ['request.credentials']: 'omit' | 'include' | 'same-origin';
-    ['schema.disableComments']: boolean;
-    ['schema.polling.enable']: boolean;
-    ['schema.polling.endpointFilter']: string;
-    ['schema.polling.interval']: number;
-    ['tracing.hideTracingResponse']: boolean;
-    ['tracing.tracingSupported']: boolean;
-  };
-
-  /**
-   * It provides HTTP headers to GraphQL Playground. If it is an object,
-   * it is provided as-is. If it is a function, it is serialized, injected
-   * in the generated HTML and invoked with the `window` object as the argument.
-   * The window parameter is typed as unknown because it might not be available as
-   * Window is not present in Node.js.
-   * Useful to read authorization token from browser's storage.
-   * See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
-   */
-  playgroundHeaders?: ((window: unknown) => object) | object;
 }
 
 export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
@@ -597,11 +592,12 @@ declare namespace mercurius {
    * Extended errors for adding additional information in error responses
    */
   class ErrorWithProps extends Error {
-    constructor(message: string, extensions?: object);
+    constructor(message: string, extensions?: object, statusCode?: number);
     /**
      * Custom additional properties of this error
      */
     extensions?: object;
+    statusCode?: number;
   }
 
   /**
@@ -641,7 +637,7 @@ declare namespace mercurius {
       args: TArgs,
       context: TContext,
       info: GraphQLResolveInfo & {
-        mergeInfo: MergeInfo
+        mergeInfo?: MergeInfo
       }
     ) => boolean | Promise<boolean>
   ) => (
@@ -649,7 +645,7 @@ declare namespace mercurius {
     args: TArgs,
     context: TContext,
     info: GraphQLResolveInfo & {
-      mergeInfo: MergeInfo
+      mergeInfo?: MergeInfo
     }
   ) => AsyncGenerator<TPayload>
 }
@@ -705,8 +701,6 @@ export interface IResolverOptions<TSource = any, TContext = MercuriusContext, TA
   fragment?: string;
   resolve?: IFieldResolver<TSource, TContext, TArgs>;
   subscribe?: IFieldResolver<TSource, TContext, TArgs>;
-  __resolveType?: GraphQLTypeResolver<TSource, TContext>;
-  __isTypeOf?: GraphQLIsTypeOfFn<TSource, TContext>;
 }
 
 type IEnumResolver = {
@@ -719,7 +713,7 @@ export interface IFieldResolver<TSource, TContext = MercuriusContext, TArgs = Re
     args: TArgs,
     context: TContext,
     info: GraphQLResolveInfo & {
-      mergeInfo: MergeInfo;
+      mergeInfo?: MergeInfo;
     }
   ): any;
 }

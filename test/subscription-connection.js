@@ -6,6 +6,7 @@ const fastify = require('fastify')
 const mq = require('mqemitter')
 const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
+const { GRAPHQL_WS } = require('../lib/subscription-protocol')
 
 test('socket is closed on unhandled promise rejection in handleMessage', t => {
   t.plan(1)
@@ -27,7 +28,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
   })
 
   const app = fastify()
-  t.tearDown(() => app.close())
+  t.teardown(() => app.close())
   app.register(subscription, {
     getOptions: {
       url: '/graphql',
@@ -48,7 +49,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(client.destroy.bind(client))
+    t.teardown(client.destroy.bind(client))
 
     client.on('error', () => {})
     client.setEncoding('utf8')
@@ -56,7 +57,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
       type: 'connection_init_error'
     }))
     ws.on('close', () => {
-      t.is(handleConnectionCloseCalled, true)
+      t.equal(handleConnectionCloseCalled, true)
     })
   })
 })
@@ -72,7 +73,8 @@ test('subscription connection sends error message when message is not json strin
         id: null,
         payload: 'Message must be a JSON string'
       }), message)
-    }
+    },
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage('invalid json string')
@@ -83,7 +85,8 @@ test('subscription connection handles GQL_CONNECTION_TERMINATE message correctly
   const sc = new SubscriptionConnection({
     on () {},
     close () { t.pass() },
-    send (message) {}
+    send (message) {},
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage(JSON.stringify({
@@ -97,7 +100,8 @@ test('subscription connection closes context on GQL_STOP message correctly', asy
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
-    send (message) {}
+    send (message) {},
+    protocol: GRAPHQL_WS
   }, {})
 
   sc.subscriptionContexts = new Map()
@@ -120,7 +124,8 @@ test('subscription connection completes resolver iterator on GQL_STOP message co
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
-    send (message) {}
+    send (message) {},
+    protocol: GRAPHQL_WS
   }, {})
 
   sc.subscriptionIters = new Map()
@@ -149,7 +154,8 @@ test('handles error in send and closes connection', async t => {
       close () {
         t.pass()
       },
-      on () {}
+      on () {},
+      protocol: GRAPHQL_WS
     },
     {}
   )
@@ -161,7 +167,8 @@ test('subscription connection handles GQL_STOP message correctly, with no data',
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
-    send (message) {}
+    send (message) {},
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage(JSON.stringify({
@@ -184,7 +191,8 @@ test('subscription connection send error message when GQL_START handler errs', a
         id: 1,
         payload: 'handleGQLStart error'
       }), message)
-    }
+    },
+    protocol: GRAPHQL_WS
   }, {})
 
   sc.isReady = true
@@ -212,7 +220,8 @@ test('subscription connection send error message when client message type is inv
         id: 1,
         payload: 'Invalid payload type'
       }), message)
-    }
+    },
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage(JSON.stringify({
@@ -232,7 +241,8 @@ test('subscription connection handles GQL_START message correctly, when payload.
       t.equal(JSON.stringify(
         { type: 'error', id: 1, payload: 'Must provide document.' }
       ), message)
-    }
+    },
+    protocol: GRAPHQL_WS
   }, {})
 
   sc.isReady = true
@@ -254,7 +264,8 @@ test('subscription connection handles when GQL_START is called before GQL_INIT',
       t.equal(JSON.stringify(
         { type: 'connection_error', payload: { message: 'Connection has not been established yet.' } }
       ), message)
-    }
+    },
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage(JSON.stringify({
@@ -276,7 +287,8 @@ test('subscription connection extends context with onConnect return value', asyn
     close () {},
     send (message) {
       t.equal(JSON.stringify({ type: 'connection_ack' }), message)
-    }
+    },
+    protocol: GRAPHQL_WS
   }, {
     context,
     onConnect: function () {
@@ -285,21 +297,24 @@ test('subscription connection extends context with onConnect return value', asyn
   })
 
   await sc.handleConnectionInit({})
-  t.is(sc.context.data, true)
-  t.is(sc.context.a, 1)
+  t.equal(sc.context.data, true)
+  t.equal(sc.context.a, 1)
 })
 
 test('subscription connection send GQL_ERROR message if connectionInit extension is defined and onConnect returns a falsy value', async (t) => {
+  t.plan(1)
+
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
     send (message) {
-      t.deepEquals(JSON.parse(message), {
+      t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Forbidden'
       })
-    }
+    },
+    protocol: GRAPHQL_WS
   }, {
     onConnect: function () {
       throw new Error('Not allowed')
@@ -326,7 +341,8 @@ test('subscription connection does not create subscription if connectionInit ext
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
-    send (message) {}
+    send (message) {},
+    protocol: GRAPHQL_WS
   }, {
     onConnect: function () {
       throw new Error('Not allowed')
@@ -352,16 +368,19 @@ test('subscription connection does not create subscription if connectionInit ext
 })
 
 test('subscription connection send GQL_ERROR on unknown extension', async (t) => {
+  t.plan(2)
+
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
     send (message) {
-      t.deepEquals(JSON.parse(message), {
+      t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: 'Unknown extension unknown'
       })
-    }
+    },
+    protocol: GRAPHQL_WS
   }, { })
 
   sc.isReady = true
@@ -384,7 +403,8 @@ test('subscription connection handleConnectionInitExtension returns the onConnec
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
-    send (message) { }
+    send (message) { },
+    protocol: GRAPHQL_WS
   }, {
     onConnect: function () {
       return onConnectResult
@@ -399,20 +419,21 @@ test('subscription connection handleConnectionInitExtension returns the onConnec
   sc.isReady = true
   const res = await sc.handleConnectionInitExtension({ type: 'connectionInit' })
 
-  t.deepEqual(res, onConnectResult)
+  t.same(res, onConnectResult)
 })
 
-test('subscription connection externds the context with the connection_init payload', async (t) => {
+test('subscription connection extends the context with the connection_init payload', async (t) => {
   const connectionInitPayload = {
     hello: 'world'
   }
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
-    send (message) { }
+    send (message) { },
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleConnectionInit({ type: 'connection_init', payload: connectionInitPayload })
 
-  t.deepEqual(sc.context._connectionInit, connectionInitPayload)
+  t.same(sc.context._connectionInit, connectionInitPayload)
 })

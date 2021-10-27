@@ -39,9 +39,9 @@ const {
   MER_ERR_METHOD_NOT_ALLOWED,
   MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
-const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
-const { kLoaders, kFactory, kHooks } = require('./lib/symbols')
-const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler } = require('./lib/handlers')
+const { Hooks, assignLifeCycleHooksToContext, assignApplicationLifecycleHooksToContext } = require('./lib/hooks')
+const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
+const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler, onGatewayReplaceSchemaHandler } = require('./lib/handlers')
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -68,6 +68,10 @@ const plugin = fp(async function (app, opts) {
   const lruErrors = buildCache(opts)
   const lruGatewayResolvers = buildCache(opts)
 
+  if (lru && opts.validationRules && typeof opts.validationRules === 'function') {
+    throw new MER_ERR_INVALID_OPTS('Using a function for the validationRules is incompatible with query caching')
+  }
+
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
   const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
@@ -76,7 +80,7 @@ const plugin = fp(async function (app, opts) {
     if (opts.onlyPersisted) {
       opts.persistedQueryProvider = persistedQueryDefaults.preparedOnly(opts.persistedQueries)
 
-      // Disable GraphiQL and GraphQL Playground
+      // Disable GraphiQL
       opts.graphiql = false
       opts.ide = false
     } else {
@@ -158,10 +162,12 @@ const plugin = fp(async function (app, opts) {
         name: 'Query',
         fields: {}
       }),
-      mutation: opts.defineMutation ? new GraphQLObjectType({
-        name: 'Mutation',
-        fields: {}
-      }) : undefined
+      mutation: opts.defineMutation
+        ? new GraphQLObjectType({
+            name: 'Mutation',
+            fields: {}
+          })
+        : undefined
     })
   }
 
@@ -177,9 +183,18 @@ const plugin = fp(async function (app, opts) {
     if (gateway.pollingInterval !== undefined) {
       if (typeof gateway.pollingInterval === 'number') {
         gatewayInterval = setInterval(async () => {
-          const schema = await gateway.refresh()
-          if (schema !== null) {
-            fastifyGraphQl.replaceSchema(schema)
+          try {
+            const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
+            const schema = await gateway.refresh()
+            if (schema !== null) {
+              // Trigger onGatewayReplaceSchema hook
+              if (context.onGatewayReplaceSchema !== null) {
+                await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
+              }
+              fastifyGraphQl.replaceSchema(schema)
+            }
+          } catch (error) {
+            app.log.error(error)
           }
         }, gateway.pollingInterval)
       } else {
@@ -219,8 +234,6 @@ const plugin = fp(async function (app, opts) {
       errorHandler: opts.errorHandler,
       errorFormatter: opts.errorFormatter,
       ide: optsIde,
-      ideSettings: opts.playgroundSettings,
-      playgroundHeaders: opts.playgroundHeaders,
       prefix: opts.prefix,
       path: opts.path,
       context: opts.context,
@@ -239,7 +252,11 @@ const plugin = fp(async function (app, opts) {
   app.decorateReply(graphqlCtx, null)
 
   app.decorateReply('graphql', function (source, context, variables, operationName) {
-    context = Object.assign({ reply: this, app }, context)
+    if (!context) {
+      context = {}
+    }
+
+    context = Object.assign(context, { reply: this, app })
     if (app[kFactory]) {
       this[kLoaders] = factory.create(context)
     }
@@ -330,6 +347,7 @@ const plugin = fp(async function (app, opts) {
   }
 
   let factory
+  let subscriptionFactory
 
   fastifyGraphQl.defineLoaders = function (loaders) {
     if (gateway) {
@@ -343,12 +361,18 @@ const plugin = fp(async function (app, opts) {
       app.decorate(kFactory, factory)
     }
 
+    if (!subscriptionFactory) {
+      subscriptionFactory = new Factory()
+      app.decorate(kSubscriptionFactory, subscriptionFactory)
+    }
+
     function defineLoader (name) {
       // async needed because of throw
       return async function (obj, params, { reply }) {
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
+
         return reply[kLoaders][name]({ obj, params })
       }
     }
@@ -362,8 +386,10 @@ const plugin = fp(async function (app, opts) {
         resolvers[typeKey][prop] = defineLoader(name)
         if (typeof type[prop] === 'function') {
           factory.add(name, type[prop])
+          subscriptionFactory.add(name, { cache: false }, type[prop])
         } else {
           factory.add(name, type[prop].opts, type[prop].loader)
+          subscriptionFactory.add(name, Object.assign({}, type[prop].opts, { cache: false }), type[prop].loader)
         }
       }
     }
@@ -400,8 +426,12 @@ const plugin = fp(async function (app, opts) {
   }
 
   async function fastifyGraphQl (source, context, variables, operationName) {
-    context = Object.assign({ app: this, lruGatewayResolvers, errors: null }, context)
-    context = assignLifeCycleHooksToContext(fastifyGraphQl[kHooks], context)
+    if (!context) {
+      context = {}
+    }
+
+    context = Object.assign(context, { app: this, lruGatewayResolvers, errors: null })
+    context = assignLifeCycleHooksToContext(context, fastifyGraphQl[kHooks])
     const reply = context.reply
 
     // Trigger preParsing hook
@@ -484,19 +514,10 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
-    // minJit is 0 by default
-    if (cached && cached.count++ === minJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
-    }
-
-    if (cached && cached.jit !== null) {
-      const execution = await cached.jit.query(root, context, variables || {})
-
-      return maybeFormatErrors(execution, context)
-    }
+    const shouldCompileJit = cached && cached.count++ === minJit
 
     // Validate variables
-    if (variables !== undefined) {
+    if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
       if (Array.isArray(executionContext)) {
         const err = new MER_ERR_GQL_VALIDATION()
@@ -509,6 +530,17 @@ const plugin = fp(async function (app, opts) {
     let modifiedDocument
     if (context.preExecution !== null) {
       ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+    }
+
+    // minJit is 0 by default
+    if (shouldCompileJit) {
+      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+    }
+
+    if (cached && cached.jit !== null) {
+      const execution = await cached.jit.query(root, context, variables || {})
+
+      return maybeFormatErrors(execution, context)
     }
 
     const execution = await execute(

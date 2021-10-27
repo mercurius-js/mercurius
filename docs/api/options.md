@@ -1,21 +1,26 @@
 # mercurius
 
-- [Plugin options](#plugin-options)
-- [HTTP endpoints](#http-endpoints)
-  - [GET /graphql](#get-graphql)
-  - [POST /graphql](#post-graphql)
-  - [POST /graphql with Content-type: application/graphql](#post-graphql-with-content-type-applicationgraphql)
-  - [GET /graphiql](#get-graphiql)
-  - [GET /playground](#get-playground)
-- [Decorators](#decorators)
-  - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
-  - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
-  - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
-  - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
-  - [app.graphql.schema](#appgraphqlschema)
-  - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
-- [Error extensions](#use-errors-extension-to-provide-additional-information-to-query-errors)
-
+- [mercurius](#mercurius)
+  - [API](#api)
+    - [Plugin options](#plugin-options)
+      - [queryDepth example](#querydepth-example)
+    - [HTTP endpoints](#http-endpoints)
+      - [GET /graphql](#get-graphql)
+      - [POST /graphql](#post-graphql)
+      - [POST /graphql with Content-type: application/graphql](#post-graphql-with-content-type-applicationgraphql)
+      - [GET /graphiql](#get-graphiql)
+    - [Decorators](#decorators)
+      - [app.graphql(source, context, variables, operationName)](#appgraphqlsource-context-variables-operationname)
+      - [app.graphql.extendSchema(schema), app.graphql.defineResolvers(resolvers) and app.graphql.defineLoaders(loaders)](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders)
+      - [app.graphql.replaceSchema(schema)](#appgraphqlreplaceschemaschema)
+      - [app.graphql.transformSchema(transforms)](#appgraphqltransformschematransforms)
+      - [app.graphql.schema](#appgraphqlschema)
+      - [reply.graphql(source, context, variables, operationName)](#replygraphqlsource-context-variables-operationname)
+    - [Errors](#errors)
+    - [ErrorWithProps](#errorwithprops)
+      - [Extensions](#extensions)
+      - [Status code](#status-code)
+    - [Error formatter](#error-formatter)
 ## API
 
 ### Plugin options
@@ -30,16 +35,11 @@
   details.
 - `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
 - `graphiql`: boolean | string. Serve
-  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. If `'playground'` is provided it will serve [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) on `/playground`. Leave empty or `false` to disable.
+  [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. Leave empty or `false` to disable.
   _only applies if `onlyPersisted` option is not `true`_
 
-  **Note:** If you are working with subscription is recommended to set 'playground' for testing proposes. See [283](https://github.com/mercurius-js/mercurius/issues/283).
+  **Note**: If `routes` is false, this option does not have effects.
 
-  **Note**: If `routes` is false, set `playground` does not have effects.
-
-- `playgroundSettings` Object. that allow you to configure GraphQL Playground with [playground
-  options](https://github.com/prisma-labs/graphql-playground#usage). it works if the graphiql is set to `'playground'`.
-- `playgroundHeaders` Object | Function. It provides HTTP headers to GraphQL Playground. If it is an object, it is provided as-is. If it is a function, it is serialized, injected in the generated HTML and invoked with the `window` object as the argument. Useful to read authorization token from browser's storage. See [examples/playground.js](https://github.com/mercurius-js/mercurius/blob/master/examples/playground.js).
 - `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
@@ -50,7 +50,7 @@
 - `defineMutation`: Boolean. Add the empty Mutation definition if schema is not defined (Default: `false`).
 - `errorHandler`: `Function`  or `boolean`. Change the default error handler (Default: `true`). _Note: If a custom error handler is defined, it should return the standardized response format according to [GraphQL spec](https://graphql.org/learn/serving-over-http/#response)._
 - `errorFormatter`: `Function`. Change the default error formatter. Allows the status code of the response to be set, and a GraphQL response for the error to be defined. This can be used to format errors for batched queries, which return a successful response overall but individual errors, or to obfuscate or format internal errors. The first argument is the error object, while the second one _might_ be the context if it is available.
-- `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE (or Playground IDE) sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
+- `queryDepth`: `Integer`. The maximum depth allowed for a single query. _Note: GraphiQL IDE sends an introspection query when it starts up. This query has a depth of 7 so when the `queryDepth` value is smaller than 7 this query will fail with a `Bad Request` error_
 - `validationRules`: `Function` or `Function[]`. Optional additional validation rules that the queries must satisfy in addition to those defined by the GraphQL specification. When using `Function`, arguments include additional data from graphql request and the return value must be validation rules `Function[]`.
 - `subscription`: Boolean | Object. Enable subscriptions. It uses [mqemitter](https://github.com/mcollina/mqemitter) when it is true and exposes the pubsub interface to `app.graphql.pubsub`. To use a custom emitter set the value to an object containing the emitter.
   - `subscription.emitter`: Custom emitter.
@@ -58,17 +58,22 @@
   - `subscription.verifyClient`: `Function` A function which can be used to validate incoming connections.
   - `subscription.context`: `Function` Result of function is passed to subscription resolvers as a custom GraphQL context. The function receives the `connection` and `request` as parameters.
   - `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. If it returns an object the subscription context will be extended with the returned object.
-    - `subscription.onDisconnect`: `Function` A function which is called with the subscription context of the connection after the connection gets disconnected.
+  - `subscription.onDisconnect`: `Function` A function which is called with the subscription context of the connection after the connection gets disconnected.
 - `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 - `gateway`: Object. Run the GraphQL server in gateway mode.
 
   - `gateway.services`: Service[] An array of GraphQL services that are part of the gateway
     - `service.name`: A unique name for the service. Required.
-    - `service.url`: The url of the service endpoint. Required
+    - `service.url`: The URL of the service endpoint. It can also be an `Array` of URLs and in which case all the requests will be load balanced throughout the URLs. Required.
     - `service.mandatory`: `Boolean` Marks service as mandatory. If any of the mandatory services are unavailable, gateway will exit with an error. (Default: `false`)
     - `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
     - `service.initHeaders`: `Function` or `Object` An object or a function that returns the headers sent to the service for the initial \_service SDL query.
     - `service.connections`: The number of clients to create. (Default: `10`)
+    - `service.bodyTimeout`: The timeout after which a request will time out, in milliseconds. (Default: `30e3` - 30 seconds)
+    - `service.headersTimeout`: The amount of time the parser will wait to receive the complete HTTP headers, in milliseconds. (Default: `30e3` - 30 seconds)
+    - `service.keepAliveMaxTimeout`: The maximum allowed keepAliveTimeout. (Default: `5e3` - 5 seconds)
+    - `service.maxHeaderSize`: The maximum length of request headers in bytes. (Default: `16384` - 16KiB)
+    - `service.keepAlive`: The amount of time pass between the keep-alive messages sent from the gateway to the service, if `undefined`, no keep-alive messages will be sent. (Default: `undefined`)
     - `service.wsUrl`: The url of the websocket endpoint
     - `service.wsConnectionParams`: `Function` or `Object`
       - `wsConnectionParams.connectionInitPayload`: `Function` or `Object` An object or a function that returns the `connection_init` payload sent to the service.
@@ -77,9 +82,10 @@
       - `wsConnectionParams.connectionCallback`: `Function` A function called after a `connection_ack` message is received.
       - `wsConnectionParams.failedConnectionCallback`: `Function` A function called after a `connection_error` message is received, the first argument contains the message payload.
       - `wsConnectionParams.failedReconnectCallback`: `Function` A function called if reconnect is enabled and maxReconnectAttempts is reached.
+      - `wsConnectionParams.rewriteConnectionInitPayload`: `Function` A function that gets the original `connection_init` payload along with the context as a parameter and returns an object that replaces the original `connection_init` payload before forwarding it to the federated service
 
 - `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash. Overrides `persistedQueryProvider`.
-- `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (playground/graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.
+- `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.
 - `persistedQueryProvider`
   - `isPersistedQuery: (request: object) => boolean`: Return true if a given request matches the desired persisted query format.
   - `getHash: (request: object) => string`: Return the hash from a given request, or falsy if this request format is not supported.
@@ -169,11 +175,6 @@ curl -H "Content-Type:application/graphql" -XPOST -d "query { add(x: 2, y: 2) }"
 #### GET /graphiql
 
 Serves [GraphiQL](https://www.npmjs.com/package/graphiql) if enabled by
-the options.
-
-#### GET /playground
-
-Serves [GraphQL IDE](https://www.npmjs.com/package/graphql-playground-react) if enabled by
 the options.
 
 ### Decorators
@@ -445,7 +446,33 @@ async function run() {
 run()
 ```
 
-### Use errors extension to provide additional information to query errors
+### Errors
+Mercurius help the error handling with two useful tools.
+
+- ErrorWithProps class
+- ErrorFormatter option
+
+### ErrorWithProps
+
+ErrorWithProps can be used to create Errors to be thrown inside the resolvers or plugins.
+
+it takes 3 parameters:
+
+- message
+- extensions
+- statusCode
+
+```js
+'use strict'
+
+throw new ErrorWithProps('message', {
+    ...
+}, 200)
+```
+
+#### Extensions
+
+Use errors `extensions` to provide additional information to query errors
 
 GraphQL services may provide an additional entry to errors with the key `extensions` in the result.
 
@@ -501,3 +528,31 @@ app.register(mercurius, {
 
 app.listen(3000)
 ```
+
+#### Status code
+
+To control the status code for the response, the third optional parameter can be used.
+
+```js
+
+    throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo})
+    // using de defaultErrorFormatter the response statusCode will be 500
+
+    throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 200)
+    // using de defaultErrorFormatter the response statusCode will be 200
+
+    const error = new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 500)
+    error.data = {foo: 'bar'} 
+    throw error
+    // using de defaultErrorFormatter the response status code will be always 200 because error.data is defined
+
+
+```
+
+### Error formatter
+
+Allows the status code of the response to be set, and a GraphQL response for the error to be defined. 
+
+By default uses the defaultErrorFormatter, but it can be overridden in the [mercurius options](/docs/api/options.md#plugin-options) changing the errorFormatter parameter.
+
+**Important**: *using the default formatter, when the error has a data property the response status code will be always 200*

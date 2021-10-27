@@ -2,7 +2,7 @@
 
 ## OpenTelemetry (Tracing)
 
-Mercurius is compatible with open-telemetry (Note that, for now, jitted requests are not able to trace the graphql execution).
+Mercurius is compatible with open-telemetry (Note that, for now, jitted requests are not able to trace the graphql execution). Also make sure that registration of opentelemetry instrumentation happens before requiring `mercurius`.
 
 Here is a simple exemple on how to enable tracing on Mercurius with OpenTelemetry:
 

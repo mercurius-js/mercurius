@@ -85,10 +85,11 @@ function lengthDirectiveTransformer (schema) {
   return mapSchema(schema, {
     [MapperKind.FIELD]: (fieldConfig) => {
       const directives = getDirectives(schema, fieldConfig)
-      const directiveArgumentMap = directives.length
-      if (directiveArgumentMap) {
-        wrapType(fieldConfig, directiveArgumentMap)
-        return fieldConfig
+      for (const directive of directives) {
+        if (directive.name === 'length') {
+          wrapType(fieldConfig, directive.args)
+          return fieldConfig
+        }
       }
     }
   })
@@ -99,16 +100,18 @@ function upperDirectiveTransformer (schema) {
   return mapSchema(schema, {
     [MapperKind.OBJECT_FIELD]: (fieldConfig) => {
       const directives = getDirectives(schema, fieldConfig)
-      if (directives.upper) {
-        const { resolve = defaultFieldResolver } = fieldConfig
-        fieldConfig.resolve = async function (source, args, context, info) {
-          const result = await resolve(source, args, context, info)
-          if (typeof result === 'string') {
-            return result.toUpperCase()
+      for (const directive of directives) {
+        if (directive.name === 'upper') {
+          const { resolve = defaultFieldResolver } = fieldConfig
+          fieldConfig.resolve = async function (source, args, context, info) {
+            const result = await resolve(source, args, context, info)
+            if (typeof result === 'string') {
+              return result.toUpperCase()
+            }
+            return result
           }
-          return result
+          return fieldConfig
         }
-        return fieldConfig
       }
     }
   })
@@ -154,11 +157,11 @@ test('custom directives should work', async (t) => {
 
   let query = 'query { foo }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('custom directives should work with single transform function', async (t) => {
@@ -201,11 +204,11 @@ test('custom directives should work with single transform function', async (t) =
 
   let query = 'query { foo }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('custom directives should work with executable schema', async (t) => {
@@ -252,11 +255,11 @@ test('custom directives should work with executable schema', async (t) => {
 
   let query = 'query { foo }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('directives with extendSchema', async (t) => {
@@ -308,7 +311,7 @@ test('directives with extendSchema', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
@@ -367,7 +370,7 @@ test('directives with transformSchema', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
@@ -418,15 +421,15 @@ test('federation support and custom directives', async (t) => {
 
   let query = '{ _service { sdl } }'
   let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
+  t.same(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
 
   query = 'query { foo }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
 })
 
 test('federation support using schema from buildFederationSchema and custom directives', async (t) => {
@@ -461,11 +464,11 @@ test('federation support using schema from buildFederationSchema and custom dire
 
   let query = '{ _service { sdl } }'
   let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.deepEqual(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
+  t.same(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
 
   query = 'query { foo }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 })
 
 test('max length directive validation works', async (t) => {
@@ -527,11 +530,11 @@ test('max length directive validation works', async (t) => {
 
   let query = 'query { foo(value: "bar") }'
   let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { foo: 'bar' } })
+  t.same(JSON.parse(res.body), { data: { foo: 'bar' } })
 
   query = 'query { foo(value: "bar-too-long") }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: { foo: null },
     errors: [{
       message: 'expected length 12 to be at most 5',
@@ -543,11 +546,11 @@ test('max length directive validation works', async (t) => {
 
   query = 'query { user(id: "1") { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'foo' } } })
+  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'foo' } } })
 
   query = 'query { user(id: "2") { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: { user: { id: 2, name: null } },
     errors: [{
       message: 'expected length 8 to be at most 5',
@@ -559,12 +562,12 @@ test('max length directive validation works', async (t) => {
 
   query = 'mutation { createUser(input: {id: "3", name: "bar"}) { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), { data: { createUser: { id: '3', name: 'bar' } } })
+  t.same(JSON.parse(res.body), { data: { createUser: { id: '3', name: 'bar' } } })
   t.ok(users.find(user => user.id === '3'))
 
   query = 'mutation { createUser(input: {id: "4", name: "too-long"}) { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
@@ -624,12 +627,338 @@ test('directives with array of typeDefs in schema option', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: null,
     errors: [{
       message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
       locations: [{ line: 1, column: 35 }],
       extensions: { foo: 'bar' }
     }]
+  })
+})
+
+test('should support truthy skip directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldSkip: true,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldSkip: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @skip(if: $shouldSkip) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
+})
+
+test('should support falsy skip directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldSkip: false,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldSkip: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @skip(if: $shouldSkip) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        metadata: {
+          info: 'hello'
+        }
+      }
+    }
+  })
+})
+
+test('should support truthy include directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldInclude: true,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldInclude: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @include(if: $shouldInclude) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John',
+        metadata: {
+          info: 'hello'
+        }
+      }
+    }
+  })
+})
+
+test('should support falsy include directive', async t => {
+  t.plan(1)
+
+  const schema = `
+type Query {
+  me: User
+}
+
+type Metadata {
+  info: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  metadata(input: String!): Metadata!
+}`
+
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      metadata: (user, args, context, info) => {
+        return {
+          info: args.input
+        }
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+  await app.register(mercurius, { schema, resolvers })
+
+  const variables = {
+    shouldInclude: false,
+    input: 'hello'
+  }
+  const query = `
+    query GetMe($input: String!, $shouldInclude: Boolean!) {
+      me {
+        id
+        name
+        metadata(input: $input) @include(if: $shouldInclude) {
+          info
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query, variables })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
   })
 })

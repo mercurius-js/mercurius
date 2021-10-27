@@ -27,12 +27,12 @@ async function createRemoteService (schema) {
   return [service, service.server.address().port]
 }
 
-test('Throws an Error if there are no valid services', async (t) => {
+test('Throws an Error and cleans up service connections correctly if there are no valid services', { timeout: 4000 }, async (t) => {
   const [service, servicePort] = await createRemoteService(invalidSchema)
 
   const gateway = Fastify()
 
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await service.close()
   })
@@ -49,7 +49,7 @@ test('Throws an Error if there are no valid services', async (t) => {
   try {
     await gateway.ready()
   } catch (err) {
-    t.is(err.message, 'Gateway schema init issues No valid service SDLs were provided')
+    t.equal(err.message, 'Gateway schema init issues No valid service SDLs were provided')
   }
 })
 
@@ -58,7 +58,7 @@ test('Returns schema related errors for mandatory services', async (t) => {
 
   const gateway = Fastify()
 
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await service.close()
   })
@@ -76,7 +76,7 @@ test('Returns schema related errors for mandatory services', async (t) => {
   try {
     await gateway.ready()
   } catch (err) {
-    t.is(err.message, 'Unknown type "World".')
+    t.equal(err.message, 'Unknown type "World".')
   }
 })
 
@@ -94,7 +94,7 @@ test('Does not error if at least one service schema is valid', async (t) => {
     t.matchSnapshot(message)
   }
 
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await service.close()
     await invalidService.close()

@@ -5,7 +5,7 @@ const { PubSub, SubscriptionContext } = require('../lib/subscriber')
 test('subscriber published an event', async (t) => {
   class MyQueue {
     push (value) {
-      t.is(value, 1)
+      t.equal(value, 1)
     }
   }
 
@@ -78,7 +78,7 @@ test('subscription context publish event returns a promise reject on error', asy
   try {
     await sc.subscribe('TOPIC')
   } catch (e) {
-    t.deepEqual(error, e)
+    t.same(error, e)
   }
 })
 

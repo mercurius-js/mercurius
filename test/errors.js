@@ -7,6 +7,11 @@ const { ErrorWithProps } = GQL
 const { FederatedError } = require('../lib/errors')
 const split = require('split2')
 
+test('ErrorWithProps - support status code in the constructor', async (t) => {
+  const error = new ErrorWithProps('error', { }, 500)
+  t.equal(error.statusCode, 500)
+})
+
 test('errors - multiple extended errors', async (t) => {
   const schema = `
     type Query {
@@ -41,7 +46,7 @@ test('errors - multiple extended errors', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.payload), {
+  t.same(JSON.parse(res.payload), {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -96,7 +101,7 @@ test('errors - extended errors with number extensions', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.payload), {
+  t.same(JSON.parse(res.payload), {
     data: {
       willThrow: null
     },
@@ -157,7 +162,7 @@ test('errors - extended errors optional parameters', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.payload), {
+  t.same(JSON.parse(res.payload), {
     data: {
       one: null,
       two: null
@@ -231,7 +236,7 @@ test('errors - errors with jit enabled', async (t) => {
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.payload), {
+  t.same(JSON.parse(res.payload), {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -290,7 +295,7 @@ test('errors - errors with jit enabled using the app decorator', async (t) => {
 
   const payload = await app.graphql('{error,successful}')
 
-  t.deepEqual(payload, {
+  t.same(payload, {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -383,10 +388,10 @@ test('errors - federated errors with jit enabled', async (t) => {
   }
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.payload), expectedResult)
+  t.same(JSON.parse(res.payload), expectedResult)
 
   t.equal(jitres.statusCode, 200)
-  t.deepEqual(JSON.parse(jitres.payload), expectedResult)
+  t.same(JSON.parse(jitres.payload), expectedResult)
 })
 
 test('errors - federated errors without locations, path and extensions', async (t) => {
@@ -437,10 +442,10 @@ test('errors - federated errors without locations, path and extensions', async (
   }
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.payload), expectedResult)
+  t.same(JSON.parse(res.payload), expectedResult)
 
   t.equal(jitres.statusCode, 200)
-  t.deepEqual(JSON.parse(jitres.payload), expectedResult)
+  t.same(JSON.parse(jitres.payload), expectedResult)
 })
 
 test('errors - custom error formatter that uses default error formatter', async (t) => {
@@ -461,7 +466,7 @@ test('errors - custom error formatter that uses default error formatter', async 
     resolvers,
     errorFormatter: (err, ctx) => {
       t.ok(ctx)
-      t.is(ctx.app, app)
+      t.equal(ctx.app, app)
       t.ok(ctx.reply)
       const response = GQL.defaultErrorFormatter(err, ctx)
       response.statusCode = 499
@@ -501,7 +506,7 @@ test('POST query with a resolver which which throws and a custom error formatter
     allowBatchedQueries: true,
     errorFormatter: (errors, ctx) => {
       t.ok(ctx)
-      t.is(ctx.app, app)
+      t.equal(ctx.app, app)
       t.ok(ctx.reply)
       return {
         statusCode: 200,
@@ -527,7 +532,7 @@ test('POST query with a resolver which which throws and a custom error formatter
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
 })
 
 test('POST query which throws, with custom error formatter and JIT enabled, twice', async (t) => {
@@ -571,7 +576,7 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
 
   res = await app.inject({
     method: 'POST',
@@ -587,7 +592,7 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
   })
 
   t.equal(res.statusCode, 200)
-  t.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
 })
 
 test('POST query which throws, with JIT enabled, twice', async (t) => {
@@ -659,12 +664,12 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
   for await (const line of lines) {
     if (line.err) {
       const expected = errors.shift()
-      t.is(line.msg, expected.msg)
-      t.is(line.err.type, expected.errorType)
+      t.equal(line.msg, expected.msg)
+      t.equal(line.err.type, expected.errorType)
     }
   }
 
-  t.is(errors.length, 0)
+  t.equal(errors.length, 0)
 })
 
 test('app.graphql which throws, with JIT enabled, twice', async (t) => {
@@ -719,10 +724,46 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
   for await (const line of lines) {
     if (line.err) {
       const expected = errors.shift()
-      t.is(line.msg, expected.msg)
-      t.is(line.err.type, expected.errorType)
+      t.equal(line.msg, expected.msg)
+      t.equal(line.err.type, expected.errorType)
     }
   }
 
-  t.is(errors.length, 0)
+  t.equal(errors.length, 0)
+})
+
+test('errors - should override statusCode to 200 if the data is present', async (t) => {
+  const schema = `
+    type Query {
+      error: String
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      error () {
+        throw new ErrorWithProps('Error', undefined, 500)
+      },
+      successful () {
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={error,successful}'
+  })
+
+  t.equal(res.statusCode, 200)
 })

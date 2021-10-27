@@ -216,6 +216,10 @@ async function start () {
     console.log('onResolution called')
   })
 
+  gateway.graphql.addHook('onGatewayReplaceSchema', async (instance, schema) => {
+    console.log('onGatewayReplaceSchema called')
+  })
+
   await gateway.listen(4000)
 }
 

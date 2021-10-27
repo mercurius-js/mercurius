@@ -130,8 +130,7 @@ test('gateway subscription handling works correctly', t => {
       schema: userSchema,
       resolvers: userResolvers,
       federationMetadata: true,
-      subscription: true,
-      ide: 'playground'
+      subscription: true
     })
     userService.listen(0, callback)
   }
@@ -142,8 +141,7 @@ test('gateway subscription handling works correctly', t => {
       schema: messageSchema,
       resolvers: messageResolvers,
       federationMetadata: true,
-      subscription: true,
-      ide: 'playground'
+      subscription: true
     })
     messageService.listen(0, callback)
   }
@@ -155,7 +153,6 @@ test('gateway subscription handling works correctly', t => {
     gateway = Fastify()
     gateway.register(GQL, {
       subscription: true,
-      ide: 'playground',
       jit: 1,
       gateway: {
         services: [{
@@ -176,7 +173,7 @@ test('gateway subscription handling works correctly', t => {
   function runSubscription () {
     const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.tearDown(async () => {
+    t.teardown(async () => {
       client.destroy()
       await gateway.close()
       await messageService.close()
@@ -287,7 +284,7 @@ test('gateway subscription handling works correctly', t => {
 
 test('gateway wsConnectionParams object is passed to SubscriptionClient', t => {
   function onConnect (data) {
-    t.deepEqual(data.payload, connectionInitPayload)
+    t.same(data.payload, connectionInitPayload)
     t.end()
   }
 
@@ -311,7 +308,7 @@ test('gateway wsConnectionParams object is passed to SubscriptionClient', t => {
     const testServicePort = testService.server.address().port
 
     const gateway = Fastify()
-    t.tearDown(async () => {
+    t.teardown(async () => {
       await gateway.close()
       await testService.close()
     })
@@ -334,7 +331,7 @@ test('gateway wsConnectionParams object is passed to SubscriptionClient', t => {
 
 test('gateway wsConnectionParams function is passed to SubscriptionClient', t => {
   function onConnect (data) {
-    t.deepEqual(data.payload, connectionInitPayload)
+    t.same(data.payload, connectionInitPayload)
     t.end()
   }
 
@@ -358,7 +355,7 @@ test('gateway wsConnectionParams function is passed to SubscriptionClient', t =>
     const testServicePort = testService.server.address().port
 
     const gateway = Fastify()
-    t.tearDown(async () => {
+    t.teardown(async () => {
       await gateway.close()
       await testService.close()
     })
@@ -385,7 +382,7 @@ test('gateway forwards the connection_init payload to the federated service on g
   t.plan(3)
   function onConnect (data) {
     if (data && data.payload && Object.entries(data.payload).length) {
-      t.deepEqual(data.payload, connectionInitPayload)
+      t.same(data.payload, connectionInitPayload)
     }
 
     return true
@@ -433,7 +430,7 @@ test('gateway forwards the connection_init payload to the federated service on g
     const testServicePort = testService.server.address().port
 
     const gateway = Fastify()
-    t.tearDown(async () => {
+    t.teardown(async () => {
       await gateway.close()
       await testService.close()
     })
@@ -452,7 +449,7 @@ test('gateway forwards the connection_init payload to the federated service on g
       t.error(err)
       const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
       const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-      t.tearDown(client.destroy.bind(client))
+      t.teardown(client.destroy.bind(client))
       client.setEncoding('utf8')
 
       client.write(JSON.stringify({
@@ -482,4 +479,284 @@ test('gateway forwards the connection_init payload to the federated service on g
       })
     })
   })
+})
+
+test('connection_init payload is overwritten at gateway and forwarded to the federated service', t => {
+  t.plan(6)
+  const initialPayload = { token: 'some-token' }
+  const rewritePayload = { user: { id: '1' } }
+
+  function onConnectGateway (data) {
+    if (data && data.payload && Object.entries(data.payload).length) {
+      t.same(data.payload, initialPayload)
+    }
+
+    return rewritePayload
+  }
+
+  function rewriteConnectionInitPayload (payload, context) {
+    t.same(payload, initialPayload)
+    t.has(context, rewritePayload)
+    return { user: context.user }
+  }
+
+  function onConnectService (data) {
+    if (data && data.payload && Object.entries(data.payload).length) {
+      t.same(data.payload, rewritePayload)
+    }
+
+    return true
+  }
+
+  const testService = Fastify()
+
+  testService.register(GQL, {
+    schema: `
+      type Notification {
+        id: ID!
+        message: String
+      }
+
+      type Query {
+        notifications: [Notification]
+      }
+
+      type Subscription {
+        notificationAdded: Notification
+      }
+    `,
+    resolvers: {
+      Query: {
+        notifications: () => []
+      },
+      Subscription: {
+        notificationAdded: {
+          subscribe: (root, args, { pubsub, topic, hello }) => {
+            t.end()
+          }
+        }
+      }
+    },
+    federationMetadata: true,
+    subscription: { onConnect: onConnectService }
+  })
+
+  testService.listen(0, async err => {
+    t.error(err)
+
+    const testServicePort = testService.server.address().port
+
+    const gateway = Fastify()
+    t.teardown(async () => {
+      await gateway.close()
+      await testService.close()
+    })
+    gateway.register(GQL, {
+      subscription: {
+        onConnect: onConnectGateway
+      },
+      gateway: {
+        services: [{
+          name: 'test',
+          url: `http://localhost:${testServicePort}/graphql`,
+          wsUrl: `ws://localhost:${testServicePort}/graphql`,
+          wsConnectionParams: {
+            rewriteConnectionInitPayload
+          }
+        }]
+      }
+    })
+
+    gateway.listen(0, async err => {
+      t.error(err)
+      const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+      const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+      t.teardown(client.destroy.bind(client))
+      client.setEncoding('utf8')
+
+      client.write(JSON.stringify({
+        type: 'connection_init',
+        payload: initialPayload
+      }))
+
+      client.on('data', chunk => {
+        const data = JSON.parse(chunk)
+        if (data.type === 'connection_ack') {
+          client.write(JSON.stringify({
+            id: 1,
+            type: 'start',
+            payload: {
+              query: `
+                subscription {
+                  notificationAdded {
+                    id
+                    message
+                  }
+                }
+              `
+            }
+          }))
+          client.destroy()
+        }
+      })
+    })
+  })
+})
+
+test('subscriptions work with scalars', async t => {
+  let testService
+  let gateway
+
+  const schema = `
+  extend type Query {
+      ignored: Boolean!
+  }
+
+  extend type Mutation {
+      addTestEvent(value: Int!): Int!
+  }
+
+  extend type Subscription {
+      testEvent: Int!
+  }`
+
+  const resolvers = {
+    Query: {
+      ignored: () => true
+    },
+    Mutation: {
+      addTestEvent: async (_, { value }, { pubsub }) => {
+        await pubsub.publish({
+          topic: 'testEvent',
+          payload: { testEvent: value }
+        })
+
+        return value
+      }
+    },
+    Subscription: {
+      testEvent: {
+        subscribe: async (_, __, { pubsub }) => {
+          return await pubsub.subscribe('testEvent')
+        }
+      }
+    }
+  }
+
+  function createTestService () {
+    testService = Fastify()
+    testService.register(GQL, {
+      schema,
+      resolvers,
+      federationMetadata: true,
+      subscription: true
+    })
+
+    return testService.listen(0)
+  }
+
+  function createGateway () {
+    const testServicePort = testService.server.address().port
+
+    gateway = Fastify()
+    gateway.register(GQL, {
+      subscription: true,
+      gateway: {
+        services: [{
+          name: 'testService',
+          url: `http://localhost:${testServicePort}/graphql`,
+          wsUrl: `ws://localhost:${testServicePort}/graphql`
+        }]
+      }
+    })
+
+    return gateway.listen(0)
+  }
+
+  function runSubscription () {
+    const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(async () => {
+      client.destroy()
+      await gateway.close()
+      await testService.close()
+    })
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            testEvent
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            testEvent 
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    let end
+
+    const endPromise = new Promise(resolve => {
+      end = resolve
+    })
+
+    client.on('data', (chunk) => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              testEvent: 1
+            }
+          }
+        }))
+
+        client.end()
+        end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        gateway.inject({
+          method: 'POST',
+          url: '/graphql',
+          body: {
+            query: `
+              mutation {
+                addTestEvent(value: 1)
+              }
+            `
+          }
+        })
+      }
+    })
+
+    return endPromise
+  }
+
+  await createTestService()
+  await createGateway()
+  await runSubscription()
 })

@@ -5,15 +5,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x]
+        node-version: [12.x, 14.x, 16.x]
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.5
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2.4.1
         with:
           node-version: ${{ matrix.node-version }}
       - name: Install Dependencies
         run: npm install --ignore-scripts
       - name: Test
         run: npm test
+  automerge:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v2.5.0
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}

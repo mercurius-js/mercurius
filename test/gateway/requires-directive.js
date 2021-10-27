@@ -4,7 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('../..')
 
-async function createService (t, schema, resolvers = {}) {
+async function createService (schema, resolvers = {}) {
   const service = Fastify()
   service.register(GQL, {
     schema,
@@ -13,43 +13,79 @@ async function createService (t, schema, resolvers = {}) {
   })
   await service.listen(0)
 
-  return [service, service.server.address().port]
+  return service
 }
 
-const users = {
-  u1: {
-    id: 'u1',
-    name: 'John'
-  },
-  u2: {
-    id: 'u2',
-    name: 'Jane'
+async function createGateway (...services) {
+  const gateway = Fastify()
+  const teardown = async () => {
+    await gateway.close()
+    for (const service of services) {
+      await service.close()
+    }
   }
+  const servicesMap = services.map((service, i) => ({
+    name: `service${i}`,
+    url: `http://localhost:${service.server.address().port}/graphql`
+  }))
+
+  gateway.register(GQL, {
+    gateway: {
+      services: servicesMap
+    }
+  })
+
+  await gateway.listen(0)
+  return { gateway, teardown }
 }
 
-const posts = {
-  p1: {
-    pid: 'p1',
-    title: 'Post 1',
-    content: 'Content 1',
-    authorId: 'u1'
-  },
-  p2: {
-    pid: 'p2',
-    title: 'Post 2',
-    content: 'Content 2',
-    authorId: 'u2'
-  },
-  p3: {
-    pid: 'p3',
-    title: 'Post 3',
-    content: 'Content 3',
-    authorId: 'u2'
-  }
+function gatewayRequest (gateway, query) {
+  return gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query
+    })
+  })
 }
 
 test('gateway handles @requires directive correctly', async (t) => {
-  const [userService, userServicePort] = await createService(t, `
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const posts = {
+    p1: {
+      pid: 'p1',
+      title: 'Post 1',
+      content: 'Content 1',
+      authorId: 'u1'
+    },
+    p2: {
+      pid: 'p2',
+      title: 'Post 2',
+      content: 'Content 2',
+      authorId: 'u2'
+    },
+    p3: {
+      pid: 'p3',
+      title: 'Post 3',
+      content: 'Content 3',
+      authorId: 'u2'
+    }
+  }
+
+  const userService = await createService(`
     extend type Query {
       me: User
     }
@@ -83,7 +119,7 @@ test('gateway handles @requires directive correctly', async (t) => {
     }
   })
 
-  const [biographyService, biographyServicePort] = await createService(t, `
+  const biographyService = await createService(`
     type User @key(fields: "id") @extends {
       id: ID! @external
       name: String @external
@@ -98,25 +134,8 @@ test('gateway handles @requires directive correctly', async (t) => {
     }
   })
 
-  const gateway = Fastify()
-  t.tearDown(async () => {
-    await gateway.close()
-    await biographyService.close()
-    await userService.close()
-  })
-  gateway.register(GQL, {
-    gateway: {
-      services: [{
-        name: 'post',
-        url: `http://localhost:${userServicePort}/graphql`
-      }, {
-        name: 'rating',
-        url: `http://localhost:${biographyServicePort}/graphql`
-      }]
-    }
-  })
-
-  await gateway.listen(0)
+  const { gateway, teardown } = await createGateway(biographyService, userService)
+  t.teardown(teardown)
 
   const query = `
     query {
@@ -128,19 +147,9 @@ test('gateway handles @requires directive correctly', async (t) => {
       }
     }   
   `
+  const res = await gatewayRequest(gateway, query)
 
-  const res = await gateway.inject({
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json'
-    },
-    url: '/graphql',
-    body: JSON.stringify({
-      query
-    })
-  })
-
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         friends: [
@@ -150,6 +159,293 @@ test('gateway handles @requires directive correctly', async (t) => {
           }
         ]
       }
+    }
+  })
+})
+
+test('gateway handles @requires directive correctly from different services', async (t) => {
+  const regions = [{
+    id: 1,
+    city: 'London'
+  }, {
+    id: 2,
+    city: 'Paris'
+  }]
+
+  const sizes = [{
+    id: 1,
+    cpus: 10,
+    memory: 10
+  }, {
+    id: 2,
+    cpus: 20,
+    memory: 20
+  }, {
+    id: 3,
+    cpus: 30,
+    memory: 30
+  }]
+
+  const dictService = await createService(`
+    type Size @key(fields: "id") {
+      id: Int!
+      cpus: Int!
+      memory: Int!
+    }
+
+    type Region @key(fields: "id") {
+      id: Int!
+      city: String!
+    }
+
+    extend type Host @key(fields: "id") {
+      id: Int! @external
+      size: Int! @external
+      region: Int! @external
+      sizeData: Size! @requires(fields: "size")
+      regionData: Region! @requires(fields: "region")
+    }`, {
+    Host: {
+      regionData (host) {
+        return host.region && regions.find(r => r.id === host.region)
+      },
+      sizeData (host) {
+        return host.size && sizes.find(s => s.id === host.size)
+      }
+    }
+  })
+
+  const hosts = [{
+    id: 1,
+    name: 'test1',
+    region: 1,
+    size: 1
+  }, {
+    id: 1,
+    name: 'test2',
+    region: 2,
+    size: 2
+  }]
+
+  const hostService = await createService(`
+    extend type Query {
+      hosts: [Host]
+    }
+
+    type Host @key(fields: "id") {
+      id: Int!
+      name: String!
+      region: Int!
+      size: Int!
+    }`, {
+    Query: {
+      hosts (parent, args, context, info) {
+        return hosts
+      }
+    }
+  })
+
+  const { gateway, teardown } = await createGateway(hostService, dictService)
+  t.teardown(teardown)
+
+  t.plan(2)
+
+  t.test('should retrieve @requires fields from different services', async (t) => {
+    const query = `
+    query {
+      hosts {
+        name
+        sizeData {
+          cpus
+        }
+      }
+    }`
+    const res = await gatewayRequest(gateway, query)
+    t.same(JSON.parse(res.body), {
+      data: {
+        hosts: [
+          {
+            name: 'test1',
+            sizeData: {
+              cpus: 10
+            }
+          },
+          {
+            name: 'test2',
+            sizeData: {
+              cpus: 20
+            }
+          }
+        ]
+      }
+    })
+  })
+
+  t.test('should retrieve multiple @requires fields from different services', async (t) => {
+    const query = `
+    query {
+      hosts {
+        name
+        sizeData {
+          cpus
+        },
+        regionData {
+          city
+        }
+      }
+    }`
+    const res = await gatewayRequest(gateway, query)
+    t.same(JSON.parse(res.body), {
+      data: {
+        hosts: [
+          {
+            name: 'test1',
+            sizeData: {
+              cpus: 10
+            },
+            regionData: {
+              city: 'London'
+            }
+          },
+          {
+            name: 'test2',
+            sizeData: {
+              cpus: 20
+            },
+            regionData: {
+              city: 'Paris'
+            }
+          }
+        ]
+      }
+    })
+  })
+})
+
+test('gateway handles @requires directive correctly apart of other directives', async (t) => {
+  const regions = [{
+    id: 1,
+    city: 'London'
+  }, {
+    id: 2,
+    city: 'Paris'
+  }]
+
+  const sizes = [{
+    id: 1,
+    cpus: 10,
+    memory: 10
+  }, {
+    id: 2,
+    cpus: 20,
+    memory: 20
+  }, {
+    id: 3,
+    cpus: 30,
+    memory: 30
+  }]
+
+  const dictService = await createService(`
+    directive @custom on OBJECT | FIELD_DEFINITION
+
+    type Size @key(fields: "id") {
+      id: Int!
+      cpus: Int!
+      memory: Int!
+    }
+
+    type Region @key(fields: "id") {
+      id: Int!
+      city: String!
+    }
+
+    type Metadata @key(fields: "id") {
+      id: Int!
+      description: String!
+    }
+
+    extend type Host @key(fields: "id") {
+      id: Int! @external
+      size: Int! @external
+      region: Int! @external
+      metadata: Metadata @custom
+      sizeData: Size! @requires(fields: "size")
+      regionData: Region! @requires(fields: "region")
+    }`, {
+    Host: {
+      regionData (host) {
+        return host.region && regions.find(r => r.id === host.region)
+      },
+      sizeData (host) {
+        return host.size && sizes.find(s => s.id === host.size)
+      }
+    }
+  })
+
+  const hosts = [{
+    id: 1,
+    name: 'test1',
+    region: 1,
+    size: 1
+  }, {
+    id: 1,
+    name: 'test2',
+    region: 2,
+    size: 2
+  }]
+
+  const hostService = await createService(`
+    extend type Query {
+      hosts: [Host]
+    }
+
+    type Host @key(fields: "id") {
+      id: Int!
+      name: String!
+      region: Int!
+      size: Int!
+    }`, {
+    Query: {
+      hosts (parent, args, context, info) {
+        return hosts
+      }
+    }
+  })
+
+  const { gateway, teardown } = await createGateway(hostService, dictService)
+  t.teardown(teardown)
+
+  const query = `
+    query {
+      hosts {
+        name
+        sizeData {
+          cpus
+        }
+        metadata {
+          description
+        }        
+      }
+    }`
+  const res = await gatewayRequest(gateway, query)
+  t.same(JSON.parse(res.body), {
+    data: {
+      hosts: [
+        {
+          name: 'test1',
+          sizeData: {
+            cpus: 10
+          },
+          metadata: null
+        },
+        {
+          name: 'test2',
+          sizeData: {
+            cpus: 20
+          },
+          metadata: null
+        }
+      ]
     }
   })
 })

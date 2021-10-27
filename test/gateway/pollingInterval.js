@@ -18,7 +18,7 @@ test('Polling schemas', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
-  t.tearDown(() => clock.uninstall())
+  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -37,7 +37,7 @@ test('Polling schemas', async (t) => {
 
   const userService = Fastify()
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
   })
@@ -91,7 +91,7 @@ test('Polling schemas', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -119,7 +119,7 @@ test('Polling schemas', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     errors: [
       {
         message:
@@ -171,7 +171,7 @@ test('Polling schemas', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       me: {
         id: 'u1',
@@ -207,7 +207,7 @@ test('Polling schemas (gateway.polling interval is not a number)', async (t) => 
     }
   })
 
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
   })
@@ -251,7 +251,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
-  t.tearDown(() => clock.uninstall())
+  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -271,7 +271,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   const userService = Fastify()
   const gateway = Fastify()
 
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
   })
@@ -331,7 +331,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
 
     await clock.tickAsync()
 
-    t.deepEqual(JSON.parse(body), {
+    t.same(JSON.parse(body), {
       data: {
         me: {
           id: 'u1',
@@ -361,7 +361,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.same(JSON.parse(body), {
       errors: [
         {
           message:
@@ -396,7 +396,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.same(JSON.parse(body), {
       errors: [
         {
           message:
@@ -427,7 +427,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
 
   const userService = Fastify()
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
   })
@@ -482,7 +482,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.same(JSON.parse(body), {
       data: {
         me: {
           id: 'u1',
@@ -512,7 +512,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
       })
     })
 
-    t.deepEqual(JSON.parse(body), {
+    t.same(JSON.parse(body), {
       errors: [
         {
           message:
@@ -537,7 +537,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
-  t.tearDown(() => clock.uninstall())
+  t.teardown(() => clock.uninstall())
 
   const user = {
     id: 'u1',
@@ -547,7 +547,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
 
   const userService = Fastify()
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
   })
@@ -610,7 +610,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -665,7 +665,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     errors: [
       {
         message: 'Cannot query field "me" on type "Query". Did you mean "me2"?',
@@ -693,7 +693,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       me2: {
         id: 'u1',
@@ -708,7 +708,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
-  t.tearDown(() => clock.uninstall())
+  t.teardown(() => clock.uninstall())
   const oldSchema = `
     directive @extends on INTERFACE | OBJECT
 
@@ -785,7 +785,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -797,7 +797,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
   await userService.close()
 
   const restartedUserService = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
     await restartedUserService.close()
@@ -872,7 +872,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     errors: [
       {
         message: 'Cannot query field "me" on type "Query". Did you mean "me2"?',
@@ -900,7 +900,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     })
   })
 
-  t.deepEqual(JSON.parse(res3.body), {
+  t.same(JSON.parse(res3.body), {
     data: {
       create: {
         id: 'u1',
@@ -911,6 +911,8 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
 })
 
 test('Polling schemas (subscriptions should be handled)', async (t) => {
+  t.plan(12)
+
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
@@ -953,7 +955,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   const userService = Fastify()
   const gateway = Fastify()
 
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
   })
@@ -1013,15 +1015,19 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     encoding: 'utf8',
     objectMode: true
   })
-  t.tearDown(client.destroy.bind(client))
+  t.teardown(client.destroy.bind(client))
   client.setEncoding('utf8')
 
-  process.nextTick(() => {
-    client.write(
-      JSON.stringify({
-        type: 'connection_init'
-      })
-    )
+  client.write(
+    JSON.stringify({
+      type: 'connection_init'
+    })
+  )
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
 
     client.write(
       JSON.stringify({
@@ -1039,25 +1045,22 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         }
       })
     )
-  })
 
-  {
-    const [chunk] = await once(client, 'data')
-    const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    // We need the event loop to spin twice
+    // for the subscription to be created
+    await immediate()
+    await immediate()
 
-    process.nextTick(() => {
-      gateway.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
-            mutation {
-              triggerUser
-            }
-          `
-        }
-      })
+    gateway.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            triggerUser
+          }
+        `
+      }
     })
   }
 
@@ -1070,7 +1073,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
     const { payload: { data: { updatedUser = {} } = {} } = {} } = data
 
-    t.deepEqual(updatedUser, {
+    t.same(updatedUser, {
       id: 'u1',
       name: 'John'
     })
@@ -1107,7 +1110,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   await immediate()
   await immediate()
 
-  t.deepEqual(Object.keys(gateway.graphql.schema.getType('User').getFields()), [
+  t.same(Object.keys(gateway.graphql.schema.getType('User').getFields()), [
     'id',
     'name',
     'lastName'
@@ -1126,15 +1129,19 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     encoding: 'utf8',
     objectMode: true
   })
-  t.tearDown(client2.destroy.bind(client2))
+  t.teardown(client2.destroy.bind(client2))
   client2.setEncoding('utf8')
 
-  process.nextTick(() => {
-    client2.write(
-      JSON.stringify({
-        type: 'connection_init'
-      })
-    )
+  client2.write(
+    JSON.stringify({
+      type: 'connection_init'
+    })
+  )
+
+  {
+    const [chunk] = await once(client2, 'data')
+    const data = JSON.parse(chunk)
+    t.equal(data.type, 'connection_ack')
 
     client2.write(
       JSON.stringify({
@@ -1153,38 +1160,34 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         }
       })
     )
-  })
 
-  {
-    const [chunk] = await once(client2, 'data')
-    const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    // We need the event loop to spin twice
+    // for the subscription to be created
+    await immediate()
+    await immediate()
 
-    process.nextTick(() => {
-      gateway.inject({
-        method: 'POST',
-        url: '/graphql',
-        body: {
-          query: `
-            mutation {
-              triggerUser
-            }
-          `
-        }
-      })
+    gateway.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            triggerUser
+          }
+        `
+      }
     })
   }
 
   {
     const [chunk] = await once(client2, 'data')
     const data = JSON.parse(chunk)
-    client2.end()
     t.equal(data.type, 'data')
     t.equal(data.id, 2)
 
     const { payload: { data: { updatedUser = {} } = {} } = {} } = data
 
-    t.deepEqual(updatedUser, {
+    t.same(updatedUser, {
       id: 'u1',
       name: 'John',
       lastName: 'Doe'
@@ -1192,6 +1195,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   }
 
   t.equal(ws2.readyState, WebSocket.OPEN)
+  client2.end()
 
   await gateway.close()
   await userService.close()

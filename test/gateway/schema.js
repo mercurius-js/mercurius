@@ -139,7 +139,7 @@ test('It builds the gateway schema correctly', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -224,7 +224,7 @@ test('It builds the gateway schema correctly', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -346,7 +346,7 @@ test('It support variable inside nested arguments', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await userService.close()
   })
@@ -398,7 +398,7 @@ test('It support variable inside nested arguments', async (t) => {
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: user
     }
@@ -473,7 +473,7 @@ test('Should not throw on nullable reference', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -515,7 +515,7 @@ test('Should not throw on nullable reference', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       topPosts: [
         {
@@ -584,7 +584,7 @@ test('Should handle InlineFragment', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await productService.close()
   })
@@ -619,7 +619,7 @@ test('Should handle InlineFragment', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       products: [
         {
@@ -714,7 +714,7 @@ test('Should support array references with _entities query', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -756,7 +756,7 @@ test('Should support array references with _entities query', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       topPosts: [
         {
@@ -810,7 +810,7 @@ test('Should support multiple `extends` of the same type in the service SDL', as
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await productService.close()
   })
@@ -836,7 +836,7 @@ test('Should support multiple `extends` of the same type in the service SDL', as
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       ping: 1
     }
@@ -853,7 +853,7 @@ test('Should support multiple `extends` of the same type in the service SDL', as
     })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       pong: 2
     }
@@ -937,7 +937,7 @@ test('Should support array references with _entities query and empty response', 
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -979,7 +979,7 @@ test('Should support array references with _entities query and empty response', 
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       topPosts: [
         {
@@ -1076,7 +1076,7 @@ test('Should support array references with _entities query and empty response an
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -1118,7 +1118,7 @@ test('Should support array references with _entities query and empty response an
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       topPosts: [
         {
@@ -1190,7 +1190,7 @@ test('Should handle union with InlineFragment', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await productService.close()
   })
@@ -1233,7 +1233,7 @@ test('Should handle union with InlineFragment', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       shelve: {
         id: 1,
@@ -1279,7 +1279,7 @@ test('Gateway sends initHeaders with _service sdl query', async (t) => {
   await service.listen(0)
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await service.close()
   })
@@ -1326,7 +1326,7 @@ test('Gateway sends initHeaders function result with _service sdl query', async 
   await service.listen(0)
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await service.close()
   })
@@ -1407,7 +1407,7 @@ test('Should handle interface', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await productService.close()
   })
@@ -1450,7 +1450,7 @@ test('Should handle interface', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       shelve: {
         id: 1,
@@ -1567,7 +1567,7 @@ test('Should handle interface referenced multiple times in different services', 
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await dictionariesService.close()
     await bookService.close()
@@ -1608,7 +1608,7 @@ test('Should handle interface referenced multiple times in different services', 
     body: JSON.stringify({ query: query1 })
   })
 
-  t.deepEqual(JSON.parse(res1.body), {
+  t.same(JSON.parse(res1.body), {
     data: {
       books: [
         {
@@ -1649,7 +1649,7 @@ test('Should handle interface referenced multiple times in different services', 
     body: JSON.stringify({ query: query2 })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       dictionaries: [
         {
@@ -1854,7 +1854,7 @@ test('Should handle complex and nested interfaces with external types', async (t
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await configCService.close()
     await configABService.close()
@@ -1917,7 +1917,7 @@ test('Should handle complex and nested interfaces with external types', async (t
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       users: [
         {
@@ -2110,7 +2110,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await postService.close()
     await userService.close()
@@ -2188,7 +2188,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
     })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       me: {
         id: 'u1',
@@ -2290,7 +2290,7 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await brokenService.close()
     await workingService.close()
@@ -2320,7 +2320,7 @@ test('Non mandatory gateway failure wont stop gateway creation', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       hello: 'world'
     }
@@ -2349,7 +2349,7 @@ test('Update the schema', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await service.close()
   })
@@ -2377,7 +2377,7 @@ test('Update the schema', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(
+  t.same(
     JSON.parse(res.body).errors[0].message,
     'Cannot query field "world" on type "Query".'
   )
@@ -2396,7 +2396,7 @@ test('Update the schema', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(JSON.parse(res2.body), {
+  t.same(JSON.parse(res2.body), {
     data: {
       hello: 'world',
       world: 'hello'
@@ -2418,7 +2418,7 @@ test('Update the schema without any changes', async (t) => {
   })
 
   const gateway = Fastify()
-  t.tearDown(async () => {
+  t.teardown(async () => {
     await gateway.close()
     await service.close()
   })
@@ -2445,7 +2445,7 @@ test('Update the schema without any changes', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.deepEqual(
+  t.same(
     JSON.parse(res.body), {
       data: {
         hello: 'world'
@@ -2456,5 +2456,5 @@ test('Update the schema without any changes', async (t) => {
   gateway.graphql.gateway.serviceMap.working.setSchema(schema)
   const newSchema = await gateway.graphql.gateway.refresh()
 
-  t.equals(newSchema, null)
+  t.equal(newSchema, null)
 })

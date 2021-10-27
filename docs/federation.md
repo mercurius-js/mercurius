@@ -168,7 +168,7 @@ gateway.register(mercurius, {
       {
         name: 'user',
         url: 'http://localhost:4001/graphql',
-        rewriteHeaders: (headers) => {
+        rewriteHeaders: (headers, context) => {
           if (headers.authorization) {
             return {
               authorization: headers.authorization
@@ -227,7 +227,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {
@@ -264,7 +264,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {
@@ -331,7 +331,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {
@@ -362,7 +362,7 @@ const mercurius = require('mercurius')
 const server = Fastify()
 
 server.register(mercurius, {
-  graphiql: 'playground',
+  graphiql: true,
   gateway: {
     services: [
       {
@@ -374,14 +374,14 @@ server.register(mercurius, {
         name: 'company',
         url: 'http://localhost:3001/graphql'
       }
-    ]
+    ],
+    errorHandler: (error, service) => {
+      if (service.mandatory) {
+        server.log.error(error)
+      }
+    },
   },
-  pollingInterval: 2000,
-  errorHandler: (error, service) => {
-    if (service.mandatory) {
-      logger.error(error)
-    }
-  }
+  pollingInterval: 2000
 })
 
 server.listen(3002)

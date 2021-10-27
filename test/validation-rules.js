@@ -75,7 +75,7 @@ test('validationRules array - passes when no errors', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules array - works with empty validationRules', async (t) => {
@@ -92,7 +92,7 @@ test('validationRules array - works with empty validationRules', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - reports an error', async (t) => {
@@ -102,6 +102,7 @@ test('validationRules - reports an error', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: () => [
       // validation rule that reports an error
       function (context) {
@@ -132,6 +133,7 @@ test('validationRules - passes when no errors', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: () => [
       // validation rule that reports no errors
       function (_context) {
@@ -148,7 +150,7 @@ test('validationRules - passes when no errors', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - works with empty validationRules', async (t) => {
@@ -158,6 +160,7 @@ test('validationRules - works with empty validationRules', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: () => []
   })
 
@@ -165,7 +168,7 @@ test('validationRules - works with empty validationRules', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - works with missing validationRules', async (t) => {
@@ -182,7 +185,7 @@ test('validationRules - works with missing validationRules', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
 })
 
 test('validationRules - includes graphql request metadata', async (t) => {
@@ -198,10 +201,11 @@ test('validationRules - includes graphql request metadata', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
+    cache: false,
     validationRules: function ({ source, variables, operationName }) {
       t.equal(source, query)
-      t.deepEqual(variables, { x: 2, y: 2 })
-      t.deepEqual(operationName, 'Add')
+      t.same(variables, { x: 2, y: 2 })
+      t.same(operationName, 'Add')
       return [
         // validation rule that reports no errors
         function (_context) {
@@ -219,5 +223,25 @@ test('validationRules - includes graphql request metadata', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query, null, { x: 2, y: 2 }, 'Add')
-  t.deepEqual(res, { data: { add: 4 } })
+  t.same(res, { data: { add: 4 } })
+})
+
+test('validationRules - errors if cache is used with the function', async (t) => {
+  t.plan(1)
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    cache: true,
+    validationRules: () => []
+  })
+
+  // needed so that graphql is defined
+
+  try {
+    await app.ready()
+  } catch (e) {
+    t.equal(e.message, 'Invalid options: Using a function for the validationRules is incompatible with query caching')
+  }
 })

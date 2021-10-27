@@ -31,7 +31,7 @@ test('reply decorator', async (t) => {
     url: '/'
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -79,7 +79,7 @@ test('reply decorator operationName', async (t) => {
     url: '/'
   })
 
-  t.deepEqual(JSON.parse(res.body), {
+  t.same(JSON.parse(res.body), {
     data: {
       add: 4
     }

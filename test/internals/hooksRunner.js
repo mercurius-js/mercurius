@@ -13,17 +13,17 @@ test('hooksRunner - Basic', (t) => {
   }
 
   function fn1 (a) {
-    t.strictEqual(a, 'a')
+    t.equal(a, 'a')
     return Promise.resolve()
   }
 
   function fn2 (a) {
-    t.strictEqual(a, 'a')
+    t.equal(a, 'a')
     return Promise.resolve()
   }
 
   function fn3 (a) {
-    t.strictEqual(a, 'a')
+    t.equal(a, 'a')
     return Promise.resolve()
   }
 })
@@ -34,7 +34,7 @@ test('hooksRunner - In case of error should skip subsequent functions', async (t
   try {
     await hooksRunner([fn1, fn2, fn3], iterator, 'a')
   } catch (err) {
-    t.strictEqual(err.message, 'kaboom')
+    t.equal(err.message, 'kaboom')
   }
 
   function iterator (fn, a) {
@@ -42,12 +42,12 @@ test('hooksRunner - In case of error should skip subsequent functions', async (t
   }
 
   function fn1 (a) {
-    t.strictEqual(a, 'a')
+    t.equal(a, 'a')
     return Promise.resolve()
   }
 
   function fn2 (a) {
-    t.strictEqual(a, 'a')
+    t.equal(a, 'a')
     return Promise.reject(new Error('kaboom'))
   }
 
@@ -71,12 +71,12 @@ test('hooksRunner - Be able to exit before its natural end', async (t) => {
   }
 
   function fn1 (a) {
-    t.strictEqual(a, 'a')
+    t.equal(a, 'a')
     return Promise.resolve()
   }
 
   function fn2 (a) {
-    t.strictEqual(a, 'a')
+    t.equal(a, 'a')
     shouldStop = true
     return Promise.resolve()
   }
@@ -98,22 +98,22 @@ test('hooksRunner - Promises that resolve to a value do not change the state', (
   }
 
   function fn1 (state) {
-    t.strictEqual(state, originalState)
+    t.equal(state, originalState)
     return Promise.resolve(null)
   }
 
   function fn2 (state) {
-    t.strictEqual(state, originalState)
+    t.equal(state, originalState)
     return Promise.resolve('string')
   }
 
   function fn3 (state) {
-    t.strictEqual(state, originalState)
+    t.equal(state, originalState)
     return Promise.resolve({ object: true })
   }
 
   function fn4 (state) {
-    t.strictEqual(state, originalState)
+    t.equal(state, originalState)
   }
 })
 
@@ -123,7 +123,7 @@ test('hooksRunner - Should handle when iterator errors', async (t) => {
   try {
     await hooksRunner([fn1, fn2], iterator, 'a')
   } catch (err) {
-    t.strictEqual(err.message, 'kaboom')
+    t.equal(err.message, 'kaboom')
   }
 
   function iterator (fn) {
@@ -147,23 +147,23 @@ test('preExecutionHooksRunner - Basic', (t) => {
   preExecutionHooksRunner([fn1, fn2, fn3], originalRequest)
 
   function fn1 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve()
   }
 
   function fn2 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve()
   }
 
   function fn3 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve()
   }
 })
@@ -176,20 +176,20 @@ test('preExecutionHooksRunner - In case of error should skip subsequent function
   try {
     await preExecutionHooksRunner([fn1, fn2, fn3], originalRequest)
   } catch (err) {
-    t.strictEqual(err.message, 'kaboom')
+    t.equal(err.message, 'kaboom')
   }
 
   function fn1 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve()
   }
 
   function fn2 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.reject(new Error('kaboom'))
   }
 
@@ -206,27 +206,27 @@ test('preExecutionHooksRunner - Promises that resolve to a value do not change t
   await preExecutionHooksRunner([fn1, fn2, fn3], originalRequest)
 
   function fn1 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve(null)
   }
 
   function fn2 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve('string')
   }
 
   function fn3 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve({ object: true })
   }
 
-  t.deepEqual(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
+  t.same(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
 })
 
 test('preExecutionHooksRunner - Promises can modify a query document', async (t) => {
@@ -237,14 +237,14 @@ test('preExecutionHooksRunner - Promises can modify a query document', async (t)
   const { modifiedDocument } = await preExecutionHooksRunner([fn1], originalRequest)
 
   function fn1 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.deepEqual(document, { old: 'old' })
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.same(document, { old: 'old' })
+    t.equal(context, 'context')
     return Promise.resolve({ document: { new: 'new' } })
   }
 
-  t.deepEqual(originalRequest, { schema: 'schema', document: { old: 'old' }, context: 'context' })
-  t.deepEqual(modifiedDocument, { new: 'new' })
+  t.same(originalRequest, { schema: 'schema', document: { old: 'old' }, context: 'context' })
+  t.same(modifiedDocument, { new: 'new' })
 })
 
 test('preExecutionHooksRunner - Promises can add to existing execution errors', async (t) => {
@@ -255,14 +255,14 @@ test('preExecutionHooksRunner - Promises can add to existing execution errors', 
   const { errors } = await preExecutionHooksRunner([fn1], originalRequest)
 
   function fn1 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve({ errors: [{ message: 'new errors' }] })
   }
 
-  t.deepEqual(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
-  t.deepEqual(errors, [{ message: 'new errors' }])
+  t.same(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
+  t.same(errors, [{ message: 'new errors' }])
 })
 
 test('preExecutionHooksRunner - Should handle thrown errors', async t => {
@@ -273,21 +273,21 @@ test('preExecutionHooksRunner - Should handle thrown errors', async t => {
   try {
     await preExecutionHooksRunner([fn1, fn2, fn3], originalRequest)
   } catch (err) {
-    t.strictEqual(err.message, 'kaboom')
-    t.deepEqual(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
+    t.equal(err.message, 'kaboom')
+    t.same(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
   }
 
   function fn1 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve()
   }
 
   function fn2 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     throw new Error('kaboom')
   }
 
@@ -304,16 +304,16 @@ test('preExecutionHooksRunner - Should handle non promise functions ', async t =
   await preExecutionHooksRunner([fn1, fn2], originalRequest)
 
   function fn1 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
     return Promise.resolve()
   }
 
   function fn2 (schema, document, context) {
-    t.strictEqual(schema, 'schema')
-    t.strictEqual(document, 'document')
-    t.strictEqual(context, 'context')
+    t.equal(schema, 'schema')
+    t.equal(document, 'document')
+    t.equal(context, 'context')
   }
-  t.deepEqual(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
+  t.same(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
 })
