@@ -13,7 +13,7 @@ Now you can define a schema using classes and decorators:
 
 ```ts
 // recipe.ts
-import { Field, ObjectType, Int, Float, Resolver, Query } from "type-graphql";
+import { Arg, Field, ObjectType, Int, Float, Resolver, Query } from "type-graphql";
 
 @ObjectType({ description: "Object representing cooking recipe" })
 export class Recipe {
@@ -44,7 +44,7 @@ export class Recipe {
 @Resolver()
 export class RecipeResolver {
   @Query((returns) => Recipe, { nullable: true })
-  async recipe(@Arg("title") title: string): Promise<Recipe | undefined> {
+  async recipe(@Arg("title") title: string): Promise<Omit<Recipe, 'specification'> | undefined> {
     return {
       description: "Desc 1",
       title: "Recipe 1",
@@ -62,6 +62,7 @@ This can be linked to the Mercurius plugin:
 import "reflect-metadata";
 import fastify from "fastify";
 import mercurius from "mercurius";
+import { buildSchema } from 'type-graphql'
 
 import { RecipeResolver } from "./recipe";
 
