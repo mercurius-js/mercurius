@@ -62,7 +62,7 @@
     "fastify-static": "^4.2.2",
     "fastify-websocket": "^4.0.0",
     "graphql": "^15.5.1",
-    "graphql-jit": "^0.6.0",
+    "graphql-jit": "^0.7.0",
     "mqemitter": "^4.4.1",
     "p-map": "^4.0.0",
     "promise.allsettled": "^1.0.4",
