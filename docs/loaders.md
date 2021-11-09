@@ -9,10 +9,11 @@ also cache the results, so that other parts of the GraphQL do not have
 to fetch the same data.
 
 Each loader function has the signature `loader(queries, context)`.
-`queries` is an array of objects defined as `{ obj, params }` where
-`obj` is the current object and `params` are the GraphQL params (those
-are the first two parameters of a normal resolver). The `context` is the
-GraphQL context, and it includes a `reply` object.
+`queries` is an array of objects defined as `{ obj, params, info }` where
+`obj` is the current object, `params` are the GraphQL params (those
+are the first two parameters of a normal resolver) and `info` contains
+additional information about the query and execution. The `context` is 
+the GraphQL context, and it includes a `reply` object.
 
 Example:
 
