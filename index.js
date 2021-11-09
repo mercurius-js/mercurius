@@ -368,12 +368,14 @@ const plugin = fp(async function (app, opts) {
 
     function defineLoader (name) {
       // async needed because of throw
-      return async function (obj, params, { reply }) {
+      return async function (obj, params, { reply }, info) {
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
 
-        return reply[kLoaders][name]({ obj, params })
+        const query = opts.cache === false ? { obj, params, info } : { obj, params }
+
+        return reply[kLoaders][name](query)
       }
     }
 
