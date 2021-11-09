@@ -258,7 +258,7 @@ const plugin = fp(async function (app, opts) {
 
     context = Object.assign(context, { reply: this, app })
     if (app[kFactory]) {
-      this[kLoaders] = factory.create(context)
+      this[kLoaders] = app[kFactory].create(context)
     }
 
     return app.graphql(source, context, variables, operationName)
