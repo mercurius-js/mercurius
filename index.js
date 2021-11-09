@@ -527,14 +527,18 @@ const plugin = fp(async function (app, opts) {
     }
 
     // Trigger preExecution hook
+    let modifiedSchema
     let modifiedDocument
     if (context.preExecution !== null) {
-      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
     }
 
     // minJit is 0 by default
     if (shouldCompileJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+      cached.jit = compileQuery(
+        modifiedSchema || fastifyGraphQl.schema,
+        modifiedDocument || document, operationName
+      )
     }
 
     if (cached && cached.jit !== null) {
@@ -544,7 +548,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     const execution = await execute(
-      fastifyGraphQl.schema,
+      modifiedSchema || fastifyGraphQl.schema,
       modifiedDocument || document,
       root,
       context,

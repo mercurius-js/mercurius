@@ -2,7 +2,7 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
-const { parse, GraphQLSchema } = require('graphql')
+const { parse, buildSchema, GraphQLSchema } = require('graphql')
 const { promisify } = require('util')
 const GQL = require('..')
 
@@ -521,6 +521,56 @@ test('preExecution hooks should be able to modify the query document AST', async
   t.same(JSON.parse(res.body), {
     data: {
       add: 10
+    }
+  })
+})
+
+test('preExecution hooks should be able to modify the schema document AST', async t => {
+  t.plan(4)
+  const app = await createTestServer(t)
+
+  const query = `{ 
+    __type(name:"Query") { 
+      name
+      fields {
+        name
+      }  
+    }
+  }`
+
+  app.graphql.addHook('preExecution', async (schema, document, context) => {
+    t.type(schema, GraphQLSchema)
+    t.same(document, parse(query))
+    t.type(context, 'object')
+
+    const modifiedSchema = `
+      type Query {
+        add(x: Int, y: Int): Int
+        subtract(x: Int, y: Int): Int
+      }
+    `
+
+    return {
+      schema: buildSchema(modifiedSchema)
+    }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      __type: {
+        name: 'Query',
+        fields: [
+          { name: 'add' },
+          { name: 'subtract' }
+        ]
+      }
     }
   })
 })
