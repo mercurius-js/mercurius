@@ -783,58 +783,58 @@ test('support info in loader', async (t) => {
 
   t.equal(res.statusCode, 200)
   t.strictSame(JSON.parse(res.body), {
-    "data": {
-      "dogs": [
+    data: {
+      dogs: [
         {
-          "dogName": "Max",
-          "age": 10,
-          "owner": {
-            "nickName": "Jennifer",
-            "age": 25
+          dogName: 'Max',
+          age: 10,
+          owner: {
+            nickName: 'Jennifer',
+            age: 25
           }
         },
         {
-          "dogName": "Charlie",
-          "age": 13,
-          "owner": {
-            "nickName": "Sarah",
-            "age": 35
+          dogName: 'Charlie',
+          age: 13,
+          owner: {
+            nickName: 'Sarah',
+            age: 35
           }
         },
         {
-          "dogName": "Buddy",
-          "age": 15,
-          "owner": {
-            "nickName": "Tracy",
-            "age": 45
+          dogName: 'Buddy',
+          age: 15,
+          owner: {
+            nickName: 'Tracy',
+            age: 45
           }
         },
         {
-          "dogName": "Max",
-          "age": 17,
-          "owner": {
-            "nickName": "Jennifer",
-            "age": 25
+          dogName: 'Max',
+          age: 17,
+          owner: {
+            nickName: 'Jennifer',
+            age: 25
           }
         }
       ],
-      "cats": [
+      cats: [
         {
-          "catName": "Charlie",
-          "owner": {
-            "age": 35
+          catName: 'Charlie',
+          owner: {
+            age: 35
           }
         },
         {
-          "catName": "Max",
-          "owner": {
-            "age": 25
+          catName: 'Max',
+          owner: {
+            age: 25
           }
         },
         {
-          "catName": "Buddy",
-          "owner": {
-            "age": 45
+          catName: 'Buddy',
+          owner: {
+            age: 45
           }
         }
       ]
