@@ -623,3 +623,221 @@ test('subscriptions properly execute loaders', t => {
     })
   })
 })
+
+test('support info in loader', async (t) => {
+  const app = Fastify()
+
+  const dogs = [{
+    dogName: 'Max',
+    age: 10
+  }, {
+    dogName: 'Charlie',
+    age: 13
+  }, {
+    dogName: 'Buddy',
+    age: 15
+  }, {
+    dogName: 'Max',
+    age: 17
+  }]
+
+  const cats = [{
+    catName: 'Charlie',
+    age: 10
+  }, {
+    catName: 'Max',
+    age: 13
+  }, {
+    catName: 'Buddy',
+    age: 15
+  }]
+
+  const owners = {
+    Max: {
+      nickName: 'Jennifer',
+      age: 25
+    },
+    Charlie: {
+      nickName: 'Sarah',
+      age: 35
+    },
+    Buddy: {
+      nickName: 'Tracy',
+      age: 45
+    }
+  }
+
+  const schema = `
+    type Human {
+      nickName: String!
+      age: Int!
+    }
+
+    type Dog {
+      dogName: String!
+      age: Int!
+      owner: Human
+    }
+
+    type Cat {
+      catName: String!
+      age: Int!
+      owner: Human
+    }
+
+    type Query {
+      dogs: [Dog]
+      cats: [Cat]
+    }
+  `
+
+  const query = `{
+    dogs {
+      dogName
+      age
+      owner {
+        nickName
+        age
+      }
+    }
+    cats {
+      catName
+      owner {
+        age
+      }
+    }
+  }`
+  const resolvers = {
+    Query: {
+      dogs: (_, params, context) => {
+        return dogs
+      },
+      cats: (_, params, context) => {
+        return cats
+      }
+    }
+  }
+
+  const loaders = {
+    Dog: {
+      async owner (queries, context) {
+        t.equal(context.app, app)
+        return queries.map(({ obj, info }) => {
+          // verify info properties
+          t.equal(info.operation.operation, 'query')
+
+          const resolverOutputParams = info.operation.selectionSet.selections[0].selectionSet.selections
+          t.equal(resolverOutputParams.length, 3)
+          t.equal(resolverOutputParams[0].name.value, 'dogName')
+          t.equal(resolverOutputParams[1].name.value, 'age')
+          t.equal(resolverOutputParams[2].name.value, 'owner')
+
+          const loaderOutputParams = resolverOutputParams[2].selectionSet.selections
+
+          t.equal(loaderOutputParams.length, 2)
+          t.equal(loaderOutputParams[0].name.value, 'nickName')
+          t.equal(loaderOutputParams[1].name.value, 'age')
+
+          return owners[obj.dogName]
+        })
+      }
+    },
+    Cat: {
+      async owner (queries, context) {
+        t.equal(context.app, app)
+        return queries.map(({ obj, info }) => {
+          // verify info properties
+          t.equal(info.operation.operation, 'query')
+
+          const resolverOutputParams = info.operation.selectionSet.selections[1].selectionSet.selections
+          t.equal(resolverOutputParams.length, 2)
+          t.equal(resolverOutputParams[0].name.value, 'catName')
+          t.equal(resolverOutputParams[1].name.value, 'owner')
+
+          const loaderOutputParams = resolverOutputParams[1].selectionSet.selections
+
+          t.equal(loaderOutputParams.length, 1)
+          t.equal(loaderOutputParams[0].name.value, 'age')
+
+          return owners[obj.catName]
+        })
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.strictSame(JSON.parse(res.body), {
+    "data": {
+      "dogs": [
+        {
+          "dogName": "Max",
+          "age": 10,
+          "owner": {
+            "nickName": "Jennifer",
+            "age": 25
+          }
+        },
+        {
+          "dogName": "Charlie",
+          "age": 13,
+          "owner": {
+            "nickName": "Sarah",
+            "age": 35
+          }
+        },
+        {
+          "dogName": "Buddy",
+          "age": 15,
+          "owner": {
+            "nickName": "Tracy",
+            "age": 45
+          }
+        },
+        {
+          "dogName": "Max",
+          "age": 17,
+          "owner": {
+            "nickName": "Jennifer",
+            "age": 25
+          }
+        }
+      ],
+      "cats": [
+        {
+          "catName": "Charlie",
+          "owner": {
+            "age": 35
+          }
+        },
+        {
+          "catName": "Max",
+          "owner": {
+            "age": 25
+          }
+        },
+        {
+          "catName": "Buddy",
+          "owner": {
+            "age": 45
+          }
+        }
+      ]
+    }
+  })
+})
