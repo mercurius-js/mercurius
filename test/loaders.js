@@ -71,8 +71,7 @@ test('loaders create batching resolvers', async (t) => {
     Dog: {
       async owner (queries, { reply }) {
         // note that the second entry for max is cached
-        const queriesObj = queries.map(({ obj, params }) => ({ obj, params }))
-        t.same(queriesObj, [{
+        t.same(queries, [{
           obj: {
             name: 'Max'
           },
@@ -85,11 +84,6 @@ test('loaders create batching resolvers', async (t) => {
         }, {
           obj: {
             name: 'Buddy'
-          },
-          params: {}
-        }, {
-          obj: {
-            name: 'Max'
           },
           params: {}
         }])
@@ -148,8 +142,7 @@ test('disable cache for each loader', async (t) => {
       owner: {
         async loader (queries, { reply }) {
           // note that the second entry for max is NOT cached
-          const queriesObj = queries.map(({ obj, params }) => ({ obj, params }))
-          t.same(queriesObj, [{
+          t.same(queries, [{
             obj: {
               name: 'Max'
             },
@@ -488,8 +481,7 @@ test('loaders support custom context', async (t) => {
       async owner (queries, { reply, test }) {
         t.equal(test, 'custom')
         // note that the second entry for max is cached
-        const queriesObj = queries.map(({ obj, params }) => ({ obj, params }))
-        t.same(queriesObj, [{
+        t.same(queries, [{
           obj: {
             name: 'Max'
           },
@@ -502,11 +494,6 @@ test('loaders support custom context', async (t) => {
         }, {
           obj: {
             name: 'Buddy'
-          },
-          params: {}
-        }, {
-          obj: {
-            name: 'Max'
           },
           params: {}
         }])
@@ -637,7 +624,7 @@ test('subscriptions properly execute loaders', t => {
   })
 })
 
-test('support info in loader', async (t) => {
+test('Pass info to loader if cache is disabled', async (t) => {
   const app = Fastify()
 
   const dogs = [{
@@ -781,7 +768,8 @@ test('support info in loader', async (t) => {
   app.register(GQL, {
     schema,
     resolvers,
-    loaders
+    loaders,
+    cache: false
   })
 
   await app.ready()
@@ -851,6 +839,72 @@ test('support info in loader', async (t) => {
           }
         }
       ]
+    }
+  })
+})
+
+test('should not pass info to loader if cache is enabled', async (t) => {
+  const app = Fastify()
+
+  const resolvers = {
+    Query: {
+      dogs: (_, params, context) => {
+        return dogs
+      }
+    }
+  }
+
+  const loaders = {
+    Dog: {
+      async owner (queries) {
+        t.equal(queries[0].info, undefined)
+        return queries.map(({ obj }) => owners[obj.name])
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders,
+    cache: true
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = 'query { dogs { name owner { name } } }'
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query
+    }
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      dogs: [{
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }, {
+        name: 'Charlie',
+        owner: {
+          name: 'Sarah'
+        }
+      }, {
+        name: 'Buddy',
+        owner: {
+          name: 'Tracy'
+        }
+      }, {
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }]
     }
   })
 })

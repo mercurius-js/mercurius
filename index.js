@@ -373,7 +373,9 @@ const plugin = fp(async function (app, opts) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
 
-        return reply[kLoaders][name]({ obj, params, info })
+        const query = opts.cache === false ? { obj, params, info } : { obj, params }
+
+        return reply[kLoaders][name](query)
       }
     }
 

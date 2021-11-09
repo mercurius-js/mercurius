@@ -12,8 +12,9 @@ Each loader function has the signature `loader(queries, context)`.
 `queries` is an array of objects defined as `{ obj, params, info }` where
 `obj` is the current object, `params` are the GraphQL params (those
 are the first two parameters of a normal resolver) and `info` contains
-additional information about the query and execution. The `context` is 
-the GraphQL context, and it includes a `reply` object.
+additional information about the query and execution. `info` object is
+only available in the loader if the cache is set to `false`. The `context`
+is the GraphQL context, and it includes a `reply` object.
 
 Example:
 
