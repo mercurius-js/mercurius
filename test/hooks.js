@@ -526,7 +526,7 @@ test('preExecution hooks should be able to modify the query document AST', async
 })
 
 test('preExecution hooks should be able to modify the schema document AST', async t => {
-  t.plan(4)
+  t.plan(8)
   const app = await createTestServer(t)
 
   const query = `{ 
@@ -543,36 +543,58 @@ test('preExecution hooks should be able to modify the schema document AST', asyn
     t.same(document, parse(query))
     t.type(context, 'object')
 
-    const modifiedSchema = `
-      type Query {
-        add(x: Int, y: Int): Int
-        subtract(x: Int, y: Int): Int
-      }
-    `
+    if (context.reply.request.headers.role === 'super-user') {
+      const modifiedSchema = `
+        type Query {
+          add(x: Int, y: Int): Int
+          subtract(x: Int, y: Int): Int
+        }
+      `
 
-    return {
-      schema: buildSchema(modifiedSchema)
+      return {
+        schema: buildSchema(modifiedSchema)
+      }
     }
   })
 
-  const res = await app.inject({
+  const reqSuper = app.inject({
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', role: 'super-user' },
     url: '/graphql',
     body: JSON.stringify({ query })
+  }).then(res => {
+    t.same(JSON.parse(res.body), {
+      data: {
+        __type: {
+          name: 'Query',
+          fields: [
+            { name: 'add' },
+            { name: 'subtract' }
+          ]
+        }
+      }
+    })
   })
 
-  t.same(JSON.parse(res.body), {
-    data: {
-      __type: {
-        name: 'Query',
-        fields: [
-          { name: 'add' },
-          { name: 'subtract' }
-        ]
+  const reqNotSuper = app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json', role: 'not-a-super-user' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  }).then(res => {
+    t.same(JSON.parse(res.body), {
+      data: {
+        __type: {
+          name: 'Query',
+          fields: [
+            { name: 'add' }
+          ]
+        }
       }
-    }
+    })
   })
+
+  await Promise.all([reqSuper, reqNotSuper])
 })
 
 test('preExecution hooks should be able to add to the errors array', async t => {
