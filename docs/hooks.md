@@ -68,7 +68,7 @@ fastify.graphql.addHook('preExecution', async (schema, document, context) => {
   const { modifiedDocument, errors } = await asyncMethod(document)
 
   return {
-    document: modifiedDocument
+    document: modifiedDocument,
     errors
   }
 })
@@ -90,13 +90,15 @@ fastify.graphql.addHook('preGatewayExecution', async (schema, document, context,
   const { modifiedDocument, errors } = await asyncMethod(document)
 
   return {
-    document: modifiedDocument
+    document: modifiedDocument,
     errors
   }
 })
 ```
 
 ### onResolution
+
+The `onResolution` hooks run after the GraphQL query execution and you can access the result via the `execution` argument.
 
 ```js
 fastify.graphql.addHook('onResolution', async (execution, context) => {
