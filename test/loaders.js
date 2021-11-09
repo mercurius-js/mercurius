@@ -71,7 +71,8 @@ test('loaders create batching resolvers', async (t) => {
     Dog: {
       async owner (queries, { reply }) {
         // note that the second entry for max is cached
-        t.same(queries, [{
+        const queriesObj = queries.map(({ obj, params }) => ({ obj, params }))
+        t.same(queriesObj, [{
           obj: {
             name: 'Max'
           },
@@ -84,6 +85,11 @@ test('loaders create batching resolvers', async (t) => {
         }, {
           obj: {
             name: 'Buddy'
+          },
+          params: {}
+        }, {
+          obj: {
+            name: 'Max'
           },
           params: {}
         }])
@@ -142,7 +148,8 @@ test('disable cache for each loader', async (t) => {
       owner: {
         async loader (queries, { reply }) {
           // note that the second entry for max is NOT cached
-          t.same(queries, [{
+          const queriesObj = queries.map(({ obj, params }) => ({ obj, params }))
+          t.same(queriesObj, [{
             obj: {
               name: 'Max'
             },
@@ -481,7 +488,8 @@ test('loaders support custom context', async (t) => {
       async owner (queries, { reply, test }) {
         t.equal(test, 'custom')
         // note that the second entry for max is cached
-        t.same(queries, [{
+        const queriesObj = queries.map(({ obj, params }) => ({ obj, params }))
+        t.same(queriesObj, [{
           obj: {
             name: 'Max'
           },
@@ -494,6 +502,11 @@ test('loaders support custom context', async (t) => {
         }, {
           obj: {
             name: 'Buddy'
+          },
+          params: {}
+        }, {
+          obj: {
+            name: 'Max'
           },
           params: {}
         }])
