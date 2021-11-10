@@ -515,7 +515,6 @@ const plugin = fp(async function (app, opts) {
     }
 
     const shouldCompileJit = cached && cached.count++ === minJit
-
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
@@ -534,13 +533,17 @@ const plugin = fp(async function (app, opts) {
     }
 
     // minJit is 0 by default
-    if (shouldCompileJit && !modifiedSchema) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+    if (shouldCompileJit) {
+      if (!modifiedSchema) {
+        cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+      } else {
+        // the must decrease the counter to ignore the query
+        cached && cached.count--
+      }
     }
 
     if (cached && cached.jit !== null) {
       const execution = await cached.jit.query(root, context, variables || {})
-
       return maybeFormatErrors(execution, context)
     }
 
