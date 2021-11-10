@@ -6,7 +6,7 @@ const fastify = require('fastify')
 const mq = require('mqemitter')
 const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
-const { GRAPHQL_WS } = require('../lib/subscription-protocol')
+const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protocol')
 
 test('socket is closed on unhandled promise rejection in handleMessage', t => {
   t.plan(1)
@@ -95,7 +95,7 @@ test('subscription connection handles GQL_CONNECTION_TERMINATE message correctly
   }))
 })
 
-test('subscription connection closes context on GQL_STOP message correctly', async (t) => {
+test('subscription connection closes context on GQL_STOP message correctly (protocol: graphql-ws)', async (t) => {
   t.plan(2)
   const sc = new SubscriptionConnection({
     on () {},
@@ -119,7 +119,31 @@ test('subscription connection closes context on GQL_STOP message correctly', asy
   t.equal(sc.subscriptionContexts.size, 0)
 })
 
-test('subscription connection completes resolver iterator on GQL_STOP message correctly', async (t) => {
+test('subscription connection closes context on GQL_STOP message correctly (protocol: graphql-transport-ws)', async (t) => {
+  t.plan(2)
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {},
+    protocol: GRAPHQL_TRANSPORT_WS
+  }, {})
+
+  sc.subscriptionContexts = new Map()
+  sc.subscriptionContexts.set(1, {
+    close () {
+      t.pass()
+    }
+  })
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'complete'
+  }))
+
+  t.equal(sc.subscriptionContexts.size, 0)
+})
+
+test('subscription connection completes resolver iterator on GQL_STOP message correctly (protocol: graphql-ws)', async (t) => {
   t.plan(2)
   const sc = new SubscriptionConnection({
     on () {},
@@ -138,6 +162,30 @@ test('subscription connection completes resolver iterator on GQL_STOP message co
   await sc.handleMessage(JSON.stringify({
     id: 1,
     type: 'stop'
+  }))
+
+  t.equal(sc.subscriptionIters.size, 0)
+})
+
+test('subscription connection completes resolver iterator on GQL_STOP message correctly (protocol: graphql-transport-ws)', async (t) => {
+  t.plan(2)
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {},
+    protocol: GRAPHQL_TRANSPORT_WS
+  }, {})
+
+  sc.subscriptionIters = new Map()
+  sc.subscriptionIters.set(1, {
+    return () {
+      t.pass()
+    }
+  })
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'complete'
   }))
 
   t.equal(sc.subscriptionIters.size, 0)
@@ -163,7 +211,7 @@ test('handles error in send and closes connection', async t => {
   await sc.sendMessage('foo')
 })
 
-test('subscription connection handles GQL_STOP message correctly, with no data', async (t) => {
+test('subscription connection handles GQL_STOP message correctly, with no data (protocol: graphql-ws)', async (t) => {
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
@@ -174,6 +222,22 @@ test('subscription connection handles GQL_STOP message correctly, with no data',
   await sc.handleMessage(JSON.stringify({
     id: 1,
     type: 'stop'
+  }))
+
+  t.notOk(sc.subscriptionContexts.get(0))
+})
+
+test('subscription connection handles GQL_STOP message correctly, with no data (protocol: graphql-transport-ws)', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message) {},
+    protocol: GRAPHQL_TRANSPORT_WS
+  }, {})
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'complete'
   }))
 
   t.notOk(sc.subscriptionContexts.get(0))
