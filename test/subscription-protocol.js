@@ -26,7 +26,7 @@ test('getProtocolByName returns correct protocol message types', t => {
     GQL_DATA: 'next',
     GQL_ERROR: 'error',
     GQL_COMPLETE: 'complete',
-    GQL_STOP: 'stop'
+    GQL_STOP: 'complete'
   })
   t.equal(getProtocolByName('unsupported-protocol'), null)
 })

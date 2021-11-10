@@ -30,3 +30,4 @@
   * [mercurius-upload](/docs/plugins#mercurius-upload)
   * [altair-fastify-plugin](/docs/plugins#altair-fastify-plugin)
 * [Protocol Extensions](/docs/protocol-extension)
+* [Faq](/docs/faq)

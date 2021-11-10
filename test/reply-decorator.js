@@ -123,3 +123,55 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   t.equal(res.statusCode, 400)
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
 })
+
+test('reply decorator supports encapsulation when loaders are defined in parent object', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders: {}
+  })
+
+  app.register(async (app) => {
+    const schema = `
+      type Query {
+        multiply(x: Int, y: Int): Int
+      }
+    `
+    const resolvers = {
+      multiply: async ({ x, y }) => x * y
+    }
+
+    app.register(GQL, {
+      schema,
+      resolvers,
+      prefix: '/prefix'
+    })
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/prefix/graphql',
+    payload: {
+      query: '{ multiply(x: 5, y: 5) }'
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.same(JSON.parse(res.body), {
+    data: {
+      multiply: 25
+    }
+  })
+
+  t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
+})

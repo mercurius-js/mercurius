@@ -64,7 +64,7 @@ In the `preExecution` hook, you can modify the following items by returning them
   - `schema`
   - `errors`
 
-Note that when the `schama` is modified, the query is not [jit'ed nor counted](./api/options.md#plugin-options).
+Note that if you modify the `schema` or the `document` object, the [jit](./api/options.md#plugin-options) compilation will be disabled for the request.
 
 ```js
 fastify.graphql.addHook('preExecution', async (schema, document, context) => {
@@ -147,7 +147,7 @@ Note, the original query will still execute. Adding the above will result in the
 ```json
 {
   "data": {
-    foo: "bar"
+    "foo": "bar"
   },
   "errors": [
     {
