@@ -535,11 +535,11 @@ const plugin = fp(async function (app, opts) {
     }
 
     // minJit is 0 by default
-    if (shouldCompileJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+    if (shouldCompileJit && !modifiedDocument) {
+      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
     }
 
-    if (cached && cached.jit !== null) {
+    if (cached && cached.jit !== null && !modifiedDocument) {
       const execution = await cached.jit.query(root, context, variables || {})
 
       return maybeFormatErrors(execution, context)

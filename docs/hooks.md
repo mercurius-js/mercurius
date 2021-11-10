@@ -63,6 +63,8 @@ In the `preExecution` hook, you can modify the following items by returning them
   - `document`
   - `errors`
 
+Note that if you modify the `document` object, the jit compilation will be disabled for the request.
+
 ```js
 fastify.graphql.addHook('preExecution', async (schema, document, context) => {
   const { modifiedDocument, errors } = await asyncMethod(document)
@@ -143,7 +145,7 @@ Note, the original query will still execute. Adding the above will result in the
 ```json
 {
   "data": {
-    foo: "bar"
+    "foo": "bar"
   },
   "errors": [
     {
