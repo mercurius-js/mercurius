@@ -517,7 +517,6 @@ const plugin = fp(async function (app, opts) {
     }
 
     const shouldCompileJit = cached && cached.count++ === minJit
-
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
@@ -529,24 +528,30 @@ const plugin = fp(async function (app, opts) {
     }
 
     // Trigger preExecution hook
+    let modifiedSchema
     let modifiedDocument
     if (context.preExecution !== null) {
-      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
     }
 
     // minJit is 0 by default
-    if (shouldCompileJit && !modifiedDocument) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
+    if (shouldCompileJit) {
+      if (!modifiedSchema && !modifiedDocument) {
+        // can compile only when the schema and document are not modified
+        cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
+      } else {
+        // the counter must decrease to ignore the query
+        cached && cached.count--
+      }
     }
 
-    if (cached && cached.jit !== null && !modifiedDocument) {
+    if (cached && cached.jit !== null && !modifiedSchema && !modifiedDocument) {
       const execution = await cached.jit.query(root, context, variables || {})
-
       return maybeFormatErrors(execution, context)
     }
 
     const execution = await execute(
-      fastifyGraphQl.schema,
+      modifiedSchema || fastifyGraphQl.schema,
       modifiedDocument || document,
       root,
       context,

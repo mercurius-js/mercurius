@@ -9,6 +9,7 @@
     "unit": "tap test/*.js test/gateway/*.js test/internals/*.js",
     "cov": "tap  --coverage-report=html -J test/*.js test/gateway/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
+    "lint:fix": "standard --fix",
     "lint:standard": "standard | snazzy",
     "lint:typescript": "standard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin test/types/*.ts",
     "typescript": "tsd",

@@ -786,6 +786,7 @@ type ValidationRules =
     }) => ValidationRule[]);
 
 export interface PreExecutionHookResponse<TError extends Error> {
+  schema?: GraphQLSchema
   document?: DocumentNode
   errors?: TError[]
 }
