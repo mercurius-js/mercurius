@@ -45,7 +45,7 @@ test('validationRules array - reports an error', async (t) => {
   await app.ready()
 
   try {
-    await app.graphql(query)
+    await app.graphql({ source: query })
   } catch (e) {
     t.equal(e.errors.length, 1)
     t.equal(e.errors[0].message, 'Validation rule error')
@@ -74,7 +74,7 @@ test('validationRules array - passes when no errors', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  const res = await app.graphql(query)
+  const res = await app.graphql({ source: query })
   t.same(res, { data: { add: 4 } })
 })
 
@@ -91,7 +91,7 @@ test('validationRules array - works with empty validationRules', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  const res = await app.graphql(query)
+  const res = await app.graphql({ source: query })
   t.same(res, { data: { add: 4 } })
 })
 
@@ -119,7 +119,7 @@ test('validationRules - reports an error', async (t) => {
   await app.ready()
 
   try {
-    await app.graphql(query)
+    await app.graphql({ source: query })
   } catch (e) {
     t.equal(e.errors.length, 1)
     t.equal(e.errors[0].message, 'Validation rule error')
@@ -149,7 +149,7 @@ test('validationRules - passes when no errors', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  const res = await app.graphql(query)
+  const res = await app.graphql({ source: query })
   t.same(res, { data: { add: 4 } })
 })
 
@@ -167,7 +167,7 @@ test('validationRules - works with empty validationRules', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  const res = await app.graphql(query)
+  const res = await app.graphql({ source: query })
   t.same(res, { data: { add: 4 } })
 })
 
@@ -184,7 +184,7 @@ test('validationRules - works with missing validationRules', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  const res = await app.graphql(query)
+  const res = await app.graphql({ source: query })
   t.same(res, { data: { add: 4 } })
 })
 
@@ -202,9 +202,9 @@ test('validationRules - includes graphql request metadata', async (t) => {
     schema,
     resolvers,
     cache: false,
-    validationRules: function ({ source, variables, operationName }) {
+    validationRules: function ({ source, variableValues, operationName }) {
       t.equal(source, query)
-      t.same(variables, { x: 2, y: 2 })
+      t.same(variableValues, { x: 2, y: 2 })
       t.same(operationName, 'Add')
       return [
         // validation rule that reports no errors
@@ -222,7 +222,11 @@ test('validationRules - includes graphql request metadata', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  const res = await app.graphql(query, null, { x: 2, y: 2 }, 'Add')
+  const res = await app.graphql({
+    source: query,
+    variableValues: { x: 2, y: 2 },
+    operationName: 'Add'
+  })
   t.same(res, { data: { add: 4 } })
 })
 

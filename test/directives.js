@@ -121,12 +121,12 @@ test('custom directives should work', async (t) => {
   const app = Fastify()
   const schema = `
     ${upperDirectiveTypeDefs}
-    
+
     type Query {
       foo: String @upper
       user: User
     }
-    
+
     type User {
       id: ID!
       name: String @upper
@@ -168,12 +168,12 @@ test('custom directives should work with single transform function', async (t) =
   const app = Fastify()
   const schema = `
     ${upperDirectiveTypeDefs}
-    
+
     type Query {
       foo: String @upper
       user: User
     }
-    
+
     type User {
       id: ID!
       name: String @upper
@@ -215,12 +215,12 @@ test('custom directives should work with executable schema', async (t) => {
   const app = Fastify()
   const schema = `
     ${upperDirectiveTypeDefs}
-    
+
     type Query {
       foo: String @upper
       user: User
     }
-    
+
     type User {
       id: ID!
       name: String @upper
@@ -384,12 +384,12 @@ test('federation support and custom directives', async (t) => {
   const app = Fastify()
   const schema = `
     ${upperDirectiveTypeDefs}
-    
+
     type Query {
       foo: String @upper
       user: User
     }
-    
+
     type User {
       id: ID!
       name: String @upper
@@ -436,7 +436,7 @@ test('federation support using schema from buildFederationSchema and custom dire
   const app = Fastify()
   const schema = `
     ${upperDirectiveTypeDefs}
-    
+
     type Query {
       foo: String @upper
     }
@@ -479,16 +479,16 @@ test('max length directive validation works', async (t) => {
       foo(value: String!): String @length(max: 5)
       user(id: ID!): User
     }
-    
+
     type Mutation {
       createUser(input: CreateUserInput!): User!
     }
-    
+
     type User {
       id: ID!
       name: String @length(max: 5)
     }
-    
+
     input CreateUserInput {
       id: ID!
       name: String! @length(max: 3)

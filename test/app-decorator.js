@@ -65,7 +65,7 @@ test('support context in resolver', async (t) => {
   await app.ready()
 
   const query = '{ ctx }'
-  const res = await app.graphql(query, { num: 42 })
+  const res = await app.graphql({ query, contextValue: { num: 42 } })
 
   t.same(res, {
     data: {

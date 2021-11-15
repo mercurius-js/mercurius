@@ -703,11 +703,11 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
         bad
     }`
 
-  let res = await app.graphql(query, null, { x: 1 })
+  let res = await app.graphql({ query, contextValue: { x: 1 } })
 
   t.matchSnapshot(JSON.stringify(res), null, 2)
 
-  res = await app.graphql(query, null, { x: 1 })
+  res = await app.graphql({ query, contextValue: { x: 1 } })
 
   t.matchSnapshot(JSON.stringify(res), null, 2)
 

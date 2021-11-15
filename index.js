@@ -110,7 +110,7 @@ const plugin = fp(async function (app, opts) {
     throw new MER_ERR_INVALID_OPTS('the jit option must be a number')
   }
 
-  const root = {}
+  const rootValue = {}
   let schema = opts.schema
   let gateway = opts.gateway
   const subscriptionOpts = opts.subscription
@@ -251,17 +251,19 @@ const plugin = fp(async function (app, opts) {
 
   app.decorateReply(graphqlCtx, null)
 
-  app.decorateReply('graphql', function (source, context, variables, operationName) {
-    if (!context) {
-      context = {}
+  app.decorateReply('graphql', function ({
+    source, contextValue, variableValues, operationName
+  }) {
+    if (!contextValue) {
+      contextValue = {}
     }
 
-    context = Object.assign(context, { reply: this, app })
+    contextValue = Object.assign(contextValue, { reply: this, app })
     if (app[kFactory]) {
-      this[kLoaders] = app[kFactory].create(context)
+      this[kLoaders] = app[kFactory].create(contextValue)
     }
 
-    return app.graphql(source, context, variables, operationName)
+    return app.graphql({ source, contextValue, variableValues, operationName })
   })
 
   app.decorate('graphql', fastifyGraphQl)
@@ -310,9 +312,10 @@ const plugin = fp(async function (app, opts) {
       const type = fastifyGraphQl.schema.getType(name)
 
       if (typeof resolvers[name] === 'function') {
-        root[name] = resolvers[name]
+        rootValue[name] = resolvers[name]
       } else if (type instanceof GraphQLObjectType) {
         const fields = type.getFields()
+
         const resolver = resolvers[name]
         if (resolver.isTypeOf) {
           type.isTypeOf = resolver.isTypeOf
@@ -427,18 +430,18 @@ const plugin = fp(async function (app, opts) {
     this[kHooks].add(name, fn)
   }
 
-  async function fastifyGraphQl (source, context, variables, operationName) {
-    if (!context) {
-      context = {}
+  async function fastifyGraphQl ({ source, contextValue, variableValues, operationName }) {
+    if (!contextValue) {
+      contextValue = {}
     }
 
-    context = Object.assign(context, { app: this, lruGatewayResolvers, errors: null })
-    context = assignLifeCycleHooksToContext(context, fastifyGraphQl[kHooks])
-    const reply = context.reply
+    contextValue = Object.assign(contextValue, { app: this, lruGatewayResolvers, errors: null })
+    contextValue = assignLifeCycleHooksToContext(contextValue, fastifyGraphQl[kHooks])
+    const reply = contextValue.reply
 
     // Trigger preParsing hook
-    if (context.preParsing !== null) {
-      await preParsingHandler({ schema: fastifyGraphQl.schema, source, context })
+    if (contextValue.preParsing !== null) {
+      await preParsingHandler({ schema: fastifyGraphQl.schema, source, contextValue })
     }
 
     // Parse, with a little lru
@@ -465,8 +468,8 @@ const plugin = fp(async function (app, opts) {
       }
 
       // Trigger preValidation hook
-      if (context.preValidation !== null) {
-        await preValidationHandler({ schema: fastifyGraphQl.schema, document, context })
+      if (contextValue.preValidation !== null) {
+        await preValidationHandler({ schema: fastifyGraphQl.schema, document, contextValue })
       }
 
       // Validate
@@ -475,7 +478,7 @@ const plugin = fp(async function (app, opts) {
         if (Array.isArray(opts.validationRules)) {
           validationRules = opts.validationRules
         } else {
-          validationRules = opts.validationRules({ source, variables, operationName })
+          validationRules = opts.validationRules({ source, variableValues, operationName })
         }
       }
       const validationErrors = validate(fastifyGraphQl.schema, document, [...specifiedRules, ...validationRules])
@@ -519,8 +522,10 @@ const plugin = fp(async function (app, opts) {
     const shouldCompileJit = cached && cached.count++ === minJit
 
     // Validate variables
-    if (variables !== undefined && !shouldCompileJit) {
-      const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
+    if (variableValues !== undefined && !shouldCompileJit) {
+      const executionContext = buildExecutionContext({
+        schema: fastifyGraphQl.schema, document, rootValue, contextValue, variableValues, operationName
+      })
       if (Array.isArray(executionContext)) {
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = executionContext
@@ -530,8 +535,8 @@ const plugin = fp(async function (app, opts) {
 
     // Trigger preExecution hook
     let modifiedDocument
-    if (context.preExecution !== null) {
-      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+    if (contextValue.preExecution !== null) {
+      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, contextValue }))
     }
 
     // minJit is 0 by default
@@ -540,21 +545,21 @@ const plugin = fp(async function (app, opts) {
     }
 
     if (cached && cached.jit !== null && !modifiedDocument) {
-      const execution = await cached.jit.query(root, context, variables || {})
+      const execution = await cached.jit.query(rootValue, contextValue, variableValues || {})
 
-      return maybeFormatErrors(execution, context)
+      return maybeFormatErrors(execution, contextValue)
     }
 
-    const execution = await execute(
-      fastifyGraphQl.schema,
-      modifiedDocument || document,
-      root,
-      context,
-      variables,
+    const execution = await execute({
+      schema: fastifyGraphQl.schema,
+      document: modifiedDocument || document,
+      rootValue,
+      contextValue,
+      variableValues,
       operationName
-    )
+    })
 
-    return maybeFormatErrors(execution, context)
+    return maybeFormatErrors(execution, contextValue)
   }
 
   async function maybeFormatErrors (execution, context) {
