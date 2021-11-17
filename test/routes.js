@@ -1655,7 +1655,11 @@ test('error thrown from onDisconnect is logged', t => {
   const error = new Error('error')
 
   const app = Fastify()
+
+  // override `app.log` to avoid poluting other tests
+  app.log = Object.create(app.log)
   app.log.error = (e) => { t.same(error, e) }
+
   t.teardown(() => app.close())
 
   const schema = `
@@ -1702,6 +1706,9 @@ test('promise rejection from onDisconnect is logged', t => {
   const error = new Error('error')
 
   const app = Fastify()
+
+  // override `app.log` to avoid poluting other tests
+  app.log = Object.create(app.log)
   app.log.error = (e) => { t.same(error, e) }
   t.teardown(() => app.close())
 
