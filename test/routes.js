@@ -582,6 +582,49 @@ test('POST return 400 on error', async (t) => {
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
+test('POST return 400 error handler provide custom context to custom async error formatter', async (t) => {
+  t.plan(2)
+
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler: true,
+    context: async () => {
+      return { topic: 'POINT_ADDED' }
+    },
+    errorFormatter: (_execution, context) => {
+      t.has(context, { topic: 'POINT_ADDED' })
+      return {
+        statusCode: 400,
+        response: {
+          data: { add: null },
+          errors: [{ message: 'Internal Server Error' }]
+        }
+      }
+    }
+  })
+
+  // Invalid query
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query: '{ add(x: 2, y: 2)' }
+  })
+
+  t.equal(res.statusCode, 400)
+})
+
 test('mutation with POST', async (t) => {
   const app = Fastify()
   const schema = `
@@ -1656,7 +1699,7 @@ test('error thrown from onDisconnect is logged', t => {
 
   const app = Fastify()
 
-  // override `app.log` to avoid poluting other tests
+  // override `app.log` to avoid polluting other tests
   app.log = Object.create(app.log)
   app.log.error = (e) => { t.same(error, e) }
 
@@ -1707,7 +1750,7 @@ test('promise rejection from onDisconnect is logged', t => {
 
   const app = Fastify()
 
-  // override `app.log` to avoid poluting other tests
+  // override `app.log` to avoid polluting other tests
   app.log = Object.create(app.log)
   app.log.error = (e) => { t.same(error, e) }
   t.teardown(() => app.close())
