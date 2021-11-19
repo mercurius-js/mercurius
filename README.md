@@ -1,3 +1,6 @@
+
+![Mercurius Logo](https://github.com/mercurius-js/graphics/blob/main/mercurius-horizontal.svg)
+
 # mercurius
 
 ![CI workflow](https://github.com/mercurius-js/mercurius/workflows/CI%20workflow/badge.svg)
