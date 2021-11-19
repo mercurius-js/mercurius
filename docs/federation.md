@@ -388,3 +388,34 @@ server.listen(3002)
 ```
 
 _Note: The default behavior of `errorHandler` is call `errorFormatter` to send the result. When is provided an `errorHandler` make sure to **call `errorFormatter` manually if needed**._
+
+#### Securely parse service responses in Gateway mode
+
+Gateway service responses can be securely parsed using the `useSecureParse` flag. By default, the target service is considered trusted and thus this flag is set to `false`. If there is a need to securely parse the JSON response from a service, this flag can be set to `true` and it will use the [secure-json-parse](https://github.com/fastify/secure-json-parse) library.
+
+```js
+const Fastify = require('fastify')
+const mercurius = require('mercurius')
+
+const server = Fastify()
+
+server.register(mercurius, {
+  graphiql: true,
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:3000/graphql',
+        useSecureParse: true
+      },
+      {
+        name: 'company',
+        url: 'http://localhost:3001/graphql'
+      }
+    ]
+  },
+  pollingInterval: 2000
+})
+
+server.listen(3002)
+```
