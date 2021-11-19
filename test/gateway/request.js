@@ -117,7 +117,7 @@ test('sendRequest method should accept useSecureParse flag and parse the respons
     })
   })
 
-  // cecking for prototype leakage: https://github.com/fastify/secure-json-parse#introduction
+  // checking for prototype leakage: https://github.com/fastify/secure-json-parse#introduction
   // secure parsing should not allow it
   t.ok(result.json)
   t.notOk(result.json.foo)
