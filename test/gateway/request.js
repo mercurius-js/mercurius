@@ -163,3 +163,32 @@ test('sendRequest method should run without useSecureParse flag', async (t) => {
 
   t.end()
 })
+
+// test('callback defined in buildRequest method should run correctly', async (t) => {
+//   t.plan(2)
+//   const app = fastify()
+//   app.post('/', async (request, reply) => {
+//     return '{ "foo": "bar" }'
+//   })
+
+//   await app.listen(0)
+
+//   const url = new URL(`http://localhost:${app.server.address().port}`)
+//   const { request, close } = buildRequest({ url })
+
+//   await request({
+//     url,
+//     method: 'POST',
+//     body: ''
+//   }, async (err, response) => {
+//     t.error(err)
+//     const result = await response.stream.json()
+
+//     t.same(result, { foo: 'bar' })
+//     t.teardown(() => {
+//       close()
+//       return app.close()
+//     })
+//     t.end()
+//   })
+// })
