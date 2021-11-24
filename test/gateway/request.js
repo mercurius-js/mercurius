@@ -1,6 +1,7 @@
 const { test } = require('tap')
 const fastify = require('fastify')
 const { sendRequest, buildRequest } = require('../../lib/gateway/request')
+const { FederatedError } = require('../../lib/errors')
 
 test('sendRequest method rejects when request errs', t => {
   const url = new URL('http://localhost:3001')
@@ -51,6 +52,7 @@ test('sendRequest method rejects when response is not valid json', async (t) => 
 })
 
 test('sendRequest method rejects when response contains errors', async (t) => {
+  t.plan(2)
   const app = fastify()
   app.post('/', async (request, reply) => {
     return { errors: ['foo'] }
@@ -64,8 +66,9 @@ test('sendRequest method rejects when response contains errors', async (t) => {
     close()
     return app.close()
   })
-  t.rejects(
-    sendRequest(
+
+  try {
+    await sendRequest(
       request,
       url
     )({
@@ -80,9 +83,11 @@ test('sendRequest method rejects when response contains errors', async (t) => {
       `
       })
     })
-  )
-
-  t.end()
+    t.fail('it must throw')
+  } catch (error) {
+    t.type(error, FederatedError)
+    t.same(error.extensions, { errors: ['foo'] })
+  }
 })
 
 test('sendRequest method should accept useSecureParse flag and parse the response securely', async (t) => {
