@@ -258,7 +258,7 @@ const plugin = fp(async function (app, opts) {
 
     context = Object.assign(context, { reply: this, app })
     if (app[kFactory]) {
-      this[kLoaders] = factory.create(context)
+      this[kLoaders] = app[kFactory].create(context)
     }
 
     return app.graphql(source, context, variables, operationName)
@@ -368,12 +368,14 @@ const plugin = fp(async function (app, opts) {
 
     function defineLoader (name) {
       // async needed because of throw
-      return async function (obj, params, { reply }) {
+      return async function (obj, params, { reply }, info) {
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
 
-        return reply[kLoaders][name]({ obj, params })
+        const query = opts.cache === false ? { obj, params, info } : { obj, params }
+
+        return reply[kLoaders][name](query)
       }
     }
 
@@ -515,7 +517,6 @@ const plugin = fp(async function (app, opts) {
     }
 
     const shouldCompileJit = cached && cached.count++ === minJit
-
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
@@ -527,24 +528,30 @@ const plugin = fp(async function (app, opts) {
     }
 
     // Trigger preExecution hook
+    let modifiedSchema
     let modifiedDocument
     if (context.preExecution !== null) {
-      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
     }
 
     // minJit is 0 by default
     if (shouldCompileJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+      if (!modifiedSchema && !modifiedDocument) {
+        // can compile only when the schema and document are not modified
+        cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
+      } else {
+        // the counter must decrease to ignore the query
+        cached && cached.count--
+      }
     }
 
-    if (cached && cached.jit !== null) {
+    if (cached && cached.jit !== null && !modifiedSchema && !modifiedDocument) {
       const execution = await cached.jit.query(root, context, variables || {})
-
       return maybeFormatErrors(execution, context)
     }
 
     const execution = await execute(
-      fastifyGraphQl.schema,
+      modifiedSchema || fastifyGraphQl.schema,
       modifiedDocument || document,
       root,
       context,

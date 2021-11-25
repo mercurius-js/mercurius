@@ -537,6 +537,7 @@ app.graphql.addHook('preExecution', async function (schema, document, context) {
   expectAssignable<DocumentNode>(document)
   expectAssignable<MercuriusContext>(context)
   return {
+    schema,
     document,
     errors: [
       new Error('foo')
