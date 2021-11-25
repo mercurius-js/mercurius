@@ -1,5 +1,6 @@
 'use strict'
 
+const { parse } = require('graphql')
 const getQueryResult = require('../../lib/gateway/get-query-result')
 const { test } = require('tap')
 
@@ -61,8 +62,10 @@ test('it works with a basic example', async (t) => {
         }
       }
     },
+
     queries: [
       {
+        document: parse(getQueryWithCount(1)),
         query: getQueryWithCount(1),
         variables: {
           representations: [
@@ -97,6 +100,7 @@ test('it works with a basic example and batched queries', async (t) => {
     },
     queries: [
       {
+        document: parse(getQueryWithCount(1)),
         query: getQueryWithCount(1),
         variables: {
           representations: [
@@ -108,6 +112,7 @@ test('it works with a basic example and batched queries', async (t) => {
         }
       },
       {
+        document: parse(getQueryWithCount(2)),
         query: getQueryWithCount(2),
         variables: {
           representations: [
