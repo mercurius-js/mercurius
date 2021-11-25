@@ -3,12 +3,12 @@
 const getQueryResult = require('../../lib/gateway/get-query-result')
 const { test } = require('tap')
 
-const query1 = `
+const getQueryWithCount = (count) => `
 query EntitiesQuery($representations: [_Any!]!) {
   _entities(representations: $representations) {
     __typename
     ... on User {
-      topPosts(count: 1) {
+      topPosts(count: ${count}) {
         pid
         __typename
         pid
@@ -16,31 +16,54 @@ query EntitiesQuery($representations: [_Any!]!) {
     }
   }
 }
+`
 
-`
-const query2 = `
-query EntitiesQuery($representations: [_Any!]!) {
-  _entities(representations: $representations) {
-    __typename
-    ... on User {
-      topPosts(count: 2) {
-        pid
-        __typename
-        pid
-      }
+const createEntity = (pid) => ({
+  __typename: 'User',
+  topPosts: {
+    pid,
+    __typename: 'Post'
+  }
+})
+
+const createNotBatchedResponse = (...entities) => ({
+  json: {
+    data: {
+      _entities: [...entities]
     }
   }
-}
-`
+})
+
+const createBatchedResponse = (...entities) => ({
+  json: [
+    {
+      data: {
+        _entities: [...entities]
+      }
+    },
+    {
+      data: {
+        _entities: [...entities]
+      }
+    }
+  ]
+})
 
 test('it works with a basic example', async (t) => {
+  const entity1 = createEntity('p1')
+  const entity2 = createEntity('p2')
   const result = await getQueryResult({
+    context: {
+      preGatewayExecution: null,
+      reply: {
+        request: {
+          headers: {}
+        }
+      }
+    },
     queries: [
       {
-        context: {
-          preGatewayExecution: null
-        },
-        query: query1,
+        query: getQueryWithCount(1),
         variables: {
           representations: [
             {
@@ -52,41 +75,29 @@ test('it works with a basic example', async (t) => {
       }
     ],
     serviceDefinition: {
-      sendRequest: async () => ({
-        json: {
-          data: {
-            _entities: [
-              {
-                __typename: 'User',
-                topPosts: {
-                  pid: 'p1',
-                  __typename: 'Post'
-                }
-              }
-            ]
-          }
-        }
-      })
+      sendRequest: async () => createNotBatchedResponse(entity1, entity2)
     }
   })
 
-  t.same(result[0].data._entities[0], {
-    __typename: 'User',
-    topPosts: {
-      pid: 'p1',
-      __typename: 'Post'
-    }
-  })
+  t.same(result[0].data._entities[0], entity1)
+  t.same(result[0].data._entities[1], entity2)
 })
 
 test('it works with a basic example and batched queries', async (t) => {
+  const entity1 = createEntity('p3')
+  const entity2 = createEntity('p4')
   const result = await getQueryResult({
+    context: {
+      preGatewayExecution: null,
+      reply: {
+        request: {
+          headers: {}
+        }
+      }
+    },
     queries: [
       {
-        context: {
-          preGatewayExecution: null
-        },
-        query: query1,
+        query: getQueryWithCount(1),
         variables: {
           representations: [
             {
@@ -97,10 +108,7 @@ test('it works with a basic example and batched queries', async (t) => {
         }
       },
       {
-        context: {
-          preGatewayExecution: null
-        },
-        query: query2,
+        query: getQueryWithCount(2),
         variables: {
           representations: [
             {
@@ -113,104 +121,12 @@ test('it works with a basic example and batched queries', async (t) => {
     ],
     serviceDefinition: {
       allowBatchedQueries: true,
-      sendRequest: async () => ({
-        json: [
-          {
-            data: {
-              _entities: [
-                {
-                  __typename: 'User',
-                  topPosts: [{ pid: 'p1', __typename: 'Post' }]
-                }
-              ]
-            }
-          },
-          {
-            data: {
-              _entities: [
-                {
-                  __typename: 'User',
-                  topPosts: [
-                    { pid: 'p1', __typename: 'Post' },
-                    { pid: 'p3', __typename: 'Post' }
-                  ]
-                }
-              ]
-            }
-          }
-        ]
-      })
+      sendRequest: async () => createBatchedResponse(entity1, entity2)
     }
   })
 
-  t.same(result, [
-    {
-      data: {
-        _entities: [
-          {
-            __typename: 'User',
-            topPosts: [
-              {
-                pid: 'p1',
-                __typename: 'Post'
-              }
-            ]
-          }
-        ]
-      },
-      json: {
-        data: {
-          _entities: [
-            {
-              __typename: 'User',
-              topPosts: [
-                {
-                  pid: 'p1',
-                  __typename: 'Post'
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
-      data: {
-        _entities: [
-          {
-            __typename: 'User',
-            topPosts: [
-              {
-                pid: 'p1',
-                __typename: 'Post'
-              },
-              {
-                pid: 'p3',
-                __typename: 'Post'
-              }
-            ]
-          }
-        ]
-      },
-      json: {
-        data: {
-          _entities: [
-            {
-              __typename: 'User',
-              topPosts: [
-                {
-                  pid: 'p1',
-                  __typename: 'Post'
-                },
-                {
-                  pid: 'p3',
-                  __typename: 'Post'
-                }
-              ]
-            }
-          ]
-        }
-      }
-    }
-  ])
+  t.same(result[0].data._entities[0], entity1)
+  t.same(result[0].data._entities[1], entity2)
+  t.same(result[1].data._entities[0], entity1)
+  t.same(result[1].data._entities[1], entity2)
 })
