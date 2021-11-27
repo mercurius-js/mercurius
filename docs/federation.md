@@ -357,8 +357,9 @@ server.listen(3002)
 
 #### Batched Queries to services
 
-To fully leverage the DataLoader pattern a Gateway assumes that can send a request with batched queries to its services.  
-This configuration can be disabled if the service doesn't support batched queries instead.
+To fully leverage the DataLoader pattern we can tell the Gateway which of its services support [batched queries](batched-queries.md).  
+In this case the service will receive a request body with an array of queries to execute.  
+Enabling batched queries for a service that doesn't support it will generate errors.
 
 
 ```js
@@ -373,13 +374,13 @@ server.register(mercurius, {
     services: [
       {
         name: 'user',
-        url: 'http://localhost:3000/graphql'  // queries will be batched into one request
-                                              // same as setting allowBatchedQueries: true
+        url: 'http://localhost:3000/graphql'  
+        allowBatchedQueries: true             
       },
       {
         name: 'company',
-        url: 'http://localhost:3001/graphql', // one request for each of the queries
-        allowBatchedQueries: false
+        url: 'http://localhost:3001/graphql', 
+        allowBatchedQueries: false            
       }
     ]
   },
