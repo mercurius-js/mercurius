@@ -134,7 +134,7 @@ test('POST single bad batched query with cutom error formatter and custom async 
       return { topic: 'NOTIFICATIONS_ADDED' }
     },
     errorFormatter: (_execution, context) => {
-      t.include(context, { topic: 'NOTIFICATIONS_ADDED' })
+      t.has(context, { topic: 'NOTIFICATIONS_ADDED' })
       return {
         response: {
           data: null,
