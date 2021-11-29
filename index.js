@@ -28,6 +28,7 @@ const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
+const stringify = require('safe-stable-stringify')
 const {
   ErrorWithProps,
   defaultErrorFormatter,
@@ -366,9 +367,10 @@ const plugin = fp(async function (app, opts) {
       app.decorate(kSubscriptionFactory, subscriptionFactory)
     }
 
-    function defineLoader (name) {
+    function defineLoader (name, opts) {
       // async needed because of throw
-      return async function (obj, params, { reply }, info) {
+      return async function (obj, params, ctx, info) {
+        const { reply } = ctx
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
@@ -379,19 +381,33 @@ const plugin = fp(async function (app, opts) {
       }
     }
 
+    function serialize (query) {
+      if (query.info) {
+        return stringify({ obj: query.obj, params: query.params })
+      }
+      return query
+    }
+
     const resolvers = {}
     for (const typeKey of Object.keys(loaders)) {
       const type = loaders[typeKey]
       resolvers[typeKey] = {}
       for (const prop of Object.keys(type)) {
         const name = typeKey + '-' + prop
-        resolvers[typeKey][prop] = defineLoader(name)
+        const toAssign = [{}, type[prop].opts || {}]
+        if (opts.cache === false) {
+          toAssign.push({
+            cache: false
+          })
+        }
+        const factoryOpts = Object.assign(...toAssign)
+        resolvers[typeKey][prop] = defineLoader(name, factoryOpts)
         if (typeof type[prop] === 'function') {
-          factory.add(name, type[prop])
-          subscriptionFactory.add(name, { cache: false }, type[prop])
+          factory.add(name, factoryOpts, type[prop], serialize)
+          subscriptionFactory.add(name, { cache: false }, type[prop], serialize)
         } else {
-          factory.add(name, type[prop].opts, type[prop].loader)
-          subscriptionFactory.add(name, Object.assign({}, type[prop].opts, { cache: false }), type[prop].loader)
+          factory.add(name, factoryOpts, type[prop].loader, serialize)
+          subscriptionFactory.add(name, Object.assign({}, type[prop].opts, { cache: false }), type[prop].loader, serialize)
         }
       }
     }
