@@ -767,3 +767,90 @@ test('errors - should override statusCode to 200 if the data is present', async 
 
   t.equal(res.statusCode, 200)
 })
+
+test('bad json', async (t) => {
+  const schema = `
+    type Query {
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      successful () {
+        t.fail('Should not be called')
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: 'this is not a json',
+    url: '/graphql'
+  })
+
+  t.equal(res.statusCode, 400)
+  t.same(res.json(),
+    { data: null, errors: [{ message: 'Unexpected token h in JSON at position 1' }] }
+  )
+})
+
+test('bad json with custom error handler', async (t) => {
+  t.plan(3)
+  const schema = `
+    type Query {
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      successful () {
+        t.fail('Should not be called')
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler: (_, request, reply) => {
+      t.pass('custom error handler called')
+      reply.code(400).send({
+        is: 'error'
+      })
+    }
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: 'this is not a json',
+    url: '/graphql'
+  })
+
+  t.equal(res.statusCode, 400)
+  t.same(res.json(), {
+    is: 'error'
+  })
+})
