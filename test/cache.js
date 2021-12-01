@@ -34,7 +34,14 @@ test('cache skipped when the GQL Schema has been changed', async t => {
   const app = Fastify()
   t.teardown(() => app.close())
 
-  await app.register(GQL, { schema, resolvers, jit: 1 })
+  await app.register(GQL, {
+    schema,
+    resolvers,
+    jit: 1,
+    compilerOptions: {
+      customJSONSerializer: true
+    }
+  })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     if (context.reply.request.headers.super === 'true') {
