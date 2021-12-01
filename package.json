@@ -67,6 +67,7 @@
     "p-map": "^4.0.0",
     "promise.allsettled": "^1.0.4",
     "readable-stream": "^3.6.0",
+    "safe-stable-stringify": "^2.3.0",
     "secure-json-parse": "^2.4.0",
     "single-user-cache": "^0.6.0",
     "tiny-lru": "^7.0.6",
