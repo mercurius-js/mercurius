@@ -5,6 +5,7 @@ const Fastify = require('fastify')
 const GQL = require('..')
 const { ErrorWithProps } = GQL
 const { FederatedError } = require('../lib/errors')
+const { kRequestContext } = require('../lib/symbols')
 const split = require('split2')
 
 test('ErrorWithProps - support status code in the constructor', async (t) => {
@@ -808,6 +809,55 @@ test('bad json', async (t) => {
   )
 })
 
+test('bad json with custom error formatter and custom context', async (t) => {
+  const schema = `
+    type Query {
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      successful () {
+        t.fail('Should not be called')
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    context: (_request, _reply) => ({ customValue: true }),
+    errorFormatter: (_execution, context) => {
+      t.equal(context.customValue, true)
+      t.pass('custom error formatter called')
+      return {
+        statusCode: 400,
+        response: { data: null, errors: [{ message: 'Unexpected token h' }] }
+      }
+    }
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: 'this is not a json',
+    url: '/graphql'
+  })
+
+  t.equal(res.statusCode, 400)
+  t.same(res.json(),
+    { data: null, errors: [{ message: 'Unexpected token h' }] }
+  )
+})
+
 test('bad json with custom error handler', async (t) => {
   t.plan(3)
   const schema = `
@@ -831,6 +881,55 @@ test('bad json with custom error handler', async (t) => {
     schema,
     resolvers,
     errorHandler: (_, request, reply) => {
+      t.pass('custom error handler called')
+      reply.code(400).send({
+        is: 'error'
+      })
+    }
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: 'this is not a json',
+    url: '/graphql'
+  })
+
+  t.equal(res.statusCode, 400)
+  t.same(res.json(), {
+    is: 'error'
+  })
+})
+
+test('bad json with custom error handler, custom error formatter and custom context', async (t) => {
+  const schema = `
+    type Query {
+      successful: String
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      successful () {
+        t.fail('Should not be called')
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    context: (_request, _reply) => ({ customValue: true }),
+
+    errorHandler: (_, request, reply) => {
+      t.equal(request[kRequestContext].customValue, true)
       t.pass('custom error handler called')
       reply.code(400).send({
         is: 'error'
