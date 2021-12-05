@@ -97,10 +97,7 @@
   - `notSupportedError?: string`: An error message to return when a query matches `isPersistedQuery`, but returns no valid hash from `getHash`. Defaults to `Bad Request`.
 - `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
-- `compilerOptions`: Object. Configurable options for the graphql-jit compiler.
-  - `disableLeafSerialization`: Boolean (Default: false). Disables leaf node serializers. The serializers validate the content of the field at runtime so this option should only be set to true if there are strong assurances that the values are valid.
-  - `customSerializers`: Object as Map (Default: {}) - Replace serializer functions for specific types. Can be used as a safer alternative for overly expensive serializers.
-  - `customJSONSerializer`: Boolean (Default: false) - Whether to produce also a JSON serializer function using fast-json-stringify. The default stringifier function is JSON.stringify
+- `compilerOptions`: Object. Configurable options for the graphql-jit compiler. For more details check https://github.com/zalando-incubator/graphql-jit
 
 #### queryDepth example
 
