@@ -37,10 +37,7 @@ test('cache skipped when the GQL Schema has been changed', async t => {
   await app.register(GQL, {
     schema,
     resolvers,
-    jit: 1,
-    compilerOptions: {
-      customJSONSerializer: true
-    }
+    jit: 1
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
