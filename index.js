@@ -554,7 +554,7 @@ const plugin = fp(async function (app, opts) {
     if (shouldCompileJit) {
       if (!modifiedSchema && !modifiedDocument) {
         // can compile only when the schema and document are not modified
-        cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName)
+        cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName, opts.compilerOptions)
       } else {
         // the counter must decrease to ignore the query
         cached && cached.count--

@@ -97,6 +97,8 @@
   - `notSupportedError?: string`: An error message to return when a query matches `isPersistedQuery`, but returns no valid hash from `getHash`. Defaults to `Bad Request`.
 - `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
+- `compilerOptions`: Object. Configurable options for the graphql-jit compiler. For more details check https://github.com/zalando-incubator/graphql-jit
+
 #### queryDepth example
 
 ```
