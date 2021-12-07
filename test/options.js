@@ -1,16 +1,9 @@
 'use strict'
 
-const proxyquire = require('proxyquire').noCallThru()
+const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const { test } = require('tap')
 const Fastify = require('fastify')
-
-const compileQueryStub = sinon.stub()
-const GQL = proxyquire('../index', {
-  'graphql-jit': {
-    compileQuery: compileQueryStub
-  }
-})
 
 const schema = `
 type User {
@@ -41,6 +34,14 @@ test('call compileQuery with correct options if compilerOptions specified', asyn
 
   const app = Fastify()
   t.teardown(() => app.close())
+
+  const compileQueryStub = sinon.stub()
+
+  const GQL = proxyquire('../index', {
+    'graphql-jit': {
+      compileQuery: compileQueryStub
+    }
+  })
 
   await app.register(GQL, {
     schema,
