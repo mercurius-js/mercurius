@@ -49,7 +49,7 @@ fastify.graphql.addHook('preParsing', async (schema, source, context) => {
 
 ### preValidation
 
-By the time the `preValidation` hook triggers, the query string has been parsed into a GraphQL Document AST.
+By the time the `preValidation` hook triggers, the query string has been parsed into a GraphQL Document AST. The hook will not be triggered for cached queries, as they are not validated.
 
 ```js
 fastify.graphql.addHook('preValidation', async (schema, document, context) => {
