@@ -535,7 +535,14 @@ const plugin = fp(async function (app, opts) {
     const shouldCompileJit = cached && cached.count++ === minJit
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
-      const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
+      const executionContext = buildExecutionContext({
+        schema: fastifyGraphQl.schema,
+        document,
+        rootValue: root,
+        contextValue: context,
+        variableValues: variables,
+        operationName
+      })
       if (Array.isArray(executionContext)) {
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = executionContext
@@ -566,14 +573,14 @@ const plugin = fp(async function (app, opts) {
       return maybeFormatErrors(execution, context)
     }
 
-    const execution = await execute(
-      modifiedSchema || fastifyGraphQl.schema,
-      modifiedDocument || document,
-      root,
-      context,
-      variables,
+    const execution = await execute({
+      schema: modifiedSchema || fastifyGraphQl.schema,
+      document: modifiedDocument || document,
+      rootValue: root,
+      contextValue: context,
+      variableValues: variables,
       operationName
-    )
+    })
 
     return maybeFormatErrors(execution, context)
   }

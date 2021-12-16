@@ -43,5 +43,4 @@ type User {
 }
 
 union _Entity = Product | User
-
 `
