@@ -37,11 +37,8 @@ Features:
 - [Integrations](docs/integrations/)
 - [Related Plugins](docs/plugins.md)
 - [Protocol Extensions](/docs/protocol-extension.md)
-<<<<<<< HEAD
 - [Faq](/docs/faq.md)
-=======
 - [HTTP](/docs/http.md)
->>>>>>> d34e20da58eb800cbd5f13465ea8a2ccd1f9b10b
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
