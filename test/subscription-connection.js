@@ -8,7 +8,6 @@ const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
 const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protocol')
 
-
 test('socket is closed on unhandled promise rejection in handleMessage', t => {
   t.plan(1)
   let handleConnectionCloseCalled = false
@@ -102,7 +101,7 @@ test('subscription connection closes context on GQL_STOP message correctly (prot
     on () {},
     close () {},
     send (message) {},
-    protocol: GRAPHQL_TRANSPORT_WS
+    protocol: GRAPHQL_WS
   }, {})
 
   sc.subscriptionContexts = new Map()
@@ -150,7 +149,7 @@ test('subscription connection completes resolver iterator on GQL_STOP message co
     on () {},
     close () {},
     send (message) {},
-    protocol: GRAPHQL_TRANSPORT_WS
+    protocol: GRAPHQL_WS
   }, {})
 
   sc.subscriptionIters = new Map()
@@ -217,7 +216,7 @@ test('subscription connection handles GQL_STOP message correctly, with no data (
     on () {},
     close () {},
     send (message) {},
-    protocol: GRAPHQL_TRANSPORT_WS
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage(JSON.stringify({

@@ -192,7 +192,7 @@ test('subscription client stops trying reconnecting after maxReconnectAttempts',
   server.close()
 })
 
-test('subscription client multiple subscriptions is handled by one operation', t => {
+test('subscription client multiple subscriptions is handled by one operation', { only: true }, t => {
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
 
@@ -231,7 +231,7 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message, isBinary) {
       const data = JSON.parse(isBinary ? message : message.toString())
-      if (data.type === 'stop') {
+      if (data.type === 'complete') {
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
       }
     })
