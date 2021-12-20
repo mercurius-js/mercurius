@@ -2,6 +2,7 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
+const split = require('split2')
 const querystring = require('querystring')
 const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
@@ -319,8 +320,14 @@ test('GET route with extensions', async (t) => {
   })
 })
 
-test('GET route with bad JSON extensions', async (t) => {
-  const app = Fastify()
+test('GET route with bad JSON extensions', { only: true }, async (t) => {
+  t.plan(3)
+  const lines = split(JSON.parse)
+  const app = Fastify({
+    logger: {
+      stream: lines
+    }
+  })
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -345,6 +352,14 @@ test('GET route with bad JSON extensions', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
+
+  for await (const line of lines) {
+    if (line.err) {
+      t.equal(line.err.message, 'Unexpected token o in JSON at position 1')
+      t.equal(line.err.code, 'MER_ERR_GQL_VALIDATION')
+      break
+    }
+  }
 })
 
 test('POST route variables', async (t) => {
@@ -580,6 +595,49 @@ test('POST return 400 on error', async (t) => {
 
   t.equal(res.statusCode, 400) // Bad Request
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+})
+
+test('POST return 400 error handler provide custom context to custom async error formatter', async (t) => {
+  t.plan(2)
+
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    errorHandler: true,
+    context: async () => {
+      return { topic: 'POINT_ADDED' }
+    },
+    errorFormatter: (_execution, context) => {
+      t.has(context, { topic: 'POINT_ADDED' })
+      return {
+        statusCode: 400,
+        response: {
+          data: { add: null },
+          errors: [{ message: 'Internal Server Error' }]
+        }
+      }
+    }
+  })
+
+  // Invalid query
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query: '{ add(x: 2, y: 2)' }
+  })
+
+  t.equal(res.statusCode, 400)
 })
 
 test('mutation with POST', async (t) => {
@@ -1655,7 +1713,11 @@ test('error thrown from onDisconnect is logged', t => {
   const error = new Error('error')
 
   const app = Fastify()
+
+  // override `app.log` to avoid polluting other tests
+  app.log = Object.create(app.log)
   app.log.error = (e) => { t.same(error, e) }
+
   t.teardown(() => app.close())
 
   const schema = `
@@ -1702,6 +1764,9 @@ test('promise rejection from onDisconnect is logged', t => {
   const error = new Error('error')
 
   const app = Fastify()
+
+  // override `app.log` to avoid polluting other tests
+  app.log = Object.create(app.log)
   app.log.error = (e) => { t.same(error, e) }
   t.teardown(() => app.close())
 

@@ -2,7 +2,9 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
-const { parse, GraphQLSchema } = require('graphql')
+const proxyquire = require('proxyquire')
+const { mapSchema } = require('@graphql-tools/utils')
+const { parse, buildSchema, GraphQLSchema } = require('graphql')
 const { promisify } = require('util')
 const GQL = require('..')
 
@@ -523,6 +525,139 @@ test('preExecution hooks should be able to modify the query document AST', async
       add: 10
     }
   })
+})
+
+test('preExecution hooks should be able to modify the schema document AST', async t => {
+  t.plan(8)
+  const app = await createTestServer(t)
+
+  const query = `{ 
+    __type(name:"Query") { 
+      name
+      fields {
+        name
+      }  
+    }
+  }`
+
+  app.graphql.addHook('preExecution', async (schema, document, context) => {
+    t.type(schema, GraphQLSchema)
+    t.same(document, parse(query))
+    t.type(context, 'object')
+
+    if (context.reply.request.headers.role === 'super-user') {
+      const modifiedSchema = `
+        type Query {
+          add(x: Int, y: Int): Int
+          subtract(x: Int, y: Int): Int
+        }
+      `
+
+      return {
+        schema: buildSchema(modifiedSchema)
+      }
+    }
+  })
+
+  const reqSuper = app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json', role: 'super-user' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  }).then(res => {
+    t.same(JSON.parse(res.body), {
+      data: {
+        __type: {
+          name: 'Query',
+          fields: [
+            { name: 'add' },
+            { name: 'subtract' }
+          ]
+        }
+      }
+    })
+  })
+
+  const reqNotSuper = app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json', role: 'not-a-super-user' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  }).then(res => {
+    t.same(JSON.parse(res.body), {
+      data: {
+        __type: {
+          name: 'Query',
+          fields: [
+            { name: 'add' }
+          ]
+        }
+      }
+    })
+  })
+
+  await Promise.all([reqSuper, reqNotSuper])
+})
+
+test('cache skipped when the GQL Schema has been changed', async t => {
+  t.plan(4)
+
+  const app = Fastify()
+  t.teardown(() => app.close())
+
+  const plugin = proxyquire('../index', {
+    'graphql-jit': {
+      compileQuery () {
+        t.pass('the jit is called once')
+        return null
+      }
+    }
+  })
+
+  await app.register(plugin, { schema, resolvers, jit: 1 })
+  await app
+
+  app.graphql.addHook('preExecution', async (schema, document, context) => {
+    if (context.reply.request.headers.original === 'ok') {
+      return
+    }
+
+    return {
+      schema: mapSchema(schema)
+    }
+  })
+
+  const query = '{ add(x:1, y:2) }'
+
+  {
+    const res = await app.inject({
+      method: 'POST',
+      headers: { 'content-type': 'application/json', original: 'ok' },
+      url: '/graphql',
+      body: JSON.stringify({ query })
+    })
+    t.same(res.json(), { data: { add: 3 } }, 'this call warm up the jit counter')
+  }
+
+  {
+    const res = await app.inject({
+      method: 'POST',
+      headers: { 'content-type': 'application/json', original: 'NO' },
+      url: '/graphql',
+      body: JSON.stringify({ query })
+    })
+    t.same(res.json(), { data: { add: 3 } }, 'this call MUST not trigger the jit')
+  }
+
+  {
+    const res = await app.inject({
+      method: 'POST',
+      headers: { 'content-type': 'application/json', original: 'ok' },
+      url: '/graphql',
+      body: JSON.stringify({ query })
+    })
+    t.same(res.json(), { data: { add: 3 } }, 'this call triggers the jit cache')
+  }
 })
 
 test('preExecution hooks should be able to add to the errors array', async t => {

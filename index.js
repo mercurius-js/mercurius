@@ -28,6 +28,7 @@ const buildGateway = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
+const stringify = require('safe-stable-stringify')
 const {
   ErrorWithProps,
   defaultErrorFormatter,
@@ -258,7 +259,7 @@ const plugin = fp(async function (app, opts) {
 
     context = Object.assign(context, { reply: this, app })
     if (app[kFactory]) {
-      this[kLoaders] = factory.create(context)
+      this[kLoaders] = app[kFactory].create(context)
     }
 
     return app.graphql(source, context, variables, operationName)
@@ -366,15 +367,25 @@ const plugin = fp(async function (app, opts) {
       app.decorate(kSubscriptionFactory, subscriptionFactory)
     }
 
-    function defineLoader (name) {
+    function defineLoader (name, opts) {
       // async needed because of throw
-      return async function (obj, params, { reply }) {
+      return async function (obj, params, ctx, info) {
+        const { reply } = ctx
         if (!reply) {
           throw new MER_ERR_INVALID_OPTS('loaders only work via reply.graphql()')
         }
 
-        return reply[kLoaders][name]({ obj, params })
+        const query = opts.cache === false ? { obj, params, info } : { obj, params }
+
+        return reply[kLoaders][name](query)
       }
+    }
+
+    function serialize (query) {
+      if (query.info) {
+        return stringify({ obj: query.obj, params: query.params })
+      }
+      return query
     }
 
     const resolvers = {}
@@ -383,13 +394,20 @@ const plugin = fp(async function (app, opts) {
       resolvers[typeKey] = {}
       for (const prop of Object.keys(type)) {
         const name = typeKey + '-' + prop
-        resolvers[typeKey][prop] = defineLoader(name)
+        const toAssign = [{}, type[prop].opts || {}]
+        if (opts.cache === false) {
+          toAssign.push({
+            cache: false
+          })
+        }
+        const factoryOpts = Object.assign(...toAssign)
+        resolvers[typeKey][prop] = defineLoader(name, factoryOpts)
         if (typeof type[prop] === 'function') {
-          factory.add(name, type[prop])
-          subscriptionFactory.add(name, { cache: false }, type[prop])
+          factory.add(name, factoryOpts, type[prop], serialize)
+          subscriptionFactory.add(name, { cache: false }, type[prop], serialize)
         } else {
-          factory.add(name, type[prop].opts, type[prop].loader)
-          subscriptionFactory.add(name, Object.assign({}, type[prop].opts, { cache: false }), type[prop].loader)
+          factory.add(name, factoryOpts, type[prop].loader, serialize)
+          subscriptionFactory.add(name, Object.assign({}, type[prop].opts, { cache: false }), type[prop].loader, serialize)
         }
       }
     }
@@ -515,7 +533,6 @@ const plugin = fp(async function (app, opts) {
     }
 
     const shouldCompileJit = cached && cached.count++ === minJit
-
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext(fastifyGraphQl.schema, document, root, context, variables, operationName)
@@ -527,24 +544,30 @@ const plugin = fp(async function (app, opts) {
     }
 
     // Trigger preExecution hook
+    let modifiedSchema
     let modifiedDocument
     if (context.preExecution !== null) {
-      ({ modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
     }
 
     // minJit is 0 by default
     if (shouldCompileJit) {
-      cached.jit = compileQuery(fastifyGraphQl.schema, modifiedDocument || document, operationName)
+      if (!modifiedSchema && !modifiedDocument) {
+        // can compile only when the schema and document are not modified
+        cached.jit = compileQuery(fastifyGraphQl.schema, document, operationName, opts.compilerOptions)
+      } else {
+        // the counter must decrease to ignore the query
+        cached && cached.count--
+      }
     }
 
-    if (cached && cached.jit !== null) {
+    if (cached && cached.jit !== null && !modifiedSchema && !modifiedDocument) {
       const execution = await cached.jit.query(root, context, variables || {})
-
       return maybeFormatErrors(execution, context)
     }
 
     const execution = await execute(
-      fastifyGraphQl.schema,
+      modifiedSchema || fastifyGraphQl.schema,
       modifiedDocument || document,
       root,
       context,

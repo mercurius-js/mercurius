@@ -1,3 +1,6 @@
+
+![Mercurius Logo](https://github.com/mercurius-js/graphics/blob/main/mercurius-horizontal.svg)
+
 # mercurius
 
 ![CI workflow](https://github.com/mercurius-js/mercurius/workflows/CI%20workflow/badge.svg)
@@ -34,6 +37,7 @@ Features:
 - [Integrations](docs/integrations/)
 - [Related Plugins](docs/plugins.md)
 - [Protocol Extensions](/docs/protocol-extension.md)
+- [Faq](/docs/faq.md)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 

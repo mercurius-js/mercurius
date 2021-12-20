@@ -49,7 +49,7 @@ fastify.graphql.addHook('preParsing', async (schema, source, context) => {
 
 ### preValidation
 
-By the time the `preValidation` hook triggers, the query string has been parsed into a GraphQL Document AST.
+By the time the `preValidation` hook triggers, the query string has been parsed into a GraphQL Document AST. The hook will not be triggered for cached queries, as they are not validated.
 
 ```js
 fastify.graphql.addHook('preValidation', async (schema, document, context) => {
@@ -61,14 +61,18 @@ fastify.graphql.addHook('preValidation', async (schema, document, context) => {
 
 In the `preExecution` hook, you can modify the following items by returning them in the hook definition:
   - `document`
+  - `schema`
   - `errors`
+
+Note that if you modify the `schema` or the `document` object, the [jit](./api/options.md#plugin-options) compilation will be disabled for the request.
 
 ```js
 fastify.graphql.addHook('preExecution', async (schema, document, context) => {
-  const { modifiedDocument, errors } = await asyncMethod(document)
+  const { modifiedSchema, modifiedDocument, errors } = await asyncMethod(document)
 
   return {
-    document: modifiedDocument
+    schema: modifiedSchema, // ⚠️ changing the schema may break the query execution. Use it carefully.
+    document: modifiedDocument,
     errors
   }
 })
@@ -90,13 +94,15 @@ fastify.graphql.addHook('preGatewayExecution', async (schema, document, context,
   const { modifiedDocument, errors } = await asyncMethod(document)
 
   return {
-    document: modifiedDocument
+    document: modifiedDocument,
     errors
   }
 })
 ```
 
 ### onResolution
+
+The `onResolution` hooks run after the GraphQL query execution and you can access the result via the `execution` argument.
 
 ```js
 fastify.graphql.addHook('onResolution', async (execution, context) => {
@@ -141,7 +147,7 @@ Note, the original query will still execute. Adding the above will result in the
 ```json
 {
   "data": {
-    foo: "bar"
+    "foo": "bar"
   },
   "errors": [
     {

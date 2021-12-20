@@ -9,6 +9,7 @@ Related plugins for mercurius
 - [altair-fastify-plugin](#altair-fastify-plugin)
 - [mercurius-apollo-registry](#mercurius-apollo-registry)
 - [mercurius-apollo-tracing](#mercurius-apollo-tracing)
+- [mercurius-postgraphile](#mercurius-postgraphile)
 
 ## mercurius-auth
 
@@ -118,3 +119,8 @@ app.register(mercuriusTracing, {
   graphRef: 'yourGraph@ref' // replace 'yourGraph@ref'' with the one from apollo studio
 })
 ```
+
+## mercurius-postgraphile
+A Mercurius plugin for integrating PostGraphile schemas with Mercurius
+
+Check [https://github.com/autotelic/mercurius-postgraphile](https://github.com/autotelic/mercurius-postgraphile) for usage and readme.

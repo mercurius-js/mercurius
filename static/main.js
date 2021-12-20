@@ -19,10 +19,10 @@ const importer = {
 function render () {
   const host = window.location.host
 
-  const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws'
+  const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
   const url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
-  const subscriptionUrl = `${websocketProtocol}://${host}${window.GRAPHQL_ENDPOINT}`
+  const subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
 
   const fetcher = GraphiQL.createFetcher({
     url,
@@ -39,25 +39,28 @@ function render () {
   )
 }
 
+function importDependencies () {
+  const link = document.createElement('link')
+  link.href = 'https://unpkg.com/graphiql@1.4.2/graphiql.css'
+  link.type = 'text/css'
+  link.rel = 'stylesheet'
+  link.media = 'screen,print'
+  document.getElementsByTagName('head')[0].appendChild(link)
+
+  return importer.urls([
+    'https://unpkg.com/react@16.8.0/umd/react.production.min.js',
+    'https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js',
+    'https://unpkg.com/graphiql@1.4.2/graphiql.min.js',
+    'https://unpkg.com/subscriptions-transport-ws@0.9.19/browser/client.js'
+  ])
+}
+
 if ('serviceWorker' in navigator) {
   navigator
     .serviceWorker
     .register('./graphiql/sw.js')
-    .then(function () {
-      const link = document.createElement('link')
-      link.href = 'https://unpkg.com/graphiql@1.4.2/graphiql.css'
-      link.type = 'text/css'
-      link.rel = 'stylesheet'
-      link.media = 'screen,print'
-      document.getElementsByTagName('head')[0].appendChild(link)
-
-      return importer.urls([
-        'https://unpkg.com/react@16.8.0/umd/react.production.min.js',
-        'https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js',
-        'https://unpkg.com/graphiql@1.4.2/graphiql.min.js',
-        'https://unpkg.com/subscriptions-transport-ws@0.9.19/browser/client.js'
-      ])
-    }).then(render)
+    .then(importDependencies).then(render)
 } else {
-  render()
+  importDependencies()
+    .then(render)
 }

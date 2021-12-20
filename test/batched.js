@@ -111,6 +111,55 @@ test('POST single bad batched query', async (t) => {
   t.same(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 2, column: 37 }] }] }])
 })
 
+test('POST single bad batched query with cutom error formatter and custom async context', async (t) => {
+  t.plan(2)
+
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    allowBatchedQueries: true,
+    context: async () => {
+      return { topic: 'NOTIFICATIONS_ADDED' }
+    },
+    errorFormatter: (_execution, context) => {
+      t.has(context, { topic: 'NOTIFICATIONS_ADDED' })
+      return {
+        response: {
+          data: null,
+          errors: [{ message: 'Internal Server Error' }]
+        }
+      }
+    }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: [
+      {
+        operationName: 'AddQuery',
+        variables: { x: 1, y: 2 },
+        query: `
+            query AddQuery ($x: Int!`
+      }
+    ]
+  })
+
+  t.same(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Internal Server Error' }] }])
+})
+
 test('POST batched query', async (t) => {
   const app = Fastify()
 

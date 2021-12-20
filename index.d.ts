@@ -231,7 +231,7 @@ interface Gateway {
   serviceMap: Record<string, ServiceConfig>;
 }
 
-interface MercuriusPlugin {
+export interface MercuriusPlugin {
   <
     TData extends Record<string, any> = Record<string, any>,
     TVariables extends Record<string, any> = Record<string, any>
@@ -380,7 +380,7 @@ interface WsConnectionParams {
 
 export interface MercuriusGatewayService {
   name: string;
-  url: string;
+  url: string | string[];
   schema?: string;
   wsUrl?: string;
   mandatory?: boolean;
@@ -428,8 +428,8 @@ export interface MercuriusCommonOptions {
   /**
    * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
    */
-  graphiql?: boolean | string;
-  ide?: boolean | string;
+  graphiql?: boolean | 'graphiql';
+  ide?: boolean | 'graphiql';
   /**
    * The minimum number of execution a query needs to be executed before being jit'ed.
    * @default true
@@ -592,11 +592,12 @@ declare namespace mercurius {
    * Extended errors for adding additional information in error responses
    */
   class ErrorWithProps extends Error {
-    constructor(message: string, extensions?: object);
+    constructor(message: string, extensions?: object, statusCode?: number);
     /**
      * Custom additional properties of this error
      */
     extensions?: object;
+    statusCode?: number;
   }
 
   /**
@@ -785,6 +786,7 @@ type ValidationRules =
     }) => ValidationRule[]);
 
 export interface PreExecutionHookResponse<TError extends Error> {
+  schema?: GraphQLSchema
   document?: DocumentNode
   errors?: TError[]
 }

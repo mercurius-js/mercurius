@@ -760,3 +760,427 @@ test('subscriptions work with scalars', async t => {
   await createGateway()
   await runSubscription()
 })
+
+test('subscriptions work with different contexts', async (t) => {
+  let testService
+  let gateway
+
+  const schema = `
+  extend type Query {
+      ignored: Boolean!
+  }
+
+  extend type Mutation {
+      addTestEvent(value: Int!): Int!
+  }
+
+  type Event @key(fields: "value") {
+    value: Int! @external
+  }
+
+  extend type Subscription {
+      testEvent(value: Int!): Int!
+  }`
+
+  const resolvers = {
+    Query: {
+      ignored: () => true
+    },
+    Mutation: {
+      addTestEvent: async (_, { value }, { pubsub }) => {
+        await pubsub.publish({
+          topic: 'testEvent',
+          payload: { testEvent: value }
+        })
+
+        return value
+      }
+    },
+    Subscription: {
+      testEvent: {
+        subscribe: GQL.withFilter(
+          async (_, __, { pubsub }) => {
+            return await pubsub.subscribe('testEvent')
+          },
+          ({ testEvent }, { value }) => {
+            return testEvent === value
+          }
+        )
+      }
+    }
+  }
+
+  function createTestService () {
+    testService = Fastify()
+    testService.register(GQL, {
+      schema,
+      resolvers,
+      federationMetadata: true,
+      subscription: true
+    })
+
+    return testService.listen(0)
+  }
+
+  function createGateway () {
+    const testServicePort = testService.server.address().port
+
+    gateway = Fastify()
+    gateway.register(GQL, {
+      subscription: true,
+      gateway: {
+        services: [{
+          name: 'testService',
+          url: `http://localhost:${testServicePort}/graphql`,
+          wsUrl: `ws://localhost:${testServicePort}/graphql`
+        }]
+      }
+    })
+
+    return gateway.listen(0)
+  }
+
+  function runSubscription (id) {
+    const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(async () => {
+      client.destroy()
+    })
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription TestEvent($value: Int!) {
+            testEvent(value: $value)
+          }
+        `,
+        variables: { value: id }
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription TestEvent($value: Int!) {
+            testEvent(value: $value)
+          }
+        `,
+        variables: { value: id }
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    let end
+
+    const endPromise = new Promise(resolve => {
+      end = resolve
+    })
+
+    client.on('data', (chunk) => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              testEvent: id
+            }
+          }
+        }))
+
+        client.end()
+        end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        gateway.inject({
+          method: 'POST',
+          url: '/graphql',
+          body: {
+            query: `
+              mutation AddTestEvent($value: Int!) {
+                addTestEvent(value: $value)
+              }
+            `,
+            variables: { value: id }
+          }
+        })
+      }
+    })
+
+    return endPromise
+  }
+
+  await createTestService()
+  await createGateway()
+  const subscriptions = new Array(10).fill(null).map((_, i) => runSubscription(i))
+  await Promise.all(subscriptions)
+
+  t.teardown(async () => {
+    await gateway.close()
+    await testService.close()
+  })
+})
+
+test('connection_init headers available in federation event resolver', async (t) => {
+  let subscriptionService
+  let resolverService
+  let gateway
+
+  const onConnect = (data) => {
+    if (data.payload.gateway) {
+      return { headers: {} }
+    } else {
+      return {
+        headers: data.payload.headers
+      }
+    }
+  }
+
+  const wsConnectionParams = {
+    connectionInitPayload () {
+      return {
+        gateway: true
+      }
+    }
+  }
+
+  function createResolverService () {
+    const schema = `
+      extend type Query {
+        ignoredResolver: Boolean!
+      }
+    
+      extend type Event @key(fields: "value") {
+        id: ID! @external
+        userId: Int!
+      }  
+    `
+
+    const resolvers = {
+      Query: {
+        ignoredResolver: () => true
+      },
+      Event: {
+        userId: (root, args, ctx) => {
+          return parseInt(root.id)
+        }
+      }
+    }
+
+    resolverService = Fastify()
+    resolverService.register(GQL, {
+      schema,
+      resolvers,
+      federationMetadata: true,
+      subscription: { onConnect }
+    })
+
+    return resolverService.listen(0)
+  }
+
+  function createSubscriptionService () {
+    const schema = `
+      extend type Query {
+        ignored: Boolean!
+      }
+    
+      type Event @key(fields: "id") {
+        id: ID!
+      }
+
+      extend type Mutation {
+        addTestEvent(value: Int!): Int!
+      }
+      
+      extend type Subscription {
+        testEvent(value: Int!): Event!
+      }
+      `
+
+    const resolvers = {
+      Query: {
+        ignored: () => true
+      },
+      Mutation: {
+        addTestEvent: async (_, { value }, { pubsub }) => {
+          await pubsub.publish({
+            topic: 'testEvent',
+            payload: { testEvent: { id: value } }
+          })
+
+          return value
+        }
+      },
+      Subscription: {
+        testEvent: {
+          subscribe: GQL.withFilter(
+            async (_, __, { pubsub }) => {
+              return await pubsub.subscribe('testEvent')
+            },
+            (root, args, { headers }) => {
+              return headers.userId === root.testEvent.id
+            }
+          )
+        }
+      }
+    }
+
+    subscriptionService = Fastify()
+    subscriptionService.register(GQL, {
+      schema,
+      resolvers,
+      federationMetadata: true,
+      subscription: { onConnect }
+    })
+
+    return subscriptionService.listen(0)
+  }
+
+  function createGateway () {
+    const subscriptionServicePort = subscriptionService.server.address().port
+    const resolverServicePort = resolverService.server.address().port
+
+    gateway = Fastify()
+    gateway.register(GQL, {
+      subscription: true,
+      gateway: {
+        services: [
+          {
+            name: 'subscriptionService',
+            url: `http://localhost:${subscriptionServicePort}/graphql`,
+            wsUrl: `ws://localhost:${subscriptionServicePort}/graphql`,
+            wsConnectionParams
+          },
+          {
+            name: 'resolverService',
+            url: `http://localhost:${resolverServicePort}/graphql`,
+            wsUrl: `ws://localhost:${resolverServicePort}/graphql`,
+            wsConnectionParams
+          }
+        ]
+      }
+    })
+
+    return gateway.listen(0)
+  }
+
+  function runSubscription (id) {
+    const ws = new WebSocket(`ws://localhost:${(gateway.server.address()).port}/graphql`, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(async () => {
+      client.destroy()
+    })
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init',
+      payload: { headers: { userId: id } }
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription TestEvent($value: Int!) {
+            testEvent(value: $value) {
+              id
+              userId
+            }
+          }
+        `,
+        variables: { value: id }
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription TestEvent($value: Int!) {
+            testEvent(value: $value) {
+              id
+              userId
+            }
+          }
+        `,
+        variables: { value: id }
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    let end
+
+    const endPromise = new Promise(resolve => {
+      end = resolve
+    })
+
+    client.on('data', (chunk) => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              testEvent: {
+                id: String(id),
+                userId: id
+              }
+            }
+          }
+        }))
+
+        client.end()
+        end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        gateway.inject({
+          method: 'POST',
+          url: '/graphql',
+          body: {
+            query: `
+              mutation AddTestEvent($value: Int!) {
+                addTestEvent(value: $value)
+              }
+            `,
+            variables: { value: id }
+          }
+        })
+      }
+    })
+
+    return endPromise
+  }
+
+  await createSubscriptionService()
+  await createResolverService()
+  await createGateway()
+  const subscriptions = new Array(10).fill(null).map((_, i) => runSubscription(i))
+  await Promise.all(subscriptions)
+
+  t.teardown(async () => {
+    await gateway.close()
+    await subscriptionService.close()
+    await resolverService.close()
+  })
+})

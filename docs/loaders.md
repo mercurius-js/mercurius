@@ -9,18 +9,20 @@ also cache the results, so that other parts of the GraphQL do not have
 to fetch the same data.
 
 Each loader function has the signature `loader(queries, context)`.
-`queries` is an array of objects defined as `{ obj, params }` where
-`obj` is the current object and `params` are the GraphQL params (those
-are the first two parameters of a normal resolver). The `context` is the
-GraphQL context, and it includes a `reply` object.
+`queries` is an array of objects defined as `{ obj, params, info }` where
+`obj` is the current object, `params` are the GraphQL params (those
+are the first two parameters of a normal resolver) and `info` contains
+additional information about the query and execution. `info` object is
+only available in the loader if the cache is set to `false`. The `context`
+is the GraphQL context, and it includes a `reply` object.
 
 Example:
 
 ```js
 const loaders = {
   Dog: {
-    async owner(queries, { reply }) {
-      return queries.map(({ obj }) => owners[obj.name])
+    async owner (queries, { reply }) {
+      return queries.map(({ obj, params }) => owners[obj.name])
     }
   }
 }
@@ -38,8 +40,11 @@ It is also possible disable caching with:
 const loaders = {
   Dog: {
     owner: {
-      async loader(queries, { reply }) {
-        return queries.map(({ obj }) => owners[obj.name])
+      async loader (queries, { reply }) {
+        return queries.map(({ obj, params, info }) => { 
+          // info is available only if the loader is not cached
+          owners[obj.name]
+        })
       },
       opts: {
         cache: false
@@ -52,6 +57,28 @@ app.register(mercurius, {
   schema,
   resolvers,
   loaders
+})
+```
+
+Alternatively, globally disabling caching also disable the Loader cache:
+
+```js
+const loaders = {
+  Dog: {
+    async owner (queries, { reply }) {
+      return queries.map(({ obj, params, info }) => { 
+        // info is available only if the loader is not cached
+        owners[obj.name]
+      })
+    }
+  }
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  loaders,
+  cache: false
 })
 ```
 

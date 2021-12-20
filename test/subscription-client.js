@@ -367,6 +367,34 @@ test('subscription client sending empty object payload on connection init', (t) 
   })
 })
 
+test('subscription client sends GQL_CONNECTION_KEEP_ALIVE when the keep alive option is active', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+  const clock = FakeTimers.createClock()
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: '1', type: 'connection_ack' }))
+      } else if (data.type === 'start') {
+        ws.send(JSON.stringify({ id: '2', type: 'complete' }))
+      } else if (data.type === 'ka') {
+        client.close()
+        server.close()
+        t.end()
+      }
+    })
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: false,
+    serviceName: 'test-service',
+    keepAlive: 1000
+  })
+  clock.tick(1000)
+})
+
 test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type payload received', (t) => {
   const clock = FakeTimers.createClock()
   const server = new WS.Server({ port: 0 })

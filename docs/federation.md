@@ -1,13 +1,17 @@
 # mercurius
 
-- [Federation metadata support](#federation-metadata-support)
-- [Federation with \_\_resolveReference caching](#federation-with-__resolvereference-caching)
-- [Use GraphQL server as a Gateway for federated schemas](#use-graphql-server-as-a-gateway-for-federated-schemas)
-  - [Periodically refresh federated schemas in Gateway mode](#periodically-refresh-federated-schemas-in-gateway-mode)
-  - [Programmatically refresh federated schemas in Gateway mode](#programmatically-refresh-federated-schemas-in-gateway-mode)
-  - [Using Gateway mode with a schema registry](#using-gateway-mode-with-a-schema-registry)
-  - [Flag service as mandatory in Gateway mode](#flag-service-as-mandatory-in-gateway-mode)
-  - [Using a custom errorHandler for handling downstream service errors in Gateway mode](#using-a-custom-errorhandler-for-handling-downstream-service-errors-in-gateway-mode)
+- [mercurius](#mercurius)
+  - [Federation](#federation)
+    - [Federation metadata support](#federation-metadata-support)
+    - [Federation with \_\_resolveReference caching](#federation-with-__resolvereference-caching)
+    - [Use GraphQL server as a Gateway for federated schemas](#use-graphql-server-as-a-gateway-for-federated-schemas)
+      - [Periodically refresh federated schemas in Gateway mode](#periodically-refresh-federated-schemas-in-gateway-mode)
+      - [Programmatically refresh federated schemas in Gateway mode](#programmatically-refresh-federated-schemas-in-gateway-mode)
+      - [Using Gateway mode with a schema registry](#using-gateway-mode-with-a-schema-registry)
+      - [Flag service as mandatory in Gateway mode](#flag-service-as-mandatory-in-gateway-mode)
+      - [Batched Queries to services](#batched-queries-to-services)
+      - [Using a custom errorHandler for handling downstream service errors in Gateway mode](#using-a-custom-errorhandler-for-handling-downstream-service-errors-in-gateway-mode)
+      - [Securely parse service responses in Gateway mode](#securely-parse-service-responses-in-gateway-mode)
 
 ## Federation
 
@@ -351,6 +355,41 @@ server.register(mercurius, {
 server.listen(3002)
 ```
 
+#### Batched Queries to services
+
+To fully leverage the DataLoader pattern we can tell the Gateway which of its services support [batched queries](batched-queries.md).  
+In this case the service will receive a request body with an array of queries to execute.  
+Enabling batched queries for a service that doesn't support it will generate errors.
+
+
+```js
+const Fastify = require('fastify')
+const mercurius = require('mercurius')
+
+const server = Fastify()
+
+server.register(mercurius, {
+  graphiql: true,
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:3000/graphql'  
+        allowBatchedQueries: true             
+      },
+      {
+        name: 'company',
+        url: 'http://localhost:3001/graphql', 
+        allowBatchedQueries: false            
+      }
+    ]
+  },
+  pollingInterval: 2000
+})
+
+server.listen(3002)
+```
+
 #### Using a custom errorHandler for handling downstream service errors in Gateway mode
 
 Service which uses Gateway mode can process different types of issues that can be obtained from remote services (for example, Network Error, Downstream Error, etc.). A developer can provide a function (`gateway.errorHandler`) that can process these errors.
@@ -388,3 +427,34 @@ server.listen(3002)
 ```
 
 _Note: The default behavior of `errorHandler` is call `errorFormatter` to send the result. When is provided an `errorHandler` make sure to **call `errorFormatter` manually if needed**._
+
+#### Securely parse service responses in Gateway mode
+
+Gateway service responses can be securely parsed using the `useSecureParse` flag. By default, the target service is considered trusted and thus this flag is set to `false`. If there is a need to securely parse the JSON response from a service, this flag can be set to `true` and it will use the [secure-json-parse](https://github.com/fastify/secure-json-parse) library.
+
+```js
+const Fastify = require('fastify')
+const mercurius = require('mercurius')
+
+const server = Fastify()
+
+server.register(mercurius, {
+  graphiql: true,
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:3000/graphql',
+        useSecureParse: true
+      },
+      {
+        name: 'company',
+        url: 'http://localhost:3001/graphql'
+      }
+    ]
+  },
+  pollingInterval: 2000
+})
+
+server.listen(3002)
+```

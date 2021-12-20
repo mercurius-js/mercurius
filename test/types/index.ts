@@ -1,4 +1,4 @@
-import { expectAssignable } from 'tsd'
+import { expectAssignable, expectError } from 'tsd'
 /* eslint-disable no-unused-expressions */
 import { EventEmitter } from 'events'
 // eslint-disable-next-line no-unused-vars
@@ -6,7 +6,7 @@ import Fastify, { FastifyReply, FastifyRequest, FastifyInstance } from 'fastify'
 // eslint-disable-next-line no-unused-vars
 import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
-import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata } from '../..'
+import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata, MercuriusPlugin } from '../..'
 // eslint-disable-next-line no-unused-vars
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from '@graphql-tools/schema'
@@ -323,6 +323,22 @@ gateway.register(mercurius, {
   }
 })
 
+// Gateway mode with load balanced services
+gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: ['http://localhost:4001/graphql', 'http://localhost:4002/graphql']
+      },
+      {
+        name: 'post',
+        url: 'http://localhost:4003/graphql'
+      }
+    ]
+  }
+})
+
 // Executable schema
 
 const executableSchema = makeExecutableSchema({
@@ -521,6 +537,7 @@ app.graphql.addHook('preExecution', async function (schema, document, context) {
   expectAssignable<DocumentNode>(document)
   expectAssignable<MercuriusContext>(context)
   return {
+    schema,
     document,
     errors: [
       new Error('foo')
@@ -593,3 +610,22 @@ app.graphql.addHook('onGatewayReplaceSchema', async function (instance, schema) 
   expectAssignable<FastifyInstance>(instance)
   expectAssignable<GraphQLSchema>(schema)
 })
+
+expectError(() => {
+  return new mercurius.ErrorWithProps('mess', {}, 'wrong statusCode')
+})
+
+expectAssignable<Error>(new mercurius.ErrorWithProps('mess', {}, 200))
+
+expectError(() => {
+  app.register(mercurius, {
+    graphiql: 'nonexistent'
+  })
+})
+
+declare module 'fastify' {
+// eslint-disable-next-line no-unused-vars
+  interface FastifyInstance {
+    graphql: MercuriusPlugin
+  }
+}
