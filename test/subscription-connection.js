@@ -295,7 +295,7 @@ test('subscription connection send error message when client message type is inv
   }))
 })
 
-test('subscription connection handles GQL_START message correctly, when payload.query is not defined', async (t) => {
+test('subscription connection handles GQL_START message correctly, when payload.query is not defined', (t) => {
   t.plan(1)
 
   const sc = new SubscriptionConnection({
@@ -311,7 +311,7 @@ test('subscription connection handles GQL_START message correctly, when payload.
 
   sc.isReady = true
 
-  await sc.handleMessage(JSON.stringify({
+  sc.handleMessage(JSON.stringify({
     id: 1,
     type: 'start',
     payload: { }
