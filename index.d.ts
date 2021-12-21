@@ -614,7 +614,7 @@ declare namespace mercurius {
    */
   const defaultErrorFormatter: (
     execution: ExecutionResult,
-    context: any
+    context: MercuriusContext
   ) => { statusCode: number; response: ExecutionResult };
 
   /**
