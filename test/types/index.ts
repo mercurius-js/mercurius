@@ -629,3 +629,13 @@ declare module 'fastify' {
     graphql: MercuriusPlugin
   }
 }
+
+mercurius.defaultErrorFormatter({}, {} as MercuriusContext)
+
+expectError(() => {
+  return mercurius.defaultErrorFormatter({}, null)
+})
+
+expectError(() => {
+  return mercurius.defaultErrorFormatter({}, undefined)
+})
