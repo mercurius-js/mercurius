@@ -122,6 +122,7 @@ const plugin = fp(async function (app, opts) {
   let subscriptionContextFn
   let onConnect
   let onDisconnect
+  let keepAlive
 
   if (typeof subscriptionOpts === 'object') {
     if (subscriptionOpts.pubsub) {
@@ -134,6 +135,7 @@ const plugin = fp(async function (app, opts) {
     subscriptionContextFn = subscriptionOpts.context
     onConnect = subscriptionOpts.onConnect
     onDisconnect = subscriptionOpts.onDisconnect
+    keepAlive = subscriptionOpts.keepAlive
   } else if (subscriptionOpts === true) {
     emitter = mq()
     subscriber = new PubSub(emitter)
@@ -246,7 +248,8 @@ const plugin = fp(async function (app, opts) {
       onDisconnect,
       lruGatewayResolvers,
       entityResolversFactory,
-      subscriptionContextFn
+      subscriptionContextFn,
+      keepAlive
     })
   }
 
