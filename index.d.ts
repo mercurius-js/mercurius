@@ -470,7 +470,7 @@ export interface MercuriusCommonOptions {
   /**
    * Change the default error formatter.
    */
-  errorFormatter?: <TContext extends Record<string,any> = MercuriusContext>(
+  errorFormatter?: <TContext extends MercuriusContext = MercuriusContext>(
     execution: ExecutionResult,
     context: TContext
   ) => {
@@ -614,7 +614,7 @@ declare namespace mercurius {
    */
   const defaultErrorFormatter: (
     execution: ExecutionResult,
-    context: any
+    context: MercuriusContext
   ) => { statusCode: number; response: ExecutionResult };
 
   /**
