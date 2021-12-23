@@ -59,6 +59,7 @@
   - `subscription.context`: `Function` Result of function is passed to subscription resolvers as a custom GraphQL context. The function receives the `connection` and `request` as parameters.
   - `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. If it returns an object the subscription context will be extended with the returned object.
   - `subscription.onDisconnect`: `Function` A function which is called with the subscription context of the connection after the connection gets disconnected.
+  - `subscription.keepAlive`: `Integer` Optional interval in ms to send the `GQL_CONNECTION_KEEP_ALIVE` message.
 - `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 - `gateway`: Object. Run the GraphQL server in gateway mode.
 

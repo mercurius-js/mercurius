@@ -516,6 +516,7 @@ export interface MercuriusCommonOptions {
           payload: any;
         }) => Record<string, any> | Promise<Record<string, any>>;
         onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
+        keepAlive?: number,
       };
   /**
    * Enable federation metadata support so the service can be deployed behind an Apollo Gateway

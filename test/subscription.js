@@ -52,6 +52,55 @@ test('subscription server replies with connection_ack', t => {
   })
 })
 
+test('subscription server replies with keep alive when enabled', t => {
+  const app = Fastify()
+  t.teardown(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: (parent, { x, y }) => x + y
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      keepAlive: 10000
+    }
+  })
+
+  app.listen(0, err => {
+    t.error(err)
+
+    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+    const ws = new WebSocket(url, 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(client.destroy.bind(client))
+
+    client.setEncoding('utf8')
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+    client.on('data', chunk => {
+      const payload = JSON.parse(chunk)
+
+      // keep alive only comes after the ack
+      if (payload.type === 'connection_ack') return
+
+      t.equal(payload.type, 'ka')
+      client.end()
+      t.end()
+    })
+  })
+})
+
 test('subscription server sends update to subscriptions', t => {
   const app = Fastify()
   t.teardown(() => app.close())
