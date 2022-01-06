@@ -7,6 +7,7 @@ const { mapSchema } = require('@graphql-tools/utils')
 const { parse, buildSchema, GraphQLSchema } = require('graphql')
 const { promisify } = require('util')
 const GQL = require('..')
+const { ErrorWithProps } = GQL
 
 const immediate = promisify(setImmediate)
 
@@ -276,6 +277,53 @@ test('preParsing hooks should handle errors', async t => {
     errors: [
       {
         message: 'a preParsing error occured'
+      }
+    ]
+  })
+})
+
+test('preParsing hooks should handle ErrorWithProps', async t => {
+  t.plan(4)
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('preParsing', async (schema, source, context) => {
+    t.type(schema, GraphQLSchema)
+    t.equal(source, query)
+    t.type(context, 'object')
+    throw new ErrorWithProps('a preParsing error occured', { code: 'USER_ID_INVALID' })
+  })
+
+  app.graphql.addHook('preParsing', async (schema, source, context) => {
+    t.fail('this should not be called')
+  })
+
+  app.graphql.addHook('preValidation', async (schema, document, context) => {
+    t.fail('this should not be called')
+  })
+
+  app.graphql.addHook('preExecution', async (schema, document, context) => {
+    t.fail('this should not be called')
+  })
+
+  app.graphql.addHook('onResolution', async (execution, context) => {
+    t.fail('this should not be called')
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: null,
+    errors: [
+      {
+        message: 'a preParsing error occured',
+        extensions: {
+          code: 'USER_ID_INVALID'
+        }
       }
     ]
   })
