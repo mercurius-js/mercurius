@@ -557,3 +557,15 @@ Allows the status code of the response to be set, and a GraphQL response for the
 By default uses the `defaultErrorFormatter`, but it can be overridden in the [mercurius options](/docs/api/options.md#plugin-options) changing the errorFormatter parameter.
 
 **Important**: *using the default formatter, when the error has a data property the response status code will be always 200*
+
+While using custom error formatter, you can access the status code provided by the ErrorWithProps object via 
+`originalError` property. Please keep in mind though, that `originalError` is a non-enumerable property, meaning it won't
+get serialized and/or logged as a whole.
+
+```javascript
+app.register(mercurius, {
+    schema,
+    resolvers,
+    errorFormatter: (result) => ({ statusCode: result.errors[0].originalError.statusCode, response: result })
+})
+```
