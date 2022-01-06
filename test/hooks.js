@@ -290,7 +290,7 @@ test('preParsing hooks should handle ErrorWithProps', async t => {
     t.type(schema, GraphQLSchema)
     t.equal(source, query)
     t.type(context, 'object')
-    throw new ErrorWithProps('a preParsing error occured', {code: 'USER_ID_INVALID'})
+    throw new ErrorWithProps('a preParsing error occured', { code: 'USER_ID_INVALID' })
   })
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
