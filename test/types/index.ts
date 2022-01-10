@@ -323,6 +323,55 @@ gateway.register(mercurius, {
   }
 })
 
+// keepAlive value in service config
+gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql',
+        schema: `
+        type Query {
+          dogs: [Dog]
+        }`,
+        keepAlive: 3000
+      }
+    ]
+  }
+})
+
+expectError(() => gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql',
+        schema: `
+        type Query {
+          dogs: [Dog]
+        }`,
+        keepAlive: true
+      }
+    ]
+  }
+}))
+
+expectError(() => gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql',
+        schema: `
+        type Query {
+          dogs: [Dog]
+        }`,
+        keepAlive: 'yes'
+      }
+    ]
+  }
+}))
+
 // Gateway mode with load balanced services
 gateway.register(mercurius, {
   gateway: {
