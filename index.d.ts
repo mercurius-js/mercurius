@@ -387,6 +387,7 @@ export interface MercuriusGatewayService {
   initHeaders?: (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>) | OutgoingHttpHeaders;
   rewriteHeaders?: <TContext extends MercuriusContext = MercuriusContext>(headers: IncomingHttpHeaders, context: TContext) => OutgoingHttpHeaders;
   connections?: number;
+  keepAlive?: number;
   keepAliveMaxTimeout?: number;
   rejectUnauthorized?: boolean;
   wsConnectionParams?:
