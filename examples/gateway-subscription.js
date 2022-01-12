@@ -269,7 +269,8 @@ async function start () {
         url: 'http://localhost:4003/graphql',
         wsUrl: 'ws://localhost:4003/graphql',
         wsConnectionParams: {
-          protocols: ['graphql-transport-ws'] // optional, if not set, will use the default protocol (graphql-ws)
+          // OPTIONAL: uncomment this line if you are using the `subscriptions-transport-ws` library
+          // protocols: ['graphql-ws']
         },
         keepAlive: 3000
       }]
