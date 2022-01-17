@@ -20,6 +20,7 @@
 * [Persisted Queries](/docs/persisted-queries)
 * [TypeScript Usage](/docs/typescript)
 * [HTTP](/docs/http)
+* [WebSocket Protocol](/docs/graphql-over-websocket.md)
 * [Integrations](/docs/integrations/)
   * [nexus](/docs/integrations/nexus)
   * [TypeGraphQL](/docs/integrations/type-graphql)
@@ -34,5 +35,4 @@
   * [altair-fastify-plugin](/docs/plugins#altair-fastify-plugin)
   * [mercurius-apollo-registry](/docs/plugins#mercurius-apollo-registry)
   * [mercurius-apollo-tracing](/docs/plugins#mercurius-apollo-tracing)
-* [Protocol Extensions](/docs/protocol-extension)
 * [Faq](/docs/faq)
