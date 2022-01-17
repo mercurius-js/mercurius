@@ -2385,7 +2385,7 @@ test('Update the schema', async (t) => {
   gateway.graphql.gateway.serviceMap.working.setSchema(fullSchema)
   const newSchema = await gateway.graphql.gateway.refresh()
 
-  gateway.graphql.replaceSchema(newSchema)
+  gateway.graphql.replaceSchema(newSchema.schema)
 
   const res2 = await gateway.inject({
     method: 'POST',
