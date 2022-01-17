@@ -60,6 +60,7 @@
   - `subscription.onConnect`: `Function` A function which can be used to validate the `connection_init` payload. If defined it should return a truthy value to authorize the connection. If it returns an object the subscription context will be extended with the returned object.
   - `subscription.onDisconnect`: `Function` A function which is called with the subscription context of the connection after the connection gets disconnected.
   - `subscription.keepAlive`: `Integer` Optional interval in ms to send the `GQL_CONNECTION_KEEP_ALIVE` message.
+  - `subscription.fullWsTransport`: `Boolean` Enable sending every operation via WS.
 - `federationMetadata`: Boolean. Enable federation metadata support so the service can be deployed behind an Apollo Gateway
 - `gateway`: Object. Run the GraphQL server in gateway mode.
 
@@ -545,7 +546,7 @@ throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 200)
 // using the defaultErrorFormatter, the response statusCode will be 200 when there is a single error
 
 const error = new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 500)
-error.data = {foo: 'bar'} 
+error.data = {foo: 'bar'}
 throw error
 // using the defaultErrorFormatter, the response status code will be always 200 because error.data is defined
 ```
@@ -558,7 +559,7 @@ By default uses the `defaultErrorFormatter`, but it can be overridden in the [me
 
 **Important**: *using the default formatter, when the error has a data property the response status code will be always 200*
 
-While using custom error formatter, you can access the status code provided by the ErrorWithProps object via 
+While using custom error formatter, you can access the status code provided by the ErrorWithProps object via
 `originalError` property. Please keep in mind though, that `originalError` is a non-enumerable property, meaning it won't
 get serialized and/or logged as a whole.
 
