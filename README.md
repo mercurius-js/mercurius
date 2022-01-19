@@ -35,7 +35,7 @@ Features:
 - [Persisted Queries](docs/persisted-queries.md)
 - [TypeScript Usage](/docs/typescript.md)
 - [HTTP](/docs/http.md)
-- [WebSocket Protocol](/docs/graphql-over-websocket.md)
+- [GraphQL over WebSocket](/docs/graphql-over-websocket.md)
 - [Integrations](docs/integrations/)
 - [Related Plugins](docs/plugins.md)
 - [Faq](/docs/faq.md)

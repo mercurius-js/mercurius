@@ -2,13 +2,23 @@
 
 The GraphQL specification doesn't dictates which transport must be used in order to execute operations. In fact, GraphQL is _transport agnostic_, so implementors can choose which protocol makes more sense for each use case.
 
-Generally, `query` and `mutation` are carried via HTTP, while `subscription` via WebSocket: this is the default behavior in `mercurius` and many other server implementations.
+Generally, `query` and `mutation` are carried via HTTP, while `subscription` via WebSocket: this is the default behavior in `mercurius` and many other server implementations. However, `query` and `mutation` can also be sent through WebSocket.
 
-However, you can also choose to enable `query` and `mutation` via WebSocket. If you want to do so, pass `fullWsTransport: true` on the options, like in [this example](../examples/full-ws-transport.md). You should be able to use any GraphQL client e.g. `graphql-ws`, `apollo`, `urql`, `graphql-hooks`, _etc._ in order to send every operation via WebSocket.
+## WebSocket subprotocol
 
-## Protocol
+As WebSocket is a generic and bidirectional way to send messages, **we need to agree about what each message _means_**: this is defined by the _subprotocol_.
 
-The GraphQL over WebSocket Protocol (i.e. the WebSocket sub-protocol) `mercurius` uses by default is [graphql-transport-ws](https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md). It also supports the protocol used by Apollo's `subscriptions-transport-ws`; however that library is **unmaintained** so it's not recommended to use.
+### Supported subprotocols
+
+The GraphQL over WebSocket Protocol (i.e. the WebSocket sub-protocol) used by default is called `graphql-transport-ws` and it's defined here:
+
+- [`graphql-transport-ws` Protocol SPEC](https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md)
+
+> ⚠️ The subprotocol originally defined by Apollo's `subscriptions-transport-ws` library is also supported. However, that library is **UNMAINTAINED** so it's not recommended to be used: basically **deprecated**. More info [here](https://github.com/apollographql/subscriptions-transport-ws/).
+
+### Supported clients
+
+You should be able to use any major GraphQL client library in order to send operations via WebSocket (e.g. `graphql-ws`, `graphql-hooks`, `apollo`, `urql`…). Depending on which client you use, you have built in support or you may need to use some plugins or middleware.
 
 ## Extensions
 

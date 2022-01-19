@@ -20,7 +20,7 @@
 * [Persisted Queries](/docs/persisted-queries)
 * [TypeScript Usage](/docs/typescript)
 * [HTTP](/docs/http)
-* [WebSocket Protocol](/docs/graphql-over-websocket.md)
+* [GraphQL over WebSocket](/docs/graphql-over-websocket.md)
 * [Integrations](/docs/integrations/)
   * [nexus](/docs/integrations/nexus)
   * [TypeGraphQL](/docs/integrations/type-graphql)
