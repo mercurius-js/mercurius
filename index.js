@@ -179,15 +179,15 @@ const plugin = fp(async function (app, opts) {
 
   const retryServices = (interval) => {
     let retryCount = 0
-    let shouldRetry = true
+    let isRetry = true
 
-    try {
-      return setInterval(async () => {
-        if (retryCount === 10) shouldRetry = false
+    return setInterval(async () => {
+      try {
+        if (retryCount === 10) isRetry = false
         retryCount++
 
         const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
-        const serviceInfo = await gateway.refresh(shouldRetry)
+        const serviceInfo = await gateway.refresh(isRetry)
         if (!serviceInfo) return
 
         const { schema = null, failedMandatoryServices = [] } = serviceInfo
@@ -201,10 +201,10 @@ const plugin = fp(async function (app, opts) {
           }
           fastifyGraphQl.replaceSchema(schema)
         }
-      }, interval)
-    } catch (error) {
-      app.log.error(error)
-    }
+      } catch (error) {
+        app.log.error(error)
+      }
+    }, interval)
   }
 
   if (gateway) {
