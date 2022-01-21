@@ -111,7 +111,7 @@ const postService = {
   }
 }
 
-test('gateway retry failed services', async (t) => {
+test('gateway - retry mandatory failed services on startup', async (t) => {
   t.plan(2)
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
@@ -134,17 +134,18 @@ test('gateway retry failed services', async (t) => {
   })
 
   app.register(GQL, {
-    graphiql: true,
     jit: 1,
     gateway: {
       services: [
         {
           name: 'user',
-          url: 'http://localhost:5001/graphql'
+          url: 'http://localhost:5001/graphql',
+          mandatory: false
         },
         {
           name: 'post',
-          url: 'http://localhost:5002/graphql'
+          url: 'http://localhost:5002/graphql',
+          mandatory: true
         }
       ]
     }
@@ -201,5 +202,95 @@ test('gateway retry failed services', async (t) => {
         ]
       }
     }
+  })
+})
+
+test('gateway - dont retry non-mandatory failed services on startup', async (t) => {
+  t.plan(2)
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 50
+  })
+
+  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+
+  let service2 = null
+  setTimeout(async () => {
+    service2 = await createTestService(5002, postService.schema, postService.resolvers)
+  }, 3000)
+
+  const app = Fastify()
+  t.teardown(async () => {
+    await app.close()
+    await service1.close()
+    await service2.close()
+    clock.uninstall()
+  })
+
+  app.register(GQL, {
+    jit: 1,
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: 'http://localhost:5001/graphql',
+          mandatory: false
+        },
+        {
+          name: 'post',
+          url: 'http://localhost:5002/graphql',
+          mandatory: false
+        }
+      ]
+    }
+  })
+
+  await app.listen(5000)
+
+  const query = `
+    query {
+      user: me {
+        id
+        name
+        posts(count: 1) {
+          pid
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.same(JSON.parse(res.body), {
+    errors: [
+      {
+        message: 'Cannot query field "posts" on type "User".',
+        locations: [{ line: 6, column: 9 }]
+      }
+    ],
+    data: null
+  })
+
+  await clock.runAllAsync()
+
+  const res1 = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.same(JSON.parse(res1.body), {
+    errors: [
+      {
+        message: 'Cannot query field "posts" on type "User".',
+        locations: [{ line: 6, column: 9 }]
+      }
+    ],
+    data: null
   })
 })
