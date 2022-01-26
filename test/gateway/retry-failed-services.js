@@ -216,7 +216,6 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
   })
 })
 
-
 test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not specified', async (t) => {
   t.plan(2)
   const clock = FakeTimers.install({
