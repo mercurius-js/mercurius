@@ -286,9 +286,7 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
     data: null
   })
 
-  for (let i = 0; i < 10; i++) {
-    await sleep(1000)
-  }
+  await clock.tickAsync(10000)
 
   const res1 = await app.inject({
     method: 'POST',
