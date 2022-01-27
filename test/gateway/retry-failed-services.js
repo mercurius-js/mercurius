@@ -2,8 +2,6 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
-const { promisify } = require('util')
-const sleep = promisify(setTimeout)
 const { GraphQLSchema } = require('graphql')
 const GQL = require('../..')
 const FakeTimers = require('@sinonjs/fake-timers')
@@ -160,7 +158,7 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
     t.ok('should be called')
   })
 
-  await app.listen(5000)
+  await app.ready()
 
   const query = `
     query {
@@ -191,7 +189,7 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
   })
 
   for (let i = 0; i < 10; i++) {
-    await sleep(1000)
+    await clock.tickAsync(1000)
   }
 
   const res1 = await app.inject({
@@ -252,11 +250,104 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
           url: 'http://localhost:5002/graphql',
           mandatory: true
         }
-      ]
+      ],
+      retryServicesCount: 10,
+      retryServicesInterval: 2000
     }
   })
 
-  await app.listen(5000)
+  await app.ready()
+
+  const query = `
+    query {
+      user: me {
+        id
+        name
+        posts(count: 1) {
+          pid
+        }
+      }
+    }`
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.same(JSON.parse(res.body), {
+    errors: [
+      {
+        message: 'Cannot query field "posts" on type "User".',
+        locations: [{ line: 6, column: 9 }]
+      }
+    ],
+    data: null
+  })
+
+  for (let i = 0; i < 10; i++) {
+    await clock.tickAsync(1000)
+  }
+
+  const res1 = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  t.same(JSON.parse(res1.body), {
+    data: {
+      user: {
+        id: 'u1',
+        name: 'John',
+        posts: [
+          {
+            pid: 'p1'
+          }
+        ]
+      }
+    }
+  })
+})
+
+test('gateway - dont retry non-mandatory failed services on startup', async (t) => {
+  t.plan(2)
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 50
+  })
+
+  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+
+  const app = Fastify()
+  t.teardown(async () => {
+    await app.close()
+    await service1.close()
+    clock.uninstall()
+  })
+
+  app.register(GQL, {
+    jit: 1,
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: 'http://localhost:5001/graphql',
+          mandatory: false
+        },
+        {
+          name: 'post',
+          url: 'http://localhost:5002/graphql',
+          mandatory: false
+        }
+      ],
+      pollingInterval: 2000
+    }
+  })
+
+  await app.ready()
 
   const query = `
     query {
@@ -296,101 +387,6 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
   })
 
   t.same(JSON.parse(res1.body), {
-    data: {
-      user: {
-        id: 'u1',
-        name: 'John',
-        posts: [
-          {
-            pid: 'p1'
-          }
-        ]
-      }
-    }
-  })
-})
-
-test('gateway - dont retry non-mandatory failed services on startup', async (t) => {
-  t.plan(2)
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 50
-  })
-
-  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
-
-  let service2 = null
-  setTimeout(async () => {
-    service2 = await createTestService(5002, postService.schema, postService.resolvers)
-  }, 3000)
-
-  const app = Fastify()
-  t.teardown(async () => {
-    await app.close()
-    await service1.close()
-    await service2.close()
-    clock.uninstall()
-  })
-
-  app.register(GQL, {
-    jit: 1,
-    gateway: {
-      services: [
-        {
-          name: 'user',
-          url: 'http://localhost:5001/graphql',
-          mandatory: false
-        },
-        {
-          name: 'post',
-          url: 'http://localhost:5002/graphql',
-          mandatory: false
-        }
-      ],
-      pollingInterval: 2000
-    }
-  })
-
-  await app.listen(5000)
-
-  const query = `
-    query {
-      user: me {
-        id
-        name
-        posts(count: 1) {
-          pid
-        }
-      }
-    }`
-
-  const res = await app.inject({
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    url: '/graphql',
-    body: JSON.stringify({ query })
-  })
-
-  t.same(JSON.parse(res.body), {
-    errors: [
-      {
-        message: 'Cannot query field "posts" on type "User".',
-        locations: [{ line: 6, column: 9 }]
-      }
-    ],
-    data: null
-  })
-
-  await clock.runToLast()
-
-  const res1 = await app.inject({
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    url: '/graphql',
-    body: JSON.stringify({ query })
-  })
-
-  t.same(JSON.parse(res1.body), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -402,7 +398,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
 })
 
 test('gateway - stop retrying after no. of retries exceeded', async (t) => {
-  t.plan(1)
+  t.plan(3)
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
@@ -411,6 +407,14 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
   const service1 = await createTestService(5001, userService.schema, userService.resolvers)
 
   const app = Fastify()
+
+  let errorCalled = 0
+  app.log.error = (message) => {
+    errorCalled++
+    t.type(message, 'Error')
+    t.match(message.code, 'MER_ERR_GQL_GATEWAY_REFRESH')
+  }
+
   t.teardown(async () => {
     await app.close()
     await service1.close()
@@ -431,52 +435,34 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
           url: 'http://localhost:5002/graphql',
           mandatory: true
         }
-      ]
+      ],
+      retryServicesCount: 1,
+      retryServicesInterval: 3000
     }
   })
 
-  await app.listen(5000)
+  await app.ready()
 
-  const query = `
-    query {
-      user: me {
-        id
-        name
-        posts(count: 1) {
-          pid
-        }
-      }
-    }`
+  for (let i = 0; i < 10; i++) {
+    await clock.tickAsync(1000)
+  }
 
-  await clock.tickAsync(50000)
-
-  const res = await app.inject({
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    url: '/graphql',
-    body: JSON.stringify({ query })
-  })
-
-  t.same(JSON.parse(res.body), {
-    errors: [
-      {
-        message: 'Cannot query field "posts" on type "User".',
-        locations: [{ line: 6, column: 9 }]
-      }
-    ],
-    data: null
-  })
+  t.equal(errorCalled, 1, 'Error is called')
 })
 
 test('gateway - should log error if retry fails', async (t) => {
   t.plan(2)
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 100
+  })
 
   const service1 = await createTestService(5001, userService.schema, userService.resolvers)
 
   let service2 = null
   setTimeout(async () => {
     service2 = await createTestService(5002, postService.schema, postService.resolvers)
-  }, 5000)
+  }, 2000)
 
   const app = Fastify()
 
@@ -490,6 +476,7 @@ test('gateway - should log error if retry fails', async (t) => {
     await app.close()
     await service1.close()
     await service2.close()
+    clock.uninstall()
   })
 
   await app.register(GQL, {
@@ -506,7 +493,9 @@ test('gateway - should log error if retry fails', async (t) => {
           url: 'http://localhost:5002/graphql',
           mandatory: true
         }
-      ]
+      ],
+      retryServicesCount: 1,
+      retryServicesInterval: 1000
     }
   })
 
@@ -517,7 +506,7 @@ test('gateway - should log error if retry fails', async (t) => {
   await app.ready()
 
   for (let i = 0; i < 10; i++) {
-    await sleep(1000)
+    await clock.tickAsync(1000)
   }
 
   t.equal(errorCalled, 1, 'Error is called')

@@ -176,6 +176,7 @@ const plugin = fp(async function (app, opts) {
 
   let entityResolversFactory
   let gatewayRetryIntervalTimer = null
+  const retryServicesCount = gateway && gateway.retryServicesCount ? gateway.retryServicesCount : 10
 
   const retryServices = (interval) => {
     let retryCount = 0
@@ -183,11 +184,15 @@ const plugin = fp(async function (app, opts) {
 
     return setInterval(async () => {
       try {
-        if (retryCount === 10) isRetry = false
+        if (retryCount === retryServicesCount) {
+          clearInterval(gatewayRetryIntervalTimer)
+          isRetry = false
+        }
         retryCount++
 
         const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
         const serviceInfo = await gateway.refresh(isRetry)
+        if (!serviceInfo) return
 
         const { schema, failedMandatoryServices } = serviceInfo
         if (!failedMandatoryServices.length) {
@@ -207,12 +212,12 @@ const plugin = fp(async function (app, opts) {
   }
 
   if (gateway) {
+    const retryInterval = gateway.retryServicesInterval || 3000
     gateway = await buildGateway(gateway, app)
 
     const serviceMap = Object.values(gateway.serviceMap)
     const failedMandatoryServices = serviceMap.filter(service => !!service.error && service.mandatory)
 
-    const retryInterval = 3000
     if (failedMandatoryServices.length) {
       gatewayRetryIntervalTimer = retryServices(retryInterval)
       gatewayRetryIntervalTimer.unref()
