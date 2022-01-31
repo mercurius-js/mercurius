@@ -536,8 +536,10 @@ const plugin = fp(async function (app, opts) {
     }
 
     const shouldCompileJit = cached && cached.count++ === minJit
+    const shouldValidateVariables = variables !== undefined && Object.keys(variables).length > 0
+
     // Validate variables
-    if (variables !== undefined && !shouldCompileJit) {
+    if (shouldValidateVariables && !shouldCompileJit) {
       const executionContext = buildExecutionContext({
         schema: fastifyGraphQl.schema,
         document,
