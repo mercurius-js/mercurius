@@ -397,60 +397,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
   })
 })
 
-test('gateway - stop retrying after no. of retries exceeded', async (t) => {
-  t.plan(3)
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
-  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
-
-  const app = Fastify()
-
-  let errorCalled = 0
-  app.log.error = (message) => {
-    errorCalled++
-    t.type(message, 'Error')
-    t.match(message.code, 'MER_ERR_GQL_GATEWAY_REFRESH')
-  }
-
-  t.teardown(async () => {
-    await app.close()
-    await service1.close()
-    clock.uninstall()
-  })
-
-  await app.register(GQL, {
-    jit: 1,
-    gateway: {
-      services: [
-        {
-          name: 'user',
-          url: 'http://localhost:5001/graphql',
-          mandatory: false
-        },
-        {
-          name: 'post',
-          url: 'http://localhost:5002/graphql',
-          mandatory: true
-        }
-      ],
-      retryServicesCount: 1,
-      retryServicesInterval: 3000
-    }
-  })
-
-  await app.ready()
-
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1000)
-  }
-
-  t.equal(errorCalled, 1, 'Error is called')
-})
-
-test('gateway - should log error if retry fails', async (t) => {
+test('gateway - should log error if retry throws', async (t) => {
   t.plan(2)
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
@@ -495,7 +442,7 @@ test('gateway - should log error if retry fails', async (t) => {
         }
       ],
       retryServicesCount: 1,
-      retryServicesInterval: 1000
+      retryServicesInterval: 2000
     }
   })
 
@@ -507,6 +454,59 @@ test('gateway - should log error if retry fails', async (t) => {
 
   for (let i = 0; i < 10; i++) {
     await clock.tickAsync(1000)
+  }
+
+  t.equal(errorCalled, 1, 'Error is called')
+})
+
+test('gateway - stop retrying after no. of retries exceeded', async (t) => {
+  t.plan(3)
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 100
+  })
+
+  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+
+  const app = Fastify()
+
+  let errorCalled = 0
+  app.log.error = (message) => {
+    errorCalled++
+    t.type(message, 'Error')
+    t.match(message.code, 'MER_ERR_GQL_GATEWAY_REFRESH')
+  }
+
+  t.teardown(async () => {
+    await app.close()
+    await service1.close()
+    clock.uninstall()
+  })
+
+  await app.register(GQL, {
+    jit: 1,
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: 'http://localhost:5001/graphql',
+          mandatory: false
+        },
+        {
+          name: 'post',
+          url: 'http://localhost:5002/graphql',
+          mandatory: true
+        }
+      ],
+      retryServicesCount: 2,
+      retryServicesInterval: 2000
+    }
+  })
+
+  await app.ready()
+
+  for (let i = 0; i < 10; i++) {
+    await clock.tickAsync(1500)
   }
 
   t.equal(errorCalled, 1, 'Error is called')
