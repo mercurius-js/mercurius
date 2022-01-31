@@ -69,8 +69,9 @@ test('POST route, no query error', async (t) => {
 
   t.equal(res.statusCode, 400)
   t.same(JSON.parse(res.body), {
-    errors: [{ message: 'Unknown query' }],
-    data: null
+    statusCode: 400,
+    error: 'Internal Server Error',
+    message: 'Unknown query'
   })
 })
 
