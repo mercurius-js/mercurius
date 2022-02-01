@@ -400,7 +400,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
 })
 
 test('gateway - should log error if retry throws', async (t) => {
-  t.plan(2)
+  t.plan(1)
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
@@ -415,10 +415,10 @@ test('gateway - should log error if retry throws', async (t) => {
 
   const app = Fastify()
 
-  let errorCalled = 0
-  app.log.error = (message) => {
-    errorCalled++
-    t.match(message, /kaboom/)
+  app.log.error = (error) => {
+    if (error.message.includes('kaboom')) {
+      t.pass()
+    }
   }
 
   t.teardown(async () => {
@@ -457,8 +457,6 @@ test('gateway - should log error if retry throws', async (t) => {
   for (let i = 0; i < 10; i++) {
     await clock.tickAsync(1000)
   }
-
-  t.equal(errorCalled, 1, 'Error is called')
 })
 
 test('gateway - stop retrying after no. of retries exceeded', async (t) => {
@@ -473,9 +471,9 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
   const app = Fastify()
 
   let errorCalled = 0
-  app.log.error = (message) => {
+  app.log.error = (error) => {
     errorCalled++
-    if (message.code === 'MER_ERR_GQL_GATEWAY_REFRESH') {
+    if (error.code === 'MER_ERR_GQL_GATEWAY_REFRESH') {
       t.pass()
     }
   }
