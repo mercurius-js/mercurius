@@ -316,7 +316,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
   t.plan(2)
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
-    advanceTimeDelta: 50
+    advanceTimeDelta: 100
   })
 
   const service1 = await createTestService(5001, userService.schema, userService.resolvers)
@@ -377,7 +377,9 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     data: null
   })
 
-  await clock.tickAsync(10000)
+  for (let i = 0; i < 10; i++) {
+    await clock.tickAsync(1500)
+  }
 
   const res1 = await app.inject({
     method: 'POST',
@@ -460,7 +462,7 @@ test('gateway - should log error if retry throws', async (t) => {
 })
 
 test('gateway - stop retrying after no. of retries exceeded', async (t) => {
-  t.plan(3)
+  t.plan(2)
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
@@ -473,8 +475,9 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
   let errorCalled = 0
   app.log.error = (message) => {
     errorCalled++
-    t.type(message, 'Error')
-    t.match(message.code, 'MER_ERR_GQL_GATEWAY_REFRESH')
+    if (message.code === 'MER_ERR_GQL_GATEWAY_REFRESH') {
+      t.pass()
+    }
   }
 
   t.teardown(async () => {
@@ -509,5 +512,5 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
     await clock.tickAsync(1500)
   }
 
-  t.equal(errorCalled, 1, 'Error is called')
+  t.equal(errorCalled, 3, 'Error is called')
 })

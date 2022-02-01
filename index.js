@@ -191,14 +191,9 @@ const plugin = fp(async function (app, opts) {
         retryCount++
 
         const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
-        const serviceInfo = await gateway.refresh(isRetry)
-        if (!serviceInfo) return
-
-        const { schema, failedMandatoryServices } = serviceInfo
-        if (!failedMandatoryServices.length) {
-          clearInterval(gatewayRetryIntervalTimer)
-        }
+        const schema = await gateway.refresh(isRetry)
         if (schema !== null) {
+          clearInterval(gatewayRetryIntervalTimer)
           // Trigger onGatewayReplaceSchema hook
           if (context.onGatewayReplaceSchema !== null) {
             await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
@@ -233,13 +228,13 @@ const plugin = fp(async function (app, opts) {
         gatewayInterval = setInterval(async () => {
           try {
             const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
-            const serviceInfo = await gateway.refresh()
-            if (serviceInfo && serviceInfo.schema) {
+            const schema = await gateway.refresh()
+            if (schema !== null) {
               // Trigger onGatewayReplaceSchema hook
               if (context.onGatewayReplaceSchema !== null) {
-                await onGatewayReplaceSchemaHandler(context, { instance: app, schema: serviceInfo.schema })
+                await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
               }
-              fastifyGraphQl.replaceSchema(serviceInfo.schema)
+              fastifyGraphQl.replaceSchema(schema)
             }
           } catch (error) {
             app.log.error(error)
