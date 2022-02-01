@@ -561,8 +561,7 @@ app.register(mercurius, {
   }
 })
 
-const isRetry = false
-app.graphql.gateway.refresh(isRetry)
+app.graphql.gateway.refresh()
 
 app.graphql.gateway.serviceMap.serviceName.setSchema(`
 query hello {
