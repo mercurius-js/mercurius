@@ -189,7 +189,7 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
   })
 
   for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1000)
+    await clock.tickAsync(2000)
   }
 
   const res1 = await app.inject({
