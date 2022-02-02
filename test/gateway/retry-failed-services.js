@@ -501,7 +501,7 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
           mandatory: true
         }
       ],
-      retryServicesCount: 2,
+      retryServicesCount: 1,
       retryServicesInterval: 2000
     }
   })
