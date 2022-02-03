@@ -120,5 +120,5 @@ test('Does not error if at least one service schema is valid', async (t) => {
   } catch (err) {
     t.error(err)
   }
-  t.equal(warnCalled, 1, 'Warning is called')
+  t.equal(warnCalled, 2, 'Warning is called')
 })

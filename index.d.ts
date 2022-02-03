@@ -227,7 +227,7 @@ interface ServiceConfig {
 }
 
 interface Gateway {
-  refresh: () => Promise<GraphQLSchema | null>;
+  refresh: (isRetry?: boolean) => Promise<GraphQLSchema | null>;
   serviceMap: Record<string, ServiceConfig>;
 }
 
