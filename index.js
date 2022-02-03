@@ -305,7 +305,9 @@ const plugin = fp(async function (app, opts) {
 
     context = Object.assign(context, { reply: this, app })
     if (app[kFactory]) {
-      this[kLoaders] = app[kFactory].create(context)
+      if (!opts.allowBatchedQueries || !this[kLoaders]) {
+        this[kLoaders] = app[kFactory].create(context)
+      }
     }
 
     return app.graphql(source, context, variables, operationName)
