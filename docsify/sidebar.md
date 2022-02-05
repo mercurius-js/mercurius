@@ -9,7 +9,7 @@
   * [Plugin Options](/docs/api/options#plugin-options)
   * [HTTP Endpoints](/docs/api/options#http-endpoints)
   * [Decorators](/docs/api/options#decorators)
-  * [Error Extensions](/docs/api/options#use-errors-extension-to-provide-additional-information-to-query-errors)
+  * [Error Extensions](/docs/api/options#errors)
 * [Context](/docs/context)
 * [Loaders](/docs/loaders)
 * [Hooks](/docs/hooks)
