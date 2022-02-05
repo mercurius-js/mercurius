@@ -467,6 +467,14 @@ app.register(mercurius, {
 })
 
 app.register(mercurius, {
+  schema: schema,
+  resolvers,
+  subscription: {
+    fullWsTransport: true
+  }
+})
+
+app.register(mercurius, {
   schema,
   resolvers,
   schemaTransforms: []
