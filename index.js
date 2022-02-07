@@ -123,6 +123,7 @@ const plugin = fp(async function (app, opts) {
   let onConnect
   let onDisconnect
   let keepAlive
+  let fullWsTransport
 
   if (typeof subscriptionOpts === 'object') {
     if (subscriptionOpts.pubsub) {
@@ -136,6 +137,7 @@ const plugin = fp(async function (app, opts) {
     onConnect = subscriptionOpts.onConnect
     onDisconnect = subscriptionOpts.onDisconnect
     keepAlive = subscriptionOpts.keepAlive
+    fullWsTransport = subscriptionOpts.fullWsTransport
   } else if (subscriptionOpts === true) {
     emitter = mq()
     subscriber = new PubSub(emitter)
@@ -292,7 +294,8 @@ const plugin = fp(async function (app, opts) {
       lruGatewayResolvers,
       entityResolversFactory,
       subscriptionContextFn,
-      keepAlive
+      keepAlive,
+      fullWsTransport
     })
   }
 
@@ -305,7 +308,9 @@ const plugin = fp(async function (app, opts) {
 
     context = Object.assign(context, { reply: this, app })
     if (app[kFactory]) {
-      this[kLoaders] = app[kFactory].create(context)
+      if (!opts.allowBatchedQueries || !this[kLoaders]) {
+        this[kLoaders] = app[kFactory].create(context)
+      }
     }
 
     return app.graphql(source, context, variables, operationName)

@@ -40,6 +40,8 @@ const schema = `
 
   type Query {
     dogs: [Dog]
+    puppies: [Dog]
+    elders: [Dog]
   }
 
   type Subscription {
@@ -51,12 +53,36 @@ const resolvers = {
   Query: {
     dogs (_, params, { reply }) {
       return dogs
+    },
+    puppies (_, params, { reply }) {
+      return [dogs[0]]
+    },
+    elders (_, params, { reply }) {
+      return dogs.slice(2, dogs.length)
     }
   }
 }
 
 const query = `{
   dogs {
+    name,
+    owner {
+      name
+    }
+  }
+}`
+
+const puppiesQuery = `{
+  puppies {
+    name,
+    owner {
+      name
+    }
+  }
+}`
+
+const eldersQuery = `{
+  elders {
     name,
     owner {
       name
@@ -134,6 +160,71 @@ test('loaders create batching resolvers', async (t) => {
       }]
     }
   })
+})
+
+test('loaders create batching resolvers with batchedQueries', async (t) => {
+  const app = Fastify()
+
+  const loaders = {
+    Dog: {
+      async owner (queries, { reply }) {
+        // note that the second entry for max is cached
+        t.same(queries, [{
+          obj: {
+            name: 'Max'
+          },
+          params: {}
+        }, {
+          obj: {
+            name: 'Buddy'
+          },
+          params: {}
+        }])
+        return queries.map(({ obj }) => {
+          return { ...owners[obj.name] }
+        })
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    loaders,
+    allowBatchedQueries: true
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: [{ query: puppiesQuery }, { query: eldersQuery }]
+  })
+
+  t.equal(res.statusCode, 200)
+  t.same(JSON.parse(res.body), [{
+    data: {
+      puppies: [{
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }]
+    }
+  }, {
+    data: {
+      elders: [{
+        name: 'Buddy',
+        owner: {
+          name: 'Tracy'
+        }
+      }, {
+        name: 'Max',
+        owner: {
+          name: 'Jennifer'
+        }
+      }]
+    }
+  }])
 })
 
 test('disable cache for each loader', async (t) => {

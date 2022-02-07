@@ -34,11 +34,11 @@ Features:
 - [Batched Queries](docs/batched-queries.md)
 - [Persisted Queries](docs/persisted-queries.md)
 - [TypeScript Usage](/docs/typescript.md)
+- [HTTP](/docs/http.md)
+- [GraphQL over WebSocket](/docs/graphql-over-websocket.md)
 - [Integrations](docs/integrations/)
 - [Related Plugins](docs/plugins.md)
-- [Protocol Extensions](/docs/protocol-extension.md)
 - [Faq](/docs/faq.md)
-- [HTTP](/docs/http.md)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
