@@ -64,6 +64,7 @@ async function buildServiceExternal () {
     extend type Query {
       meWrap: Wrap
       meDirect: User
+      meList: [User]
     }
 
     type Wrap {
@@ -82,6 +83,9 @@ async function buildServiceExternal () {
       },
       meDirect: () => {
         return { id: '1', __typename: 'User' }
+      },
+      meList: () => {
+        return [{ id: '1', __typename: 'User' }]
       }
     }
   }
@@ -134,28 +138,51 @@ test('federated node should be able to return external Type directly', async (t)
   await serviceProxy.ready()
   t.teardown(() => { serviceProxy.close() })
 
-  const res = await serviceProxy.inject({
-    method: 'POST',
-    url: '/graphql',
-    body: {
-      query: `{
+  {
+    const res = await serviceProxy.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `{
         meDirect { id name }
         meWrap { user { name }  }
       }`
-    }
-  })
+      }
+    })
 
-  t.same(res.json(), {
-    data: {
-      meDirect: {
-        id: '1',
-        name: 'John'
-      },
-      meWrap: {
-        user: {
+    t.same(res.json(), {
+      data: {
+        meDirect: {
+          id: '1',
           name: 'John'
+        },
+        meWrap: {
+          user: {
+            name: 'John'
+          }
         }
       }
-    }
-  })
+    })
+  }
+
+  {
+    const res = await serviceProxy.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `{
+        meList { id name }
+      }`
+      }
+    })
+
+    t.same(res.json(), {
+      data: {
+        meList: [{
+          id: '1',
+          name: 'John'
+        }]
+      }
+    })
+  }
 })
