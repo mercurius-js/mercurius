@@ -1983,7 +1983,7 @@ test('Should handle complex and nested interfaces with external types', async (t
   })
 })
 
-test('Uses the supplied schema for federation rather than fetching it remotely', async (t) => {
+test('Uses the supplied schema for federation rather than fetching it remotely', { only: true }, async (t) => {
   const users = {
     u1: {
       id: 'u1',
