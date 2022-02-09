@@ -468,7 +468,7 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
     advanceTimeDelta: 100
   })
 
-  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+  const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   const app = Fastify()
 
@@ -492,7 +492,7 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
       services: [
         {
           name: 'user',
-          url: 'http://localhost:5001/graphql',
+          url: `http://localhost:${service1.server.address().port}/graphql`,
           mandatory: false
         },
         {

@@ -69,6 +69,7 @@ async function buildServiceExternal () {
 
     type Wrap {
       user: User
+      users: [User]
     }
 
     type User @key(fields: "id") @extends {
@@ -85,7 +86,18 @@ async function buildServiceExternal () {
         return { id: '1', __typename: 'User' }
       },
       meList: () => {
-        return [{ id: '1', __typename: 'User' }]
+        return [
+          { id: '1', __typename: 'User' },
+          { id: '2', __typename: 'User' }
+        ]
+      }
+    },
+    Wrap: {
+      users: () => {
+        return [
+          { id: '1', __typename: 'User' },
+          { id: '2', __typename: 'User' }
+        ]
       }
     }
   }
@@ -181,7 +193,40 @@ test('federated node should be able to return external Type directly', async (t)
         meList: [{
           id: '1',
           name: 'John'
+        }, {
+          id: '2',
+          name: 'Jane'
         }]
+      }
+    })
+  }
+
+  {
+    const res = await serviceProxy.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `{
+          meWrap { 
+            users {
+              id name
+            }
+          }
+        }`
+      }
+    })
+
+    t.same(res.json(), {
+      data: {
+        meWrap: {
+          users: [{
+            id: '1',
+            name: 'John'
+          }, {
+            id: '2',
+            name: 'Jane'
+          }]
+        }
       }
     })
   }
