@@ -156,6 +156,28 @@ test('federated node should be able to return external Type directly', async (t)
       url: '/graphql',
       body: {
         query: `{
+        meDirect { id name username }
+      }`
+      }
+    })
+
+    t.same(res.json(), {
+      data: {
+        meDirect: {
+          id: '1',
+          name: 'John',
+          username: '@john'
+        }
+      }
+    })
+  }
+
+  {
+    const res = await serviceProxy.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `{
         meDirect { id name }
         meWrap { user { name }  }
       }`
@@ -176,7 +198,6 @@ test('federated node should be able to return external Type directly', async (t)
       }
     })
   }
-
   {
     const res = await serviceProxy.inject({
       method: 'POST',
