@@ -64,7 +64,9 @@ async function buildServiceExternal () {
     extend type Query {
       meWrap: Wrap
       meDirect: User
+      meDirectMissing: User
       meList: [User]
+      meEmptyList: [User]
     }
 
     type Wrap {
@@ -85,11 +87,18 @@ async function buildServiceExternal () {
       meDirect: () => {
         return { id: '1', __typename: 'User' }
       },
+      meDirectMissing: () => {
+        return null
+      },
       meList: () => {
         return [
           { id: '1', __typename: 'User' },
           { id: '2', __typename: 'User' }
         ]
+      },
+      meEmptyList: () => {
+        // no users
+        return []
       }
     },
     Wrap: {
@@ -177,6 +186,22 @@ test('federated node should be able to return external Type directly', async (t)
       method: 'POST',
       url: '/graphql',
       body: {
+        query: '{ meDirectMissing { id name username } }'
+      }
+    })
+
+    t.same(res.json(), {
+      data: {
+        meDirectMissing: null
+      }
+    })
+  }
+
+  {
+    const res = await serviceProxy.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
         query: `{
         meDirect { id name }
         meWrap { user { name }  }
@@ -248,6 +273,26 @@ test('federated node should be able to return external Type directly', async (t)
             name: 'Jane'
           }]
         }
+      }
+    })
+  }
+
+  {
+    const res = await serviceProxy.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `{
+          meEmptyList { 
+            id name
+          }
+        }`
+      }
+    })
+
+    t.same(res.json(), {
+      data: {
+        meEmptyList: []
       }
     })
   }
