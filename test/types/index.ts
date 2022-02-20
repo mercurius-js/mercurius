@@ -388,6 +388,33 @@ gateway.register(mercurius, {
   }
 })
 
+// Gateway mode with custom services retry props
+gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql'
+      }
+    ],
+    retryServicesCount: 30,
+    retryServicesInterval: 5000
+  }
+})
+
+expectError(() => gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql'
+      }
+    ],
+    retryServicesCount: '30',
+    retryServicesInterval: '5000'
+  }
+}))
+
 // Executable schema
 
 const executableSchema = makeExecutableSchema({

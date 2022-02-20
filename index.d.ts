@@ -402,7 +402,9 @@ export interface MercuriusGatewayOptions {
   gateway: {
     services: Array<MercuriusGatewayService>;
     pollingInterval?: number;
-    errorHandler?(error: Error, service: MercuriusGatewayService): void
+    errorHandler?(error: Error, service: MercuriusGatewayService): void;
+    retryServicesCount?: number;
+    retryServicesInterval?: number;
   };
 }
 
