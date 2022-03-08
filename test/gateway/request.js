@@ -22,6 +22,7 @@ test('sendRequest method rejects when request errs', t => {
 })
 
 test('sendRequest method rejects when response is not valid json', async (t) => {
+  t.plan(3)
   const app = fastify()
   app.post('/', async (request, reply) => {
     return 'response'
@@ -35,20 +36,27 @@ test('sendRequest method rejects when response is not valid json', async (t) => 
     close()
     return app.close()
   })
-  t.rejects(sendRequest(request, url)({
-    method: 'POST',
-    body: JSON.stringify({
-      query: `
-      query ServiceInfo {
-        _service {
-          sdl
+  try {
+    await sendRequest(request, url)({
+      method: 'POST',
+      body: JSON.stringify({
+        query: `
+        query ServiceInfo {
+          _service {
+            sdl
+          }
         }
-      }
-      `
+        `
+      })
     })
-  }))
+    t.fail('it must throw')
+  } catch (error) {
+    t.type(error, FederatedError)
+    t.type(error.extensions.errors, 'Array')
 
-  t.end()
+    // Full string on Node 17 is "Unexpected token r in JSON at position 0"
+    t.match(error.extensions.errors[0].message, 'Unexpected token')
+  }
 })
 
 test('sendRequest method rejects when response contains errors', async (t) => {
