@@ -13,6 +13,21 @@ test('ErrorWithProps - support status code in the constructor', async (t) => {
   t.equal(error.statusCode, 500)
 })
 
+test('FederatedError - throws if given errors is not an array', async (t) => {
+  t.plan(1)
+  t.throws(() => new FederatedError({ message: 'Some error' }))
+})
+
+test('FederatedError - does not throw if given an array', async (t) => {
+  t.plan(1)
+  t.doesNotThrow(() => new FederatedError([{ message: 'Some error' }]))
+})
+
+test('FederatedError - does not throw if not given errors', async (t) => {
+  t.plan(1)
+  t.doesNotThrow(() => new FederatedError())
+})
+
 test('errors - multiple extended errors', async (t) => {
   const schema = `
     type Query {
