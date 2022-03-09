@@ -35,4 +35,5 @@
   * [altair-fastify-plugin](/docs/plugins#altair-fastify-plugin)
   * [mercurius-apollo-registry](/docs/plugins#mercurius-apollo-registry)
   * [mercurius-apollo-tracing](/docs/plugins#mercurius-apollo-tracing)
+* [Development](/docs/development)
 * [Faq](/docs/faq)
