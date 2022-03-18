@@ -204,6 +204,7 @@ t.test('gateway', t => {
       'skip',
       'deprecated',
       'specifiedBy',
+      'requires',
       'custom'
     ])
 
