@@ -449,3 +449,80 @@ test('gateway handles @requires directive correctly apart of other directives', 
     }
   })
 })
+
+test('gateway exposes @requires directive in list of directives', async (t) => {
+  const users = {
+    u1: {
+      id: 'u1',
+      name: 'John'
+    },
+    u2: {
+      id: 'u2',
+      name: 'Jane'
+    }
+  }
+
+  const userService = await createService(`
+    extend type Query {
+      me: User
+    }
+
+    type User @key(fields: "id") {
+      id: ID!
+      name: String!
+    }
+  `, {
+    Query: {
+      me: (root, args, context, info) => {
+        return users.u1
+      }
+    },
+    User: {
+      __resolveReference: (user, args, context, info) => {
+        return users[user.id]
+      }
+    }
+  })
+
+  const biographyService = await createService(`
+    type User @key(fields: "id") @extends {
+      id: ID! @external
+      name: String @external
+      biography: String @requires(fields: "id name")
+    }
+  `, {
+    User: {
+      biography (user) {
+        return `${user.name} with id ${user.id} test biography`
+      }
+    }
+  })
+
+  const { gateway, teardown } = await createGateway(biographyService, userService)
+  t.teardown(teardown)
+
+  const query = `
+    query IntrospectionQuery {
+      __schema {
+        directives {
+          name
+        }
+      }
+    } 
+  `
+  const res = await gatewayRequest(gateway, query)
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      __schema: {
+        directives: [
+          { name: 'include' },
+          { name: 'skip' },
+          { name: 'deprecated' },
+          { name: 'specifiedBy' },
+          { name: 'requires' }
+        ]
+      }
+    }
+  })
+})
