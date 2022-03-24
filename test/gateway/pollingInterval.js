@@ -710,16 +710,6 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
   })
   t.teardown(() => clock.uninstall())
   const oldSchema = `
-    directive @extends on INTERFACE | OBJECT
-
-    directive @external on FIELD_DEFINITION | OBJECT
-
-    directive @key(fields: String!) on INTERFACE | OBJECT
-
-    directive @provides(fields: String!) on FIELD_DEFINITION
-
-    directive @requires(fields: String!) on FIELD_DEFINITION
-
     type Query {
       me: User
     }
@@ -804,16 +794,6 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
   })
 
   const refreshedSchema = `
-    directive @extends on INTERFACE | OBJECT
-
-    directive @external on FIELD_DEFINITION | OBJECT
-
-    directive @key(fields: String!) on INTERFACE | OBJECT
-
-    directive @provides(fields: String!) on FIELD_DEFINITION
-    
-    directive @requires(fields: String!) on FIELD_DEFINITION
-
     type User @key(fields: "id") {
       id: ID!
       lastName: String!
