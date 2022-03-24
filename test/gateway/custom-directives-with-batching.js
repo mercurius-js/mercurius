@@ -204,6 +204,7 @@ t.test('gateway with batching', t => {
       'skip',
       'deprecated',
       'specifiedBy',
+      'requires',
       'custom'
     ])
 
