@@ -27,6 +27,7 @@
   * [Prisma](/docs/integrations/prisma)
   * [Testing](/docs/integrations/mercurius-integration-testing)
   * [Tracing - OpenTelemetry](/docs/integrations/open-telemetry)
+  * [NestJS](/docs/integrations/nestjs.md)
 * [Related Plugins](/docs/plugins)
   * [mercurius-auth](/docs/plugins#mercurius-auth)
   * [mercurius-cache](/docs/plugins#mercurius-cache)
