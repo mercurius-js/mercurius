@@ -2,6 +2,8 @@
 
 NestJS offers Fastify and Mercurius support out of the box. It also supports both schema and code-first approaches to development. We'll be covering the code-first approach, as it is used more commonly.
 
+> **Note**: Support for NestJS can be found at their [Discord server](https://discord.gg/ErA7cNkK). 
+
 ## Installation
 
 To get going, follow the [first steps](https://docs.nestjs.com/first-steps) to install the Nest CLI and to create your Nest API project with the CLI. 
@@ -221,5 +223,7 @@ Now you can continue adding more modules, models, resolvers and business logic i
 This is just a short and rough example of how to get going with NestJS and Mercurius. There is a lot more to do and learn to get a fully running GraphQL API going. The code examples above, despite lacking some explanation, do show the potential of NestJS with Mecurius. AGain, we've only barely scratched the surface. 
 
 If you'd like to continue with Nest and Mercurius and learn more about Nest, please do read the [documention on the NestJS website](https://docs.nestjs.com/). The two as a combination make a really great combination in terms of developer experience.
+
+Should you need any help with Nest, they have a [great support community](https://discord.gg/ErA7cNkK). 
 
 
