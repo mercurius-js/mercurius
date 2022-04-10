@@ -224,6 +224,6 @@ This is just a short and rough example of how to get going with NestJS and Mercu
 
 If you'd like to continue with Nest and Mercurius and learn more about Nest, please do read the [documention on the NestJS website](https://docs.nestjs.com/). The two as a combination make a really great combination in terms of developer experience.
 
-Should you need any help with Nest, they have a [great support community](https://discord.gg/ErA7cNkK). 
+Should you need any help with Nest, they have a [great support community](https://discord.gg/ErA7cNkK). Please go there for support with NestJS questions or issues. 
 
 
