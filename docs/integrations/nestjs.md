@@ -220,9 +220,9 @@ Now you can continue adding more modules, models, resolvers and business logic i
 
 ## Summary
 
-This is just a short and rough example of how to get going with NestJS and Mercurius. There is a lot more to do and learn to get a fully running GraphQL API going. The code examples above, despite lacking some explanation, do show the potential of NestJS with Mecurius. AGain, we've only barely scratched the surface. 
+This is just a short and rough example of how to get going with NestJS and Mercurius. There is a lot more to do and learn to get a fully running GraphQL API going. The code examples above, despite lacking some explanation, do show the potential of NestJS with Mecurius. Again, we've only barely scratched the surface. 
 
-If you'd like to continue with Nest and Mercurius and learn more about Nest, please do read the [documention on the NestJS website](https://docs.nestjs.com/). The two as a combination make a really great combination in terms of developer experience.
+If you'd like to continue with Nest and Mercurius and learn more about Nest, please do read the [documention on the NestJS website](https://docs.nestjs.com/). The two make a really great combination in terms of developer experience.
 
 Should you need any help with Nest, they have a [great support community](https://discord.gg/ErA7cNkK). Please go there for support with NestJS questions or issues. 
 
