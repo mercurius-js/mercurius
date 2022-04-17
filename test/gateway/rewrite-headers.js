@@ -92,7 +92,7 @@ test('gateway - service rewriteHeaders', async (t) => {
       await users.close()
     })
 
-    const rewriteHeaders = () => ({ 'x-custom': custom })
+    const rewriteHeaders = async () => ({ 'x-custom': custom })
     const url = `http://localhost:${usersPort}/graphql`
     gateway.register(GQL, { gateway: { services: [{ name: 'user', url, rewriteHeaders }] } })
 

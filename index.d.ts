@@ -384,8 +384,13 @@ export interface MercuriusGatewayService {
   schema?: string;
   wsUrl?: string;
   mandatory?: boolean;
-  initHeaders?: (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>) | OutgoingHttpHeaders;
-  rewriteHeaders?: <TContext extends MercuriusContext = MercuriusContext>(headers: IncomingHttpHeaders, context: TContext) => OutgoingHttpHeaders;
+  initHeaders?:
+    | (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>)
+    | OutgoingHttpHeaders;
+  rewriteHeaders?: <TContext extends MercuriusContext = MercuriusContext>(
+    headers: IncomingHttpHeaders,
+    context: TContext
+  ) => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>;
   connections?: number;
   keepAlive?: number;
   keepAliveMaxTimeout?: number;
