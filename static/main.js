@@ -6,6 +6,7 @@ const importer = {
       const script = document.createElement('script')
       script.type = 'text/javascript'
       script.src = url
+      script.crossOrigin = 'anonymous'
       script.addEventListener('load', () => resolve(script), false)
       script.addEventListener('error', (err) => reject(err), false)
       document.body.appendChild(script)
@@ -45,6 +46,7 @@ function importDependencies () {
   link.type = 'text/css'
   link.rel = 'stylesheet'
   link.media = 'screen,print'
+  link.crossOrigin = 'anonymous'
   document.getElementsByTagName('head')[0].appendChild(link)
 
   return importer.urls([
