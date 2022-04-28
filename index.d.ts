@@ -13,7 +13,7 @@ import {
   GraphQLScalarType,
   ValidationRule,
 } from "graphql";
-import { SocketStream } from "fastify-websocket"
+import { SocketStream } from "@fastify/websocket"
 import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
 import { Readable } from "stream";
 

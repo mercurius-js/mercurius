@@ -3,7 +3,7 @@ const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
 const { EventEmitter } = require('events')
-const fastifyWebsocket = require('fastify-websocket')
+const fastifyWebsocket = require('@fastify/websocket')
 const GQL = require('..')
 
 const FakeTimers = require('@sinonjs/fake-timers')
@@ -1767,7 +1767,7 @@ test('`withFilter` tool works with async filters', t => {
   })
 })
 
-test('subscription server works with fastify-websocket', t => {
+test('subscription server works with fastify websocket', t => {
   const app = Fastify()
   t.teardown(() => app.close())
   t.plan(3)
