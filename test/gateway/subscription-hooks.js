@@ -641,7 +641,7 @@ test('gateway - should call onSubscriptionEnd when subscription ends', async t =
     id: 1,
     type: 'stop',
     payload: {
-      query: query
+      query
     }
   }))
 

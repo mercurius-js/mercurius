@@ -1162,7 +1162,7 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
     }
   }
 
-  app.register(GQL, { schema: schema })
+  app.register(GQL, { schema })
 
   app.register(async function (app) {
     t.throws(function () {
