@@ -302,7 +302,7 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
     id: 1,
     type: 'start',
     payload: {
-      query: query
+      query
     }
   }))
 
@@ -341,7 +341,7 @@ test('subscription - should call onSubscriptionEnd when subscription ends', asyn
     id: 1,
     type: 'start',
     payload: {
-      query: query
+      query
     }
   }))
 
@@ -382,7 +382,7 @@ test('subscription - should handle onSubscriptionEnd hook errors', async t => {
     id: 1,
     type: 'start',
     payload: {
-      query: query
+      query
     }
   }))
 

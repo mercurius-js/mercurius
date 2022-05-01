@@ -53,7 +53,7 @@ test('Polling schemas', async (t) => {
         name: String!
       }
     `,
-    resolvers: resolvers,
+    resolvers,
     federationMetadata: true
   })
 
@@ -223,7 +223,7 @@ test('Polling schemas (gateway.polling interval is not a number)', async (t) => 
         name: String!
       }
     `,
-    resolvers: resolvers,
+    resolvers,
     federationMetadata: true
   })
 
@@ -287,7 +287,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
         name: String!
       }
     `,
-    resolvers: resolvers,
+    resolvers,
     federationMetadata: true
   })
 
@@ -443,7 +443,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
         name: String!
       }
     `,
-    resolvers: resolvers,
+    resolvers,
     federationMetadata: true
   })
 
@@ -959,7 +959,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
         name: String!
       }
     `,
-    resolvers: resolvers,
+    resolvers,
     federationMetadata: true,
     subscription: true
   })

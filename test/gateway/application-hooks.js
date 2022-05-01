@@ -55,7 +55,7 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
         name: String!
       }
     `,
-    resolvers: resolvers,
+    resolvers,
     federationMetadata: true
   })
 
@@ -145,7 +145,7 @@ test('onGatewayReplaceSchema - should log an error should any errors occur in th
         name: String!
       }
     `,
-    resolvers: resolvers,
+    resolvers,
     federationMetadata: true
   })
 

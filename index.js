@@ -169,9 +169,9 @@ const plugin = fp(async function (app, opts) {
       }),
       mutation: opts.defineMutation
         ? new GraphQLObjectType({
-            name: 'Mutation',
-            fields: {}
-          })
+          name: 'Mutation',
+          fields: {}
+        })
         : undefined
     })
   }

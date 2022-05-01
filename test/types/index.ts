@@ -57,7 +57,7 @@ declare module '../../' {
 }
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   loaders: {},
   ide: false,
@@ -83,7 +83,7 @@ app.register(mercurius, {
 })
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   loaders: {},
   ide: false,
@@ -452,7 +452,7 @@ gateway.register(mercurius, {
 // Subscriptions
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   subscription: true
 })
@@ -460,7 +460,7 @@ app.register(mercurius, {
 const emitter = mq()
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   subscription: {
     emitter,
@@ -492,7 +492,7 @@ app.register(mercurius, {
 })
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   subscription: {
     context: async (connection, request) => {
@@ -509,7 +509,7 @@ app.register(mercurius, {
 })
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   subscription: {
     emitter
@@ -517,7 +517,7 @@ app.register(mercurius, {
 })
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   subscription: {
     fullWsTransport: true
@@ -612,7 +612,7 @@ class CustomPubSub {
 }
 
 app.register(mercurius, {
-  schema: schema,
+  schema,
   resolvers,
   subscription: {
     pubsub: new CustomPubSub()
