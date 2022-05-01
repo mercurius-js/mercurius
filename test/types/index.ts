@@ -323,6 +323,29 @@ gateway.register(mercurius, {
   }
 })
 
+// Async rewriteHeaders
+gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql',
+        schema: `
+        type Query {
+          dogs: [Dog]
+        }`,
+        keepAlive: 3000,
+        rewriteHeaders: async (headers, context) => {
+          const sessionId = await Promise.resolve('12')
+          return {
+            sessionId
+          }
+        }
+      }
+    ]
+  }
+})
+
 // keepAlive value in service config
 gateway.register(mercurius, {
   gateway: {

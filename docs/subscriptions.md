@@ -8,7 +8,7 @@
   - [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
   - [Subscription support (with redis)](#subscription-support-with-redis)
   - [Subscriptions with custom PubSub](#subscriptions-with-custom-pubsub)
-  - [Subscriptions with fastify-websocket](#subscriptions-with-fastify-websocket)
+  - [Subscriptions with @fastify/websocket](#subscriptions-with-fastify-websocket)
 
 ### Subscription support (simple)
 
@@ -322,12 +322,12 @@ app.register(mercurius, {
 
 ```
 
-### Subscriptions with fastify-websocket
+### Subscriptions with @fastify/websocket
 
-Mercurius uses `fastify-websocket` internally, but you can still use it by registering before `mercurius` plugin. If so, it is recommened to set the appropriate `options.maxPayload` like this:
+Mercurius uses `@fastify/websocket` internally, but you can still use it by registering before `mercurius` plugin. If so, it is recommened to set the appropriate `options.maxPayload` like this:
 
 ```js
-const fastifyWebsocket = require('fastify-websocket')
+const fastifyWebsocket = require('@fastify/websocket')
 
 app.register(fastifyWebsocket, {
   options: {

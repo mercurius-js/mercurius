@@ -13,7 +13,7 @@ import {
   GraphQLScalarType,
   ValidationRule,
 } from "graphql";
-import { SocketStream } from "fastify-websocket"
+import { SocketStream } from "@fastify/websocket"
 import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
 import { Readable } from "stream";
 
@@ -384,8 +384,13 @@ export interface MercuriusGatewayService {
   schema?: string;
   wsUrl?: string;
   mandatory?: boolean;
-  initHeaders?: (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>) | OutgoingHttpHeaders;
-  rewriteHeaders?: <TContext extends MercuriusContext = MercuriusContext>(headers: IncomingHttpHeaders, context: TContext) => OutgoingHttpHeaders;
+  initHeaders?:
+    | (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>)
+    | OutgoingHttpHeaders;
+  rewriteHeaders?: <TContext extends MercuriusContext = MercuriusContext>(
+    headers: IncomingHttpHeaders,
+    context: TContext
+  ) => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>;
   connections?: number;
   keepAlive?: number;
   keepAliveMaxTimeout?: number;
