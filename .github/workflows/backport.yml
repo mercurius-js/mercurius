@@ -12,6 +12,6 @@ jobs:
     if: github.event.pull_request.merged
     steps:
       - name: Backport
-        uses: tibdex/backport@v1
+        uses: tibdex/backport@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
