@@ -3,7 +3,7 @@ const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
 const { EventEmitter } = require('events')
-const fastifyWebsocket = require('fastify-websocket')
+const fastifyWebsocket = require('@fastify/websocket')
 const GQL = require('..')
 
 const FakeTimers = require('@sinonjs/fake-timers')
