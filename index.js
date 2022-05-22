@@ -377,6 +377,8 @@ const plugin = fp(async function (app, opts) {
       throw new MER_ERR_GQL_GATEWAY('Calling defineResolvers method when plugin is running in gateway mode is not allowed')
     }
 
+    const subscriptionTypeName = (schema.getSubscriptionType() || {}).name || 'Subscription'
+
     for (const name of Object.keys(resolvers)) {
       const type = fastifyGraphQl.schema.getType(name)
 
@@ -390,7 +392,7 @@ const plugin = fp(async function (app, opts) {
           delete resolver.isTypeOf
         }
         for (const prop of Object.keys(resolver)) {
-          if (name === 'Subscription') {
+          if (name === subscriptionTypeName) {
             fields[prop] = {
               ...fields[prop],
               ...resolver[prop]
