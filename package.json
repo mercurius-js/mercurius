@@ -61,7 +61,7 @@
     "fastify-plugin": "^3.0.1",
     "graphql": "^16.0.0",
     "graphql-jit": "^0.7.3",
-    "mqemitter": "^4.4.1",
+    "mqemitter": "^5.0.0",
     "p-map": "^4.0.0",
     "readable-stream": "^3.6.0",
     "safe-stable-stringify": "^2.3.0",
