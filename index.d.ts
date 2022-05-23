@@ -210,7 +210,7 @@ export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
 // ----------------------------
 
 /**
- * `onGatewayReplaceSchema` is an application lifeycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
+ * `onGatewayReplaceSchema` is an application lifecycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
  * This hook will only be triggered in gateway mode. It has the following parameters:
  *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
  *  - `schema` - The new schema that has been built from the gateway refresh.
@@ -351,7 +351,7 @@ export interface MercuriusPlugin {
   // Application lifecycle addHooks
 
   /**
-   * `onGatewayReplaceSchema` is an application lifeycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
+   * `onGatewayReplaceSchema` is an application lifecycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
    * This hook will only be triggered in gateway mode. It has the following parameters:
    *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
    *  - `schema` - The new schema that has been built from the gateway refresh.
