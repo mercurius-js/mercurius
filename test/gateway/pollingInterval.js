@@ -13,6 +13,95 @@ const WebSocket = require('ws')
 const buildFederationSchema = require('../../lib/federation')
 const GQL = require('../..')
 
+test('Polling schemas with disable cache', async (t) => {
+  const clock = FakeTimers.install({
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 40
+  })
+  t.teardown(() => clock.uninstall())
+
+  const resolvers = {
+    Query: {
+      me: (root, args, context, info) => user
+    },
+    User: {
+      __resolveReference: (user, args, context, info) => user
+    }
+  }
+
+  const user = {
+    id: 'u1',
+    name: 'John',
+    lastName: 'Doe'
+  }
+
+  const userService = Fastify()
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await userService.close()
+  })
+
+  userService.register(GQL, {
+    schema: `
+      extend type Query {
+        me: User
+      }
+
+      type User @key(fields: "id") {
+        id: ID!
+        name: String!
+      }
+    `,
+    resolvers,
+    federationMetadata: true
+  })
+
+  await userService.listen(0)
+
+  const userServicePort = userService.server.address().port
+
+  gateway.register(GQL, {
+    cache: false,
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${userServicePort}/graphql`
+        }
+      ],
+      pollingInterval: 2000
+    }
+  })
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: `
+        query MainQuery {
+          me {
+            id
+            name
+          }
+        }
+      `
+    })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      me: {
+        id: 'u1',
+        name: 'John'
+      }
+    }
+  })
+})
+
 test('Polling schemas', async (t) => {
   const clock = FakeTimers.install({
     shouldAdvanceTime: true,
