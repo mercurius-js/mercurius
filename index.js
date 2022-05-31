@@ -213,6 +213,7 @@ const plugin = fp(async function (app, opts) {
 
         const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
         const schema = await gateway.refresh(isRetry)
+        /* istanbul ignore next */
         if (schema !== null) {
           clearInterval(gatewayRetryIntervalTimer)
           // Trigger onGatewayReplaceSchema hook
