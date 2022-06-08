@@ -11,7 +11,7 @@ async function createService (schema, resolvers = {}) {
     resolvers,
     federationMetadata: true
   })
-  await service.listen(0)
+  await service.listen({ port: 0 })
 
   return service
 }
@@ -35,7 +35,7 @@ async function createGateway (...services) {
     }
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
   return { gateway, teardown }
 }
 

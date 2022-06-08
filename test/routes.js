@@ -1247,7 +1247,7 @@ test('route validation is catched and parsed to graphql error', async (t) => {
     url: '/graphql'
   })
 
-  const expectedResult = { errors: [{ message: 'body should be object' }], data: null }
+  const expectedResult = { errors: [{ message: 'body must be object' }], data: null }
 
   t.equal(res.statusCode, 400)
   t.strictSame(JSON.parse(res.body), expectedResult)
@@ -1456,7 +1456,7 @@ test('connection is not allowed when verifyClient callback called with `false`',
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws', {
       headers: { 'x-custom-header': 'fastify is awesome !' }
@@ -1521,7 +1521,7 @@ test('connection is not allowed when onConnect callback called with `false`', t 
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1588,7 +1588,7 @@ test('connection is not allowed when onConnect callback throws', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1642,7 +1642,7 @@ test('onDisconnect is called with connection context when connection gets discon
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1691,7 +1691,7 @@ test('promise returned from onDisconnect resolves', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1742,7 +1742,7 @@ test('error thrown from onDisconnect is logged', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1792,7 +1792,7 @@ test('promise rejection from onDisconnect is logged', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })

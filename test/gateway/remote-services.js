@@ -22,7 +22,7 @@ async function createRemoteService (schema) {
     reply.send({ data: { _service: { sdl: schema } } })
   })
 
-  await service.listen(0)
+  await service.listen({ port: 0 })
 
   return [service, service.server.address().port]
 }

@@ -11,7 +11,7 @@ async function createService (t, schema, resolvers = {}) {
     resolvers,
     federationMetadata: true
   })
-  await service.listen(0)
+  await service.listen({ port: 0 })
 
   return [service, service.server.address().port]
 }
@@ -1276,7 +1276,7 @@ test('Gateway sends initHeaders with _service sdl query', async (t) => {
     if (!req.headers.authorization) throw new Error('Unauthorized')
   })
 
-  await service.listen(0)
+  await service.listen({ port: 0 })
 
   const gateway = Fastify()
   t.teardown(async () => {
@@ -1323,7 +1323,7 @@ test('Gateway sends initHeaders function result with _service sdl query', async 
     if (!req.headers.authorization) throw new Error('Unauthorized')
   })
 
-  await service.listen(0)
+  await service.listen({ port: 0 })
 
   const gateway = Fastify()
   t.teardown(async () => {

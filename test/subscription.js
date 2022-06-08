@@ -1,3 +1,5 @@
+'use strict'
+
 const { test } = require('tap')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
@@ -30,7 +32,7 @@ test('subscription server replies with connection_ack', t => {
     subscription: true
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
@@ -76,7 +78,7 @@ test('subscription server replies with keep alive when enabled', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
@@ -203,7 +205,7 @@ test('subscription server sends update to subscriptions', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -398,7 +400,7 @@ test('subscription with custom pubsub', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -574,7 +576,7 @@ test('subscription server sends update to subscriptions with custom context', t 
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -666,7 +668,7 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
     subscription: true
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'foobar')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -705,7 +707,7 @@ test('subscription connection is closed if context function throws', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
@@ -841,7 +843,7 @@ test('subscription server sends update to subscriptions with custom async contex
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -949,7 +951,7 @@ test('subscription connection is closed if async context function throws', t => 
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
@@ -1008,7 +1010,7 @@ test('subscription server sends correct error if execution throws', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -1089,7 +1091,7 @@ test('subscription server exposes pubsub', t => {
     subscription: true
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -1190,7 +1192,7 @@ test('subscription context is extended with onConnect return value if connection
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -1269,7 +1271,7 @@ test('subscription works properly if onConnect is not defined and connectionInit
     subscription: true
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -1376,7 +1378,7 @@ test('subscription works with `withFilter` tool', t => {
     resolvers,
     subscription: true
   })
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -1530,7 +1532,7 @@ test('subscription handles `withFilter` if filter throws', t => {
     resolvers,
     subscription: true
   })
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -1682,7 +1684,7 @@ test('`withFilter` tool works with async filters', t => {
     resolvers,
     subscription: true
   })
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
@@ -1778,9 +1780,11 @@ test('subscription server works with fastify websocket', t => {
     }
   })
 
-  app.get('/fastify-websocket', { websocket: true }, (connection, req) => {
-    connection.socket.on('message', message => {
-      connection.socket.send('hi from server')
+  app.register(async function (app) {
+    app.get('/fastify-websocket', { websocket: true }, (connection, req) => {
+      connection.socket.on('message', message => {
+        connection.socket.send('hi from server')
+      })
     })
   })
 
@@ -1863,7 +1867,7 @@ test('subscription server works with fastify websocket', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/fastify-websocket')
@@ -2026,7 +2030,7 @@ test('subscription passes context to its loaders', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')

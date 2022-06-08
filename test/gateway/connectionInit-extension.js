@@ -152,8 +152,8 @@ test('connectionInit extension e2e testing', t => {
   Promise.all([
     userService.ready(),
     notificationService.ready(),
-    userService.listen(0),
-    notificationService.listen(0)
+    userService.listen({ port: 0 }),
+    notificationService.listen({ port: 0 })
   ]).then(() => {
     gateway.register(GQL, {
       subscription: true,
@@ -193,7 +193,7 @@ test('connectionInit extension e2e testing', t => {
       }
     })
 
-    gateway.listen(0, err => {
+    gateway.listen({ port: 0 }, err => {
       t.error(err)
       async function addUser () {
         await gateway.inject({

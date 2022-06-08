@@ -57,7 +57,7 @@ test('Polling schemas with disable cache', async (t) => {
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -146,7 +146,7 @@ test('Polling schemas', async (t) => {
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -316,7 +316,7 @@ test('Polling schemas (gateway.polling interval is not a number)', async (t) => 
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -332,7 +332,7 @@ test('Polling schemas (gateway.polling interval is not a number)', async (t) => 
     }
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 })
 
 test("Polling schemas (if service is down, schema shouldn't be changed)", async (t) => {
@@ -380,7 +380,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
   await clock.tickAsync()
 
   const userServicePort = userService.server.address().port
@@ -536,7 +536,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -663,7 +663,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -679,7 +679,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     }
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const res = await gateway.inject({
     method: 'POST',
@@ -830,7 +830,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -914,7 +914,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     federationMetadata: true
   })
 
-  await restartedUserService.listen(userServicePort)
+  await restartedUserService.listen({ port: userServicePort })
 
   await clock.tickAsync(10000)
 
@@ -1053,7 +1053,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     subscription: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -1071,7 +1071,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
     }
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const ws = new WebSocket(
     `ws://localhost:${gateway.server.address().port}/graphql`,

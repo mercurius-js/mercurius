@@ -13,7 +13,7 @@ async function createTestService (port, schema, resolvers = {}) {
     resolvers,
     federationMetadata: true
   })
-  await service.listen(port)
+  await service.listen({ port })
   return service
 }
 
