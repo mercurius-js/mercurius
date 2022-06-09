@@ -390,7 +390,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       services: [
         {
           name: 'user',
-          url: `http://localhost:${userServicePort}/graphql`
+          url: `http://127.0.0.1:${userServicePort}/graphql`
         }
       ],
       pollingInterval: 500
