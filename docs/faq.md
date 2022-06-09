@@ -1,9 +1,9 @@
 # FAQ
 
-This page answers common asked questions about Mercurius.
+This page answers commonly asked questions about Mercurius.
 
-## Disable Graphql instrospection
-To disable Graphql instrospection you can use `NoSchemaIntrospectionCustomRule` from graphql, we have an example on "example/disable-instrospection.js", using this approach:
+## Disable Graphql introspection
+To disable Graphql introspection you can use `NoSchemaIntrospectionCustomRule` from graphql. We have an example on "example/disable-instrospection.js", using this approach:
 
 ```js
 import { NoSchemaIntrospectionCustomRule } from 'graphql';
