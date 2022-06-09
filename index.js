@@ -680,7 +680,7 @@ const plugin = fp(async function (app, opts) {
   }
 }, {
   name: 'mercurius',
-  fastify: '>=3.x'
+  fastify: '4.x'
 })
 
 plugin.ErrorWithProps = ErrorWithProps

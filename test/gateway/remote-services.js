@@ -59,8 +59,10 @@ test('Returns schema related errors for mandatory services', async (t) => {
   const gateway = Fastify()
 
   t.teardown(async () => {
-    await gateway.close()
-    await service.close()
+    await Promise.all([
+      gateway.close(),
+      service.close()
+    ])
   })
 
   gateway.register(GQL, {
@@ -68,7 +70,9 @@ test('Returns schema related errors for mandatory services', async (t) => {
       services: [{
         name: 'not-working',
         url: `http://localhost:${servicePort}/graphql`,
-        mandatory: true
+        mandatory: true,
+        keepAliveTimeout: 10, // milliseconds
+        keepAliveMaxTimeout: 10 // milliseconds
       }]
     }
   })
@@ -95,9 +99,11 @@ test('Does not error if at least one service schema is valid', async (t) => {
   }
 
   t.teardown(async () => {
-    await gateway.close()
-    await service.close()
-    await invalidService.close()
+    await Promise.all([
+      gateway.close(),
+      service.close(),
+      invalidService.close()
+    ])
   })
 
   gateway.register(GQL, {
