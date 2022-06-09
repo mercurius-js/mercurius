@@ -11,7 +11,7 @@ async function createService (t, schema, resolvers = {}) {
     resolvers,
     federationMetadata: true
   })
-  await service.listen(0)
+  await service.listen({ port: 0 })
 
   return [service, service.server.address().port]
 }
@@ -407,7 +407,7 @@ test('gateway distributes query correctly to services when querying with inline 
     }
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const query = `
     query {

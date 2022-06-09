@@ -13,7 +13,7 @@ async function createTestService (t, schema, resolvers = {}) {
     federationMetadata: true,
     allowBatchedQueries: true
   })
-  await service.listen(0)
+  await service.listen({ port: 0 })
   return [service, service.server.address().port]
 }
 

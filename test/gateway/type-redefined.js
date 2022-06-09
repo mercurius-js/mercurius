@@ -130,12 +130,12 @@ async function buildProxy (port1, port2) {
 test('federated node should be able to redefine type', async (t) => {
   const port1 = 3027
   const serviceOne = await buildService()
-  await serviceOne.listen(port1)
+  await serviceOne.listen({ port: port1 })
   t.teardown(() => { serviceOne.close() })
 
   const port2 = 3028
   const serviceTwo = await buildServiceExternal()
-  await serviceTwo.listen(port2)
+  await serviceTwo.listen({ port: port2 })
   t.teardown(() => { serviceTwo.close() })
 
   const serviceProxy = await buildProxy(port1, port2)

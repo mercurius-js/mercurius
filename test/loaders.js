@@ -679,7 +679,7 @@ test('subscriptions properly execute loaders', t => {
     }
   })
 
-  app.listen(0, err => {
+  app.listen({ port: 0 }, err => {
     t.error(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')

@@ -147,7 +147,7 @@ async function createTestService (t, schema, resolvers) {
     federationMetadata: true,
     subscription: true
   })
-  await service.listen(0)
+  await service.listen({ port: 0 })
   return [service, service.server.address().port]
 }
 
@@ -234,7 +234,7 @@ test('gateway subscription - hooks basic', async t => {
     t.ok('onSubscriptionResolution called')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, gateway)
 
@@ -326,7 +326,7 @@ test('gateway - preSubscriptionParsing hooks should handle errors', async t => {
     t.fail('onSubscriptionResolution should not be called')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, gateway)
 
@@ -382,7 +382,7 @@ test('gateway - preSubscriptionExecution hooks should handle errors', async t =>
     t.fail('onSubscriptionResolution should not be called')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, gateway)
 
@@ -433,7 +433,7 @@ test('gateway - preGatewaySubscriptionExecution hooks should handle errors', asy
     t.fail('onSubscriptionResolution should not be called')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, gateway)
 
@@ -481,7 +481,7 @@ test('gateway subscription - preGatewaySubscriptionExecution hooks should contai
     t.ok('preGatewaySubscriptionExecution called')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, gateway)
 
@@ -561,7 +561,7 @@ test('gateway - onSubscriptionResolution hooks should handle errors', async t =>
     t.fail('onSubscriptionResolution should not be called again')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client, ws } = createWebSocketClient(t, gateway)
 
@@ -616,7 +616,7 @@ test('gateway - should call onSubscriptionEnd when subscription ends', async t =
     t.ok('onSubscriptionEnd called')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, gateway)
 
@@ -660,7 +660,7 @@ test('gateway - should handle onSubscriptionEnd hook errors', async t => {
     throw new Error('kaboom')
   })
 
-  await gateway.listen(0)
+  await gateway.listen({ port: 0 })
 
   const { client, ws } = createWebSocketClient(t, gateway)
 

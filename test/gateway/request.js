@@ -28,7 +28,7 @@ test('sendRequest method rejects when response is not valid json', async (t) => 
     return 'response'
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
   const { request, close } = buildRequest({ url })
@@ -66,7 +66,7 @@ test('sendRequest method rejects when response contains errors', async (t) => {
     return { errors: ['foo'] }
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
   const { request, close } = buildRequest({ url })
@@ -104,7 +104,7 @@ test('sendRequest method should accept useSecureParse flag and parse the respons
     return '{" __proto__": { "foo": "bar" } }'
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
   const { request, close } = buildRequest({ url })
@@ -146,7 +146,7 @@ test('sendRequest method should run without useSecureParse flag', async (t) => {
     return '{ "foo": "bar" }'
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const url = new URL(`http://localhost:${app.server.address().port}`)
   const { request, close } = buildRequest({ url })

@@ -59,7 +59,7 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 
@@ -149,7 +149,7 @@ test('onGatewayReplaceSchema - should log an error should any errors occur in th
     federationMetadata: true
   })
 
-  await userService.listen(0)
+  await userService.listen({ port: 0 })
 
   const userServicePort = userService.server.address().port
 

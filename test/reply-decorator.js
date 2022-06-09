@@ -106,7 +106,8 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   })
 
   app.setErrorHandler(async function (err, request, reply) {
-    t.pass('error handler called')
+    reply.code(err.statusCode)
+    t.equal(err.statusCode, 400)
     return { errors: err.errors }
   })
 

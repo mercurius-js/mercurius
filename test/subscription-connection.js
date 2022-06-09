@@ -46,7 +46,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     subscriber: new PubSub(mq())
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-transport-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
