@@ -63,7 +63,7 @@
     "graphql-jit": "^0.7.3",
     "mqemitter": "^5.0.0",
     "p-map": "^4.0.0",
-    "readable-stream": "^3.6.0",
+    "readable-stream": "^4.0.0",
     "safe-stable-stringify": "^2.3.0",
     "secure-json-parse": "^2.4.0",
     "single-user-cache": "^0.6.0",
