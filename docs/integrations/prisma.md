@@ -2,9 +2,9 @@
 
 [Prisma](https://prisma.io) is an [open-source](https://github.com/prisma/prisma) ORM for Node.js and TypeScript. 
 It can be used as an _alternative_ to writing plain SQL, or using another database access tool such as SQL query builders (e.g. [knex.js](https://knexjs.org/)) or ORMs (like [TypeORM](https://typeorm.io/) and [Sequelize](https://sequelize.org/)).
-Prisma currently supports PostgreSQL, MySQL, SQL Server and SQLite.
+Prisma currently supports PostgreSQL, MySQL, SQL Server, MongoDB, CockroachDB, and SQLite.
 
-You can easily combine Prisma and Mercurius to build your GraphQL server that connects to a database. Prisma is agnostic to the GraphQL tools you use when building your GraphQL server. 
+You can easily combine Prisma and Mercurius to build your GraphQL server that connects to a database. Prisma is agnostic to the GraphQL tools you use when building your GraphQL server. Check out this [GitHub repo](https://github.com/2color/fastify-graphql-nexus-prisma) for a ready-to-run example project with a PosgreSQL database.
 
 Prisma can be used with plain JavaScript and it embraces TypeScript and provides a level to type-safety that goes beyond the guarantees other ORMs in the TypeScript ecosystem. You can find an in-depth comparison of Prisma against other ORMs [here](https://www.prisma.io/docs/concepts/more/comparisons)
 
@@ -13,13 +13,11 @@ Prisma can be used with plain JavaScript and it embraces TypeScript and provides
 Install [Prisma CLI](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-cli) as a development dependency in your project:
 
 ```bash
-npm install prisma@2.20.1 --save-dev
-npm install @prisma/client@2.20.1
+npm install prisma --save-dev
+npm install @prisma/client
 ```
 
 [Prisma Client](https://www.prisma.io/docs/reference/api-reference/prisma-client-reference) is an auto-generated database client that allows you to interact with your database in a type-safe way.
-
-> **Note**: Prisma releases typically happen every two weeks with a minor version update.
 
 Initialize Prisma in your project:  
 ```bash
@@ -32,12 +30,13 @@ This command does the following:
 
 ## Connect to your database
 
-To connect to your database, set the `url` field of the `datasource` block in your Prisma schema to your database connection URL. By default, it's set to `postgresql` but this guide will use SQLite database. Adjust your `datasource` block to `sqlite` and `url` to `file:./dev.db`:
+To connect to your database, set the `url` field of the `datasource` block in your Prisma schema to your database connection URL. By default, it's set to `postgresql` but this guide will use SQLite database. Adjust your `datasource` block to `sqlite`:
 
 ```prisma
+/// prisma/schema.prisma
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -45,7 +44,15 @@ generator client {
 }
 ```
 
+Update the `DATABASE_URL` environment variable in the `.env` file:
+
+```
+# .env
+DATABASE_URL="file:./dev.db"
+```
+
 If you wish to use a different database, you can jump to [switching database providers](#switching-database-providers).
+
 ## Create database tables with Prisma Migrate
 
 Add the following model to your `prisma.schema` file:
@@ -67,6 +74,7 @@ npx prisma migrate dev --name init
 
 The above command does three things:
 1. Creates a new SQL migration file for this migration
+1. Creates the database if it does not exist
 1. Runs the SQL migration against the database
 1. Generates Prisma Client
 
@@ -162,16 +170,8 @@ If you want to switch to a different database other than SQLite, you can adjust 
 Learn more about the different connection configurations in the [docs](https://www.prisma.io/docs/reference/database-reference/connection-urls).
 
 Here's an overview of an example configuration with different databases:
+
 ### PostgreSQL
-
-For PostgreSQL, the connection URL has the following structure:
-
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-```
 
 Here is an example connection string with a local PostgreSQL database:
 
@@ -184,15 +184,6 @@ datasource db {
 
 ### MySQL
 
-For MySQL, the connection URL has the following structure:
-
-```prisma
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-```
-
 Here is an example connection string with a local MySQL database:
 
 ```prisma
@@ -202,7 +193,7 @@ datasource db {
 }
 ```
 
-### SQLServer (preview)
+### SQL Server
 
 Here is an example connection string with a local Microsoft SQL Server database:
 
@@ -213,11 +204,24 @@ datasource db {
 }
 ```
 
-Because SQL Server is currently in [Preview](https://www.prisma.io/docs/about/releases#preview), you need to specify the `previewFeatures` on your `generator` block:
+### CockroachDB
+
+Here is an example connection string with a local Microsoft SQL Server database:
 
 ```prisma
-generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["microsoftSqlServer"]
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+```
+
+### MongoDB
+
+Here is an example connection string with a local Microsoft SQL Server database:
+
+```prisma
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 ```
