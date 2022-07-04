@@ -363,6 +363,38 @@ gateway.register(mercurius, {
   }
 })
 
+gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql',
+        schema: `
+        type Query {
+          dogs: [Dog]
+        }`,
+        setResponseHeaders: (reply) => reply.header('abc', 'abc')
+      }
+    ]
+  }
+})
+
+expectError(() => gateway.register(mercurius, {
+  gateway: {
+    services: [
+      {
+        name: 'user',
+        url: 'http://localhost:4001/graphql',
+        schema: `
+        type Query {
+          dogs: [Dog]
+        }`,
+        setResponseHeaders: false
+      }
+    ]
+  }
+}))
+
 expectError(() => gateway.register(mercurius, {
   gateway: {
     services: [

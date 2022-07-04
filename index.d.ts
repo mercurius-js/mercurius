@@ -398,6 +398,7 @@ export interface MercuriusGatewayService {
   wsConnectionParams?:
     | (() => WsConnectionParams | Promise<WsConnectionParams>)
     | WsConnectionParams;
+  setResponseHeaders?: (reply:FastifyReply) => void;
 }
 
 export interface MercuriusGatewayOptions {
@@ -488,8 +489,7 @@ export interface MercuriusCommonOptions {
   /**
    * The maximum depth allowed for a single query.
    */
-  queryDepth?: number;
-  setResponseHeaders?: (reply:FastifyReply) => void;
+  queryDepth?: number;  
   context?: (
     request: FastifyRequest,
     reply: FastifyReply
