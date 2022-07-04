@@ -489,7 +489,7 @@ export interface MercuriusCommonOptions {
   /**
    * The maximum depth allowed for a single query.
    */
-  queryDepth?: number;  
+  queryDepth?: number;
   context?: (
     request: FastifyRequest,
     reply: FastifyReply

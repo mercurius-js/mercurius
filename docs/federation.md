@@ -182,7 +182,7 @@ gateway.register(mercurius, {
           return {
             'x-api-key': 'secret-api-key'
           }
-        }
+        },
         setResponseHeaders: (reply) => {
           reply.header('set-cookie', 'sessionId=12345')
         }
