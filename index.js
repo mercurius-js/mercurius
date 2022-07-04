@@ -664,9 +664,10 @@ const plugin = fp(async function (app, opts) {
 
     if (execution.errors) {
       const { reply } = context
-      const { statusCode, response: { data, errors } } = errorFormatter(execution, context)
+      const { statusCode, response: { data, errors, extensions } } = errorFormatter(execution, context)
       execution.data = data
       execution.errors = errors
+      if (extensions) { execution.extensions = extensions }
       if (reply) {
         reply.code(statusCode)
       }
