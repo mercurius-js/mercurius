@@ -70,6 +70,7 @@
     - `service.mandatory`: `Boolean` Marks service as mandatory. If any of the mandatory services are unavailable, gateway will exit with an error. (Default: `false`)
     - `service.useSecureParse`: `Boolean` Marks if the service response needs to be parsed securely using [secure-json-parse](https://github.com/fastify/secure-json-parse). (Default: `false`)
     - `service.rewriteHeaders`: `Function` A function that gets the original headers as a parameter and returns an object containing values that should be added to the headers
+    - `service.setResponseHeaders`: `Function` A function that gets `reply` as a parameter and can be used to set headers for the federated response to be sent to the client.
     - `service.initHeaders`: `Function` or `Object` An object or a function that returns the headers sent to the service for the initial \_service SDL query.
     - `service.connections`: The number of clients to create. (Default: `10`)
     - `service.agent`: An optional, fully configured [undici](https://github.com/nodejs/undici) agent/pool instance to use to perform network requests. If used, you must set all connections options on the instance as the request related options from the `service` configuration will not be applied.

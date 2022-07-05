@@ -398,6 +398,7 @@ export interface MercuriusGatewayService {
   wsConnectionParams?:
     | (() => WsConnectionParams | Promise<WsConnectionParams>)
     | WsConnectionParams;
+  setResponseHeaders?: (reply:FastifyReply) => void;
 }
 
 export interface MercuriusGatewayOptions {

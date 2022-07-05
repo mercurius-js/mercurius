@@ -174,7 +174,10 @@ async function start () {
     gateway: {
       services: [{
         name: 'user',
-        url: 'http://localhost:4001/graphql'
+        url: 'http://localhost:4001/graphql',
+        setResponseHeaders: (reply) => {
+          reply.header('abc', 'abc')
+        }
       }, {
         name: 'post',
         url: 'http://localhost:4002/graphql'
