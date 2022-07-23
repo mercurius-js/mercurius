@@ -1,7 +1,7 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const LRU = require('tiny-lru')
+let LRU = require("tiny-lru");
 const routes = require('./lib/routes')
 const { compileQuery, isCompiledQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
@@ -43,6 +43,9 @@ const {
 const { Hooks, assignLifeCycleHooksToContext, assignApplicationLifecycleHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
 const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler, onGatewayReplaceSchemaHandler } = require('./lib/handlers')
+
+// Required for module bundlers
+LRU = typeof LRU === 'function' ? LRU : LRU.default
 
 function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
