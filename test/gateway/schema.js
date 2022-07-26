@@ -202,7 +202,7 @@ test('It builds the gateway schema correctly', async (t) => {
     content
     ...AuthorFragment
   }
-  
+
   fragment AuthorFragment on Post {
     author {
       ...UserFragment
@@ -1211,7 +1211,7 @@ test('Should handle union with InlineFragment', async (t) => {
       ...ShelveInfos
     }
   }
-  
+
   fragment ShelveInfos on Shelve {
     id
     products {
@@ -1428,7 +1428,7 @@ test('Should handle interface', async (t) => {
       ...ShelveInfos
     }
   }
-  
+
   fragment ShelveInfos on Shelve {
     id
     products {
@@ -2167,7 +2167,7 @@ test('Uses the supplied schema for federation rather than fetching it remotely',
     content
     ...AuthorFragment
   }
-  
+
   fragment AuthorFragment on Post {
     author {
       ...UserFragment
@@ -2655,7 +2655,7 @@ test('It builds the gateway schema correctly with two services query extension h
     content
     ...AuthorFragment
   }
-  
+
   fragment AuthorFragment on Post {
     author {
       ...UserFragment
@@ -2753,4 +2753,421 @@ test('It builds the gateway schema correctly with two services query extension h
       hello: 'World'
     }
   })
+})
+
+test('Value types should not throw', async (t) => {
+  const orders = {
+    o1: {
+      id: 'o1',
+      name: 'Order 1'
+    }
+  }
+
+  const [orderService, orderServicePort] = await createService(t, `
+    extend type Query {
+      getOrder: Order
+    }
+
+    type Order {
+      name: String
+    }
+  `, {
+    Query: {
+      getOrder: (root, args, context, info) => {
+        return orders.o1
+      }
+    },
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const [conflictingService, conflictingServicePort] = await createService(t, `
+    type Order {
+      name: String
+    }
+  `, {
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await orderService.close()
+    await conflictingService.close()
+  })
+
+  await gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'order',
+        url: `http://localhost:${orderServicePort}/graphql`,
+        rewriteHeaders: (headers) => {
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+        }
+      }, {
+        name: 'conflicting-order',
+        url: `http://localhost:${conflictingServicePort}/graphql`
+      }]
+    }
+  })
+})
+
+test('Types that extend correctly from another node should not throw an error', async (t) => {
+  const orders = {
+    o1: {
+      id: 'o1',
+      name: 'Order 1'
+    }
+  }
+
+  const [orderService, orderServicePort] = await createService(t, `
+    extend type Query {
+      getOrder: Order
+    }
+
+    type Order @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    Query: {
+      getOrder: (root, args, context, info) => {
+        return orders.o1
+      }
+    },
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const [conflictingService, conflictingServicePort] = await createService(t, `
+    extend type Order {
+      surname: String
+    }
+  `, {
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await orderService.close()
+    await conflictingService.close()
+  })
+
+  await gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'order',
+        url: `http://localhost:${orderServicePort}/graphql`,
+        rewriteHeaders: (headers) => {
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+        }
+      }, {
+        name: 'conflicting-order',
+        url: `http://localhost:${conflictingServicePort}/graphql`
+      }]
+    }
+  })
+})
+
+test('The order of extension for types with the same name should not matter', async (t) => {
+  const orders = {
+    o1: {
+      id: 'o1',
+      name: 'Order 1'
+    }
+  }
+
+  const [orderService, orderServicePort] = await createService(t, `
+    extend type Query {
+      getOrder: Order
+    }
+
+    extend type Order {
+      surname: String
+    }
+  `, {
+    Query: {
+      getOrder: (root, args, context, info) => {
+        return orders.o1
+      }
+    },
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const [conflictingService, conflictingServicePort] = await createService(t, `
+    type Order @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await orderService.close()
+    await conflictingService.close()
+  })
+
+  await gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'order',
+        url: `http://localhost:${orderServicePort}/graphql`,
+        rewriteHeaders: (headers) => {
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+        }
+      }, {
+        name: 'conflicting-order',
+        url: `http://localhost:${conflictingServicePort}/graphql`
+      }]
+    }
+  })
+})
+
+test('Types with duplicate names that are value types should not throw', async (t) => {
+  const orders = {
+    o1: {
+      id: 'o1',
+      name: 'Order 1'
+    }
+  }
+
+  const [orderService, orderServicePort] = await createService(t, `
+    extend type Query {
+      getOrder: Order
+    }
+
+    type Order @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    Query: {
+      getOrder: (root, args, context, info) => {
+        return orders.o1
+      }
+    },
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const [conflictingService, conflictingServicePort] = await createService(t, `
+    type Order {
+      id: ID!
+      name: String
+    }
+  `, {
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await orderService.close()
+    await conflictingService.close()
+  })
+
+  await gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'order',
+        url: `http://localhost:${orderServicePort}/graphql`,
+        rewriteHeaders: (headers) => {
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+        }
+      }, {
+        name: 'conflicting-order',
+        url: `http://localhost:${conflictingServicePort}/graphql`
+      }]
+    }
+  })
+})
+
+test('Types that duplicate names that are not value types should throw', async (t) => {
+  const orders = {
+    o1: {
+      id: 'o1',
+      name: 'Order 1'
+    }
+  }
+
+  const [orderService, orderServicePort] = await createService(t, `
+    extend type Query {
+      getOrder: Order
+    }
+
+    type Order @key(fields: "id") {
+      id: ID!
+      name: Int
+    }
+  `, {
+    Query: {
+      getOrder: (root, args, context, info) => {
+        return orders.o1
+      }
+    },
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const [conflictingService, conflictingServicePort] = await createService(t, `
+    type Order @key(fields: "id") {
+      id: ID!
+      name: String
+      surname: String
+    }
+  `, {
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await orderService.close()
+    await conflictingService.close()
+  })
+
+  t.rejects(() => gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'order',
+        url: `http://localhost:${orderServicePort}/graphql`,
+        rewriteHeaders: (headers) => {
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+        }
+      }, {
+        name: 'conflicting-order',
+        url: `http://localhost:${conflictingServicePort}/graphql`
+      }]
+    }
+  }))
+})
+
+test('Types that extend a type from another node, but have clashing fields should throw an error', async (t) => {
+  const orders = {
+    o1: {
+      id: 'o1',
+      name: 'Order 1'
+    }
+  }
+
+  const [orderService, orderServicePort] = await createService(t, `
+    extend type Query {
+      getOrder: Order
+    }
+
+    type Order @key(fields: "id") {
+      id: ID!
+      name: String
+    }
+  `, {
+    Query: {
+      getOrder: (root, args, context, info) => {
+        return orders.o1
+      }
+    },
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const [conflictingService, conflictingServicePort] = await createService(t, `
+    extend type Order {
+      name: String
+    }
+  `, {
+    Order: {
+      __resolveReference: (order, args, context, info) => {
+        return orders[order.id]
+      }
+    }
+  })
+
+  const gateway = Fastify()
+  t.teardown(async () => {
+    await gateway.close()
+    await orderService.close()
+    await conflictingService.close()
+  })
+
+  t.rejects(() => gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'order',
+        url: `http://localhost:${orderServicePort}/graphql`,
+        rewriteHeaders: (headers) => {
+          if (headers.authorization) {
+            return {
+              authorization: headers.authorization
+            }
+          }
+        }
+      }, {
+        name: 'conflicting-order',
+        url: `http://localhost:${conflictingServicePort}/graphql`
+      }]
+    }
+  })
+  )
 })
