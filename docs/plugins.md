@@ -10,6 +10,7 @@ Related plugins for mercurius
 - [mercurius-apollo-registry](#mercurius-apollo-registry)
 - [mercurius-apollo-tracing](#mercurius-apollo-tracing)
 - [mercurius-postgraphile](#mercurius-postgraphile)
+- [mercurius-logging](#mercurius-logging)
 
 ## mercurius-auth
 
@@ -124,3 +125,23 @@ app.register(mercuriusTracing, {
 A Mercurius plugin for integrating PostGraphile schemas with Mercurius
 
 Check [https://github.com/autotelic/mercurius-postgraphile](https://github.com/autotelic/mercurius-postgraphile) for usage and readme.
+
+## mercurius-logging
+A Mercurius plugin to enhance the GQL request logging adding useful insights:
+
+```json
+{
+  "level": 30,
+  "time": 1660395516406,
+  "hostname": "eomm",
+  "reqId": "req-1",
+  "graphql": {
+    "queries": [
+      "firstQuery:myTeam",
+      "secondQuery:myTeam"
+    ]
+  }
+}
+```
+
+Check the [`mercurius-logging`](https://github.com/Eomm/mercurius-logging) documentation for usage and settings.
