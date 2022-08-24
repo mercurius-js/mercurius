@@ -5,6 +5,7 @@ const sinon = require('sinon')
 const WebSocket = require('ws')
 const fastify = require('fastify')
 const mq = require('mqemitter')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
 const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protocol')
@@ -642,4 +643,61 @@ test('subscription connection handles mutation when fullWsTransport: true', asyn
       })
     ).calledOnce
   )
+})
+
+test('subscription data is released right after it ends', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send () {},
+    protocol: GRAPHQL_TRANSPORT_WS
+  }, {
+    context: { preSubscriptionParsing: null, preSubscriptionExecution: null },
+    fastify: {
+      graphql: {
+        schema: makeExecutableSchema({
+          typeDefs: ['type Query { blah: String! }', 'type Subscription { onMessage: String! }'],
+          resolvers: {
+            Query: {},
+            Subscription: {
+              onMessage: {
+                async * subscribe () {
+                  return 'blah'
+                }
+              }
+            }
+          }
+        })
+      }
+    }
+  })
+
+  sc.isReady = true
+
+  t.equal(sc.subscriptionIters.size, 0)
+  t.equal(sc.subscriptionContexts.size, 0)
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'subscribe',
+    payload: {
+      query: 'subscription { onMessage } '
+    }
+  }))
+
+  await new Promise(resolve => {
+    sc.sendMessage = (type, id, payload) => {
+      t.equal(id, 1)
+      t.equal(type, 'complete')
+      t.equal(payload, null)
+
+      t.equal(sc.subscriptionIters.size, 1)
+      t.equal(sc.subscriptionContexts.size, 1)
+
+      resolve()
+    }
+  })
+
+  t.equal(sc.subscriptionIters.size, 0)
+  t.equal(sc.subscriptionContexts.size, 0)
 })
