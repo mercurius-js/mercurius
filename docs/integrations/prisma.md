@@ -206,7 +206,7 @@ datasource db {
 
 ### CockroachDB
 
-Here is an example connection string with a local Microsoft SQL Server database:
+Here is an example connection string with a local CockroachDB database:
 
 ```prisma
 datasource db {
@@ -217,7 +217,7 @@ datasource db {
 
 ### MongoDB
 
-Here is an example connection string with a local Microsoft SQL Server database:
+Here is an example connection string with a local MongoDB database:
 
 ```prisma
 datasource db {
