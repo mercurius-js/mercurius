@@ -2,6 +2,7 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
+const sinon = require('sinon')
 const GQL = require('..')
 
 test('POST regular query', async (t) => {
@@ -345,4 +346,45 @@ test('POST batched query with a resolver which succeeds and a resolver which thr
   })
 
   t.same(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Internal Server Error' }] }])
+})
+
+test('POST batched query has an individual context for each operation', async (t) => {
+  const app = Fastify()
+
+  const contextSpy = sinon.spy()
+
+  const schema = `
+      type Query {
+        test: String
+      }
+    `
+
+  const resolvers = {
+    test: (_, ctx) => contextSpy(ctx.operationId, ctx.operationsCount, ctx.__currentQuery)
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    allowBatchedQueries: true
+  })
+
+  await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: [
+      {
+        operationName: 'TestQuery',
+        query: 'query TestQuery { test }'
+      },
+      {
+        operationName: 'DoubleQuery',
+        query: 'query DoubleQuery { test }'
+      }
+    ]
+  })
+
+  t.ok(contextSpy.calledTwice)
+  t.ok(contextSpy.calledWith(0, 2, sinon.match(/TestQuery/)))
+  t.ok(contextSpy.calledWith(1, 2, sinon.match(/DoubleQuery/)))
 })
