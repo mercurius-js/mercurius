@@ -341,6 +341,69 @@ test('subscription connection handles when GQL_START is called before GQL_INIT',
   }))
 })
 
+test('subscription connection replies to GQL_CONNECTION_KEEP_ALIVE message with GQL_CONNECTION_KEEP_ALIVE_ACK', async (t) => {
+  t.plan(1)
+
+  const sc = new SubscriptionConnection(
+    {
+      on () {},
+      close () {},
+      send (message) {
+        t.equal(
+          JSON.stringify({
+            type: 'pong',
+            id: 1
+          }),
+          message
+        )
+      },
+      protocol: GRAPHQL_TRANSPORT_WS
+    },
+    {}
+  )
+
+  await sc.handleMessage(
+    JSON.stringify({
+      id: 1,
+      type: 'ping',
+      payload: {}
+    })
+  )
+})
+
+test('subscription connection does not error if client sends GQL_CONNECTION_KEEP_ALIVE_ACK', async (t) => {
+  t.plan(1)
+
+  const sc = new SubscriptionConnection(
+    {
+      on () {},
+      close () {},
+      send (message) {
+        t.fail()
+      },
+      protocol: GRAPHQL_TRANSPORT_WS
+    },
+    {}
+  )
+
+  await sc.handleMessage(
+    JSON.stringify({
+      id: 1,
+      type: 'pong',
+      payload: {}
+    })
+  )
+
+  await sc.handleMessage(
+    JSON.stringify({
+      id: 1,
+      type: 'complete'
+    })
+  )
+
+  t.equal(sc.subscriptionContexts.size, 0)
+})
+
 test('subscription connection extends context with onConnect return value', async (t) => {
   t.plan(3)
 
