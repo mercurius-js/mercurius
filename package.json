@@ -32,7 +32,7 @@
     "@graphql-tools/merge": "^8.0.0",
     "@graphql-tools/schema": "^8.0.0",
     "@graphql-tools/utils": "^8.0.0",
-    "@sinonjs/fake-timers": "^9.0.0",
+    "@sinonjs/fake-timers": "^9.1.2",
     "@types/node": "^18.0.0",
     "@types/ws": "^8.2.0",
     "@types/isomorphic-form-data": "^2.0.0",
@@ -48,7 +48,7 @@
     "snazzy": "^9.0.0",
     "split2": "^4.0.0",
     "standard": "^17.0.0",
-    "tap": "^16.0.0",
+    "tap": "^16.3.0",
     "tsd": "^0.22.0",
     "typescript": "^4.3.5",
     "wait-on": "^6.0.0"
