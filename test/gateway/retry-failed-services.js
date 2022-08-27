@@ -119,11 +119,11 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
     advanceTimeDelta: 100
   })
 
-  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+  const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
   setTimeout(async () => {
-    service2 = await createTestService(5002, postService.schema, postService.resolvers)
+    service2 = await createTestService(5113, postService.schema, postService.resolvers)
   }, 5000)
 
   const app = Fastify()
@@ -140,12 +140,12 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
       services: [
         {
           name: 'user',
-          url: 'http://localhost:5001/graphql',
+          url: `http://localhost:${service1.server.address().port}/graphql`,
           mandatory: false
         },
         {
           name: 'post',
-          url: 'http://localhost:5002/graphql',
+          url: 'http://localhost:5113/graphql',
           mandatory: true
         }
       ]
@@ -221,11 +221,11 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
     advanceTimeDelta: 100
   })
 
-  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+  const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
   setTimeout(async () => {
-    service2 = await createTestService(5002, postService.schema, postService.resolvers)
+    service2 = await createTestService(5111, postService.schema, postService.resolvers)
   }, 5000)
 
   const app = Fastify()
@@ -242,12 +242,12 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
       services: [
         {
           name: 'user',
-          url: 'http://localhost:5001/graphql',
+          url: `http://localhost:${service1.server.address().port}/graphql`,
           mandatory: false
         },
         {
           name: 'post',
-          url: 'http://localhost:5002/graphql',
+          url: 'http://localhost:5111/graphql',
           mandatory: true
         }
       ],
@@ -319,7 +319,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     advanceTimeDelta: 100
   })
 
-  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+  const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   const app = Fastify()
   t.teardown(async () => {
@@ -334,12 +334,12 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
       services: [
         {
           name: 'user',
-          url: 'http://localhost:5001/graphql',
+          url: `http://localhost:${service1.server.address().port}/graphql`,
           mandatory: false
         },
         {
           name: 'post',
-          url: 'http://localhost:5002/graphql',
+          url: 'http://localhost:5112/graphql',
           mandatory: false
         }
       ],
@@ -406,11 +406,11 @@ test('gateway - should log error if retry throws', async (t) => {
     advanceTimeDelta: 100
   })
 
-  const service1 = await createTestService(5001, userService.schema, userService.resolvers)
+  const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
   setTimeout(async () => {
-    service2 = await createTestService(5002, postService.schema, postService.resolvers)
+    service2 = await createTestService(5113, postService.schema, postService.resolvers)
   }, 2000)
 
   const app = Fastify()
@@ -436,12 +436,12 @@ test('gateway - should log error if retry throws', async (t) => {
       services: [
         {
           name: 'user',
-          url: 'http://localhost:5001/graphql',
+          url: `http://localhost:${service1.server.address().port}/graphql`,
           mandatory: false
         },
         {
           name: 'post',
-          url: 'http://localhost:5002/graphql',
+          url: 'http://localhost:5113/graphql',
           mandatory: true
         }
       ],
@@ -456,8 +456,8 @@ test('gateway - should log error if retry throws', async (t) => {
 
   await app.ready()
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1000)
+  for (let i = 0; i < 100; i++) {
+    await clock.tickAsync(100)
   }
 })
 
@@ -497,7 +497,7 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
         },
         {
           name: 'post',
-          url: 'http://localhost:5002/graphql',
+          url: 'http://localhost:5114/graphql',
           mandatory: true
         }
       ],
