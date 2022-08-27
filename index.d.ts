@@ -255,12 +255,12 @@ export interface MercuriusPlugin {
    * Define additional resolvers
    * @param resolvers object with resolver functions
    */
-  defineResolvers<TContext = MercuriusContext>(resolvers: IResolvers<any, TContext>): void;
+  defineResolvers<TContext extends Record<string, any> = MercuriusContext>(resolvers: IResolvers<any, TContext>): void;
   /**
    * Define data loaders
    * @param loaders object with data loader functions
    */
-  defineLoaders<TContext = MercuriusContext>(loaders: MercuriusLoaders<TContext>): void;
+  defineLoaders<TContext extends Record<string, any> = MercuriusContext>(loaders: MercuriusLoaders<TContext>): void;
   /**
    * Transform the existing schema
    */
