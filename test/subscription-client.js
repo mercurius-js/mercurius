@@ -379,7 +379,14 @@ test('subscription client sends GQL_CONNECTION_KEEP_ALIVE when the keep alive op
         ws.send(JSON.stringify({ id: '1', type: 'connection_ack' }))
       } else if (data.type === 'start') {
         ws.send(JSON.stringify({ id: '2', type: 'complete' }))
-      } else if (data.type === 'ka') {
+      } else if (data.type === 'ping') {
+        // this is a client sent ping, we reply with our pong
+        ws.send(JSON.stringify({ id: '3', type: 'pong' }))
+
+        // send a ping to the client so that it replies with its own pong
+        // pings and pongs are bidirectional
+        ws.send(JSON.stringify({ id: '4', type: 'ping' }))
+      } else if (data.type === 'pong') {
         client.close()
         server.close()
         t.end()
@@ -414,7 +421,7 @@ test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type p
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
 
     clock.setInterval(() => {
-      ws.send(JSON.stringify({ type: 'ka' }))
+      ws.send(JSON.stringify({ type: 'ping' }))
     }, 200)
   })
 
