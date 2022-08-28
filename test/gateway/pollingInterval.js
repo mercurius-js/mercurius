@@ -15,6 +15,7 @@ const GQL = require('../..')
 
 test('Polling schemas with disable cache', async (t) => {
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
@@ -104,6 +105,7 @@ test('Polling schemas with disable cache', async (t) => {
 
 test('Polling schemas', async (t) => {
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
@@ -337,6 +339,7 @@ test('Polling schemas (gateway.polling interval is not a number)', async (t) => 
 
 test("Polling schemas (if service is down, schema shouldn't be changed)", async (t) => {
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
@@ -623,6 +626,7 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
 
 test('Polling schemas (cache should be cleared)', async (t) => {
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
@@ -794,6 +798,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
 
 test('Polling schemas (should properly regenerate the schema when a downstream service restarts)', async (t) => {
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
@@ -916,7 +921,9 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
 
   await restartedUserService.listen({ port: userServicePort })
 
-  await clock.tickAsync(10000)
+  for (let i = 0; i < 100; i++) {
+    await clock.tickAsync(100)
+  }
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change
@@ -983,6 +990,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   t.plan(12)
 
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })

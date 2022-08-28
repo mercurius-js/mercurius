@@ -706,6 +706,7 @@ test('Should be able to query top-level with value types', async (t) => {
 
 test('Should be able to query with value types and polling', async (t) => {
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })

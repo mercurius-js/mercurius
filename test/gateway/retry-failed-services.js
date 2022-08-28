@@ -115,6 +115,7 @@ const postService = {
 test('gateway - retry mandatory failed services on startup', async (t) => {
   t.plan(5)
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
   })
@@ -188,8 +189,8 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
     data: null
   })
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(2000)
+  for (let i = 0; i < 100; i++) {
+    await clock.tickAsync(200)
   }
 
   const res1 = await app.inject({
@@ -217,6 +218,7 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
 test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not specified', async (t) => {
   t.plan(2)
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
   })
@@ -315,6 +317,7 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
 test('gateway - dont retry non-mandatory failed services on startup', async (t) => {
   t.plan(2)
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
   })
@@ -402,6 +405,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
 test('gateway - should log error if retry throws', async (t) => {
   t.plan(1)
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
   })
@@ -464,6 +468,7 @@ test('gateway - should log error if retry throws', async (t) => {
 test('gateway - stop retrying after no. of retries exceeded', async (t) => {
   t.plan(1)
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
   })
