@@ -123,7 +123,7 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
   const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
-  setTimeout(async () => {
+  clock.setTimeout(async () => {
     service2 = await createTestService(5113, postService.schema, postService.resolvers)
   }, 5000)
 
@@ -179,7 +179,7 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.same(await res.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -226,7 +226,7 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
   const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
-  setTimeout(async () => {
+  clock.setTimeout(async () => {
     service2 = await createTestService(5111, postService.schema, postService.resolvers)
   }, 2000)
 
@@ -278,7 +278,7 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.same(await res.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -370,7 +370,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.same(await res.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -391,7 +391,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res1.body), {
+  t.same(await res1.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -413,7 +413,7 @@ test('gateway - should log error if retry throws', async (t) => {
   const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
-  setTimeout(async () => {
+  clock.setTimeout(async () => {
     service2 = await createTestService(5114, postService.schema, postService.resolvers)
   }, 2000)
 

@@ -19,9 +19,8 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
   const clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 100
   })
-  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -43,6 +42,7 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
+    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -112,9 +112,8 @@ test('onGatewayReplaceSchema - should log an error should any errors occur in th
   const clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 100
   })
-  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -136,6 +135,7 @@ test('onGatewayReplaceSchema - should log an error should any errors occur in th
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
+    clock.uninstall()
   })
 
   userService.register(GQL, {
