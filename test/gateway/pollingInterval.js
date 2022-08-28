@@ -19,7 +19,6 @@ test('Polling schemas with disable cache', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
-  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -41,6 +40,7 @@ test('Polling schemas with disable cache', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
+    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -109,7 +109,6 @@ test('Polling schemas', async (t) => {
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
-  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -131,6 +130,7 @@ test('Polling schemas', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
+    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -236,7 +236,9 @@ test('Polling schemas', async (t) => {
   )
   userService.graphql.defineResolvers(resolvers)
 
-  await clock.tickAsync(2000)
+  for (let i = 0; i < 10; i++) {
+    await clock.tickAsync(200)
+  }
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change
@@ -341,9 +343,8 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   const clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 100
   })
-  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -366,6 +367,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
+    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -628,9 +630,8 @@ test('Polling schemas (cache should be cleared)', async (t) => {
   const clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 100
   })
-  t.teardown(() => clock.uninstall())
 
   const user = {
     id: 'u1',
@@ -643,6 +644,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
+    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -733,7 +735,9 @@ test('Polling schemas (cache should be cleared)', async (t) => {
     }
   })
 
-  await clock.tickAsync(10000)
+  for (let i = 0; i < 100; i++) {
+    await clock.tickAsync(100)
+  }
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change
@@ -800,9 +804,9 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
   const clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 100
   })
-  t.teardown(() => clock.uninstall())
+
   const oldSchema = `
     type Query {
       me: User
@@ -885,6 +889,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     await gateway.close()
     await userService.close()
     await restartedUserService.close()
+    clock.uninstall()
   })
 
   const refreshedSchema = `
@@ -992,9 +997,8 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   const clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 100
   })
-  t.teardown(() => clock.uninstall())
 
   const user = {
     id: 'u1',
@@ -1035,6 +1039,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
+    clock.uninstall()
   })
 
   userService.register(GQL, {

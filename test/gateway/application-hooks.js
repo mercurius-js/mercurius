@@ -17,6 +17,7 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
   t.plan(2)
 
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
@@ -95,7 +96,9 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
   )
   userService.graphql.defineResolvers(resolvers)
 
-  await clock.tickAsync(2000)
+  for (let i = 0; i < 10; i++) {
+    await clock.tickAsync(200)
+  }
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change
@@ -107,6 +110,7 @@ test('onGatewayReplaceSchema - should log an error should any errors occur in th
   t.plan(2)
 
   const clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
@@ -194,7 +198,9 @@ test('onGatewayReplaceSchema - should log an error should any errors occur in th
   )
   userService.graphql.defineResolvers(resolvers)
 
-  await clock.tickAsync(2000)
+  for (let i = 0; i < 10; i++) {
+    await clock.tickAsync(200)
+  }
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change
