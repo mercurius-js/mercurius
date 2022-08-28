@@ -42,7 +42,7 @@ function render () {
 
 function importDependencies () {
   const link = document.createElement('link')
-  link.href = 'https://unpkg.com/graphiql@1.4.2/graphiql.css'
+  link.href = 'https://unpkg.com/graphiql@2.0.2/graphiql.min.css'
   link.type = 'text/css'
   link.rel = 'stylesheet'
   link.media = 'screen,print'
@@ -50,10 +50,9 @@ function importDependencies () {
   document.getElementsByTagName('head')[0].appendChild(link)
 
   return importer.urls([
-    'https://unpkg.com/react@16.8.0/umd/react.production.min.js',
-    'https://unpkg.com/react-dom@16.8.0/umd/react-dom.production.min.js',
-    'https://unpkg.com/graphiql@1.4.2/graphiql.min.js',
-    'https://unpkg.com/subscriptions-transport-ws@0.9.19/browser/client.js'
+    'https://unpkg.com/react@18.2.0/umd/react.production.min.js',
+    'https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js',
+    'https://unpkg.com/graphiql@2.0.2/graphiql.min.js'
   ])
 }
 
