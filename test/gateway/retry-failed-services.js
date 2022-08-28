@@ -288,8 +288,8 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
     data: null
   })
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1000)
+  for (let i = 0; i < 100; i++) {
+    await clock.tickAsync(100)
   }
 
   const res1 = await app.inject({
@@ -380,8 +380,8 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     data: null
   })
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1500)
+  for (let i = 0; i < 100; i++) {
+    await clock.tickAsync(150)
   }
 
   const res1 = await app.inject({
@@ -513,7 +513,7 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
 
   await app.ready()
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1500)
+  for (let i = 0; i < 100; i++) {
+    await clock.tickAsync(150)
   }
 })
