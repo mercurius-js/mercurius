@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test, t } = require('tap')
 
 const FakeTimers = require('@sinonjs/fake-timers')
 
@@ -13,13 +13,19 @@ const WebSocket = require('ws')
 const buildFederationSchema = require('../../lib/federation')
 const GQL = require('../..')
 
-test('Polling schemas with disable cache', async (t) => {
-  const clock = FakeTimers.install({
+t.beforeEach(({ context }) => {
+  context.clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40
   })
+})
 
+t.afterEach(({ context }) => {
+  context.clock.uninstall()
+})
+
+test('Polling schemas with disable cache', async (t) => {
   const resolvers = {
     Query: {
       me: (root, args, context, info) => user
@@ -40,7 +46,6 @@ test('Polling schemas with disable cache', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
-    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -104,12 +109,6 @@ test('Polling schemas with disable cache', async (t) => {
 })
 
 test('Polling schemas', async (t) => {
-  const clock = FakeTimers.install({
-    shouldClearNativeTimers: true,
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-
   const resolvers = {
     Query: {
       me: (root, args, context, info) => user
@@ -130,7 +129,6 @@ test('Polling schemas', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
-    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -237,7 +235,7 @@ test('Polling schemas', async (t) => {
   userService.graphql.defineResolvers(resolvers)
 
   for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(200)
+    await t.context.clock.tickAsync(200)
   }
 
   // We need the event loop to actually spin twice to
@@ -340,12 +338,6 @@ test('Polling schemas (gateway.polling interval is not a number)', async (t) => 
 })
 
 test("Polling schemas (if service is down, schema shouldn't be changed)", async (t) => {
-  const clock = FakeTimers.install({
-    shouldClearNativeTimers: true,
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
   const resolvers = {
     Query: {
       me: (root, args, context, info) => user
@@ -367,7 +359,6 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
-    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -386,7 +377,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   })
 
   await userService.listen({ port: 0 })
-  await clock.tickAsync()
+  await t.context.clock.tickAsync()
 
   const userServicePort = userService.server.address().port
 
@@ -402,7 +393,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
     }
   })
 
-  await clock.tickAsync()
+  await t.context.clock.tickAsync()
 
   {
     const { body } = await gateway.inject({
@@ -423,7 +414,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
       })
     })
 
-    await clock.tickAsync()
+    await t.context.clock.tickAsync()
 
     t.same(JSON.parse(body), {
       data: {
@@ -468,7 +459,7 @@ test("Polling schemas (if service is down, schema shouldn't be changed)", async 
   }
 
   await userService.close()
-  await clock.tickAsync(500)
+  await t.context.clock.tickAsync(500)
 
   {
     const { body } = await gateway.inject({
@@ -627,12 +618,6 @@ test('Polling schemas (if service is mandatory, exception should be thrown)', as
 })
 
 test('Polling schemas (cache should be cleared)', async (t) => {
-  const clock = FakeTimers.install({
-    shouldClearNativeTimers: true,
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
   const user = {
     id: 'u1',
     name: 'John',
@@ -644,7 +629,6 @@ test('Polling schemas (cache should be cleared)', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
-    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -736,7 +720,7 @@ test('Polling schemas (cache should be cleared)', async (t) => {
   })
 
   for (let i = 0; i < 100; i++) {
-    await clock.tickAsync(100)
+    await t.context.clock.tickAsync(100)
   }
 
   // We need the event loop to actually spin twice to
@@ -801,12 +785,6 @@ test('Polling schemas (cache should be cleared)', async (t) => {
 })
 
 test('Polling schemas (should properly regenerate the schema when a downstream service restarts)', async (t) => {
-  const clock = FakeTimers.install({
-    shouldClearNativeTimers: true,
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
   const oldSchema = `
     type Query {
       me: User
@@ -889,7 +867,6 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
     await gateway.close()
     await userService.close()
     await restartedUserService.close()
-    clock.uninstall()
   })
 
   const refreshedSchema = `
@@ -927,7 +904,7 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
   await restartedUserService.listen({ port: userServicePort })
 
   for (let i = 0; i < 100; i++) {
-    await clock.tickAsync(100)
+    await t.context.clock.tickAsync(100)
   }
 
   // We need the event loop to actually spin twice to
@@ -994,12 +971,6 @@ test('Polling schemas (should properly regenerate the schema when a downstream s
 test('Polling schemas (subscriptions should be handled)', async (t) => {
   t.plan(12)
 
-  const clock = FakeTimers.install({
-    shouldClearNativeTimers: true,
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
   const user = {
     id: 'u1',
     name: 'John',
@@ -1039,7 +1010,6 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
   t.teardown(async () => {
     await gateway.close()
     await userService.close()
-    clock.uninstall()
   })
 
   userService.register(GQL, {
@@ -1185,7 +1155,7 @@ test('Polling schemas (subscriptions should be handled)', async (t) => {
 
   userService.graphql.defineResolvers(resolvers)
 
-  await clock.tickAsync(10000)
+  await t.context.clock.tickAsync(10000)
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change

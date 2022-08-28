@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test, t } = require('tap')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
@@ -9,6 +9,18 @@ const fastifyWebsocket = require('@fastify/websocket')
 const GQL = require('..')
 
 const FakeTimers = require('@sinonjs/fake-timers')
+
+t.beforeEach(({ context }) => {
+  context.clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 40
+  })
+})
+
+t.afterEach(({ context }) => {
+  context.clock.uninstall()
+})
 
 test('subscription server replies with connection_ack', t => {
   const app = Fastify()
@@ -730,15 +742,9 @@ test('subscription connection is closed if context function throws', t => {
 })
 
 test('subscription server sends update to subscriptions with custom async context', t => {
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-
   const app = Fastify()
   t.teardown(async () => {
     await app.close()
-    clock.uninstall()
   })
 
   const sendTestQuery = () => {
@@ -837,7 +843,7 @@ test('subscription server sends update to subscriptions with custom async contex
     subscription: {
       emitter,
       context: async () => {
-        await clock.tickAsync(200)
+        await t.context.clock.tickAsync(200)
         return { topic: 'NOTIFICATION_ADDED' }
       }
     }
@@ -917,15 +923,9 @@ test('subscription server sends update to subscriptions with custom async contex
 })
 
 test('subscription connection is closed if async context function throws', t => {
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-
   const app = Fastify()
   t.teardown(async () => {
     await app.close()
-    clock.uninstall()
   })
 
   const schema = `
@@ -945,7 +945,7 @@ test('subscription connection is closed if async context function throws', t => 
     resolvers,
     subscription: {
       context: async function () {
-        await clock.tickAsync(200)
+        await t.context.clock.tickAsync(200)
         throw new Error('kaboom')
       }
     }

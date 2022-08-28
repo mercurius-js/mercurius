@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test, t } = require('tap')
 const Fastify = require('fastify')
 const FakeTimers = require('@sinonjs/fake-timers')
 const { promisify } = require('util')
@@ -485,6 +485,18 @@ const commentMutation = `
   }  
 `
 
+t.beforeEach(({ context }) => {
+  context.clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 100
+  })
+})
+
+t.afterEach(({ context }) => {
+  context.clock.uninstall()
+})
+
 test('Should be able to query with value types', async (t) => {
   const [userService, userServicePort] = await createService(t, userSchema, userResolvers)
   const [postService, postServicePort] = await createService(t, postSchema, postResolvers)
@@ -705,13 +717,6 @@ test('Should be able to query top-level with value types', async (t) => {
 })
 
 test('Should be able to query with value types and polling', async (t) => {
-  const clock = FakeTimers.install({
-    shouldClearNativeTimers: true,
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-  t.teardown(() => clock.uninstall())
-
   const [userService, userServicePort] = await createService(t, userSchema, userResolvers)
   const [postService, postServicePort] = await createService(t, postSchema, postResolvers)
   const [commentService, commentServicePort] = await createService(t, commentSchema, commentResolvers)
@@ -798,7 +803,7 @@ test('Should be able to query with value types and polling', async (t) => {
     }
   })
 
-  await clock.tickAsync(2000)
+  await t.context.clock.tickAsync(2000)
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change
