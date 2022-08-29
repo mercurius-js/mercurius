@@ -384,7 +384,7 @@ test('POST batched query has an individual context for each operation', async (t
     ]
   })
 
-  t.ok(contextSpy.calledTwice)
-  t.ok(contextSpy.calledWith(0, 2, sinon.match(/TestQuery/)))
-  t.ok(contextSpy.calledWith(1, 2, sinon.match(/DoubleQuery/)))
+  sinon.assert.calledTwice(contextSpy)
+  sinon.assert.calledWith(contextSpy, 0, 2, sinon.match(/TestQuery/))
+  sinon.assert.calledWith(contextSpy, 1, 2, sinon.match(/DoubleQuery/))
 })
