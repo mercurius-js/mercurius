@@ -25,6 +25,9 @@ export interface PubSub {
 export interface MercuriusContext {
   app: FastifyInstance;
   reply: FastifyReply;
+  operationsCount?: number;
+  operationId?: number;
+  __currentQuery: string;
   /**
    * __Caution__: Only available if `subscriptions` are enabled
    */

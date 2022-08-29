@@ -637,24 +637,17 @@ test('subscription connection handles query when fullWsTransport: true', async (
     })
   )
 
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'next',
-        id: 1,
-        payload: {}
-      })
-    ).calledOnce
-  )
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'complete',
-        id: 1,
-        payload: null
-      })
-    ).calledOnce
-  )
+  sinon.assert.calledTwice(send)
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'next',
+    id: 1,
+    payload: {}
+  }))
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'complete',
+    id: 1,
+    payload: null
+  }))
 })
 
 test('subscription connection handles mutation when fullWsTransport: true', async (t) => {
@@ -688,24 +681,17 @@ test('subscription connection handles mutation when fullWsTransport: true', asyn
     })
   )
 
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'next',
-        id: 1,
-        payload: {}
-      })
-    ).calledOnce
-  )
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'complete',
-        id: 1,
-        payload: null
-      })
-    ).calledOnce
-  )
+  sinon.assert.calledTwice(send)
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'next',
+    id: 1,
+    payload: {}
+  }))
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'complete',
+    id: 1,
+    payload: null
+  }))
 })
 
 test('subscription data is released right after it ends', async (t) => {
