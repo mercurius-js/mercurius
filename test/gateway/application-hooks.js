@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test, t } = require('tap')
 const FakeTimers = require('@sinonjs/fake-timers')
 const { GraphQLSchema } = require('graphql')
 const { promisify } = require('util')
@@ -10,17 +10,23 @@ const buildFederationSchema = require('../../lib/federation')
 
 const immediate = promisify(setImmediate)
 
+t.beforeEach(({ context }) => {
+  context.clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
+    shouldAdvanceTime: true,
+    advanceTimeDelta: 100
+  })
+})
+
+t.afterEach(({ context }) => {
+  context.clock.uninstall()
+})
+
 // ----------------------
 // onGatewayReplaceSchema
 // ----------------------
 test('onGatewayReplaceSchema - polling interval with a new schema should trigger onGatewayReplaceSchema hook', async (t) => {
   t.plan(2)
-
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -95,7 +101,9 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
   )
   userService.graphql.defineResolvers(resolvers)
 
-  await clock.tickAsync(2000)
+  for (let i = 0; i < 10; i++) {
+    await t.context.clock.tickAsync(200)
+  }
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change
@@ -105,12 +113,6 @@ test('onGatewayReplaceSchema - polling interval with a new schema should trigger
 
 test('onGatewayReplaceSchema - should log an error should any errors occur in the hook', async (t) => {
   t.plan(2)
-
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 40
-  })
-  t.teardown(() => clock.uninstall())
 
   const resolvers = {
     Query: {
@@ -194,7 +196,9 @@ test('onGatewayReplaceSchema - should log an error should any errors occur in th
   )
   userService.graphql.defineResolvers(resolvers)
 
-  await clock.tickAsync(2000)
+  for (let i = 0; i < 10; i++) {
+    await t.context.clock.tickAsync(200)
+  }
 
   // We need the event loop to actually spin twice to
   // be able to propagate the change

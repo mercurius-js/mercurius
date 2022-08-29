@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test, t } = require('tap')
 const Fastify = require('fastify')
 const { GraphQLSchema } = require('graphql')
 const GQL = require('../..')
@@ -112,17 +112,24 @@ const postService = {
   }
 }
 
-test('gateway - retry mandatory failed services on startup', async (t) => {
-  t.plan(5)
-  const clock = FakeTimers.install({
+t.beforeEach(({ context }) => {
+  context.clock = FakeTimers.install({
+    shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 100
   })
+})
 
+t.afterEach(({ context }) => {
+  context.clock.uninstall()
+})
+
+test('gateway - retry mandatory failed services on startup', async (t) => {
+  t.plan(5)
   const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
-  setTimeout(async () => {
+  t.context.clock.setTimeout(async () => {
     service2 = await createTestService(5113, postService.schema, postService.resolvers)
   }, 5000)
 
@@ -131,7 +138,6 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
     await app.close()
     await service1.close()
     await service2.close()
-    clock.uninstall()
   })
 
   await app.register(GQL, {
@@ -178,7 +184,7 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.same(await res.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -188,8 +194,8 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
     data: null
   })
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(2000)
+  for (let i = 0; i < 100; i++) {
+    await t.context.clock.tickAsync(100)
   }
 
   const res1 = await app.inject({
@@ -216,24 +222,18 @@ test('gateway - retry mandatory failed services on startup', async (t) => {
 
 test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not specified', async (t) => {
   t.plan(2)
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
   const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
-  setTimeout(async () => {
+  t.context.clock.setTimeout(async () => {
     service2 = await createTestService(5111, postService.schema, postService.resolvers)
-  }, 5000)
+  }, 2000)
 
   const app = Fastify()
   t.teardown(async () => {
     await app.close()
     await service1.close()
     await service2.close()
-    clock.uninstall()
   })
 
   await app.register(GQL, {
@@ -276,7 +276,7 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.same(await res.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -286,8 +286,8 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
     data: null
   })
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1000)
+  for (let i = 0; i < 100; i++) {
+    await t.context.clock.tickAsync(100)
   }
 
   const res1 = await app.inject({
@@ -314,18 +314,13 @@ test('gateway - should not call onGatewayReplaceSchemaHandler if the hook is not
 
 test('gateway - dont retry non-mandatory failed services on startup', async (t) => {
   t.plan(2)
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
   const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   const app = Fastify()
   t.teardown(async () => {
     await app.close()
     await service1.close()
-    clock.uninstall()
+    t.context.clock.uninstall()
   })
 
   app.register(GQL, {
@@ -367,7 +362,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.same(await res.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -377,8 +372,8 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     data: null
   })
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1500)
+  for (let i = 0; i < 100; i++) {
+    await t.context.clock.tickAsync(150)
   }
 
   const res1 = await app.inject({
@@ -388,7 +383,7 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res1.body), {
+  t.same(await res1.json(), {
     errors: [
       {
         message: 'Cannot query field "posts" on type "User".',
@@ -401,16 +396,11 @@ test('gateway - dont retry non-mandatory failed services on startup', async (t) 
 
 test('gateway - should log error if retry throws', async (t) => {
   t.plan(1)
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
   const service1 = await createTestService(0, userService.schema, userService.resolvers)
 
   let service2 = null
-  setTimeout(async () => {
-    service2 = await createTestService(5113, postService.schema, postService.resolvers)
+  t.context.clock.setTimeout(async () => {
+    service2 = await createTestService(5114, postService.schema, postService.resolvers)
   }, 2000)
 
   const app = Fastify()
@@ -427,63 +417,6 @@ test('gateway - should log error if retry throws', async (t) => {
     await app.close()
     await service1.close()
     await service2.close()
-    clock.uninstall()
-  })
-
-  await app.register(GQL, {
-    jit: 1,
-    gateway: {
-      services: [
-        {
-          name: 'user',
-          url: `http://localhost:${service1.server.address().port}/graphql`,
-          mandatory: false
-        },
-        {
-          name: 'post',
-          url: 'http://localhost:5113/graphql',
-          mandatory: true
-        }
-      ],
-      retryServicesCount: 1,
-      retryServicesInterval: 2000
-    }
-  })
-
-  app.graphql.addHook('onGatewayReplaceSchema', async () => {
-    throw new Error('kaboom')
-  })
-
-  await app.ready()
-
-  for (let i = 0; i < 100; i++) {
-    await clock.tickAsync(100)
-  }
-})
-
-test('gateway - stop retrying after no. of retries exceeded', async (t) => {
-  t.plan(1)
-  const clock = FakeTimers.install({
-    shouldAdvanceTime: true,
-    advanceTimeDelta: 100
-  })
-
-  const service1 = await createTestService(0, userService.schema, userService.resolvers)
-
-  const app = Fastify()
-
-  let errCount = 0
-  app.log.error = (error) => {
-    if (error.code === 'MER_ERR_GQL_GATEWAY_REFRESH' && errCount === 0) {
-      errCount++
-      t.pass()
-    }
-  }
-
-  t.teardown(async () => {
-    await app.close()
-    await service1.close()
-    clock.uninstall()
   })
 
   await app.register(GQL, {
@@ -502,13 +435,63 @@ test('gateway - stop retrying after no. of retries exceeded', async (t) => {
         }
       ],
       retryServicesCount: 1,
+      retryServicesInterval: 3000
+    }
+  })
+
+  app.graphql.addHook('onGatewayReplaceSchema', async () => {
+    throw new Error('kaboom')
+  })
+
+  await app.ready()
+
+  for (let i = 0; i < 200; i++) {
+    await t.context.clock.tickAsync(50)
+  }
+})
+
+test('gateway - stop retrying after no. of retries exceeded', async (t) => {
+  t.plan(1)
+  const service1 = await createTestService(0, userService.schema, userService.resolvers)
+
+  const app = Fastify()
+
+  let errCount = 0
+  app.log.error = (error) => {
+    if (error.code === 'MER_ERR_GQL_GATEWAY_REFRESH' && errCount === 0) {
+      errCount++
+      t.pass()
+    }
+  }
+
+  t.teardown(async () => {
+    await app.close()
+    await service1.close()
+  })
+
+  await app.register(GQL, {
+    jit: 1,
+    gateway: {
+      services: [
+        {
+          name: 'user',
+          url: `http://localhost:${service1.server.address().port}/graphql`,
+          mandatory: false
+        },
+        {
+          name: 'post',
+          url: 'http://localhost:5115/graphql',
+          mandatory: true
+        }
+      ],
+      retryServicesCount: 1,
       retryServicesInterval: 2000
     }
   })
 
   await app.ready()
 
-  for (let i = 0; i < 10; i++) {
-    await clock.tickAsync(1500)
+  for (let i = 0; i < 100; i++) {
+    await t.context.clock.tickAsync(150)
   }
 })
