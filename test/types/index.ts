@@ -1,4 +1,4 @@
-import { expectAssignable, expectError } from 'tsd'
+import { expectAssignable, expectError, expectType } from 'tsd'
 /* eslint-disable no-unused-expressions */
 import { EventEmitter } from 'events'
 // eslint-disable-next-line no-unused-vars
@@ -779,4 +779,11 @@ expectError(() => {
 
 expectError(() => {
   return mercurius.defaultErrorFormatter({}, undefined)
+})
+
+// Context contains correct information about (batched) query identity
+app.graphql.addHook('onResolution', async function (_execution, context) {
+  expectType<number | undefined>(context.operationId)
+  expectType<number | undefined>(context.operationsCount)
+  expectType<string>(context.__currentQuery)
 })
