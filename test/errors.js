@@ -1030,7 +1030,7 @@ test('errors - should default to `statusCode` from error if present, when there 
   t.equal(res.statusCode, 409)
 })
 
-test('errors - should default to HTTP Status Code `200 Bad Request` if multiple errors are present and no data in the response', async (t) => {
+test('errors - should default to HTTP Status Code `200 OK` if multiple errors are present and no data in the response', async (t) => {
   t.plan(2)
 
   const schema = `
@@ -1128,7 +1128,7 @@ test('errors - should default to HTTP Status Code `400 Bad Request` if GraphQL v
   t.equal(res.statusCode, 400)
 })
 
-test('errors - should default to HTTP Status Code `200 Internal Server Error` if single error present but no status code defined', async (t) => {
+test('errors - should default to HTTP Status Code `200 OK` if single error present but no status code defined', async (t) => {
   t.plan(2)
 
   const schema = `
