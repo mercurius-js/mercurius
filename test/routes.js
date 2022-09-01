@@ -1119,7 +1119,7 @@ test('server should return 200 on graphql errors (if field can be null)', async 
   t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
-test('server should return 500 on graphql errors (if field can not be null)', async (t) => {
+test('server should return 200 on graphql errors (if field can not be null)', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -1148,7 +1148,7 @@ test('server should return 500 on graphql errors (if field can not be null)', as
     body: { query }
   })
 
-  t.equal(response.statusCode, 500)
+  t.equal(response.statusCode, 200)
   t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 

@@ -544,10 +544,10 @@ To control the status code for the response, the third optional parameter can be
 
 ```js
 throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo})
-// using the defaultErrorFormatter, the response statusCode will be 500 when there is a single error
+// using the defaultErrorFormatter, the response statusCode will be 200 as defined in the graphql-over-http spec
 
-throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 200)
-// using the defaultErrorFormatter, the response statusCode will be 200 when there is a single error
+throw new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 500)
+// using the defaultErrorFormatter, the response statusCode will be 500 as specified in the parameter
 
 const error = new mercurius.ErrorWithProps('Invalid User ID', {moreErrorInfo}, 500)
 error.data = {foo: 'bar'}

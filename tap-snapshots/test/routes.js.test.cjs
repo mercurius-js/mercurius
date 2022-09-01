@@ -103,8 +103,9 @@ exports['test/routes.js TAP server should return 200 on graphql errors (if field
 }
 `
 
-exports['test/routes.js TAP server should return 500 on graphql errors (if field can not be null) > must match snapshot 1'] = `
+exports['test/routes.js TAP server should return 200 on graphql errors (if field can not be null) > must match snapshot 1'] = `
 {
+  "data": null,
   "errors": [
     {
       "message": "Simple error",
@@ -118,7 +119,6 @@ exports['test/routes.js TAP server should return 500 on graphql errors (if field
         "hello"
       ]
     }
-  ],
-  "data": null
+  ]
 }
 `
