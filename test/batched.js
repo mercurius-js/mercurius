@@ -388,3 +388,74 @@ test('POST batched query has an individual context for each operation', async (t
   sinon.assert.calledWith(contextSpy, 0, 2, sinon.match(/TestQuery/))
   sinon.assert.calledWith(contextSpy, 1, 2, sinon.match(/DoubleQuery/))
 })
+
+test('POST batched query respects custom class-based context', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+    type Query {
+      test: String
+    }
+  `
+
+  class CustomContext {
+    constructor () {
+      this.test = 'custom'
+    }
+
+    method () {
+      return this.test
+    }
+  }
+
+  const resolvers = {
+    test: async (args, ctx) => {
+      t.type(ctx, 'object')
+      t.type(ctx.reply, 'object')
+      t.type(ctx.app, 'object')
+      t.type(ctx.method, 'function')
+      t.equal(ctx.test, 'custom')
+      t.equal(ctx.method(), 'custom')
+      t.equal(ctx.constructor, CustomContext)
+      return ctx.method()
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    context: (request, reply) => {
+      t.type(request, 'object')
+      t.type(reply, 'object')
+      return new CustomContext()
+    },
+    allowBatchedQueries: true
+  })
+
+  const post = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: [
+      {
+        operationName: 'TestQuery',
+        query: 'query TestQuery { test }'
+      },
+      {
+        operationName: 'DoubleQuery',
+        query: 'query DoubleQuery { test }'
+      }
+    ]
+  })
+
+  t.same(JSON.parse(post.body), [
+    {
+      data: {
+        test: 'custom'
+      }
+    }, {
+      data: {
+        test: 'custom'
+      }
+    }
+  ])
+})
