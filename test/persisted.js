@@ -235,11 +235,7 @@ test('automatic POST new persisted query and error', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
-    statusCode: 400,
-    error: 'Internal Server Error',
-    message: 'PersistedQueryNotFound'
-  })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotFound' }] })
 })
 
 test('automatic POST invalid version persisted query and error', async (t) => {
@@ -276,11 +272,7 @@ test('automatic POST invalid version persisted query and error', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
-    statusCode: 400,
-    error: 'Internal Server Error',
-    message: 'PersistedQueryNotSupported'
-  })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
 test('automatic POST invalid extension and error', async (t) => {
@@ -311,11 +303,7 @@ test('automatic POST invalid extension and error', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
-    statusCode: 400,
-    error: 'Internal Server Error',
-    message: 'Unknown query'
-  })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Unknown query' }] })
 })
 
 test('automatic POST invalid extension without persistedQueries and error', async (t) => {
@@ -349,11 +337,7 @@ test('automatic POST invalid extension without persistedQueries and error', asyn
     }
   })
 
-  t.same(JSON.parse(res.body), {
-    statusCode: 400,
-    error: 'Internal Server Error',
-    message: 'PersistedQueryNotSupported'
-  })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
 test('automatic POST persisted query after priming', async (t) => {

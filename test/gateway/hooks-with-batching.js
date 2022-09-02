@@ -455,9 +455,12 @@ test('gateway - preParsing hooks should handle errors', async t => {
   })
 
   t.same(JSON.parse(res.body), {
-    statusCode: 500,
-    error: 'Internal Server Error',
-    message: 'a preParsing error occured'
+    data: null,
+    errors: [
+      {
+        message: 'a preParsing error occured'
+      }
+    ]
   })
 })
 
@@ -552,9 +555,12 @@ test('gateway - preValidation hooks should handle errors', async t => {
   })
 
   t.same(JSON.parse(res.body), {
-    statusCode: 500,
-    error: 'Internal Server Error',
-    message: 'a preValidation error occured'
+    data: null,
+    errors: [
+      {
+        message: 'a preValidation error occured'
+      }
+    ]
   })
 })
 
@@ -645,9 +651,12 @@ test('gateway - preExecution hooks should handle errors', async t => {
   })
 
   t.same(JSON.parse(res.body), {
-    statusCode: 500,
-    error: 'Internal Server Error',
-    message: 'a preExecution error occured'
+    data: null,
+    errors: [
+      {
+        message: 'a preExecution error occured'
+      }
+    ]
   })
 })
 
@@ -1166,9 +1175,12 @@ test('gateway - onResolution hooks should handle errors', async t => {
   })
 
   t.same(JSON.parse(res.body), {
-    statusCode: 500,
-    error: 'Internal Server Error',
-    message: 'a onResolution error occured'
+    data: null,
+    errors: [
+      {
+        message: 'a onResolution error occured'
+      }
+    ]
   })
 })
 
