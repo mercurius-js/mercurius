@@ -34,13 +34,14 @@ When a GraphQL input document is invalid and fails GraphQL validation, the HTTP 
 - **Data**: `null`
 - **Errors**: `MER_ERR_GQL_VALIDATION`
 
-#### Multiple errors
+#### Response with errors
 
-When a GraphQL response contains multiple errors and no data, the HTTP Status Code is `400 Bad Request`.
+When a GraphQL response contains errors, the HTTP Status Code is `200 OK` as defined in the [GraphQL Over HTTP
+ Specification](https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md#applicationjson).
 
-- **HTTP Status Code**: `400 Bad Request`
+- **HTTP Status Code**: `200 OK`
 - **Data**: `null`
-- **Errors**: `Multiple`
+- **Errors**: `Array<GraphQLError>` (`.length >= 1`)
 
 #### Single error with `statusCode` property
 
@@ -48,90 +49,8 @@ When a GraphQL response contains a single error with the `statusCode` property s
 
 - **HTTP Status Code**: `Error statusCode`
 - **Data**: `null`
-- **Errors**: `Single`
-
-#### Single error with no `statusCode` property
-
-When a GraphQL response contains a single error with no `statusCode` property set and no data, the HTTP Status Code is `500 Internal Server Error`.
-
-- **HTTP Status Code**: `500 Internal Server Error`
-- **Data**: `null`
-- **Errors**: `Single with no .statusCode property`
+- **Errors**: `Array<GraphQLError>` (`.length === 1`)
 
 ### Custom behaviour
 
 If you wish to customise the default HTTP Status Code behaviour, one can do this using the [`errorFormatter`](./api/options.md#plugin-options) option.
-
-#### `200 OK` on all requests
-
-Enable `200 OK` on all requests as follows:
-
-```js
-'use strict'
-
-const Fastify = require('fastify')
-const mercurius = require('..')
-
-const app = Fastify()
-
-const schema = `
-  type Query {
-    add(x: Int, y: Int): Int
-  }
-`
-
-const resolvers = {
-  Query: {
-    add: async (_, obj) => {
-      const { x, y } = obj
-      return x + y
-    }
-  }
-}
-
-/**
- * Define error formatter so we always return 200 OK
- */
-function errorFormatter (err, ctx) {
-  const response = mercurius.defaultErrorFormatter(err, ctx)
-  response.statusCode = 200
-  return response
-}
-
-app.register(mercurius, {
-  schema,
-  resolvers,
-  errorFormatter
-})
-
-app.listen(3000)
-```
-
-With an invalid request:
-
-```graphql
-{
-  add(wrong: 1 x: 2)
-}
-```
-
-The response is:
-
-HTTP Status Code: `200 OK`
-
-```json
-{
-  "data": null,
-  "errors": [
-    {
-      "message": "Unknown argument \"wrong\" on field \"Query.add\".",
-      "locations": [
-        {
-          "line": 2,
-          "column": 7
-        }
-      ]
-    }
-  ]
-}
-```
