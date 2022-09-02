@@ -836,7 +836,11 @@ test('bad json', async (t) => {
 
   t.equal(res.statusCode, 400)
   t.same(res.json(),
-    { data: null, errors: [{ message: 'Unexpected token h in JSON at position 1' }] }
+    {
+      statusCode: 400,
+      error: 'Internal Server Error',
+      message: 'Unexpected token h in JSON at position 1'
+    }
   )
 })
 
@@ -1176,6 +1180,51 @@ test('errors - should default to HTTP Status Code `500 Internal Server Error` if
         ]
       }
     ]
+  })
+  t.equal(res.statusCode, 500)
+})
+
+test('errors - should throw HTTP Status Code `500 Internal Server Error` if non-GraphQL error', async (t) => {
+  t.plan(2)
+
+  const schema = `
+    type Query {
+      successful: String!
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      successful () {
+        t.fail('Should not be called')
+        return 'Runs OK'
+      }
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  await app.ready()
+
+  app.graphql.addHook('preParsing', async function (schema, source, context) {
+    throw new Error('Test error')
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={successful}'
+  })
+
+  t.same(JSON.parse(res.body), {
+    statusCode: 500,
+    error: 'Internal Server Error',
+    message: 'Test error'
   })
   t.equal(res.statusCode, 500)
 })

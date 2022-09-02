@@ -574,3 +574,12 @@ app.register(mercurius, {
     errorFormatter: (result) => ({ statusCode: result.errors[0].originalError.statusCode, response: result })
 })
 ```
+
+### Non-GraphQL Errors
+If an error is thrown (by either Fastify/Mercurius plugin or user code) before the request reaches the GraphQL layer then the error will be caught and format of the error in the response will be:
+```js
+{
+  statusCode
+  error // error code if any
+  message // error message
+}
