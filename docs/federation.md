@@ -148,7 +148,7 @@ app.listen(3000)
 
 ### Use GraphQL server as a Gateway for federated schemas
 
-A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that supports the federation.
+A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that [supports the federation](https://www.apollographql.com/docs/federation/supported-subgraphs/).
 
 In Gateway mode the following options are not allowed (the plugin will throw an error if any of them are defined):
 
