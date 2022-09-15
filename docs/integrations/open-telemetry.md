@@ -83,7 +83,7 @@ service.register(mercurius, {
   federationMetadata: true
 })
 
-service.listen(4001, 'localhost', err => {
+service.listen({ port: 4001, host: 'localhost' }, err => {
   if (err) {
     console.error(err)
     process.exit(1)
@@ -116,7 +116,7 @@ gateway.register(mercurius, {
   }
 })
 
-gateway.listen(3000, 'localhost', err => {
+gateway.listen({ port: 3000, host: 'localhost' }, err => {
   if (err) {
     process.exit(1)
   }

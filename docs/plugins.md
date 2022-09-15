@@ -63,7 +63,7 @@ app.register(AltairFastify, {
   endpointURL: '/graphql'
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 And it will be available at `http://localhost:3000/altair` 🎉
@@ -101,7 +101,7 @@ app.register(mercuriusApolloRegistry, {
   apiKey: 'REPLACE-THIS-VALUE-WITH-APOLLO-API-KEY'
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 ## mercurius-apollo-tracing

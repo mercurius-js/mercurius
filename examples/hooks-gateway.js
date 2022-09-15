@@ -220,7 +220,7 @@ async function start () {
     console.log('onGatewayReplaceSchema called')
   })
 
-  await gateway.listen(4000)
+  await gateway.listen({ port: 4000 })
 }
 
 start()

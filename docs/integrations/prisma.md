@@ -153,7 +153,7 @@ app.register(mercurius, {
   graphiql: true
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
   .then(() => console.log(`🚀 Server ready at http://localhost:3000/graphiql`))
 
 ```

@@ -74,7 +74,7 @@ async function start () {
     console.log('onSubscriptionEnd called')
   })
 
-  await app.listen(3000)
+  await app.listen({ port: 3000 })
 }
 
 start()

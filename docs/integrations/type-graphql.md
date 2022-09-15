@@ -92,7 +92,7 @@ async function main() {
     return reply.graphql(query);
   });
 
-  app.listen(3000);
+  app.listen({ port: 3000 });
 }
 
 main().catch(console.error);

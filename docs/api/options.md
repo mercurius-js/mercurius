@@ -535,7 +535,7 @@ app.register(mercurius, {
   resolvers
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 #### Status code
