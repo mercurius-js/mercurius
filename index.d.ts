@@ -444,7 +444,7 @@ export interface MercuriusCommonOptions {
   ide?: boolean | 'graphiql';
   /**
    * The minimum number of execution a query needs to be executed before being jit'ed.
-   * @default true
+   * @default 0 - disabled
    */
   jit?: number;
   /**
