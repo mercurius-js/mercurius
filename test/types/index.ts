@@ -218,7 +218,7 @@ app.get('/', async function (req, reply) {
   return await reply.graphql(query)
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 
 function makeGraphqlServer (options: MercuriusOptions) {
   const app = Fastify()

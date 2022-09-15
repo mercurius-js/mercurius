@@ -33,4 +33,4 @@ app.get('/', async function (req, reply) {
   return reply.graphql(query)
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })

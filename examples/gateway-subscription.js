@@ -277,7 +277,7 @@ async function start () {
     }
   })
 
-  await gateway.listen(4000)
+  await gateway.listen({ port: 4000 })
 }
 
 start()

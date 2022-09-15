@@ -75,7 +75,7 @@ app.get('/', async function (req, reply) {
   return app.graphql(query)
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 ### Federation with \_\_resolveReference caching
@@ -143,7 +143,7 @@ app.get('/', async function (req, reply) {
   return app.graphql(query)
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 ### Use GraphQL server as a Gateway for federated schemas
@@ -195,7 +195,7 @@ gateway.register(mercurius, {
   }
 })
 
-await gateway.listen(4000)
+await gateway.listen({ port: 4000 })
 ```
 
 #### Periodically refresh federated schemas in Gateway mode
@@ -220,7 +220,7 @@ gateway.register(mercurius, {
   }
 })
 
-gateway.listen(3001)
+gateway.listen({ port: 3001 })
 ```
 
 #### Programmatically refresh federated schemas in Gateway mode
@@ -249,7 +249,7 @@ server.register(mercurius, {
   }
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 
 setTimeout(async () => {
   const schema = await server.graphql.gateway.refresh()
@@ -306,7 +306,7 @@ server.register(mercurius, {
   }
 })
 
-await server.listen(3002)
+await server.listen({ port: 3002 })
 
 server.graphql.gateway.serviceMap.user.setSchema(`
   extend type Query {
@@ -390,7 +390,7 @@ server.register(mercurius, {
   pollingInterval: 2000
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 ```
 
 #### Using a custom errorHandler for handling downstream service errors in Gateway mode
@@ -426,7 +426,7 @@ server.register(mercurius, {
   pollingInterval: 2000
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 ```
 
 _Note: The default behavior of `errorHandler` is call `errorFormatter` to send the result. When is provided an `errorHandler` make sure to **call `errorFormatter` manually if needed**._
@@ -459,5 +459,5 @@ server.register(mercurius, {
   pollingInterval: 2000
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 ```
