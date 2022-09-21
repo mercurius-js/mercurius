@@ -1,5 +1,4 @@
-
-![Mercurius Logo](https://github.com/mercurius-js/graphics/blob/main/mercurius-horizontal.svg)
+![Mercurius Logo](https://raw.githubusercontent.com/mercurius-js/graphics/main/mercurius-horizontal.svg)
 
 # mercurius
 
