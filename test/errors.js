@@ -325,6 +325,7 @@ test('errors - errors with jit enabled using the app decorator', async (t) => {
             column: 2
           }
         ],
+        name: 'GraphQLError',
         path: ['error'],
         extensions: {
           code: 'ERROR',

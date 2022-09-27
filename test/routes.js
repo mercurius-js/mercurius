@@ -320,8 +320,8 @@ test('GET route with extensions', async (t) => {
   })
 })
 
-test('GET route with bad JSON extensions', { only: true }, async (t) => {
-  t.plan(3)
+test('GET route with bad JSON extensions', async (t) => {
+  t.plan(2)
   const lines = split(JSON.parse)
   const app = Fastify({
     logger: {
@@ -352,14 +352,10 @@ test('GET route with bad JSON extensions', { only: true }, async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-
-  for await (const line of lines) {
-    if (line.err) {
-      t.equal(line.err.message, 'Unexpected token o in JSON at position 1')
-      t.equal(line.err.code, 'MER_ERR_GQL_VALIDATION')
-      break
-    }
-  }
+  t.strictSame(JSON.parse(res.body), {
+    data: null,
+    errors: [{ message: "Unexpected token o in JSON at position 1" }]
+  })
 })
 
 test('POST route variables', async (t) => {
