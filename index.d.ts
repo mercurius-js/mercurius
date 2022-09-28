@@ -12,7 +12,6 @@ import {
   GraphQLResolveInfo,
   GraphQLScalarType,
   ValidationRule,
-  FormattedExecutionResult,
 } from "graphql";
 import { SocketStream } from "@fastify/websocket"
 import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
@@ -488,7 +487,7 @@ export interface MercuriusCommonOptions {
     context: TContext
   ) => {
     statusCode: number;
-    response: FormattedExecutionResult;
+    response: ExecutionResult;
   };
   /**
    * The maximum depth allowed for a single query.
@@ -630,7 +629,7 @@ declare namespace mercurius {
   const defaultErrorFormatter: (
     execution: ExecutionResult & Required<Pick<ExecutionResult, 'errors'>>,
     context: MercuriusContext
-  ) => { statusCode: number; response: FormattedExecutionResult };
+  ) => { statusCode: number; response: ExecutionResult };
 
   /**
    * Builds schema with support for federation mode.
