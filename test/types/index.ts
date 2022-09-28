@@ -769,9 +769,7 @@ declare module 'fastify' {
   }
 }
 
-mercurius.defaultErrorFormatter({}, {} as MercuriusContext)
-
-mercurius.defaultErrorFormatter(new Error('test error'), {} as MercuriusContext)
+mercurius.defaultErrorFormatter({ errors: [] }, {} as MercuriusContext)
 
 expectError(() => {
   return mercurius.defaultErrorFormatter({}, null)
