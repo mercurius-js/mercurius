@@ -11,6 +11,7 @@ Related plugins for mercurius
 - [mercurius-apollo-tracing](#mercurius-apollo-tracing)
 - [mercurius-postgraphile](#mercurius-postgraphile)
 - [mercurius-logging](#mercurius-logging)
+- [mercurius-fetch](#mercurius-fetch)
 - [mercurius-hit-map](#mercurius-hit-map)
 
 ## mercurius-auth
@@ -147,9 +148,12 @@ A Mercurius plugin to enhance the GQL request logging adding useful insights:
 
 Check the [`mercurius-logging`](https://github.com/Eomm/mercurius-logging) documentation for usage and settings.
 
+## mercurius-fetch
+Mercurius Fetch is a plugin for [Mercurius](https://mercurius.dev) that adds fetch to a rest api directly on query or properties of query.
+
+Check the [`mercurius-fetch` documentation](https://github.com/rbonillajr/mercurius-fetch) for detailed usage.
 
 ## mercurius-hit-map
-
 A Mercurius plugin to count how many times the application's resolvers are executed by the clients.
 
 ```js
