@@ -544,6 +544,14 @@ app.register(mercurius, {
   schema,
   resolvers,
   subscription: {
+    onConnect: () => true
+  }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
     emitter
   }
 })
