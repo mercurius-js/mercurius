@@ -12,6 +12,7 @@ Related plugins for mercurius
 - [mercurius-postgraphile](#mercurius-postgraphile)
 - [mercurius-logging](#mercurius-logging)
 - [mercurius-fetch](#mercurius-fetch)
+- [mercurius-hit-map](#mercurius-hit-map)
 
 ## mercurius-auth
 
@@ -151,3 +152,23 @@ Check the [`mercurius-logging`](https://github.com/Eomm/mercurius-logging) docum
 Mercurius Fetch is a plugin for [Mercurius](https://mercurius.dev) that adds fetch to a rest api directly on query or properties of query.
 
 Check the [`mercurius-fetch` documentation](https://github.com/rbonillajr/mercurius-fetch) for detailed usage.
+
+## mercurius-hit-map
+A Mercurius plugin to count how many times the application's resolvers are executed by the clients.
+
+```js
+const app = Fastify()
+app.register(mercurius, {
+  schema,
+  resolvers
+})
+
+app.register(require('mercurius-hit-map'))
+
+app.get('/hit', async () => {
+  const hitMap = await app.getHitMap()
+  return hitMap
+})
+```
+
+Check the [`mercurius-hit-map`](https://github.com/Eomm/mercurius-hit-map) documentation for usage and settings.
