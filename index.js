@@ -24,7 +24,7 @@ const {
 const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
-const buildGateway = require('./lib/gateway')
+const buildGateway = require('./lib/gateway/build-gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
@@ -42,7 +42,13 @@ const {
 } = require('./lib/errors')
 const { Hooks, assignLifeCycleHooksToContext, assignApplicationLifecycleHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
-const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler, onGatewayReplaceSchemaHandler } = require('./lib/handlers')
+const {
+  preParsingHandler,
+  preValidationHandler,
+  preExecutionHandler,
+  onResolutionHandler,
+  onGatewayReplaceSchemaHandler
+} = require('./lib/handlers')
 
 // Required for module bundlers
 // istanbul ignore next
@@ -632,7 +638,11 @@ const plugin = fp(async function (app, opts) {
     let modifiedSchema
     let modifiedDocument
     if (context.preExecution !== null) {
-      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({
+        schema: fastifyGraphQl.schema,
+        document,
+        context
+      }))
     }
 
     // minJit is 0 by default
