@@ -34,7 +34,6 @@ const {
   defaultErrorFormatter,
   addErrorsToExecutionResult,
   MER_ERR_GQL_INVALID_SCHEMA,
-  MER_ERR_GQL_GATEWAY,
   MER_ERR_GQL_VALIDATION,
   MER_ERR_INVALID_OPTS,
   MER_ERR_METHOD_NOT_ALLOWED,
@@ -76,7 +75,6 @@ function buildCache (opts) {
 const plugin = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
-  const lruGatewayResolvers = buildCache(opts)
 
   if (lru && opts.validationRules && typeof opts.validationRules === 'function') {
     throw new MER_ERR_INVALID_OPTS('Using a function for the validationRules is incompatible with query caching')
@@ -185,14 +183,13 @@ const plugin = fp(async function (app, opts) {
     })
   }
 
-  let entityResolversFactory
-
   let gateway
+  let lruGatewayResolvers
   if (gatewayOpts) {
+    lruGatewayResolvers = buildCache(opts)
     gateway = await initGateway(gatewayOpts, fastifyGraphQl, app)
 
     schema = gateway.schema
-    entityResolversFactory = gateway.entityResolversFactory
   }
 
   fastifyGraphQl.schema = schema
@@ -226,7 +223,7 @@ const plugin = fp(async function (app, opts) {
       onConnect,
       onDisconnect,
       lruGatewayResolvers,
-      entityResolversFactory,
+      entityResolversFactory: gateway ? gateway.entityResolversFactory : undefined,
       subscriptionContextFn,
       keepAlive,
       fullWsTransport
@@ -270,10 +267,7 @@ const plugin = fp(async function (app, opts) {
     }
   }
 
-  fastifyGraphQl.extendSchema = function (s) {
-    if (gatewayOpts) {
-      throw new MER_ERR_GQL_GATEWAY('Calling extendSchema method when plugin is running in gateway mode is not allowed')
-    }
+  fastifyGraphQl.extendSchema = fastifyGraphQl.extendSchema || function (s) {
     if (opts.federationMetadata) {
       throw new MER_ERR_INVALID_METHOD('Calling extendSchema method when federationMetadata is enabled is not allowed')
     }
@@ -287,11 +281,7 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
   }
 
-  fastifyGraphQl.defineResolvers = function (resolvers) {
-    if (gatewayOpts) {
-      throw new MER_ERR_GQL_GATEWAY('Calling defineResolvers method when plugin is running in gateway mode is not allowed')
-    }
-
+  fastifyGraphQl.defineResolvers = fastifyGraphQl.defineResolvers || function (resolvers) {
     const subscriptionTypeName = (schema.getSubscriptionType() || {}).name || 'Subscription'
     const subscriptionsActive = !!fastifyGraphQl.pubsub
 
@@ -338,11 +328,7 @@ const plugin = fp(async function (app, opts) {
   let factory
   let subscriptionFactory
 
-  fastifyGraphQl.defineLoaders = function (loaders) {
-    if (gateway) {
-      throw new MER_ERR_GQL_GATEWAY('Calling defineLoaders method when plugin is running in gateway mode is not allowed')
-    }
-
+  fastifyGraphQl.defineLoaders = fastifyGraphQl.defineLoaders || function (loaders) {
     // set up the loaders factory
     if (!factory) {
       factory = new Factory()
