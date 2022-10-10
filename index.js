@@ -123,7 +123,7 @@ const plugin = fp(async function (app, opts) {
 
   const root = {}
   let schema = opts.schema
-  let gateway = opts.gateway
+  const gatewayOpts = opts.gateway
   const subscriptionOpts = opts.subscription
   let emitter
 
@@ -157,8 +157,8 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.pubsub = subscriber
   }
 
-  if (gateway) {
-    validateGateway(schema, gateway, opts)
+  if (gatewayOpts) {
+    validateGateway(schema, gatewayOpts, opts)
   }
 
   if (Array.isArray(schema)) {
@@ -171,7 +171,7 @@ const plugin = fp(async function (app, opts) {
     } else {
       schema = buildSchema(schema)
     }
-  } else if (!opts.schema && !gateway) {
+  } else if (!opts.schema && !gatewayOpts) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
@@ -187,41 +187,42 @@ const plugin = fp(async function (app, opts) {
   }
 
   let entityResolversFactory
-  let gatewayRetryIntervalTimer = null
-  const retryServicesCount = gateway && gateway.retryServicesCount ? gateway.retryServicesCount : 10
 
-  const retryServices = (interval) => {
-    let retryCount = 0
-    let isRetry = true
+  let gateway
+  if (gatewayOpts) {
+    let gatewayRetryIntervalTimer = null
+    const retryServicesCount = gatewayOpts && gatewayOpts.retryServicesCount ? gatewayOpts.retryServicesCount : 10
+    const retryServices = (interval) => {
+      let retryCount = 0
+      let isRetry = true
 
-    return setInterval(async () => {
-      try {
-        if (retryCount === retryServicesCount) {
-          clearInterval(gatewayRetryIntervalTimer)
-          isRetry = false
-        }
-        retryCount++
-
-        const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
-        const schema = await gateway.refresh(isRetry)
-        /* istanbul ignore next */
-        if (schema !== null) {
-          clearInterval(gatewayRetryIntervalTimer)
-          // Trigger onGatewayReplaceSchema hook
-          if (context.onGatewayReplaceSchema !== null) {
-            await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
+      return setInterval(async () => {
+        try {
+          if (retryCount === retryServicesCount) {
+            clearInterval(gatewayRetryIntervalTimer)
+            isRetry = false
           }
-          fastifyGraphQl.replaceSchema(schema)
-        }
-      } catch (error) {
-        app.log.error(error)
-      }
-    }, interval)
-  }
+          retryCount++
 
-  if (gateway) {
-    const retryInterval = gateway.retryServicesInterval || 3000
-    gateway = await buildGateway(gateway, app)
+          const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
+          const schema = await gateway.refresh(isRetry)
+          /* istanbul ignore next */
+          if (schema !== null) {
+            clearInterval(gatewayRetryIntervalTimer)
+            // Trigger onGatewayReplaceSchema hook
+            if (context.onGatewayReplaceSchema !== null) {
+              await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
+            }
+            fastifyGraphQl.replaceSchema(schema)
+          }
+        } catch (error) {
+          app.log.error(error)
+        }
+      }, interval)
+    }
+
+    const retryInterval = gatewayOpts.retryServicesInterval || 3000
+    gateway = await buildGateway(gatewayOpts, app)
 
     const serviceMap = Object.values(gateway.serviceMap)
     const failedMandatoryServices = serviceMap.filter(service => !!service.error && service.mandatory)
@@ -231,13 +232,10 @@ const plugin = fp(async function (app, opts) {
       gatewayRetryIntervalTimer.unref()
     }
 
-    schema = gateway.schema
-    entityResolversFactory = gateway.entityResolversFactory
-
     let gatewayInterval = null
 
-    if (gateway.pollingInterval !== undefined) {
-      if (typeof gateway.pollingInterval === 'number') {
+    if (gatewayOpts.pollingInterval !== undefined) {
+      if (typeof gatewayOpts.pollingInterval === 'number') {
         gatewayInterval = setInterval(async () => {
           try {
             const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
@@ -252,9 +250,9 @@ const plugin = fp(async function (app, opts) {
           } catch (error) {
             app.log.error(error)
           }
-        }, gateway.pollingInterval)
+        }, gatewayOpts.pollingInterval)
       } else {
-        app.log.warn(`Expected a number for 'gateway.pollingInterval', received: ${typeof gateway.pollingInterval}`)
+        app.log.warn(`Expected a number for 'gateway.pollingInterval', received: ${typeof gatewayOpts.pollingInterval}`)
       }
     }
 
@@ -270,6 +268,8 @@ const plugin = fp(async function (app, opts) {
     })
 
     fastifyGraphQl.gateway = gateway
+    schema = gateway.schema
+    entityResolversFactory = gateway.entityResolversFactory
   }
 
   fastifyGraphQl.schema = schema
@@ -348,7 +348,7 @@ const plugin = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.extendSchema = function (s) {
-    if (gateway) {
+    if (gatewayOpts) {
       throw new MER_ERR_GQL_GATEWAY('Calling extendSchema method when plugin is running in gateway mode is not allowed')
     }
     if (opts.federationMetadata) {
@@ -365,7 +365,7 @@ const plugin = fp(async function (app, opts) {
   }
 
   fastifyGraphQl.defineResolvers = function (resolvers) {
-    if (gateway) {
+    if (gatewayOpts) {
       throw new MER_ERR_GQL_GATEWAY('Calling defineResolvers method when plugin is running in gateway mode is not allowed')
     }
 
