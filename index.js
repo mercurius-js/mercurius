@@ -24,7 +24,7 @@ const {
 const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
-const { initGateway, validateGateway } = require('./lib/gateway')
+const { initGateway } = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
@@ -120,7 +120,6 @@ const plugin = fp(async function (app, opts) {
 
   const root = {}
   let schema = opts.schema
-  const gatewayOpts = opts.gateway
   const subscriptionOpts = opts.subscription
   let emitter
 
@@ -154,10 +153,6 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.pubsub = subscriber
   }
 
-  if (gatewayOpts) {
-    validateGateway(schema, gatewayOpts, opts)
-  }
-
   if (Array.isArray(schema)) {
     schema = schema.join('\n')
   }
@@ -168,7 +163,7 @@ const plugin = fp(async function (app, opts) {
     } else {
       schema = buildSchema(schema)
     }
-  } else if (!opts.schema && !gatewayOpts) {
+  } else if (!opts.schema && !opts.gateway) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
@@ -185,9 +180,9 @@ const plugin = fp(async function (app, opts) {
 
   let gateway
   let lruGatewayResolvers
-  if (gatewayOpts) {
+  if (opts.gateway) {
     lruGatewayResolvers = buildCache(opts)
-    gateway = await initGateway(gatewayOpts, fastifyGraphQl, app)
+    gateway = await initGateway(opts, schema, fastifyGraphQl, app)
 
     schema = gateway.schema
   }
