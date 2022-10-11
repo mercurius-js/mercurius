@@ -119,7 +119,6 @@ const plugin = fp(async function (app, opts) {
   }
 
   const root = {}
-  let schema = opts.schema
   const subscriptionOpts = opts.subscription
   let emitter
 
@@ -153,6 +152,16 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.pubsub = subscriber
   }
 
+  let schema = opts.schema
+  let gateway
+  let lruGatewayResolvers
+  if (opts.gateway) {
+    lruGatewayResolvers = buildCache(opts)
+    gateway = await initGateway(opts, fastifyGraphQl, app)
+
+    schema = gateway.schema
+  }
+
   if (Array.isArray(schema)) {
     schema = schema.join('\n')
   }
@@ -176,15 +185,6 @@ const plugin = fp(async function (app, opts) {
         })
         : undefined
     })
-  }
-
-  let gateway
-  let lruGatewayResolvers
-  if (opts.gateway) {
-    lruGatewayResolvers = buildCache(opts)
-    gateway = await initGateway(opts, schema, fastifyGraphQl, app)
-
-    schema = gateway.schema
   }
 
   fastifyGraphQl.schema = schema
