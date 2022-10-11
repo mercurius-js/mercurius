@@ -527,7 +527,7 @@ export interface MercuriusCommonOptions {
         onConnect?: (data: {
           type: 'connection_init';
           payload: any;
-        }) => Record<string, any> | Promise<Record<string, any>>;
+        }) => any;
         onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
         keepAlive?: number,
         fullWsTransport?: boolean,
