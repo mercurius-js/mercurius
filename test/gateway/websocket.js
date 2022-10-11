@@ -8,7 +8,7 @@ const ws = require('ws')
 const { promisify } = require('util')
 const sleep = promisify(setTimeout)
 
-async function createTestService(port, schema, resolvers = {}) {
+async function createTestService (port, schema, resolvers = {}) {
   const service = Fastify()
 
   service.register(GQL, {
@@ -84,7 +84,7 @@ test('gateway - send query using graphql-ws protocol', async (t) => {
 
   const client = createClient({
     url: `ws://localhost:${(app.server.address()).port}/graphql`,
-    webSocketImpl: ws,
+    webSocketImpl: ws
   })
 
   client.subscribe(
@@ -98,32 +98,11 @@ test('gateway - send query using graphql-ws protocol', async (t) => {
       complete: () => {
         client.dispose()
         t.end()
-      },
-    },
+      }
+    }
   )
 
   await sleep(500)
-
-  client.subscribe(
-    {
-      query: `
-        mutation {
-          updateUser(name: "Random user") {
-            name
-          }
-        }
-      `
-    },
-    {
-      next: (data) => {
-        t.strictSame(data, { data: { updateUser: { name: 'Random user' } } })
-      },
-      complete: () => {
-        client.dispose()
-        t.end()
-      },
-    },
-  )
 })
 
 test('gateway - send mutations using graphql-ws protocol', async (t) => {
@@ -159,7 +138,7 @@ test('gateway - send mutations using graphql-ws protocol', async (t) => {
 
   const client = createClient({
     url: `ws://localhost:${(app.server.address()).port}/graphql`,
-    webSocketImpl: ws,
+    webSocketImpl: ws
   })
 
   client.subscribe(
@@ -179,8 +158,8 @@ test('gateway - send mutations using graphql-ws protocol', async (t) => {
       complete: () => {
         client.dispose()
         t.end()
-      },
-    },
+      }
+    }
   )
 
   await sleep(500)
