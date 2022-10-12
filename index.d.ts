@@ -112,7 +112,7 @@ export interface preExecutionHookHandler<TContext = MercuriusContext, TError ext
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
-  ): Promise<PreExecutionHookResponse<TError> | void>;
+  ): Promise<PreExecutionHookResponse<TError> | void> | PreExecutionHookResponse<TError> | void;
 }
 
 /**
