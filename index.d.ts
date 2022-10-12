@@ -87,7 +87,7 @@ export interface preParsingHookHandler<TContext = MercuriusContext> {
     schema: GraphQLSchema,
     source: string,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -98,7 +98,7 @@ export interface preValidationHookHandler<TContext = MercuriusContext> {
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -131,7 +131,7 @@ export interface preGatewayExecutionHookHandler<TContext = MercuriusContext, TEr
     source: DocumentNode,
     context: TContext,
     service: MercuriusServiceMetadata
-  ): Promise<PreExecutionHookResponse<TError> | void>;
+  ): Promise<PreExecutionHookResponse<TError> | void> | PreExecutionHookResponse<TError> | void;
 }
 
 /**
@@ -141,7 +141,7 @@ export interface onResolutionHookHandler<TData extends Record<string, any> = Rec
   (
     execution: ExecutionResult<TData>,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 // -----------------------------
@@ -157,7 +157,7 @@ export interface preSubscriptionParsingHookHandler<TContext = MercuriusContext> 
     schema: GraphQLSchema,
     source: string,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -169,7 +169,7 @@ export interface preSubscriptionExecutionHookHandler<TContext = MercuriusContext
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -185,7 +185,7 @@ export interface preGatewaySubscriptionExecutionHookHandler<TContext = Mercurius
     source: DocumentNode,
     context: TContext,
     service: MercuriusServiceMetadata
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -196,7 +196,7 @@ export interface onSubscriptionResolutionHookHandler<TData extends Record<string
   (
     execution: ExecutionResult<TData>,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -206,7 +206,7 @@ export interface onSubscriptionResolutionHookHandler<TData extends Record<string
 export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
   (
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 // ----------------------------
@@ -223,7 +223,7 @@ export interface onGatewayReplaceSchemaHookHandler {
   (
     instance: FastifyInstance,
     schema: GraphQLSchema
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 interface ServiceConfig {
