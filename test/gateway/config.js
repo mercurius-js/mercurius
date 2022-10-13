@@ -26,6 +26,36 @@ test('"schema" option not allowed in gateway mode', async (t) => {
   }
 })
 
+test('Throws an Error if the service list is empty', async (t) => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    gateway: {
+      services: []
+    }
+  })
+
+  try {
+    await app.ready()
+  } catch (err) {
+    t.equal(err.message, 'Gateway schema init issues No valid service SDLs were provided')
+  }
+})
+
+test('Throws an Error if the service list is empty', async (t) => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    gateway: {}
+  })
+
+  try {
+    await app.ready()
+  } catch (err) {
+    t.equal(err.message, 'Gateway schema init issues The "services" attribute cannot be undefined')
+  }
+})
+
 test('"resolvers" option not allowed in gateway mode', async (t) => {
   const app = Fastify()
 

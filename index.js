@@ -24,7 +24,7 @@ const {
 const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
-const buildGateway = require('./lib/gateway')
+const { initGateway } = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
@@ -34,15 +34,19 @@ const {
   defaultErrorFormatter,
   addErrorsToExecutionResult,
   MER_ERR_GQL_INVALID_SCHEMA,
-  MER_ERR_GQL_GATEWAY,
   MER_ERR_GQL_VALIDATION,
   MER_ERR_INVALID_OPTS,
   MER_ERR_METHOD_NOT_ALLOWED,
   MER_ERR_INVALID_METHOD
 } = require('./lib/errors')
-const { Hooks, assignLifeCycleHooksToContext, assignApplicationLifecycleHooksToContext } = require('./lib/hooks')
+const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
-const { preParsingHandler, preValidationHandler, preExecutionHandler, onResolutionHandler, onGatewayReplaceSchemaHandler } = require('./lib/handlers')
+const {
+  preParsingHandler,
+  preValidationHandler,
+  preExecutionHandler,
+  onResolutionHandler
+} = require('./lib/handlers')
 
 // Required for module bundlers
 // istanbul ignore next
@@ -71,7 +75,6 @@ function buildCache (opts) {
 const plugin = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
-  const lruGatewayResolvers = buildCache(opts)
 
   if (lru && opts.validationRules && typeof opts.validationRules === 'function') {
     throw new MER_ERR_INVALID_OPTS('Using a function for the validationRules is incompatible with query caching')
@@ -116,8 +119,6 @@ const plugin = fp(async function (app, opts) {
   }
 
   const root = {}
-  let schema = opts.schema
-  let gateway = opts.gateway
   const subscriptionOpts = opts.subscription
   let emitter
 
@@ -151,27 +152,14 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.pubsub = subscriber
   }
 
-  if (gateway && (schema || opts.resolvers || opts.loaders)) {
-    throw new MER_ERR_INVALID_OPTS('Adding "schema", "resolvers" or "loaders" to plugin options when plugin is running in gateway mode is not allowed')
-  }
+  let schema = opts.schema
+  let gateway
+  let lruGatewayResolvers
+  if (opts.gateway) {
+    lruGatewayResolvers = buildCache(opts)
+    gateway = await initGateway(opts, fastifyGraphQl, app)
 
-  if (gateway && Array.isArray(gateway.services)) {
-    const serviceNames = new Set()
-    for (const service of gateway.services) {
-      if (typeof service !== 'object') {
-        throw new MER_ERR_INVALID_OPTS('gateway: all "services" must be objects')
-      }
-      if (typeof service.name !== 'string') {
-        throw new MER_ERR_INVALID_OPTS('gateway: all "services" must have a "name" String property')
-      }
-      if (serviceNames.has(service.name)) {
-        throw new MER_ERR_INVALID_OPTS(`gateway: all "services" must have a unique "name": "${service.name}" is already used`)
-      }
-      serviceNames.add(service.name)
-      if (typeof service.url !== 'string' && (!Array.isArray(service.url) || service.url.length === 0 || !service.url.every(url => typeof url === 'string'))) {
-        throw new MER_ERR_INVALID_OPTS('gateway: all "services" must have an "url" String, or a non-empty Array of String, property')
-      }
-    }
+    schema = gateway.schema
   }
 
   if (Array.isArray(schema)) {
@@ -184,7 +172,7 @@ const plugin = fp(async function (app, opts) {
     } else {
       schema = buildSchema(schema)
     }
-  } else if (!opts.schema && !gateway) {
+  } else if (!opts.schema && !opts.gateway) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
@@ -197,92 +185,6 @@ const plugin = fp(async function (app, opts) {
         })
         : undefined
     })
-  }
-
-  let entityResolversFactory
-  let gatewayRetryIntervalTimer = null
-  const retryServicesCount = gateway && gateway.retryServicesCount ? gateway.retryServicesCount : 10
-
-  const retryServices = (interval) => {
-    let retryCount = 0
-    let isRetry = true
-
-    return setInterval(async () => {
-      try {
-        if (retryCount === retryServicesCount) {
-          clearInterval(gatewayRetryIntervalTimer)
-          isRetry = false
-        }
-        retryCount++
-
-        const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
-        const schema = await gateway.refresh(isRetry)
-        /* istanbul ignore next */
-        if (schema !== null) {
-          clearInterval(gatewayRetryIntervalTimer)
-          // Trigger onGatewayReplaceSchema hook
-          if (context.onGatewayReplaceSchema !== null) {
-            await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
-          }
-          fastifyGraphQl.replaceSchema(schema)
-        }
-      } catch (error) {
-        app.log.error(error)
-      }
-    }, interval)
-  }
-
-  if (gateway) {
-    const retryInterval = gateway.retryServicesInterval || 3000
-    gateway = await buildGateway(gateway, app)
-
-    const serviceMap = Object.values(gateway.serviceMap)
-    const failedMandatoryServices = serviceMap.filter(service => !!service.error && service.mandatory)
-
-    if (failedMandatoryServices.length) {
-      gatewayRetryIntervalTimer = retryServices(retryInterval)
-      gatewayRetryIntervalTimer.unref()
-    }
-
-    schema = gateway.schema
-    entityResolversFactory = gateway.entityResolversFactory
-
-    let gatewayInterval = null
-
-    if (gateway.pollingInterval !== undefined) {
-      if (typeof gateway.pollingInterval === 'number') {
-        gatewayInterval = setInterval(async () => {
-          try {
-            const context = assignApplicationLifecycleHooksToContext({}, fastifyGraphQl[kHooks])
-            const schema = await gateway.refresh()
-            if (schema !== null) {
-              // Trigger onGatewayReplaceSchema hook
-              if (context.onGatewayReplaceSchema !== null) {
-                await onGatewayReplaceSchemaHandler(context, { instance: app, schema })
-              }
-              fastifyGraphQl.replaceSchema(schema)
-            }
-          } catch (error) {
-            app.log.error(error)
-          }
-        }, gateway.pollingInterval)
-      } else {
-        app.log.warn(`Expected a number for 'gateway.pollingInterval', received: ${typeof gateway.pollingInterval}`)
-      }
-    }
-
-    app.onClose((fastify, next) => {
-      gateway.close()
-      if (gatewayInterval !== null) {
-        clearInterval(gatewayInterval)
-      }
-      if (gatewayRetryIntervalTimer !== null) {
-        clearInterval(gatewayRetryIntervalTimer)
-      }
-      setImmediate(next)
-    })
-
-    fastifyGraphQl.gateway = gateway
   }
 
   fastifyGraphQl.schema = schema
@@ -316,7 +218,7 @@ const plugin = fp(async function (app, opts) {
       onConnect,
       onDisconnect,
       lruGatewayResolvers,
-      entityResolversFactory,
+      entityResolversFactory: gateway ? gateway.entityResolversFactory : undefined,
       subscriptionContextFn,
       keepAlive,
       fullWsTransport
@@ -360,10 +262,7 @@ const plugin = fp(async function (app, opts) {
     }
   }
 
-  fastifyGraphQl.extendSchema = function (s) {
-    if (gateway) {
-      throw new MER_ERR_GQL_GATEWAY('Calling extendSchema method when plugin is running in gateway mode is not allowed')
-    }
+  fastifyGraphQl.extendSchema = fastifyGraphQl.extendSchema || function (s) {
     if (opts.federationMetadata) {
       throw new MER_ERR_INVALID_METHOD('Calling extendSchema method when federationMetadata is enabled is not allowed')
     }
@@ -377,11 +276,7 @@ const plugin = fp(async function (app, opts) {
     fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
   }
 
-  fastifyGraphQl.defineResolvers = function (resolvers) {
-    if (gateway) {
-      throw new MER_ERR_GQL_GATEWAY('Calling defineResolvers method when plugin is running in gateway mode is not allowed')
-    }
-
+  fastifyGraphQl.defineResolvers = fastifyGraphQl.defineResolvers || function (resolvers) {
     const subscriptionTypeName = (schema.getSubscriptionType() || {}).name || 'Subscription'
     const subscriptionsActive = !!fastifyGraphQl.pubsub
 
@@ -428,11 +323,7 @@ const plugin = fp(async function (app, opts) {
   let factory
   let subscriptionFactory
 
-  fastifyGraphQl.defineLoaders = function (loaders) {
-    if (gateway) {
-      throw new MER_ERR_GQL_GATEWAY('Calling defineLoaders method when plugin is running in gateway mode is not allowed')
-    }
-
+  fastifyGraphQl.defineLoaders = fastifyGraphQl.defineLoaders || function (loaders) {
     // set up the loaders factory
     if (!factory) {
       factory = new Factory()
@@ -632,7 +523,11 @@ const plugin = fp(async function (app, opts) {
     let modifiedSchema
     let modifiedDocument
     if (context.preExecution !== null) {
-      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({ schema: fastifyGraphQl.schema, document, context }))
+      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({
+        schema: fastifyGraphQl.schema,
+        document,
+        context
+      }))
     }
 
     // minJit is 0 by default
