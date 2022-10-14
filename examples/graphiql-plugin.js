@@ -40,11 +40,28 @@ const pluginSrc = `
 
   function Icon() {return React__default["default"].createElement('p', {style: { width: '100%', display: 'flex', justifyContent: 'center'}}, ["P"])}
   function graphiqlSamplePlugin() {return umdPlugin()}
-  function umdPlugin() {return {title: 'GraphiQL Sample',icon: () => Icon(),content: () => {return Content()}}}
+  
+  /*
+   * The plugin should have \`umdPlugin\` function that exports:
+   *   title: string. The title of the plugin
+   *   icon: React component. The icon shown in the toolbar
+   *   content: React component.
+   */  
+  function umdPlugin() {
+    return { 
+      title: 'GraphiQL Sample',
+      icon: () => Icon(),
+      content: () => { return Content() }
+    }
+  }
 
+  /*
+   * A function to intercept the fetch data can be exported to allow access to the data.
+   * Graphiql do not provide an easy way to access the retrieved data.
+   */  
   function parseFetchResponse(data) {
-    if (data.data) {sampleDataManager.setExplain(data.data);}
-    return data
+    if (data.data) {sampleDataManager.setExplain(data.data);} // Do something with the data
+    return data // It should return the data
   }
   exports.graphiqlSamplePlugin = graphiqlSamplePlugin;
   exports.parseFetchResponse = parseFetchResponse;

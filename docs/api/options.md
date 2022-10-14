@@ -34,9 +34,19 @@
 - `loaders`: Object. See [defineLoaders](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders) for more
   details.
 - `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
-- `graphiql`: boolean | string. Serve
+- `graphiql`: boolean | string | Object. Serve
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. Leave empty or `false` to disable.
   _only applies if `onlyPersisted` option is not `true`_
+  
+  An object can be passed in the config to allow the injections of external graphiql plugins exported in `umd` format.
+  - enabled: boolean. Enable disable the graphiql extension
+  - plugins: Array
+    - name: string. the name of the plugin, it should be the same exported in the `umd`
+    - props: Object | undefined. The props to be passed to the plugin
+    - umdUrl: string. The urls of the plugin, it's downloaded at runtime. (eg. https://unpkg.com/myplugin/....)
+    - fetcherWrapper: string. A function name exported by the plugin to read/enrich the fetch response
+
+  Check the [`github-repo`](https://github.com/mercurius-js/mercurius/tree/master/examples) for detailed usage.
 
   **Note**: If `routes` is false, this option does not have effects.
 
