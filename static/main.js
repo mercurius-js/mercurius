@@ -92,9 +92,7 @@ function fetcherWrapper (fetcher, cbs = []) {
   return async (gqlp, fetchOpt) => {
     const fetchResponse = await fetcher(gqlp, fetchOpt)
     const result = await fetcherReturnToPromise(fetchResponse)
-    let cbsResult = { ...result }
-    for (const cb of cbs) cbsResult = cb(cbsResult)
-    return cbsResult
+    return cbs.reduce((acc, cb) => cb(acc), result)
   }
 }
 
@@ -147,8 +145,7 @@ function importDependencies () {
     'https://unpkg.com/graphiql@2.0.2/graphiql.min.js'
   ]).then(function () {
     const pluginUrls = window.GRAPHIQL_PLUGIN_LIST
-      .map(plugin => window[`GRAPIHQL_PLUGIN_${plugin.toUpperCase()}`])
-      .map(plugin => plugin.umdUrl)
+      .map(plugin => window[`GRAPIHQL_PLUGIN_${plugin.toUpperCase()}`].umdUrl)
       .filter(url => !!url)
 
     if (pluginUrls.length) {
