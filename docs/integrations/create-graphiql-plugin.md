@@ -10,7 +10,7 @@ You can easily create a graphiql plugin and integrate it in mercurius graphiql i
 
 ### Plugin component
 
-A Graphiql plugin is an object that exports three values:
+A Graphiql plugin is an object that exports these values:
 
 * title: string. The title of the plugin
 * icon: React component. The icon shown in the toolbar
