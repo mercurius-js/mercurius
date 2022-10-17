@@ -46,7 +46,7 @@
     - umdUrl: string. The urls of the plugin, it's downloaded at runtime. (eg. https://unpkg.com/myplugin/....)
     - fetcherWrapper: string. A function name exported by the plugin to read/enrich the fetch response
 
-  Check the [`github-repo`](https://github.com/mercurius-js/mercurius/tree/master/examples) for detailed usage.
+  Check the [`github-repo`](https://github.com/mercurius-js/mercurius/tree/master/examples) for detailed usage or this [document](/docs/integrations/create-graphiql-plugin) for a detailed explanation on how to build a plugin.
 
   **Note**: If `routes` is false, this option does not have effects.
 
