@@ -2076,7 +2076,7 @@ test('GET graphiql endpoint with object and enabled', async (t) => {
     }
   `
   app.register(GQL, {
-    ide: { enabled: true },
+    ide: {},
     schema
   })
 

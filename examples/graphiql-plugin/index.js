@@ -26,7 +26,6 @@ app.register(mercurius, {
   schema,
   resolvers,
   graphiql: {
-    enabled: true,
     plugins: [
       {
         name: 'samplePlugin',

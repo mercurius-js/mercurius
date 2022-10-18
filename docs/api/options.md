@@ -39,7 +39,7 @@
   _only applies if `onlyPersisted` option is not `true`_
   
   An object can be passed in the config to allow the injection of external graphiql plugins exported in `umd` format.
-  - enabled: boolean. Enable disable the graphiql extension
+  - enabled: boolean, default `true`. Enable disable the graphiql extension
   - plugins: Array
     - `name`: string. The name of the plugin, it should be the same exported in the `umd`
     - `props`: Object | undefined. The props to be passed to the plugin
