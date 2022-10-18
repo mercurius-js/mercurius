@@ -76,8 +76,7 @@ function asyncIterableToPromise (
   })
 }
 
-function fetcherReturnToPromise (fetcherResult
-) {
+function fetcherReturnToPromise (fetcherResult) {
   return Promise.resolve(fetcherResult).then(result => {
     if (isAsyncIterable(result)) {
       return asyncIterableToPromise(result)
