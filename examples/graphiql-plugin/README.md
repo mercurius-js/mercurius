@@ -1,20 +1,28 @@
-# Graphiql custom plugin
+# GraphiQL custom plugin
 
-You can easily create a graphiql plugin and integrate it in mercurius graphiql instance.
+## Quick start
 
-[More info here.](https://github.com/graphql/graphiql)
+Execute the local `index.js` app to try the GraphiQL plugin integration.
 
-[GraphiQL Explorer Plugin example.](https://github.com/graphql/graphiql/tree/main/packages/graphiql-plugin-explorer)
+```javascript
+// examples/graphiql-plugin
+node ./index.js
+```
 
 ## Create the plugin
 
+You can easily create a GraphiQL plugin and integrate it in Mercurius GraphiQL instance.
+
+* [GraphiQL.](https://github.com/graphql/graphiql)
+* [GraphiQL Explorer Plugin example.](https://github.com/graphql/graphiql/tree/main/packages/graphiql-plugin-explorer)
+
 ### Plugin component
 
-A Graphiql plugin is an object that exports these values:
+A GraphiQL plugin is an object that contains these properties:
 
-* title: string. The title of the plugin
-* icon: React component. The icon shown in the toolbar
-* content: React component with the plugin implementation
+* `title`: string. The title of the plugin
+* `icon`: React component. The icon shown in the toolbar
+* `content`: React component with the plugin implementation
  
 It can be created using the sample:
 
@@ -30,12 +38,31 @@ function Content() {
 }
 
 function Icon() {
-  return <p>GE</p>
+  return <p>P</p>
 }
 
+/* 
+ * Enrich, extract or modify the data returned by the GraphiQL fetcher.
+ * 
+ * Q: Why do I need to intercept the data?
+ * A: GraphiQL do not provide a direct access to the fetched data. 
+ * The data are fetched and injected directly in the viewer in a stringified format.
+ * 
+ * To provide a way to access the fetched data a similar function can implemented and passed 
+ * to the plugin in the attribute `fetcherWrapper` of the configuration.
+ * 
+ * {
+ *   name: '...',
+ *   props: ...,
+ *   umdUrl: '...',
+ *   fetcherWrapper: 'parseFetchResponse'
+ * }
+ */   
 export function parseFetchResponse(data) {
-  if (data.data) {
-    // Do something with the data returned by the fetch
+  if (data) {
+    // Eg. storeDataSomewhere(data)
+    // Eg. addInfoToData(data)
+    // Eg. removeAttributrefromData(data)
   }
   return data
 }
@@ -50,7 +77,7 @@ export function graphiqlSamplePlugin(props) {
   }
 }
 
-// This is required for the mercurius integration
+// This is required for the Mercurius integration
 export function umdPlugin(props) {
     return graphiqlSamplePlugin(props)
 }
@@ -101,10 +128,15 @@ const rollup = [
 export default rollup
 ```
 
+Check the [plugin-sources](./plugin-sources) folder for a complete example.  
+
 ### Serve the plugin
 
-To work with `mercurius` the plugin should be available using a GET request. 
-It can be served by the local fastify
+To work with `Mercurius` the plugin should be available using a GET request.
+
+The preferred approach is to deploy the package on a public CDN like [unpkg.com](https://unpkg.com/).
+
+Alternatively it can be served by the local fastify.
 
 ```javascript
 app.get('/graphiql/samplePlugin.js', (req, reply) => {
@@ -112,9 +144,7 @@ app.get('/graphiql/samplePlugin.js', (req, reply) => {
 })
 ```
 
-or it can be deployed on a public CDN like [unpkg.com](https://unpkg.com/)
-
-## Add the plugin to mercurius
+## Add the plugin to Mercurius
 
 In the configuration file add the plugin in the `graphiql` parameter
 
@@ -136,7 +166,7 @@ app.register(mercurius, {
 })
 ```
 
-* name, string. The same used in the `rollup` export `output(format === umd).name`
-* props, object. The props to be passed to the plugin 
-* umdUrl, string. The url of the static `umd` file 
-* fetcherWrapper, function. The name of an exported function that intercept the result from the fetch. 
+* `name`, string. The same used in the `rollup` export `output(format === umd).name`
+* `props`, object. The props to be passed to the plugin 
+* `umdUrl`, string. The url of the static `umd` file 
+* `fetcherWrapper`, function. The name of an exported function that intercept the result from the fetch. 
