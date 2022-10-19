@@ -62,7 +62,7 @@ export function parseFetchResponse(data) {
   if (data) {
     // Eg. storeDataSomewhere(data)
     // Eg. addInfoToData(data)
-    // Eg. removeAttributrefromData(data)
+    // Eg. removeAttributeFromData(data)
   }
   return data
 }
