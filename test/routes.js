@@ -339,7 +339,12 @@ test('GET route with extensions', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: `/graphql?extensions=${JSON.stringify({ persistedQuery: { version: 1, sha256Hash } })}&variables=${JSON.stringify({ x: 2, y: 2 })}`
+    url: `/graphql?extensions=${JSON.stringify({
+      persistedQuery: {
+        version: 1,
+        sha256Hash
+      }
+    })}&variables=${JSON.stringify({ x: 2, y: 2 })}`
   })
 
   t.same(JSON.parse(res.body), {
@@ -1995,7 +2000,7 @@ test('if ide is graphiql with a prefix, serve config.js with the correct endpoin
   })
   t.equal(res.statusCode, 200)
   t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\'')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
 })
 
 test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js with the correct endpoint', async (t) => {
@@ -2020,7 +2025,7 @@ test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js w
   })
   t.equal(res.statusCode, 200)
   t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\'')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
 })
 
 test('if operationName is null, it should work fine', async (t) => {
@@ -2061,4 +2066,111 @@ test('if operationName is null, it should work fine', async (t) => {
       add: 5
     }
   })
+})
+
+test('GET graphiql endpoint with object and enabled', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: {},
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.equal(res.statusCode, 200)
+})
+
+test('disable GET graphiql endpoint with object if note enabled', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: { enabled: false },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.equal(res.statusCode, 404)
+})
+
+test('if ide has plugin set, serve config.js with the correct endpoint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: {
+      enabled: true,
+      plugins: [
+        {
+          name: 'samplePlugin',
+          props: { foo: 'bar' },
+          umdUrl: '/graphiql/explain.js',
+          fetcherWrapper: 'parsePlugin'
+        }
+      ]
+    },
+    path: '/app/graphql',
+    prefix: '/something',
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/something/graphiql/config.js'
+  })
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['content-type'], 'application/javascript')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
+    'window.GRAPIHQL_PLUGIN_SAMPLEPLUGIN = ' +
+    '{"name":"samplePlugin","props":{"foo":"bar"},"umdUrl":"/graphiql/explain.js","fetcherWrapper":"parsePlugin"};\n' +
+    'window.GRAPHIQL_PLUGIN_LIST = ["samplePlugin"]')
+})
+
+test('if ide has plugin set, serve config.js with the correct endpoint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: {
+      enabled: true,
+      plugins: [
+        {
+          props: { foo: 'bar' },
+          umdUrl: '/graphiql/explain.js',
+          fetcherWrapper: 'parsePlugin'
+        }
+      ]
+    },
+    path: '/app/graphql',
+    prefix: '/something',
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/something/graphiql/config.js'
+  })
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['content-type'], 'application/javascript')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
+    'window.GRAPHIQL_PLUGIN_LIST = []')
 })
