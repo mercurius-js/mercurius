@@ -2,13 +2,13 @@
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
-    caches.open('graphiql-v2.0.2').then(function (cache) {
+    caches.open('graphiql-v2.0.9').then(function (cache) {
       return cache.addAll([
         './main.js',
-        'https://unpkg.com/graphiql@2.0.2/graphiql.css',
+        'https://unpkg.com/graphiql@2.0.9/graphiql.css',
         'https://unpkg.com/react@18.2.0/umd/react.production.min.js',
         'https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js',
-        'https://unpkg.com/graphiql@2.0.2/graphiql.min.js'
+        'https://unpkg.com/graphiql@2.0.9/graphiql.min.js'
       ])
     })
   )
