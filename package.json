@@ -1,6 +1,6 @@
 {
   "name": "mercurius",
-  "version": "11.1.0",
+  "version": "11.2.0",
   "description": "Fastify GraphQL adapter with gateway and subscription support",
   "main": "index.js",
   "types": "index.d.ts",
@@ -64,6 +64,7 @@
     "graphql": "^16.0.0",
     "graphql-jit": "^0.7.3",
     "mqemitter": "^5.0.0",
+    "negotiator": "^0.6.3",
     "p-map": "^4.0.0",
     "readable-stream": "^4.0.0",
     "safe-stable-stringify": "^2.3.0",

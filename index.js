@@ -1,5 +1,6 @@
 'use strict'
 
+const Negotiator = require('negotiator')
 const fp = require('fastify-plugin')
 let LRU = require('tiny-lru')
 const routes = require('./lib/routes')
@@ -18,10 +19,10 @@ const {
   extendSchema,
   validate,
   validateSchema,
-  specifiedRules,
-  execute
+  specifiedRules
 } = require('graphql')
 const { buildExecutionContext } = require('graphql/execution/execute')
+const { Readable } = require('stream')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
 const { initGateway } = require('./lib/gateway')
@@ -47,6 +48,7 @@ const {
   preExecutionHandler,
   onResolutionHandler
 } = require('./lib/handlers')
+const { executeGraphql, MEDIA_TYPES } = require('./lib/util')
 
 // Required for module bundlers
 // istanbul ignore next
@@ -546,7 +548,7 @@ const plugin = fp(async function (app, opts) {
       return maybeFormatErrors(execution, context)
     }
 
-    const execution = await execute({
+    const execution = await executeGraphql({
       schema: modifiedSchema || fastifyGraphQl.schema,
       document: modifiedDocument || document,
       rootValue: root,
@@ -555,7 +557,93 @@ const plugin = fp(async function (app, opts) {
       operationName
     })
 
+    /* istanbul ignore next */
+    if (execution.initialResult) {
+      const acceptHeader = reply.request.raw.headers.accept
+
+      if (
+        !(
+          acceptHeader &&
+          new Negotiator({
+            headers: { accept: acceptHeader }
+          }).mediaType([
+            // mediaType() will return the first one that matches, so if the client
+            // doesn't include the deferSpec parameter it will match this one here,
+            // which isn't good enough.
+            MEDIA_TYPES.MULTIPART_MIXED_NO_DEFER_SPEC,
+            MEDIA_TYPES.MULTIPART_MIXED_EXPERIMENTAL
+          ]) === MEDIA_TYPES.MULTIPART_MIXED_EXPERIMENTAL
+        )
+      ) {
+        // The client ran an operation that would yield multiple parts, but didn't
+        // specify `accept: multipart/mixed`. We return an error.
+        throw new Error(
+          'Mercurius server received an operation that uses incremental delivery ' +
+          '(@defer or @stream), but the client does not accept multipart/mixed ' +
+          'HTTP responses. To enable incremental delivery support, add the HTTP ' +
+          "header 'Accept: multipart/mixed; deferSpec=20220824'.",
+          // Use 406 Not Accepted TODO
+          { extensions: { http: { status: 406 } } }
+        )
+      }
+
+      reply.header('content-type', 'multipart/mixed; boundary="-"; deferSpec=20220824')
+
+      return Readable.from(
+        writeMultipartBody(
+          execution.initialResult,
+          execution.subsequentResults
+        )
+      )
+    }
+
     return maybeFormatErrors(execution, context)
+  }
+
+  /* istanbul ignore next */
+  async function * writeMultipartBody (initialResult, subsequentResults) {
+    yield `\r\n---\r\ncontent-type: application/json; charset=utf-8\r\n\r\n${JSON.stringify(
+      orderInitialIncrementalExecutionResultFields(initialResult)
+    )}\r\n---${initialResult.hasNext ? '' : '--'}\r\n`
+
+    for await (const result of subsequentResults) {
+      yield `content-type: application/json; charset=utf-8\r\n\r\n${JSON.stringify(
+        orderSubsequentIncrementalExecutionResultFields(result)
+      )}\r\n---${result.hasNext ? '' : '--'}\r\n`
+    }
+  }
+
+  /* istanbul ignore next */
+  function orderInitialIncrementalExecutionResultFields (result) {
+    return {
+      hasNext: result.hasNext,
+      errors: result.errors,
+      data: result.data,
+      incremental: orderIncrementalResultFields(result.incremental),
+      extensions: result.extensions
+    }
+  }
+
+  /* istanbul ignore next */
+  function orderSubsequentIncrementalExecutionResultFields (result) {
+    return {
+      hasNext: result.hasNext,
+      incremental: orderIncrementalResultFields(result.incremental),
+      extensions: result.extensions
+    }
+  }
+
+  /* istanbul ignore next */
+  function orderIncrementalResultFields (incremental) {
+    return incremental?.map((i) => ({
+      hasNext: i.hasNext,
+      errors: i.errors,
+      path: i.path,
+      label: i.label,
+      data: i.data,
+      items: i.items,
+      extensions: i.extensions
+    }))
   }
 
   async function maybeFormatErrors (execution, context) {
