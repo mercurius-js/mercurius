@@ -38,7 +38,8 @@ const {
   MER_ERR_GQL_VALIDATION,
   MER_ERR_INVALID_OPTS,
   MER_ERR_METHOD_NOT_ALLOWED,
-  MER_ERR_INVALID_METHOD
+  MER_ERR_INVALID_METHOD,
+  MER_ERR_INVALID_MULTIPART_ACCEPT_HEADER
 } = require('./lib/errors')
 const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
@@ -577,12 +578,7 @@ const plugin = fp(async function (app, opts) {
       ) {
         // The client ran an operation that would yield multiple parts, but didn't
         // specify `accept: multipart/mixed`. We return an error.
-        throw new Error(
-          'Server received an operation that uses incremental delivery ' +
-          '(@defer or @stream), but the client does not accept multipart/mixed ' +
-          'HTTP responses. To enable incremental delivery support, add the HTTP ' +
-          "header 'Accept: multipart/mixed; deferSpec=20220824'."
-        )
+        throw new MER_ERR_INVALID_MULTIPART_ACCEPT_HEADER()
       }
 
       reply.header('content-type', 'multipart/mixed; boundary="-"; deferSpec=20220824')

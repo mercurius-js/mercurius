@@ -86,11 +86,11 @@ if (canUseIncrementalExecution) {
       })
 
       t.match(res, {
-        statusCode: 200,
+        statusCode: 500,
         body: JSON.stringify({
           data: null,
           errors: [{
-            message: "Server received an operation that uses incremental delivery (@defer or @stream), but the client does not accept multipart/mixed HTTP responses. To enable incremental delivery support, add the HTTP header 'Accept: multipart/mixed; deferSpec=20220824'."
+            message: 'Server received an operation that uses incremental delivery (@defer or @stream), but the client does not accept multipart/mixed HTTP responses. To enable incremental delivery support, add the HTTP header "Accept: multipart/mixed; deferSpec=20220824".'
           }]
         })
       })
