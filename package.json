@@ -56,6 +56,7 @@
     "wait-on": "^6.0.0"
   },
   "dependencies": {
+    "@fastify/accepts": "^4.0.1",
     "@fastify/error": "^3.0.0",
     "@fastify/static": "^6.0.0",
     "@fastify/websocket": "^7.0.0",
@@ -64,7 +65,6 @@
     "graphql": "^17.0.0-alpha.2",
     "graphql-jit": "^0.7.3",
     "mqemitter": "^5.0.0",
-    "negotiator": "^0.6.3",
     "p-map": "^4.0.0",
     "readable-stream": "^4.0.0",
     "safe-stable-stringify": "^2.3.0",

@@ -1,6 +1,5 @@
 'use strict'
 
-const Negotiator = require('negotiator')
 const fp = require('fastify-plugin')
 let LRU = require('tiny-lru')
 const routes = require('./lib/routes')
@@ -191,6 +190,8 @@ const plugin = fp(async function (app, opts) {
   }
 
   if (opts.defer) {
+    app.register(require('@fastify/accepts'))
+
     schema = extendSchema(
       schema,
       parse(`
@@ -572,14 +573,11 @@ const plugin = fp(async function (app, opts) {
 
     /* istanbul ignore next */
     if (execution.initialResult) {
-      const acceptHeader = reply.request.raw.headers.accept
+      const accept = reply.request.accepts() // Accepts object
 
       if (
         !(
-          acceptHeader &&
-          new Negotiator({
-            headers: { accept: acceptHeader }
-          }).mediaType([
+          accept.negotiator.mediaType([
             // mediaType() will return the first one that matches, so if the client
             // doesn't include the deferSpec parameter it will match this one here,
             // which isn't good enough.
