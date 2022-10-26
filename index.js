@@ -190,6 +190,18 @@ const plugin = fp(async function (app, opts) {
     })
   }
 
+  if (opts.defer) {
+    schema = extendSchema(
+      schema,
+      parse(`
+        directive @defer(
+          if: Boolean! = true
+          label: String
+        ) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+      `)
+    )
+  }
+
   fastifyGraphQl.schema = schema
 
   app.addHook('onReady', async function () {

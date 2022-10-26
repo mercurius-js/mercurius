@@ -5,11 +5,6 @@ const { canUseIncrementalExecution } = require('../lib/util')
 
 if (canUseIncrementalExecution) {
   const schema = `
-    directive @defer(
-      if: Boolean! = true
-      label: String
-    ) on FRAGMENT_SPREAD | INLINE_FRAGMENT
-
     type Query {
       allProducts: [Product!]!
     }
@@ -70,10 +65,37 @@ if (canUseIncrementalExecution) {
     'multipart/mixed; deferSpec=12345'
   ]
 
+  test('errors with @defer when opts.defer is not true', async t => {
+    const app = Fastify()
+    await app.register(mercurius, { schema, resolvers, graphiql: true })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/graphql',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({ query })
+    })
+
+    t.match(res, {
+      statusCode: 400,
+      body: JSON.stringify({
+        data: null,
+        errors: [{
+          message: 'Unknown directive "@defer".', locations: [{ line: 5, column: 25 }]
+        }]
+      })
+    })
+
+    await app.close()
+    t.end()
+  })
+
   for (const accept of wrongAcceptValues) {
     test('errors with @defer when used with wrong "accept" header', async t => {
       const app = Fastify()
-      await app.register(mercurius, { schema, resolvers, graphiql: true })
+      await app.register(mercurius, { schema, resolvers, graphiql: true, defer: true })
 
       const res = await app.inject({
         method: 'POST',
@@ -109,7 +131,7 @@ if (canUseIncrementalExecution) {
   for (const accept of correctAcceptValues) {
     test('works with @defer when used with correct "accept" header', async t => {
       const app = Fastify()
-      await app.register(mercurius, { schema, resolvers, graphiql: true })
+      await app.register(mercurius, { schema, resolvers, graphiql: true, defer: true })
 
       const res = await app.inject({
         method: 'POST',
