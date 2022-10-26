@@ -1,5 +1,6 @@
 const { test } = require('tap')
 const Fastify = require('fastify')
+const { fetch } = require('undici')
 const mercurius = require('../index')
 const { canUseIncrementalExecution } = require('../lib/util')
 
@@ -165,4 +166,46 @@ content-type: application/json; charset=utf-8\r
       t.end()
     })
   }
+
+  test('returns stream when using undici.fetch with @defer', async t => {
+    const app = Fastify()
+    await app.register(mercurius, { schema, resolvers, graphiql: true, defer: true })
+    const url = await app.listen({ port: 0 })
+
+    const res = await fetch(`${url}/graphql`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'multipart/mixed; deferSpec=20220824'
+      },
+      body: JSON.stringify({ query })
+    })
+
+    const reader = res.body.getReader()
+    const { value } = await reader.read()
+    const result = new TextDecoder('utf-8').decode(value)
+
+    t.same(result, `\r
+---\r
+content-type: application/json; charset=utf-8\r
+\r
+{"hasNext":true,"data":{"allProducts":[{"delivery":{},"sku":"sku","id":"0"}]}}\r
+---\r
+content-type: application/json; charset=utf-8\r
+\r
+{"hasNext":false,"incremental":[{"path":["allProducts",0,"delivery"],"data":{"estimatedDelivery":"25.01.2000","fastestDelivery":"25.01.2000"}}]}\r
+-----\r
+`)
+
+    t.same(res.status, 200)
+    t.same(res.headers.get('content-type'), 'multipart/mixed; boundary="-"; deferSpec=20220824')
+
+    t.teardown(async () => {
+      await reader.releaseLock()
+      app.close()
+      process.exit()
+    })
+
+    t.end()
+  })
 }
