@@ -578,12 +578,10 @@ const plugin = fp(async function (app, opts) {
         // The client ran an operation that would yield multiple parts, but didn't
         // specify `accept: multipart/mixed`. We return an error.
         throw new Error(
-          'Mercurius server received an operation that uses incremental delivery ' +
+          'Server received an operation that uses incremental delivery ' +
           '(@defer or @stream), but the client does not accept multipart/mixed ' +
           'HTTP responses. To enable incremental delivery support, add the HTTP ' +
-          "header 'Accept: multipart/mixed; deferSpec=20220824'.",
-          // Use 406 Not Accepted TODO
-          { extensions: { http: { status: 406 } } }
+          "header 'Accept: multipart/mixed; deferSpec=20220824'."
         )
       }
 
