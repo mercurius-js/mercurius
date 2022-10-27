@@ -302,6 +302,65 @@ test('It builds the gateway schema correctly', async (t) => {
   })
 })
 
+test('Should merge schemas correctly', async (t) => {
+  const [helloService, helloServicePort] = await createService(
+    t,
+    'extend type Query { hello: String } directive @customDirective on FIELD_DEFINITION',
+    { Query: { hello: () => 'World' } }
+  )
+
+  const [worldService, worldServicePort] = await createService(
+    t,
+    'extend type Query { world: String }',
+    { Query: { world: () => 'Hello' } }
+  )
+
+  const gateway = Fastify()
+
+  t.teardown(async () => {
+    await gateway.close()
+    await helloService.close()
+    await worldService.close()
+  })
+
+  gateway.register(GQL, {
+    gateway: {
+      services: [{
+        name: 'hello',
+        url: `http://localhost:${helloServicePort}/graphql`
+      }, {
+        name: 'world',
+        url: `http://localhost:${worldServicePort}/graphql`
+      }]
+    }
+  })
+
+  const query = `
+    query {
+      hello
+      world
+    }
+  `
+
+  const res = await gateway.inject({
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    url: '/graphql',
+    body: JSON.stringify({
+      query
+    })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      hello: 'World',
+      world: 'Hello'
+    }
+  })
+})
+
 test('It support variable inside nested arguments', async (t) => {
   const user = {
     id: 'u1',
