@@ -879,3 +879,40 @@ app.graphql.addHook('onResolution', async function (_execution, context) {
   expectType<number | undefined>(context.operationsCount)
   expectType<string>(context.__currentQuery)
 })
+
+// Test graphiql configuration using an object as params
+app.register(mercurius, { schema, resolvers, graphiql: { plugins: [] } })
+
+app.register(mercurius, { schema, resolvers, ide: { enabled: false } })
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  graphiql: {
+    enabled: true,
+    plugins: [
+      {
+        fetcherWrapper: 'testFetchWrapper',
+        umdUrl: 'http://some-url',
+        props: { foo: 'bar' },
+        name: 'pluginName'
+      }
+    ]
+  }
+})
+
+expectError(() => {
+  app.register(mercurius, {
+    schema,
+    resolvers,
+    graphiql: {
+      enabled: true,
+      plugins: [
+        {
+          fetcherWrapper: 'testFetchWrapper',
+          props: { foo: 'bar' }
+        }
+      ]
+    }
+  })
+})
