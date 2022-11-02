@@ -84,6 +84,20 @@ test('errors with @defer when opts.defer is not true', async t => {
   t.end()
 })
 
+test('errors when used with both JIT and @defer', async t => {
+  const app = Fastify()
+
+  try {
+    await app.register(mercurius, { jit: 1, defer: true })
+    t.fail('Should not successfully start the server')
+  } catch (ex) {
+    t.equal(ex.message, "Invalid options: @defer and JIT can't be used together")
+  }
+
+  await app.close()
+  t.end()
+})
+
 const wrongAcceptValues = [
   '',
   'application/json',
