@@ -5,6 +5,7 @@
 - [Subscriptions](#subscriptions)
   - [Subscription support (simple)](#subscription-support-simple)
   - [Subscription filters](#subscription-filters)
+  - [Subscription Context](#subscription-context)
   - [Build a custom GraphQL context object for subscriptions](#build-a-custom-graphql-context-object-for-subscriptions)
   - [Subscription support (with redis)](#subscription-support-with-redis)
   - [Subscriptions with custom PubSub](#subscriptions-with-custom-pubsub)
@@ -152,6 +153,18 @@ app.register(mercurius, {
   subscription: true
 })
 ```
+
+### Subscription Context
+
+The context for the `Subscription` includes:
+
+* `app`, the Fastify application
+* `reply`, an object that pretend to be a `Reply` object from Fastify without its decorators.
+* `reply.request`, the real request object from Fastify
+
+During the connection initialization phase, all content of proerty `payload` of the `connection_init` packet
+is automatically copied inside `request.headers`. In case an `headers` property is specified within `payload`,
+that's used instead.
 
 ### Build a custom GraphQL context object for subscriptions
 
