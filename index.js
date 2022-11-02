@@ -190,6 +190,10 @@ const plugin = fp(async function (app, opts) {
   }
 
   if (opts.defer) {
+    if (opts.jit) {
+      throw new MER_ERR_INVALID_OPTS("@defer and JIT can't be used together")
+    }
+
     app.register(require('@fastify/accepts'))
 
     schema = extendSchema(

@@ -473,9 +473,16 @@ export interface MercuriusCommonOptions {
   ide?: boolean | 'graphiql' | MercuriusGraphiQLOptions;
   /**
    * The minimum number of execution a query needs to be executed before being jit'ed.
+   * Can't be enabled with MercuriusCommonOptions.defer
    * @default 0 - disabled
    */
   jit?: number;
+  /**
+   * Enable @defer directive execution support.
+   * Can't be enabled with MercuriusCommonOptions.jit
+   * @default false
+   */
+  defer?: boolean;
   /**
    * A graphql endpoint is exposed at /graphql when true
    * @default true
