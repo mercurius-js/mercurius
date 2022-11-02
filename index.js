@@ -562,7 +562,7 @@ const plugin = fp(async function (app, opts) {
       return maybeFormatErrors(execution, context)
     }
 
-    const execution = await executeGraphql({
+    const execution = await executeGraphql(opts.defer, {
       schema: modifiedSchema || fastifyGraphQl.schema,
       document: modifiedDocument || document,
       rootValue: root,
