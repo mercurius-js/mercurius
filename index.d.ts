@@ -437,17 +437,52 @@ export interface MercuriusSchemaOptions {
   schemaTransforms?: ((originalSchema: GraphQLSchema) => GraphQLSchema) | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
 }
 
+export interface MercuriusGraphiQLOptions {
+  /**
+   * Expose the graphiql app, default `true`
+   */
+  enabled?: boolean;
+  /**
+   * The list of plugin to add to GraphiQL
+   */
+  plugins?: Array<{
+    /**
+     * The name of the plugin, it should be the same exported in the `umd`
+     */
+    name: string;
+    /**
+     * The props to be passed to the plugin
+     */
+    props?: Object;
+    /**
+     * The urls of the plugin, it's downloaded at runtime. (eg. https://unpkg.com/myplugin/....)
+     */
+    umdUrl: string;
+    /**
+     * A function name exported by the plugin to read/enrich the fetch response
+     */
+    fetcherWrapper?: string;
+  }>
+}
+
 export interface MercuriusCommonOptions {
   /**
    * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
    */
-  graphiql?: boolean | 'graphiql';
-  ide?: boolean | 'graphiql';
+  graphiql?: boolean | 'graphiql' | MercuriusGraphiQLOptions;
+  ide?: boolean | 'graphiql' | MercuriusGraphiQLOptions;
   /**
    * The minimum number of execution a query needs to be executed before being jit'ed.
+   * Can't be enabled with MercuriusCommonOptions.defer
    * @default 0 - disabled
    */
   jit?: number;
+  /**
+   * Enable @defer directive execution support.
+   * Can't be enabled with MercuriusCommonOptions.jit
+   * @default false
+   */
+  defer?: boolean;
   /**
    * A graphql endpoint is exposed at /graphql when true
    * @default true

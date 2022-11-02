@@ -18,10 +18,10 @@ const {
   extendSchema,
   validate,
   validateSchema,
-  specifiedRules,
-  execute
+  specifiedRules
 } = require('graphql')
 const { buildExecutionContext } = require('graphql/execution/execute')
+const { Readable } = require('stream')
 const queryDepth = require('./lib/queryDepth')
 const buildFederationSchema = require('./lib/federation')
 const { initGateway } = require('./lib/gateway')
@@ -37,7 +37,8 @@ const {
   MER_ERR_GQL_VALIDATION,
   MER_ERR_INVALID_OPTS,
   MER_ERR_METHOD_NOT_ALLOWED,
-  MER_ERR_INVALID_METHOD
+  MER_ERR_INVALID_METHOD,
+  MER_ERR_INVALID_MULTIPART_ACCEPT_HEADER
 } = require('./lib/errors')
 const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
@@ -47,6 +48,7 @@ const {
   preExecutionHandler,
   onResolutionHandler
 } = require('./lib/handlers')
+const { executeGraphql, MEDIA_TYPES } = require('./lib/util')
 
 // Required for module bundlers
 // istanbul ignore next
@@ -185,6 +187,24 @@ const plugin = fp(async function (app, opts) {
         })
         : undefined
     })
+  }
+
+  if (opts.defer) {
+    if (opts.jit) {
+      throw new MER_ERR_INVALID_OPTS("@defer and JIT can't be used together")
+    }
+
+    app.register(require('@fastify/accepts'))
+
+    schema = extendSchema(
+      schema,
+      parse(`
+        directive @defer(
+          if: Boolean! = true
+          label: String
+        ) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+      `)
+    )
   }
 
   fastifyGraphQl.schema = schema
@@ -546,7 +566,7 @@ const plugin = fp(async function (app, opts) {
       return maybeFormatErrors(execution, context)
     }
 
-    const execution = await execute({
+    const execution = await executeGraphql(opts.defer, {
       schema: modifiedSchema || fastifyGraphQl.schema,
       document: modifiedDocument || document,
       rootValue: root,
@@ -555,7 +575,83 @@ const plugin = fp(async function (app, opts) {
       operationName
     })
 
+    /* istanbul ignore next */
+    if (execution.initialResult) {
+      const accept = reply.request.accepts() // Accepts object
+
+      if (
+        !(
+          accept.negotiator.mediaType([
+            // mediaType() will return the first one that matches, so if the client
+            // doesn't include the deferSpec parameter it will match this one here,
+            // which isn't good enough.
+            MEDIA_TYPES.MULTIPART_MIXED_NO_DEFER_SPEC,
+            MEDIA_TYPES.MULTIPART_MIXED_EXPERIMENTAL
+          ]) === MEDIA_TYPES.MULTIPART_MIXED_EXPERIMENTAL
+        )
+      ) {
+        // The client ran an operation that would yield multiple parts, but didn't
+        // specify `accept: multipart/mixed`. We return an error.
+        throw new MER_ERR_INVALID_MULTIPART_ACCEPT_HEADER()
+      }
+
+      reply.header('content-type', 'multipart/mixed; boundary="-"; deferSpec=20220824')
+
+      return Readable.from(
+        writeMultipartBody(
+          execution.initialResult,
+          execution.subsequentResults
+        )
+      )
+    }
+
     return maybeFormatErrors(execution, context)
+  }
+
+  /* istanbul ignore next */
+  async function * writeMultipartBody (initialResult, subsequentResults) {
+    yield `\r\n---\r\ncontent-type: application/json; charset=utf-8\r\n\r\n${JSON.stringify(
+      orderInitialIncrementalExecutionResultFields(initialResult)
+    )}\r\n---${initialResult.hasNext ? '' : '--'}\r\n`
+
+    for await (const result of subsequentResults) {
+      yield `content-type: application/json; charset=utf-8\r\n\r\n${JSON.stringify(
+        orderSubsequentIncrementalExecutionResultFields(result)
+      )}\r\n---${result.hasNext ? '' : '--'}\r\n`
+    }
+  }
+
+  /* istanbul ignore next */
+  function orderInitialIncrementalExecutionResultFields (result) {
+    return {
+      hasNext: result.hasNext,
+      errors: result.errors,
+      data: result.data,
+      incremental: orderIncrementalResultFields(result.incremental),
+      extensions: result.extensions
+    }
+  }
+
+  /* istanbul ignore next */
+  function orderSubsequentIncrementalExecutionResultFields (result) {
+    return {
+      hasNext: result.hasNext,
+      incremental: orderIncrementalResultFields(result.incremental),
+      extensions: result.extensions
+    }
+  }
+
+  /* istanbul ignore next */
+  function orderIncrementalResultFields (incremental) {
+    return incremental?.map((i) => ({
+      hasNext: i.hasNext,
+      errors: i.errors,
+      path: i.path,
+      label: i.label,
+      data: i.data,
+      items: i.items,
+      extensions: i.extensions
+    }))
   }
 
   async function maybeFormatErrors (execution, context) {

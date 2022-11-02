@@ -27,7 +27,7 @@
   },
   "homepage": "https://mercurius.dev",
   "peerDependencies": {
-    "graphql": "^16.0.0"
+    "graphql": "^17.0.0-alpha.2"
   },
   "devDependencies": {
     "@graphql-tools/merge": "^8.0.0",
@@ -56,12 +56,13 @@
     "wait-on": "^6.0.0"
   },
   "dependencies": {
+    "@fastify/accepts": "^4.0.1",
     "@fastify/error": "^3.0.0",
     "@fastify/static": "^6.0.0",
     "@fastify/websocket": "^7.0.0",
     "events.on": "^1.0.1",
     "fastify-plugin": "^4.2.0",
-    "graphql": "^16.0.0",
+    "graphql": "^17.0.0-alpha.2",
     "graphql-jit": "^0.7.3",
     "mqemitter": "^5.0.0",
     "p-map": "^4.0.0",
