@@ -52,6 +52,7 @@
 
 - `jit`: Integer. The minimum number of execution a query needs to be
   executed before being jit'ed.
+  - Default: `0`, jit is disabled.
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
 - `path`: string. Change default graphql `/graphql` route to another one.
