@@ -2199,6 +2199,7 @@ test('request and reply objects in subscription context', t => {
     Subscription: {
       notificationAdded: {
         subscribe: (root, args, ctx) => {
+          t.ok(ctx.__currentQuery.includes('notificationAdded {'))
           t.equal(ctx.reply.request.foo(), 'bar')
           t.equal(ctx.reply.request.headers.authorization, 'Bearer foobar')
           return ctx.pubsub.subscribe('NOTIFICATION_ADDED')

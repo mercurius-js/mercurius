@@ -23,8 +23,6 @@ const {
 } = require('graphql')
 const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
-const buildFederationSchema = require('./lib/federation')
-const { initGateway } = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
@@ -36,8 +34,7 @@ const {
   MER_ERR_GQL_INVALID_SCHEMA,
   MER_ERR_GQL_VALIDATION,
   MER_ERR_INVALID_OPTS,
-  MER_ERR_METHOD_NOT_ALLOWED,
-  MER_ERR_INVALID_METHOD
+  MER_ERR_METHOD_NOT_ALLOWED
 } = require('./lib/errors')
 const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
@@ -153,26 +150,14 @@ const plugin = fp(async function (app, opts) {
   }
 
   let schema = opts.schema
-  let gateway
-  let lruGatewayResolvers
-  if (opts.gateway) {
-    lruGatewayResolvers = buildCache(opts)
-    gateway = await initGateway(opts, fastifyGraphQl, app)
-
-    schema = gateway.schema
-  }
 
   if (Array.isArray(schema)) {
     schema = schema.join('\n')
   }
 
   if (typeof schema === 'string') {
-    if (opts.federationMetadata) {
-      schema = buildFederationSchema(schema)
-    } else {
-      schema = buildSchema(schema)
-    }
-  } else if (!opts.schema && !opts.gateway) {
+    schema = buildSchema(schema)
+  } else if (!opts.schema) {
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'Query',
@@ -217,8 +202,7 @@ const plugin = fp(async function (app, opts) {
       verifyClient,
       onConnect,
       onDisconnect,
-      lruGatewayResolvers,
-      entityResolversFactory: gateway ? gateway.entityResolversFactory : undefined,
+      entityResolversFactory: undefined,
       subscriptionContextFn,
       keepAlive,
       fullWsTransport
@@ -257,16 +241,9 @@ const plugin = fp(async function (app, opts) {
     if (lruErrors) {
       lruErrors.clear()
     }
-    if (lruGatewayResolvers) {
-      lruGatewayResolvers.clear()
-    }
   }
 
   fastifyGraphQl.extendSchema = fastifyGraphQl.extendSchema || function (s) {
-    if (opts.federationMetadata) {
-      throw new MER_ERR_INVALID_METHOD('Calling extendSchema method when federationMetadata is enabled is not allowed')
-    }
-
     if (typeof s === 'string') {
       s = parse(s)
     } else if (!s || typeof s !== 'object') {
@@ -298,8 +275,6 @@ const plugin = fp(async function (app, opts) {
               ...fields[prop],
               ...resolver[prop]
             }
-          } else if (prop === '__resolveReference') {
-            type.resolveReference = resolver[prop]
           } else if (fields[prop]) {
             fields[prop].resolve = resolver[prop]
           } else {
@@ -417,7 +392,7 @@ const plugin = fp(async function (app, opts) {
       context = {}
     }
 
-    context = Object.assign(context, { app: this, lruGatewayResolvers, errors: null })
+    context = Object.assign(context, { app: this, errors: null })
     context = assignLifeCycleHooksToContext(context, fastifyGraphQl[kHooks])
     const reply = context.reply
 
@@ -585,7 +560,6 @@ const plugin = fp(async function (app, opts) {
 plugin.ErrorWithProps = ErrorWithProps
 plugin.defaultErrorFormatter = defaultErrorFormatter
 plugin.persistedQueryDefaults = persistedQueryDefaults
-plugin.buildFederationSchema = buildFederationSchema
 plugin.withFilter = withFilter
 
 module.exports = plugin

@@ -116,9 +116,9 @@ test('subscription - hooks basic', async t => {
     t.type(context, 'object')
     t.ok('preSubscriptionExecution called')
   })
-  app.graphql.addHook('preGatewaySubscriptionExecution', async (schema, document, context) => {
-    t.fail('preGatewaySubscriptionExecution should not be called in non-gateway mode')
-  })
+  // app.graphql.addHook('preGatewaySubscriptionExecution', async (schema, document, context) => {
+  //   t.fail('preGatewaySubscriptionExecution should not be called in non-gateway mode')
+  // })
   app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
     t.same(execution, {
       data: {

@@ -541,3 +541,188 @@ test('subscription client does not send message if operation is already started'
 
   function publish (data) { }
 })
+
+test('subscription client calls the publish method with the an error payload', (t) => {
+  t.plan(2)
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+      } else if (data.type === 'subscribe') {
+        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+      } else if (data.type === 'error') {
+        ws.send(JSON.stringify({ id: '1', type: 'error', payload: { data: { foo: 'bar' } } }))
+      }
+    })
+  })
+
+  let callNumber = 0
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service',
+    protocols: ['graphql-transport-ws'],
+    connectionCallback: () => {
+      client.createSubscription('query', {}, (data) => {
+        if (callNumber++ === 0) {
+          t.same(data, {
+            topic: 'test-service_1',
+            payload: {
+              foo: 'bar'
+            }
+          })
+        } else {
+          t.same(data, {
+            topic: 'test-service_1',
+            payload: null
+          })
+        }
+
+        client.sendMessage(2, 'error', {})
+      })
+    }
+  })
+
+  t.tearDown(async () => {
+    try {
+      await server.close()
+      await client.close()
+    } catch (e) {}
+  })
+})
+
+test('subscription client does not send message if operation is already started', (t) => {
+  let sent = false
+  class MockSubscriptionClient extends SubscriptionClient {
+    sendMessage (operationId, type, payload) {
+      if (operationId && type === 'subscribe') {
+        if (!sent) {
+          t.pass()
+          sent = true
+        } else {
+          t.fail('Should not send message if operation is already started')
+        }
+      }
+    }
+  }
+
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const client = new MockSubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service',
+    connectionCallback: async () => {
+      const operationId = client.createSubscription('query', {}, publish)
+      client.startOperation(operationId)
+      server.close()
+      client.close()
+      t.end()
+    }
+  })
+
+  function publish (data) { }
+})
+
+test('subscription client calls the publish method with the an error payload', (t) => {
+  t.plan(2)
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+      } else if (data.type === 'subscribe') {
+        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+      } else if (data.type === 'error') {
+        ws.send(JSON.stringify({ id: '1', type: 'error', payload: { data: { foo: 'bar' } } }))
+      }
+    })
+  })
+
+  let callNumber = 0
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service',
+    protocols: ['graphql-transport-ws'],
+    connectionCallback: () => {
+      client.createSubscription('query', {}, (data) => {
+        if (callNumber++ === 0) {
+          t.same(data, {
+            topic: 'test-service_1',
+            payload: {
+              foo: 'bar'
+            }
+          })
+          client.sendMessage(2, 'error', {})
+        } else {
+          t.same(data, {
+            topic: 'test-service_1',
+            payload: null
+          })
+        }
+      })
+    }
+  })
+
+  t.tearDown(async () => {
+    await server.close()
+    await client.close()
+  })
+})
+
+test('subscription client with context and connection init', (t) => {
+  t.plan(2)
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+      } else if (data.type === 'subscribe') {
+        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+      }
+    })
+  })
+
+  let callNumber = 0
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service',
+    protocols: ['graphql-transport-ws'],
+    rewriteConnectionInitPayload: (connectionInit, context) => {
+      t.same(connectionInit, { foo: 'bar' })
+      return connectionInit
+    },
+    connectionCallback: () => {
+      client.createSubscription('query', {}, (data) => {
+        if (callNumber++ === 0) {
+          t.same(data, {
+            topic: 'test-service_1',
+            payload: {
+              foo: 'bar'
+            }
+          })
+        }
+
+        server.close()
+        client.close()
+      }, { _connectionInit: { foo: 'bar' } })
+    }
+  })
+})

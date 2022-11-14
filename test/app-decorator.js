@@ -1173,33 +1173,3 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
   // needed so that graphql is defined
   await app.ready()
 })
-
-test('calling extendSchema throws an error if federationMetadata is enabled', async (t) => {
-  const service = Fastify()
-  t.teardown(() => service.close())
-  service.register(GQL, {
-    schema: `
-      extend type Query {
-        me: User
-      }
-
-      type User @key(fields: "id") {
-        id: ID!
-        name: String!
-      }
-    `,
-    federationMetadata: true
-  })
-  await service.ready()
-
-  try {
-    service.graphql.extendSchema(`
-      extend type Query {
-        field: String!
-      }
-    `)
-  } catch (err) {
-    t.equal(err.message, 'Invalid method: Calling extendSchema method when federationMetadata is enabled is not allowed')
-    t.end()
-  }
-})
