@@ -7,7 +7,7 @@
   "scripts": {
     "docs": "docsify serve",
     "unit": "tap test/*.js test/internals/*.js",
-    "cov": "tap --jobs=1 --coverage-report=html test/*.js test/internals/*.js",
+    "cov": "tap --coverage-report=html -J test/*.js test/internals/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:fix": "standard --fix",
     "lint:standard": "standard | snazzy",
