@@ -79,8 +79,7 @@ service.register(mercurius, {
         return result
       }
     }
-  },
-  federationMetadata: true
+  }
 })
 
 service.listen({ port: 4001, host: 'localhost' }, err => {

@@ -8,12 +8,25 @@ To disable Graphql introspection you can use `NoSchemaIntrospectionCustomRule` f
 ```js
 import { NoSchemaIntrospectionCustomRule } from 'graphql';
 
+const schema = `
+  type Query {
+    add(x: Int, y: Int): Int
+  }
+`
+
+const resolvers = {
+  Query: {
+    add: async (_, obj) => {
+      const { x, y } = obj
+      return x + y
+    }
+  }
+}
+
 app.register(mercurius, {
   context: buildContext,
-  gateway: {
-    services: [....],
-    pollingInterval: 30000,
-  },
+  schema,
+  resolvers,
   validationRules: process.env.NODE_ENV === 'production' && [NoSchemaIntrospectionCustomRule],
 });
 ```

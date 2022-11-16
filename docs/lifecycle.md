@@ -28,7 +28,7 @@ Incoming GraphQL Request
                                                         └─▶ onResolution Hook
 ```
 
-## Gateway lifecycle
+## Gateway lifecycle (using the module @mercurius/gateway)
 
 ```
 Incoming GraphQL Request
@@ -72,9 +72,9 @@ Incoming GraphQL Websocket subscription data
                      errors ◀─┴─▶ Subscription Execution
                                     │
                                     │
-                                    └─▶ preGatewaySubscriptionExecution Hook(s)
+                                    └─▶ preGatewaySubscriptionExecution Hook(s) (using the module @mercurius/gateway)
                                             │
-                                   errors ◀─┴─▶ Gateway Subscription Execution(s)
+                                   errors ◀─┴─▶ Gateway Subscription Execution(s) (using the module @mercurius/gateway)
                                                   │
                                       wait for subscription data
                                                   │
