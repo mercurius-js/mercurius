@@ -8,7 +8,7 @@ import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
 import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata, MercuriusPlugin } from '../..'
 // eslint-disable-next-line no-unused-vars
-import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
+import { DocumentNode, ExecutionResult, GraphQLResolveInfo, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from '@graphql-tools/schema'
 import { mapSchema } from '@graphql-tools/utils'
 import mq from 'mqemitter'
@@ -193,8 +193,13 @@ app.register(async function (app) {
   })
   app.graphql.defineLoaders({
     Dog: {
-      owner: async (queries: Array<{ obj: { name: keyof typeof owners }, params: {a: string} }>, _ctx) => {
-        return queries.map(({ obj }) => owners[obj.name])
+      owner: {
+        async loader(queries: Array<{ obj: { name: keyof typeof owners }, params: {a: string}, info?: GraphQLResolveInfo }>, _ctx) {
+          return queries.map(({ obj }) => owners[obj.name])
+        },
+        opts: {
+          cache: false
+        }
       }
     }
   })
