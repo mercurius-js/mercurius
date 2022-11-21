@@ -1,14 +1,14 @@
 'use strict'
 const Fastify = require('fastify')
-const mercurius = require('..')
+const mercuriusWithFederation = require('@mercurius/federation')
+const mercuriusWithGateway = require('@mercurius/gateway')
 
 async function createService (port, schema, resolvers = {}) {
   const service = Fastify()
 
-  service.register(mercurius, {
+  service.register(mercuriusWithFederation, {
     schema,
     resolvers,
-    federationMetadata: true,
     ide: true,
     routes: true,
     jit: 1,
@@ -252,7 +252,7 @@ async function start () {
   })
 
   const gateway = Fastify()
-  gateway.register(mercurius, {
+  gateway.register(mercuriusWithGateway, {
     routes: true,
     ide: true,
     subscription: true,
