@@ -28,6 +28,7 @@ const { initGateway } = require('./lib/gateway')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
+const SubscriptionClient = require('./lib/subscription-client')
 const stringify = require('safe-stable-stringify')
 const {
   ErrorWithProps,
@@ -587,5 +588,6 @@ plugin.defaultErrorFormatter = defaultErrorFormatter
 plugin.persistedQueryDefaults = persistedQueryDefaults
 plugin.buildFederationSchema = buildFederationSchema
 plugin.withFilter = withFilter
+plugin.SubscriptionClient = SubscriptionClient
 
 module.exports = plugin

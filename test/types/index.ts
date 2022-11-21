@@ -6,12 +6,20 @@ import Fastify, { FastifyReply, FastifyRequest, FastifyInstance } from 'fastify'
 // eslint-disable-next-line no-unused-vars
 import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
-import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata, MercuriusPlugin } from '../..'
+import mercurius, {
+  MercuriusOptions,
+  IResolvers,
+  MercuriusContext,
+  MercuriusServiceMetadata,
+  MercuriusPlugin,
+  SubscriptionClient
+} from '../..'
 // eslint-disable-next-line no-unused-vars
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from '@graphql-tools/schema'
 import { mapSchema } from '@graphql-tools/utils'
 import mq from 'mqemitter'
+import { GRAPHQL_TRANSPORT_WS_PROTOCOL } from 'graphql-ws'
 
 const app = Fastify()
 
@@ -916,3 +924,30 @@ expectError(() => {
     }
   })
 })
+
+const subscriptionClient = new SubscriptionClient('ws://localhost', {
+  protocols: [GRAPHQL_TRANSPORT_WS_PROTOCOL],
+  reconnect: false,
+  maxReconnectAttempts: 10,
+  serviceName: 'sample-name',
+  connectionCallback: async () => {},
+  failedConnectionCallback: async () => {},
+  failedReconnectCallback: async () => {},
+  connectionInitPayload: {},
+  rewriteConnectionInitPayload: {},
+  keepAlive: true
+})
+
+subscriptionClient.connect()
+subscriptionClient.reconnect()
+subscriptionClient.close(true)
+subscriptionClient.getReconnectDelay()
+subscriptionClient.unsubscribeAll()
+subscriptionClient.sendMessage('opId', 'test', {}, {})
+subscriptionClient.handleMessage({ foo: 'bar' })
+subscriptionClient.startOperation('opId')
+subscriptionClient.createSubscription('query', {}, async () => {
+
+}, {} as MercuriusContext)
+subscriptionClient.startKeepAliveInterval()
+subscriptionClient.stopKeepAliveInterval()
