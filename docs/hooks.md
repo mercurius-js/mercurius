@@ -62,17 +62,24 @@ fastify.graphql.addHook('preValidation', async (schema, document, context) => {
 In the `preExecution` hook, you can modify the following items by returning them in the hook definition:
   - `document`
   - `schema`
+  - `variables`
   - `errors`
 
 Note that if you modify the `schema` or the `document` object, the [jit](./api/options.md#plugin-options) compilation will be disabled for the request.
 
 ```js
-fastify.graphql.addHook('preExecution', async (schema, document, context) => {
-  const { modifiedSchema, modifiedDocument, errors } = await asyncMethod(document)
+fastify.graphql.addHook('preExecution', async (schema, document, context, variables) => {
+  const {
+    modifiedSchema,
+    modifiedDocument,
+    modifiedVariables,
+    errors
+  } = await asyncMethod(document)
 
   return {
     schema: modifiedSchema, // ⚠️ changing the schema may break the query execution. Use it carefully.
     document: modifiedDocument,
+    variables: modifiedVariables,
     errors
   }
 })
