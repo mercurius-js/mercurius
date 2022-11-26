@@ -104,14 +104,17 @@ export interface preValidationHookHandler<TContext = MercuriusContext> {
 /**
  * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`, the next hook will be `preGatewayExecution`.
  * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
+ *  - `schema`
  *  - `document`
  *  - `errors`
+ *  - `variables`
  */
 export interface preExecutionHookHandler<TContext = MercuriusContext, TError extends Error = Error> {
   (
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
+    variables: Record<string, any>,
   ): Promise<PreExecutionHookResponse<TError> | void> | PreExecutionHookResponse<TError> | void;
 }
 
@@ -831,5 +834,6 @@ type ValidationRules =
 export interface PreExecutionHookResponse<TError extends Error> {
   schema?: GraphQLSchema
   document?: DocumentNode
-  errors?: TError[]
+  errors?: TError[],
+  variables?: Record<string, any>,
 }
