@@ -59,7 +59,6 @@
     "@fastify/error": "^3.0.0",
     "@fastify/static": "^6.0.0",
     "@fastify/websocket": "^7.0.0",
-    "events.on": "^1.0.1",
     "fastify-plugin": "^4.2.0",
     "graphql": "^16.0.0",
     "graphql-jit": "^0.7.3",
