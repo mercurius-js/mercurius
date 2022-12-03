@@ -691,36 +691,41 @@ app.graphql.addHook('preValidation', function (schema, document, context) {
   expectAssignable<MercuriusContext>(context)
 })
 
-app.graphql.addHook('preExecution', async function (schema, document, context) {
+app.graphql.addHook('preExecution', async function (schema, document, context, variables) {
   expectAssignable<GraphQLSchema>(schema)
   expectAssignable<DocumentNode>(document)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<Record<string, any>>(context)
   return {
     schema,
     document,
+    variables,
     errors: [
       new Error('foo')
     ]
   }
 })
 
-app.graphql.addHook('preExecution', function (schema, document, context) {
+app.graphql.addHook('preExecution', function (schema, document, context, variables) {
   expectAssignable<GraphQLSchema>(schema)
   expectAssignable<DocumentNode>(document)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<Record<string, any>>(context)
   return {
     schema,
     document,
+    variables,
     errors: [
       new Error('foo')
     ]
   }
 })
 
-app.graphql.addHook('preExecution', function (schema, document, context) {
+app.graphql.addHook('preExecution', function (schema, document, context, variables) {
   expectAssignable<GraphQLSchema>(schema)
   expectAssignable<DocumentNode>(document)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<Record<string, any>>(context)
 })
 
 app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {

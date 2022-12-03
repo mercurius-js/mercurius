@@ -522,11 +522,13 @@ const plugin = fp(async function (app, opts) {
     // Trigger preExecution hook
     let modifiedSchema
     let modifiedDocument
+    let modifiedVariables
     if (context.preExecution !== null) {
-      ({ modifiedSchema, modifiedDocument } = await preExecutionHandler({
+      ({ modifiedSchema, modifiedDocument, modifiedVariables } = await preExecutionHandler({
         schema: fastifyGraphQl.schema,
         document,
-        context
+        context,
+        variables
       }))
     }
 
@@ -542,7 +544,7 @@ const plugin = fp(async function (app, opts) {
     }
 
     if (cached && cached.jit !== null && !modifiedSchema && !modifiedDocument && isCompiledQuery(cached.jit)) {
-      const execution = await cached.jit.query(root, context, variables || {})
+      const execution = await cached.jit.query(root, context, modifiedVariables || variables || {})
       return maybeFormatErrors(execution, context)
     }
 
@@ -551,7 +553,7 @@ const plugin = fp(async function (app, opts) {
       document: modifiedDocument || document,
       rootValue: root,
       contextValue: context,
-      variableValues: variables,
+      variableValues: modifiedVariables || variables,
       operationName
     })
 

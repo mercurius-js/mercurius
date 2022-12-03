@@ -813,13 +813,43 @@ test('preExecution hooks should be able to add to the errors array that is alrea
   })
 })
 
+test('preExecution hooks should be able to modify variables', async t => {
+  t.plan(1)
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('preExecution', async (schema, document, context, variables) => {
+    // double x, leave y
+    return { variables: { x: variables.x * 2, y: variables.y } }
+  })
+
+  app.graphql.addHook('preExecution', async (schema, document, context, variables) => {
+    // leave x, double y
+    return { variables: { x: variables.x, y: variables.y * 2 } }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({
+      query: 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
+      variables: { x: 1, y: 2 }
+    })
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      add: 6
+    }
+  })
+})
+
 // -------------
 // preGatewayExecution
 // -------------
 test('preGatewayExecution hooks should never be called in a non-gateway graphql server', async t => {
   t.plan(1)
   const app = await createTestServer(t)
-
   app.graphql.addHook('preGatewayExecution', async (schema, document, context) => {
     t.fail('this should not be called')
   })
