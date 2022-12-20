@@ -444,9 +444,14 @@ const plugin = fp(async function (app, opts) {
       try {
         document = parse(source)
       } catch (syntaxError) {
-        const err = new MER_ERR_GQL_VALIDATION()
-        err.errors = [syntaxError]
-        throw err
+        try {
+          // Try to parse the source as ast
+          document = JSON.parse(source)
+        } catch {
+          const err = new MER_ERR_GQL_VALIDATION()
+          err.errors = [syntaxError]
+          throw err
+        }
       }
 
       // Trigger preValidation hook

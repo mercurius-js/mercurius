@@ -1203,3 +1203,84 @@ test('calling extendSchema throws an error if federationMetadata is enabled', as
     t.end()
   }
 })
+
+test('support ast input', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = `{
+    "kind": "Document",
+    "definitions": [
+      {
+        "kind": "OperationDefinition",
+        "operation": "query",
+        "variableDefinitions": [],
+        "directives": [],
+        "selectionSet": {
+          "kind": "SelectionSet",
+          "selections": [
+            {
+              "kind": "Field",
+              "name": {
+                "kind": "Name",
+                "value": "add"
+              },
+              "arguments": [
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "x"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                },
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "y"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                }
+              ],
+              "directives": []
+            }
+          ]
+        }
+      }
+    ],
+    "loc": {
+      "start": 0,
+      "end": 19
+    }
+  }`
+  const res = await app.graphql(query)
+
+  t.same(res, {
+    data: {
+      add: 4
+    }
+  })
+})
