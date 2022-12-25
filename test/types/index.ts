@@ -6,7 +6,14 @@ import Fastify, { FastifyReply, FastifyRequest, FastifyInstance } from 'fastify'
 // eslint-disable-next-line no-unused-vars
 import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
-import mercurius, { MercuriusOptions, IResolvers, MercuriusContext, MercuriusServiceMetadata, MercuriusPlugin } from '../..'
+import mercurius, {
+  MercuriusOptions,
+  IResolvers,
+  MercuriusContext,
+  MercuriusServiceMetadata,
+  MercuriusPlugin,
+  MercuriusLoaders
+} from '../..'
 // eslint-disable-next-line no-unused-vars
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { makeExecutableSchema } from '@graphql-tools/schema'
@@ -920,4 +927,17 @@ expectError(() => {
       ]
     }
   })
+})
+
+interface CustomLoaderContext {
+  foo: string
+}
+
+expectAssignable<MercuriusLoaders<CustomLoaderContext>>({
+  Query: {
+    add: async (_queries, context) => {
+      context.foo
+      return []
+    }
+  }
 })
