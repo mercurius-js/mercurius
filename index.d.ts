@@ -58,7 +58,7 @@ export interface Loader<
 export interface MercuriusLoaders<TContext extends Record<string, any> = MercuriusContext> {
   [root: string]: {
     [field: string]:
-      | Loader
+      | Loader<any, any, TContext>
       | {
           loader: Loader<any, any, TContext>;
           opts?: {
