@@ -1356,3 +1356,84 @@ test('throws on invalid ast input', async (t) => {
     t.equal(err.name, 'Error')
   }
 })
+
+test('support ast input on external requests', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = `{
+    "kind": "Document",
+    "definitions": [
+      {
+        "kind": "OperationDefinition",
+        "operation": "query",
+        "variableDefinitions": [],
+        "directives": [],
+        "selectionSet": {
+          "kind": "SelectionSet",
+          "selections": [
+            {
+              "kind": "Field",
+              "name": {
+                "kind": "Name",
+                "value": "add"
+              },
+              "arguments": [
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "x"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                },
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "y"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                }
+              ],
+              "directives": []
+            }
+          ]
+        }
+      }
+    ]
+  }`
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
