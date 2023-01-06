@@ -70,7 +70,8 @@
     "single-user-cache": "^0.6.0",
     "tiny-lru": "^8.0.1",
     "undici": "^5.0.0",
-    "ws": "^8.2.2"
+    "ws": "^8.2.2",
+    "@mercuriusjs/subscription-client": "^0.1.0"
   },
   "tsd": {
     "directory": "test/types"
