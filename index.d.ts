@@ -48,6 +48,7 @@ export interface Loader<
     queries: Array<{
       obj: TObj;
       params: TParams;
+      info?: GraphQLResolveInfo;
     }>,
     context: TContext & {
       reply: FastifyReply;
