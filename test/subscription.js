@@ -9,6 +9,7 @@ const mq = require('mqemitter')
 const { EventEmitter } = require('events')
 const fastifyWebsocket = require('@fastify/websocket')
 const GQL = require('..')
+const { once } = require('events')
 
 const FakeTimers = require('@sinonjs/fake-timers')
 
@@ -2479,4 +2480,35 @@ test('request and reply objects in subscription context - no headers wrapper', t
       }
     })
   })
+})
+
+test('wrong messages do not crash the server', async (t) => {
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      add: async (_, { x, y }) => x + y
+    }
+  }
+
+  const fastify = Fastify()
+  fastify.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+
+  await fastify.listen({ port: 0 })
+
+  t.teardown(fastify.close.bind(fastify))
+
+  const ws = new WebSocket(`ws://127.0.0.1:${fastify.server.address().port}/graphql`, 'graphql-ws');
+
+  await once(ws, 'open')
+  ws._socket.write(Buffer.from([0xa2, 0x00]))
+  await once(ws, 'close')
 })
