@@ -28,32 +28,6 @@ Incoming GraphQL Request
                                                         └─▶ onResolution Hook
 ```
 
-## Gateway lifecycle
-
-```
-Incoming GraphQL Request
-  │
-  └─▶ Routing
-           │
-  errors ◀─┴─▶ preParsing Hook
-                  │
-         errors ◀─┴─▶ Parsing
-                        │
-               errors ◀─┴─▶ preValidation Hook
-                               │
-                      errors ◀─┴─▶ Validation
-                                     │
-                            errors ◀─┴─▶ preExecution Hook
-                                            │
-                                   errors ◀─┴─▶ Execution
-                                                  │
-                                                  └─▶ preGatewayExecution Hook(s) (appends errors only)
-                                                         │
-                                                errors ◀─┴─▶ GatewayExecution(s)
-                                                               │
-                                                      errors ◀─┴─▶ Resolution (once all GatewayExecutions have finished)
-                                                                     │
-                                                                     └─▶ onResolution Hook
 ```
 
 ## Subscription lifecycle
