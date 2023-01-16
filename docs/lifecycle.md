@@ -72,9 +72,9 @@ Incoming GraphQL Websocket subscription data
                      errors ◀─┴─▶ Subscription Execution
                                     │
                                     │
-                                    └─▶ preGatewaySubscriptionExecution Hook(s)
+                                    └─▶ preGatewaySubscriptionExecution Hook(s) (using the module @mercuriusjs/gateway)
                                             │
-                                   errors ◀─┴─▶ Gateway Subscription Execution(s)
+                                   errors ◀─┴─▶ Gateway Subscription Execution(s) (using the module @mercuriusjs/gateway)
                                                   │
                                       wait for subscription data
                                                   │
