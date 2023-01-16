@@ -735,36 +735,6 @@ app.graphql.addHook('preExecution', function (schema, document, context, variabl
   expectAssignable<Record<string, any>>(context)
 })
 
-app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-  return {
-    document,
-    errors: [
-      new Error('foo')
-    ]
-  }
-})
-
-app.graphql.addHook('preGatewayExecution', function (schema, document, context) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-  return {
-    document,
-    errors: [
-      new Error('foo')
-    ]
-  }
-})
-
-app.graphql.addHook('preGatewayExecution', function (schema, document, context) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-})
-
 // GraphQL Request lifecycle hooks
 app.graphql.addHook('onResolution', async function (execution, context) {
   expectAssignable<ExecutionResult>(execution)

@@ -5,15 +5,11 @@ const Fastify = require('fastify')
 const mercurius = require('..')
 const { defaultFieldResolver, GraphQLScalarType, isNonNullType, isScalarType } = require('graphql')
 const { makeExecutableSchema } = require('@graphql-tools/schema')
-const { mergeResolvers } = require('@graphql-tools/merge')
 const {
   MapperKind,
   mapSchema,
-  getDirectives,
-  printSchemaWithDirectives,
-  getResolversFromSchema
+  getDirectives
 } = require('@graphql-tools/utils')
-const buildFederationSchema = require('../lib/federation')
 
 class ValidationError extends Error {
   constructor (message, extensions) {
@@ -378,97 +374,6 @@ test('directives with transformSchema', async (t) => {
       extensions: { foo: 'bar' }
     }]
   })
-})
-
-test('federation support and custom directives', async (t) => {
-  const app = Fastify()
-  const schema = `
-    ${upperDirectiveTypeDefs}
-    
-    type Query {
-      foo: String @upper
-      user: User
-    }
-    
-    type User {
-      id: ID!
-      name: String @upper
-    }
-  `
-
-  const resolvers = {
-    Query: {
-      foo: () => 'bar',
-      user: () => ({ id: '1' })
-    }
-  }
-
-  const loaders = {
-    User: {
-      name: async (queries) => queries.map(() => 'name')
-    }
-  }
-
-  app.register(mercurius, {
-    schema,
-    resolvers,
-    loaders,
-    federationMetadata: true,
-    schemaTransforms: [upperDirectiveTransformer]
-  })
-
-  await app.ready()
-
-  let query = '{ _service { sdl } }'
-  let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.same(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
-
-  query = 'query { foo }'
-  res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
-
-  query = 'query { user { id name } }'
-  res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.same(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
-})
-
-test('federation support using schema from buildFederationSchema and custom directives', async (t) => {
-  const app = Fastify()
-  const schema = `
-    ${upperDirectiveTypeDefs}
-    
-    type Query {
-      foo: String @upper
-    }
-  `
-
-  const resolvers = {
-    Query: {
-      foo: () => 'bar'
-    }
-  }
-
-  const federationSchema = buildFederationSchema(schema)
-
-  const executableSchema = makeExecutableSchema({
-    typeDefs: printSchemaWithDirectives(federationSchema),
-    resolvers: mergeResolvers([getResolversFromSchema(federationSchema), resolvers])
-  })
-
-  app.register(mercurius, {
-    schema: executableSchema,
-    schemaTransforms: [upperDirectiveTransformer]
-  })
-
-  await app.ready()
-
-  let query = '{ _service { sdl } }'
-  let res = await app.inject({ method: 'GET', url: `/graphql?query=${query}` })
-  t.same(JSON.parse(res.body), { data: { _service: { sdl: schema } } })
-
-  query = 'query { foo }'
-  res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.same(JSON.parse(res.body), { data: { foo: 'BAR' } })
 })
 
 test('max length directive validation works', async (t) => {
