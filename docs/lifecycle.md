@@ -70,21 +70,16 @@ Incoming GraphQL Websocket subscription data
                errors ◀─┴─▶ preSubscriptionExecution Hook
                               │
                      errors ◀─┴─▶ Subscription Execution
-                                    │
-                                    │
-                                    └─▶ preGatewaySubscriptionExecution Hook(s) (using the module @mercuriusjs/gateway)
-                                            │
-                                   errors ◀─┴─▶ Gateway Subscription Execution(s) (using the module @mercuriusjs/gateway)
-                                                  │
-                                      wait for subscription data
-                                                  │
-                   subscription closed on error ◀─┴─▶ Subscription Resolution (when subscription data is received)
-                                                        │
-                                                        └─▶ onSubscriptionResolution Hook
-                                                              │
-                                              keeping processing until subscription ended
-                                                              │
-                               subscription closed on error ◀─┴─▶ Subscription End (when subscription stop is received)
-                                                                    │
-                                                                    └─▶ onSubscriptionEnd Hook
+                                              │
+                                  wait for subscription data
+                                              │
+               subscription closed on error ◀─┴─▶ Subscription Resolution (when subscription data is received)
+                                                      │
+                                                      └─▶ onSubscriptionResolution Hook
+                                                            │
+                                            keeping processing until subscription ended
+                                                            │
+                             subscription closed on error ◀─┴─▶ Subscription End (when subscription stop is received)
+                                                                  │
+                                                                  └─▶ onSubscriptionEnd Hook
 ```
