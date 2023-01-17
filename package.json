@@ -1,13 +1,13 @@
 {
   "name": "mercurius",
   "version": "11.5.0",
-  "description": "Fastify GraphQL adapter with gateway and subscription support",
+  "description": "Fastify GraphQL adapter with subscription support",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
     "docs": "docsify serve",
-    "unit": "tap test/*.js test/gateway/*.js test/internals/*.js",
-    "cov": "tap  --coverage-report=html -J test/*.js test/gateway/*.js",
+    "unit": "tap test/*.js test/internals/*.js",
+    "cov": "tap  --coverage-report=html -J test/*.js test/internals/*.js",
     "lint": "npm run lint:standard && npm run lint:typescript",
     "lint:fix": "standard --fix",
     "lint:standard": "standard | snazzy",
@@ -50,7 +50,7 @@
     "snazzy": "^9.0.0",
     "split2": "^4.0.0",
     "standard": "^17.0.0",
-    "tap": "^16.3.0",
+    "tap": "16.3.0",
     "tsd": "^0.25.0",
     "typescript": "^4.3.5",
     "wait-on": "^6.0.0"
@@ -70,8 +70,7 @@
     "single-user-cache": "^0.6.0",
     "tiny-lru": "^8.0.1",
     "undici": "^5.0.0",
-    "ws": "^8.2.2",
-    "@mercuriusjs/subscription-client": "^0.1.0"
+    "ws": "^8.2.2"
   },
   "tsd": {
     "directory": "test/types"

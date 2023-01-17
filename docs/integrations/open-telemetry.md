@@ -80,7 +80,6 @@ service.register(mercurius, {
       }
     }
   },
-  federationMetadata: true
 })
 
 service.listen({ port: 4001, host: 'localhost' }, err => {

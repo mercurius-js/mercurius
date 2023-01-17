@@ -4,28 +4,12 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
 const { ErrorWithProps } = GQL
-const { FederatedError } = require('../lib/errors')
 const { kRequestContext } = require('../lib/symbols')
 const split = require('split2')
 
 test('ErrorWithProps - support status code in the constructor', async (t) => {
   const error = new ErrorWithProps('error', { }, 500)
   t.equal(error.statusCode, 500)
-})
-
-test('FederatedError - throws if given errors is not an array', async (t) => {
-  t.plan(1)
-  t.throws(() => new FederatedError({ message: 'Some error' }))
-})
-
-test('FederatedError - does not throw if given an array', async (t) => {
-  t.plan(1)
-  t.doesNotThrow(() => new FederatedError([{ message: 'Some error' }]))
-})
-
-test('FederatedError - does not throw if not given errors', async (t) => {
-  t.plan(1)
-  t.doesNotThrow(() => new FederatedError())
 })
 
 test('errors - multiple extended errors', async (t) => {
@@ -334,134 +318,6 @@ test('errors - errors with jit enabled using the app decorator', async (t) => {
       }
     ]
   })
-})
-
-test('errors - federated errors with jit enabled', async (t) => {
-  const schema = `
-    type Query {
-      error: String
-      successful: String
-    }
-  `
-
-  const resolvers = {
-    Query: {
-      error () {
-        throw new FederatedError([{
-          message: 'Invalid operation',
-          locations: [{ column: 3, line: 2 }],
-          path: ['error'],
-          extensions: {
-            code: 'ERROR',
-            additional: 'information',
-            other: 'data'
-          }
-        }])
-      },
-      successful () {
-        return 'Runs OK'
-      }
-    }
-  }
-
-  const app = Fastify()
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    jit: 1
-  })
-
-  await app.ready()
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={error,successful}'
-  })
-
-  const jitres = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={error,successful}'
-  })
-
-  const expectedResult = {
-    data: {
-      error: null,
-      successful: 'Runs OK'
-    },
-    errors: [
-      {
-        message: 'Invalid operation',
-        locations: [{ column: 3, line: 2 }],
-        path: ['error'],
-        extensions: {
-          code: 'ERROR',
-          additional: 'information',
-          other: 'data'
-        }
-      }
-    ]
-  }
-
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.payload), expectedResult)
-
-  t.equal(jitres.statusCode, 200)
-  t.same(JSON.parse(jitres.payload), expectedResult)
-})
-
-test('errors - federated errors without locations, path and extensions', async (t) => {
-  const schema = `
-    type Query {
-      error: String
-      successful: String
-    }
-  `
-
-  const resolvers = {
-    Query: {
-      error () {
-        throw new FederatedError([{ message: 'Invalid operation' }])
-      },
-      successful () {
-        return 'Runs OK'
-      }
-    }
-  }
-
-  const app = Fastify()
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    jit: 1
-  })
-
-  await app.ready()
-
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={error,successful}'
-  })
-
-  const jitres = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={error,successful}'
-  })
-
-  const expectedResult = {
-    data: {
-      error: null,
-      successful: 'Runs OK'
-    },
-    errors: [{ message: 'Invalid operation' }]
-  }
-
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.payload), expectedResult)
-
-  t.equal(jitres.statusCode, 200)
-  t.same(JSON.parse(jitres.payload), expectedResult)
 })
 
 test('errors - custom error formatter that uses default error formatter', async (t) => {

@@ -7,7 +7,6 @@ const querystring = require('querystring')
 const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
 const GQL = require('..')
-const { FederatedError } = require('../lib/errors')
 
 test('POST route', async (t) => {
   const app = Fastify()
@@ -1280,53 +1279,6 @@ test('route validation is catched and parsed to graphql error', async (t) => {
   const expectedResult = { errors: [{ message: 'body must be object' }], data: null }
 
   t.equal(res.statusCode, 400)
-  t.strictSame(JSON.parse(res.body), expectedResult)
-})
-
-test('Error handler flattens federated errors', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const resolvers = {
-    add: async ({ x, y }) => {
-      throw new FederatedError([{
-        message: 'Service error',
-        path: ['add'],
-        locations: [{ column: 3, line: 2 }],
-        extensions: { code: 'NOT_IMPLEMENTED' }
-      }])
-    }
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    errorHandler: true
-  })
-
-  // Invalid query
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={add(x:2,y:2)}'
-  })
-
-  const expectedResult = {
-    errors: [{
-      message: 'Service error',
-      path: ['add'],
-      locations: [{ column: 3, line: 2 }],
-      extensions: { code: 'NOT_IMPLEMENTED' }
-    }],
-    data: {
-      add: null
-    }
-  }
-
-  t.equal(res.statusCode, 200)
   t.strictSame(JSON.parse(res.body), expectedResult)
 })
 
