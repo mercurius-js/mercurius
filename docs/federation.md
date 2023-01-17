@@ -164,9 +164,9 @@ Also, using the following decorator methods will throw:
 
 ```js
 const gateway = Fastify()
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
-gateway.register(gateway, {
+gateway.register(mercuriusWithGateway, {
   gateway: {
     services: [
       {
@@ -206,9 +206,9 @@ The Gateway service can obtain new versions of federated schemas automatically w
 
 ```js
 const gateway = Fastify()
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
-gateway.register(gateway, {
+gateway.register(mercuriusWithGateway, {
   gateway: {
     services: [
       {
@@ -229,11 +229,11 @@ The service acting as the Gateway can manually trigger re-fetching the federated
 
 ```js
 const Fastify = require('fastify')
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(gateway, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -266,11 +266,11 @@ The service acting as the Gateway can use supplied schema definitions instead of
 
 ```js
 const Fastify = require('fastify')
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(gateway, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -333,11 +333,11 @@ Gateway service can handle federated services in 2 different modes, `mandatory` 
 
 ```js
 const Fastify = require('fastify')
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(gateway, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -367,11 +367,11 @@ Enabling batched queries for a service that doesn't support it will generate err
 
 ```js
 const Fastify = require('fastify')
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(gateway, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -399,11 +399,11 @@ Service which uses Gateway mode can process different types of issues that can b
 
 ```js
 const Fastify = require('fastify')
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(gateway, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -437,11 +437,11 @@ Gateway service responses can be securely parsed using the `useSecureParse` flag
 
 ```js
 const Fastify = require('fastify')
-const gateway = require('@mercuriusjs/gateway')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(gateway, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
