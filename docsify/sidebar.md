@@ -38,3 +38,4 @@
   * [mercurius-apollo-tracing](/docs/plugins#mercurius-apollo-tracing)
 * [Development](/docs/development)
 * [Faq](/docs/faq)
+* [Contribute](/docs/contribute)
