@@ -2,7 +2,7 @@
 
 NestJS offers Fastify and Mercurius support out of the box. It also supports both schema and code-first approaches to development. We'll be covering the code-first approach, as it is used more commonly.
 
-> **Note**: Support for NestJS can be found at their [Discord server](https://discord.gg/ErA7cNkK). 
+> **Note**: Support for NestJS can be found at their [Discord server](https://discord.com/invite/G7Qnnhy). 
 
 ## Installation
 
@@ -224,6 +224,6 @@ This is just a short and rough example of how to get going with NestJS and Mercu
 
 If you'd like to continue with Nest and Mercurius and learn more about Nest, please do read the [documention on the NestJS website](https://docs.nestjs.com/). The two make a really great combination in terms of developer experience.
 
-Should you need any help with Nest, they have a [great support community](https://discord.gg/ErA7cNkK). Please go there for support with NestJS questions or issues. 
+Should you need any help with Nest, they have a [great support community](https://discord.com/invite/G7Qnnhy). Please go there for support with NestJS questions or issues. 
 
 
