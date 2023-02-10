@@ -1407,3 +1407,30 @@ test('support ast input on external requests', async (t) => {
     }
   })
 })
+
+test('defineResolvers should support __resolveReference', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      me: User
+    }
+    type User {
+      id: String
+    }
+  `
+  const resolvers = {
+    User: {
+      __resolveReference: async () => ({ id: 1 })
+    }
+  }
+
+  app.register(GQL, { schema })
+
+  app.register(async function (app) {
+    app.graphql.defineResolvers(resolvers)
+    t.pass('No errors occurred')
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+})
