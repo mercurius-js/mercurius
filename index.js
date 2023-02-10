@@ -271,6 +271,10 @@ const plugin = fp(async function (app, opts) {
               ...fields[prop],
               ...resolver[prop]
             }
+          } else if (prop === '__resolveReference') {
+            // TODO Investigate a way to remove this requirement
+            // Required to integrate the gateway
+            type.resolveReference = resolver[prop]
           } else if (fields[prop]) {
             fields[prop].resolve = resolver[prop]
           } else {
