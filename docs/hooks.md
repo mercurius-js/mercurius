@@ -181,7 +181,7 @@ fastify.graphql.addHook('onSubscriptionResolution', async (execution, context) =
 This hook will be triggered when a subscription ends.
 
 ```js
-fastify.graphql.addHook('onSubscriptionEnd', async (context) => {
+fastify.graphql.addHook('onSubscriptionEnd', async (context, id) => {
   await asyncMethod()
 })
 ```

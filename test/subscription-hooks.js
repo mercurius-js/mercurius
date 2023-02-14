@@ -319,11 +319,12 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
 // onSubscriptionEnd
 // -----------------
 test('subscription - should call onSubscriptionEnd when subscription ends', async t => {
-  t.plan(4)
+  t.plan(5)
   const app = await createTestServer(t)
 
-  app.graphql.addHook('onSubscriptionEnd', async (context) => {
+  app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
     t.type(context, 'object')
+    t.type(id, 'number')
     t.ok('onSubscriptionEnd called')
   })
 
@@ -364,7 +365,7 @@ test('subscription - should handle onSubscriptionEnd hook errors', async t => {
   t.plan(2)
   const app = await createTestServer(t)
 
-  app.graphql.addHook('onSubscriptionEnd', async (context) => {
+  app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
     throw new Error('kaboom')
   })
 
