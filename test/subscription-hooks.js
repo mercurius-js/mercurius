@@ -324,7 +324,7 @@ test('subscription - should call onSubscriptionEnd when subscription ends', asyn
 
   app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
     t.type(context, 'object')
-    t.type(id, 'number')
+    t.equal(id, 1)
     t.ok('onSubscriptionEnd called')
   })
 
