@@ -19,31 +19,26 @@ If you don't know where to start you can have a look at the list of good first i
   <div v-if="issues.length > 0" class="issues">
     <div v-for="issue in filteredIssues" class="good-issue">
       <div class="card">
-        <div class="card-content">
-          <div class="media">
-            <div class="media-content">
-              <p class="title is-4">
-                <a :href="issue.url">{{ issue.title }}</a>
-              </p>
-              <p class="subtitle is-6">
+        <div class="card-header">
+            <div class="subtitle">
                 <a :href="issue.project.url">{{ issue.project.name }}</a>
-              </p>
-              <p>
-                <strong>{{ issue.comments }}</strong>
-                <span> Comments</span>
-              </p>
             </div>
-          </div>
+        </div>
+        <div class="card-content">
+            <h3 class="title">
+              <a :href="issue.url">{{ issue.title }}</a>
+            </h3>
+            <div class="issue-labels">
+                <div v-for="label in issue.labels" >
+                     <span class="issue-label">{{ label }}</span>
+                </div>
+            </div>
+            <div class="issue-comments">
+              <strong>{{ issue.comments }}</strong>
+              <span> Comments</span>
+            </div>
         </div>
       </div>
     </div>
-  </div>
-  <div v-if="Object.keys(projects).length > 0" class="project-filters">
-    <!-- <label v-for="(project, name) in projects" class="panel-block checkbox">
-      <input :type="checkbox" :checked="project.selected" @change="toggleProject(name, $event.target.checked)" />
-      <span>{{ name }} <span class="has-text-grey-light">({{ project.count }})</span></span>
-    </label> -->
-    <button @click="_toggleProjects(true)">Select All</button>
-    <button @click="_toggleProjects(false)">Clear All</button>
   </div>
 </div>

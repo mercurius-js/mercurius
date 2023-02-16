@@ -48,8 +48,59 @@
         flex-direction: column;
       }
 
+
       .good-issue {
-        margin: 0 0 .5em 0;
+        margin: 0 0 1em 0;
+      }
+
+      .good-issue .card {
+        border-radius: 5px;
+        -webkit-box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+        -moz-box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+        -o-box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+        box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+      }
+
+      .good-issue .card .card-content {
+        display: flex;
+        flex-direction: column;
+        padding: 0 1em .5em 1em;
+      }
+
+      .good-issue .card .card-content .title{
+        font-size: 24px;
+        margin-bottom: 0.5em;
+      }
+
+      .good-issue .card .card-content .issue-labels {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .good-issue .card .card-content .issue-label{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-size: 15px;
+        background-color: #111111;
+        padding: .1em 1em;
+        margin-right: .3em;
+        margin-bottom: .3em;
+        border-radius: 15px;
+      }
+
+      .good-issue .card .card-content .issue-comments{
+        margin-left: .3em;
+        font-size: 15px;
+      }
+      .good-issue .card .card-header{
+        display: flex;
+        justify-content: right;
+        padding: 0 .5em;
+      }
+
+      .good-issue .card .card-header .subtitle{
+        font-size: 18px;
       }
 
       .error-result,
@@ -97,8 +148,7 @@
           },
           created() {
             this.loading = true
-            // fetch('https://goodfirstissue.fastify.io/api/find-issues?org=mercurius-js')
-            fetch('https://gh-issues-finder-backend-k44evywkza-ew.a.run.app/api/find-issues?org=mercurius-js')
+            fetch('https://goodfirstissue.fastify.io/api/find-issues?org=mercurius-js')
               .then(resp => resp.json())
               .then(data => {
                 this.issues = data.results
