@@ -540,12 +540,14 @@ app.graphql.addHook('onSubscriptionResolution', function (execution, context) {
   expectAssignable<MercuriusContext>(context)
 })
 
-app.graphql.addHook('onSubscriptionEnd', async function (context) {
+app.graphql.addHook('onSubscriptionEnd', async function (context, id) {
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
-app.graphql.addHook('onSubscriptionEnd', function (context) {
+app.graphql.addHook('onSubscriptionEnd', function (context, id) {
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
 expectError(() => {

@@ -167,6 +167,7 @@ export interface onSubscriptionResolutionHookHandler<TData extends Record<string
 export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
   (
     context: TContext,
+    id: string | number,
   ): Promise<void> | void;
 }
 
