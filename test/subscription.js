@@ -1059,6 +1059,188 @@ test('subscription server sends correct error if execution throws', t => {
   })
 })
 
+test('subscription server sends correct error if there\'s a graphql error', t => {
+  const app = Fastify()
+  t.teardown(() => app.close())
+
+  const sendTestQuery = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          query {
+            notifications {
+              id
+              message
+            }
+          }
+        `
+      }
+    }, () => {
+      sendTestMutation()
+    })
+  }
+
+  const sendTestMutation = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            addNotification(message: "Hello World") {
+              id
+            }
+          }
+        `
+      }
+    }, () => {})
+  }
+
+  const emitter = mq()
+  const schema = `
+    type Notification {
+      id: ID!
+      message: Int
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Mutation {
+      addNotification(message: String): Notification
+    }
+
+    type Subscription {
+      notificationAdded: Notification
+    }
+  `
+
+  let idCount = 1
+  const notifications = [{
+    id: idCount,
+    message: 'Notification message'
+  }]
+
+  const resolvers = {
+    Query: {
+      notifications: () => notifications
+    },
+    Mutation: {
+      addNotification: async (_, { message }) => {
+        const id = idCount++
+        const notification = {
+          id,
+          message
+        }
+        notifications.push(notification)
+        await emitter.emit({
+          topic: 'NOTIFICATION_ADDED',
+          payload: {
+            notificationAdded: notification
+          }
+        })
+
+        return notification
+      }
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: (root, args, ctx) => {
+          return ctx.pubsub.subscribe('NOTIFICATION_ADDED')
+        }
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      emitter
+    }
+  })
+
+  app.listen({ port: 0 }, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            notificationAdded {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              notificationAdded: {
+                id: '1',
+                message: null
+              }
+            },
+            errors: [{
+              message: 'Int cannot represent non-integer value: "Hello World"',
+              locations: [{ line: 5, column: 15 }],
+              path: ['notificationAdded', 'message']
+            }]
+          }
+        }))
+
+        client.end()
+        t.end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        sendTestQuery()
+      }
+    })
+  })
+})
+
 test('subscription server exposes pubsub', t => {
   const app = Fastify()
   t.teardown(() => app.close())
