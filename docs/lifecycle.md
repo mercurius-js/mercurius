@@ -28,7 +28,6 @@ Incoming GraphQL Request
                                                         └─▶ onResolution Hook
 ```
 
-```
 
 ## Subscription lifecycle
 
