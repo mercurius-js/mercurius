@@ -1,44 +1,88 @@
 # Custom directive
-A GraphQL directive is a special syntax used to provide additional information to the GraphQL execution engine about how to process a query, mutation, or schema definition. For example, directives can be used to modify the behaviour of fields, arguments, or types in your schema. 
+
+We might need to customise our schema by decorating parts of it or operations to add new reusable features to these elements.
+To do that, we can use a GraphQL concept called **Directive**.
+
+A GraphQL directive is a special syntax used to provide additional information to the GraphQL execution engine about how to process a query, mutation, or schema definition. 
+For example, directives can be used to modify the behaviour of fields, arguments, or types in your schema. 
 
 A custom directive is composed of 2 parts:
 - schema definitions
-- schema transformer
+- transformer
 
 ## Schema Definition
-It is the syntax used to describe a custom directive within a GraphQL schema.
-To define a custom directive, you must use the directive keyword, followed by its name, arguments (if any), and the locations where it can be applied. 
+
+**Let's explore the custom directive creation process by creating a directive to redact some fields value hiding a specific word.*
+
+First of all, we must define the schema
+
+```js
+const schema = `
+    # Define the directive schema
+    directive @redact(find: String) on FIELD_DEFINITION
+    
+    type Document {
+      id: String!
+      text: String! @redact(find: "password")
+    }
+
+    type Query {
+      document: Document
+    }`
+```
+
+To define a custom directive, we must use the directive keyword, followed by its name prefixed by a `@`, the arguments (if any), and the locations where it can be applied. 
 
 ```
-directive @censorship(find: String) on FIELD_DEFINITION
+directive @redact(find: String) on FIELD_DEFINITION
 ```
 
-## Schema transformer
+The directive can be applied in multiple locations.
 
-A schema transformer is a function that takes a GraphQL schema as input and modifies it somehow before returning the modified schema. 
+- **QUERY:** Location adjacent to a query operation.
+- **MUTATION:** Location adjacent to a mutation operation.
+- **SUBSCRIPTION:** Location adjacent to a subscription operation.
+- **FIELD:** Location adjacent to a field.
+- **FRAGMENT_DEFINITION:** Location adjacent to a fragment definition.
+- **FRAGMENT_SPREAD:** Location adjacent to a fragment spread.
+- **INLINE_FRAGMENT:** Location adjacent to an inline fragment.
+- **SCALAR:** Location adjacent to a scalar definition.
+- **OBJECT:** Location adjacent to an object type definition.
+- **FIELD_DEFINITION:** Location adjacent to a field definition.
+- **ARGUMENT_DEFINITION:** Location adjacent to an argument definition.
+- **INTERFACE:** Location adjacent to an interface definition.
+- **UNION:** Location adjacent to a union definition.
+- **ENUM:** Location adjacent to an enum definition.
+- **ENUM_VALUE:** Location adjacent to an enum value definition.
+- **INPUT_OBJECT:** Location adjacent to an input object type definition.
+- **INPUT_FIELD_DEFINITION:** Location adjacent to an input object field definition
+
+## Transformer
+
+Every directive needs its transformer.
+A transformer is a function that takes an existing schema and applies the modifications to the schema and resolvers.
+
+To simplify the process of creating a transformer, we use the `mapSchema` function from the `@graphql-tools` library.
+
+The `mapSchema` function applies each callback function to the corresponding type definition in the schema, creating a new schema with the modified type definitions. The function also provides access to the field resolvers of each object type, allowing you to alter the behaviour of the fields in the schema.
 
 ```js
 const { mapSchema, getDirective, MapperKind } = require('@graphql-tools/utils')
 
-const censorshipSchemaTransformer = (schema) => mapSchema(schema, {
+const redactionSchemaTransformer = (schema) => mapSchema(schema, {
   // When parsing the schema we find a FIELD
   [MapperKind.FIELD]: fieldConfig => {
     // Get the directive information
-    const censorshipDirective = getDirective(schema, fieldConfig, "censorship")?.[0]
-    if (censorshipDirective) {
-      // Get the resolver of the field
-      const innerResolver = fieldConfig.resolve
-      // Extract the find property from the directive
-      const { find } = censorshipDirective
-      // Define a new resolver for the field
-      fieldConfig.resolve = async (_obj, args, ctx, info) => {
-        // Run the original resolver to get the result
-        const document = await innerResolver(_obj, args, ctx, info)
-        // Apply censorship only if context censored is true
-        if (!ctx.censored) {
-          return document
-        }
-        return { ...document, text: document.text.replace(find, '**********') }
+    const redactDirective = getDirective(schema, fieldConfig, "redact")?.[0]
+    if (redactDirective) {
+      // Extract the find attribute from te directive
+      const { find } = redactDirective
+      // Create a new resolver
+      fieldConfig.resolve = async (obj, _args, _ctx, info) => {
+        // Extract the value of the property we want redact 
+        // getting the field name from the info parameter.
+        const value = obj[info.fieldName]
+        return value.replace(find, '**********')
       }
     }
   }
@@ -46,40 +90,30 @@ const censorshipSchemaTransformer = (schema) => mapSchema(schema, {
 ```
 
 ## Generate executable schema
-All the transformations must be applied to the executable schema, which contains both the schema and the resolvers.
+To make our custom directive work, we must first create an executable schema required by the `mapSchema` function to change the resolvers' behaviour.
 
 ```js
-const schema = makeExecutableSchema({
-  typeDefs: `
-    # Define the directive schema
-    directive @censorship(find: String) on FIELD_DEFINITION
-    
-    type Document {
-      id: String!
-      text: String! 
-    }
-
-    type Query {
-      document: Document @censorship(find: "password")
-    }
-    `,
+const executableSchema = makeExecutableSchema({
+  typeDefs: schema,
   resolvers
 })
 ```
 
 ## Apply transformations to the executable schema
 
-Now we can apply the transformations to the schema before registering the mercurius plugin
+Now it is time to transform our schema.
+
+```js
+const newSchema = redactionSchemaTransformer(executableSchema)
+```
+
+and to register mercurius inside fastify
 
 ```js
 app.register(mercurius, {
   // schema changed by the transformer
-  schema: censorshipSchemaTransformer(schema),
-  context: (request, reply) => {
-    return {
-      censored: false
-    }
-  },
+  schema: newSchema,
   graphiql: true,
 })
 ```
+

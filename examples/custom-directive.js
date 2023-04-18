@@ -9,7 +9,7 @@ const app = Fastify()
 
 const resolvers = {
   Query: {
-    document: async (_, obj, ctx) => {
+    document: async (_, _obj, _ctx) => {
       return {
         id: '1',
         text: 'Proin password rutrum pulvinar lectus sed placerat.'
@@ -22,40 +22,34 @@ const resolvers = {
 const schema = makeExecutableSchema({
   typeDefs: `
     # Define the directive schema
-    directive @censorship(find: String) on FIELD_DEFINITION
+    directive @redact(find: String) on FIELD_DEFINITION
     
     type Document {
       id: String!
-      text: String! 
+      text: String! @redact(find: "password")
     }
 
     type Query {
-      document: Document @censorship(find: "password")
+      document: Document 
     }
     `,
   resolvers
 })
 
 // Define directive schema resolver
-const censorshipSchemaTransformer = (schema) => mapSchema(schema, {
+const redactionSchemaTransformer = (schema) => mapSchema(schema, {
   // When parsing the schema we find a FIELD
-  [MapperKind.FIELD]: fieldConfig => {
+  [MapperKind.OBJECT_FIELD]: fieldConfig => {
     // Get the directive information
-    const censorshipDirective = getDirective(schema, fieldConfig, 'censorship')?.[0]
-    if (censorshipDirective) {
-      // Get the resolver of the field
-      const innerResolver = fieldConfig.resolve
-      // Extract the find property from the directive
-      const { find } = censorshipDirective
-      // Define a new resolver for the field
-      fieldConfig.resolve = async (_obj, args, ctx, info) => {
-        // Run the original resolver to get the result
-        const document = await innerResolver(_obj, args, ctx, info)
-        // Apply censorship only if context censored is true
-        if (!ctx.censored) {
+    const redactDirective = getDirective(schema, fieldConfig, 'redact')?.[0]
+    if (redactDirective) {
+      const { find } = redactDirective
+      fieldConfig.resolve = async (obj, _args, ctx, info) => {
+        const value = obj[info.fieldName]
+        if (!ctx.redaction) {
           return document
         }
-        return { ...document, text: document.text.replace(find, '**********') }
+        return value.replace(find, '**********')
       }
     }
   }
@@ -63,10 +57,10 @@ const censorshipSchemaTransformer = (schema) => mapSchema(schema, {
 
 // Register mercurius and run it
 app.register(mercurius, {
-  schema: censorshipSchemaTransformer(schema),
+  schema: redactionSchemaTransformer(schema),
   context: (request, reply) => {
     return {
-      censored: false
+      redaction: true
     }
   },
   graphiql: true
