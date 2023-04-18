@@ -12,7 +12,7 @@ A custom directive is composed of 2 parts:
 
 ## Schema Definition
 
-**Let's explore the custom directive creation process by creating a directive to redact some fields value hiding a specific word.*
+**Let's explore the custom directive creation process by creating a directive to redact some fields value hiding a specific word.**
 
 First of all, we must define the schema
 
@@ -120,7 +120,6 @@ and to register mercurius inside fastify
 
 ```js
 app.register(mercurius, {
-  // schema changed by the transformer
   schema: newSchema,
   graphiql: true,
 })
