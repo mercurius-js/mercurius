@@ -89,6 +89,15 @@ const redactionSchemaTransformer = (schema) => mapSchema(schema, {
 })
 ```
 
+As you can see in the new resolver function as props, we receive the `current object`, the `arguments`, the `context` and the `info`.
+
+Using the field name exposed by the `info` object, we get the field value from the `obj` object, object that contains lots of helpful informations like
+
+- fieldNodes
+- returnType
+- parentType
+- operation
+
 ## Generate executable schema
 To make our custom directive work, we must first create an executable schema required by the `mapSchema` function to change the resolvers' behaviour.
 
