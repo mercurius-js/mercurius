@@ -126,3 +126,6 @@ app.register(mercurius, {
 })
 ```
 
+## Example
+
+We have a runnable example on "example/custom-directive.js"
