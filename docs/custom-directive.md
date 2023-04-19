@@ -35,7 +35,7 @@ To define a custom directive, we must use the directive keyword, followed by its
 directive @redact(find: String) on FIELD_DEFINITION
 ```
 
-According to the graphql specs the directive can be applied in multiple locations. See the list on https://spec.graphql.org/October2021/#sec-Type-System.Directives. 
+According to the graphql specs the directive can be applied in multiple locations. See the list on [the GraphQL spec page](https://spec.graphql.org/October2021/#sec-Type-System.Directives). 
 
 ## Transformer
 
@@ -49,13 +49,14 @@ The `mapSchema` function applies each callback function to the corresponding typ
 ```js
 const { mapSchema, getDirective, MapperKind } = require('@graphql-tools/utils')
 
+// Define the regexp    
+const PHONE_REGEXP = /(?:\+?\d{2}[ -]?\d{3}[ -]?\d{5}|\d{4})/g;
+const EMAIL_REGEXP = /([^\s@])+@[^\s@]+\.[^\s@]+/g
+
 const redactionSchemaTransformer = (schema) => mapSchema(schema, {
   // When parsing the schema we find a FIELD
   [MapperKind.FIELD]: fieldConfig => {
-    // Define the regexp
-    const PHONE_REGEXP = /(?:\+?\d{2}[ -]?\d{3}[ -]?\d{5}|\d{4})/g;
-    const EMAIL_REGEXP = /([^\s@])+@[^\s@]+\.[^\s@]+/g
-    
+
     // Get the directive information
     const redactDirective = getDirective(schema, fieldConfig, "redact")?.[0]
     if (redactDirective) {
@@ -118,9 +119,6 @@ app.register(mercurius, {
   graphiql: true,
 })
 ```
-
-
-
 
 ## Example
 

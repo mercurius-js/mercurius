@@ -36,15 +36,19 @@ const schema = makeExecutableSchema({
   resolvers
 })
 
+const PHONE_REGEXP = /(?:\+?\d{2}[ -]?\d{3}[ -]?\d{5}|\d{4})/g
+const EMAIL_REGEXP = /([^\s@])+@[^\s@]+\.[^\s@]+/g
+
 const redactionSchemaTransformer = (schema) => mapSchema(schema, {
   [MapperKind.OBJECT_FIELD]: fieldConfig => {
-    const PHONE_REGEXP = /(?:\+?\d{2}[ -]?\d{3}[ -]?\d{5}|\d{4})/g
-    const EMAIL_REGEXP = /([^\s@])+@[^\s@]+\.[^\s@]+/g
     const redactDirective = getDirective(schema, fieldConfig, 'redact')?.[0]
+
     if (redactDirective) {
       const { find } = redactDirective
+
       fieldConfig.resolve = async (obj, _args, ctx, info) => {
         const value = obj[info.fieldName]
+
         if (!ctx.redact) {
           return document
         }
