@@ -4,58 +4,38 @@ We might need to customise our schema by decorating parts of it or operations to
 To do that, we can use a GraphQL concept called **Directive**.
 
 A GraphQL directive is a special syntax used to provide additional information to the GraphQL execution engine about how to process a query, mutation, or schema definition. 
-For example, directives can be used to modify the behaviour of fields, arguments, or types in your schema. 
+Directives can be used to modify the behaviour of fields, arguments, or types in your schema. 
 
 A custom directive is composed of 2 parts:
 - schema definitions
 - transformer
 
 ## Schema Definition
-
-**Let's explore the custom directive creation process by creating a directive to redact some fields value hiding a specific word.**
+Let's explore the custom directive creation process by creating a directive to redact some fields value, hiding a phone number or an email.
 
 First of all, we must define the schema
 
 ```js
 const schema = `
-    # Define the directive schema
     directive @redact(find: String) on FIELD_DEFINITION
     
     type Document {
-      id: String!
-      text: String! @redact(find: "password")
+      excerpt: String! @redact(find: "email")
+      text: String! @redact(find: "phone")
     }
 
     type Query {
-      document: Document
+      documents: [Document] 
     }`
 ```
 
-To define a custom directive, we must use the directive keyword, followed by its name prefixed by a `@`, the arguments (if any), and the locations where it can be applied. 
+To define a custom directive, we must use the directive keyword, followed by its name prefixed by a `@`, the arguments (if any), and the locations where it can be applied.
 
 ```
 directive @redact(find: String) on FIELD_DEFINITION
 ```
 
-The directive can be applied in multiple locations.
-
-- **QUERY:** Location adjacent to a query operation.
-- **MUTATION:** Location adjacent to a mutation operation.
-- **SUBSCRIPTION:** Location adjacent to a subscription operation.
-- **FIELD:** Location adjacent to a field.
-- **FRAGMENT_DEFINITION:** Location adjacent to a fragment definition.
-- **FRAGMENT_SPREAD:** Location adjacent to a fragment spread.
-- **INLINE_FRAGMENT:** Location adjacent to an inline fragment.
-- **SCALAR:** Location adjacent to a scalar definition.
-- **OBJECT:** Location adjacent to an object type definition.
-- **FIELD_DEFINITION:** Location adjacent to a field definition.
-- **ARGUMENT_DEFINITION:** Location adjacent to an argument definition.
-- **INTERFACE:** Location adjacent to an interface definition.
-- **UNION:** Location adjacent to a union definition.
-- **ENUM:** Location adjacent to an enum definition.
-- **ENUM_VALUE:** Location adjacent to an enum value definition.
-- **INPUT_OBJECT:** Location adjacent to an input object type definition.
-- **INPUT_FIELD_DEFINITION:** Location adjacent to an input object field definition
+According to the graphql specs the directive can be applied in multiple locations. See the list on https://spec.graphql.org/October2021/#sec-Type-System.Directives. 
 
 ## Transformer
 
@@ -72,17 +52,31 @@ const { mapSchema, getDirective, MapperKind } = require('@graphql-tools/utils')
 const redactionSchemaTransformer = (schema) => mapSchema(schema, {
   // When parsing the schema we find a FIELD
   [MapperKind.FIELD]: fieldConfig => {
+    // Define the regexp
+    const PHONE_REGEXP = /(?:\+?\d{2}[ -]?\d{3}[ -]?\d{5}|\d{4})/g;
+    const EMAIL_REGEXP = /([^\s@])+@[^\s@]+\.[^\s@]+/g
+    
     // Get the directive information
     const redactDirective = getDirective(schema, fieldConfig, "redact")?.[0]
     if (redactDirective) {
-      // Extract the find attribute from te directive
+      // Extract the find attribute from the directive, this attribute will
+      // be used to chose which replace strategy adopt
       const { find } = redactDirective
       // Create a new resolver
       fieldConfig.resolve = async (obj, _args, _ctx, info) => {
         // Extract the value of the property we want redact 
         // getting the field name from the info parameter.
         const value = obj[info.fieldName]
-        return value.replace(find, '**********')
+        
+        // Apply the redaction strategy and return the result
+        switch (find) {
+          case 'email':
+            return value.replace(EMAIL_REGEXP, '****@*****.***')
+          case 'phone':
+            return value.replace(PHONE_REGEXP, m => '*'.repeat(m.length))
+          default:
+            return value
+        }
       }
     }
   }
@@ -124,6 +118,9 @@ app.register(mercurius, {
   graphiql: true,
 })
 ```
+
+
+
 
 ## Example
 

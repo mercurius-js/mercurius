@@ -9,11 +9,11 @@ const app = Fastify()
 
 const resolvers = {
   Query: {
-    document: async (_, _obj, _ctx) => {
-      return {
-        id: '1',
-        text: 'Proin password rutrum pulvinar lectus sed placerat.'
-      }
+    documents: async (_, _obj, _ctx) => {
+      return [{
+        excerpt: 'Proin info@mercurius.dev rutrum pulvinar lectus sed placerat.',
+        text: 'Proin 33 222-33355 rutrum pulvinar lectus sed placerat.'
+      }]
     }
   }
 }
@@ -25,31 +25,38 @@ const schema = makeExecutableSchema({
     directive @redact(find: String) on FIELD_DEFINITION
     
     type Document {
-      id: String!
-      text: String! @redact(find: "password")
+      excerpt: String! @redact(find: "email")
+      text: String! @redact(find: "phone")
     }
 
     type Query {
-      document: Document 
+      documents: [Document] 
     }
     `,
   resolvers
 })
 
-// Define directive schema resolver
 const redactionSchemaTransformer = (schema) => mapSchema(schema, {
-  // When parsing the schema we find a FIELD
   [MapperKind.OBJECT_FIELD]: fieldConfig => {
-    // Get the directive information
+    const PHONE_REGEXP = /(?:\+?\d{2}[ -]?\d{3}[ -]?\d{5}|\d{4})/g
+    const EMAIL_REGEXP = /([^\s@])+@[^\s@]+\.[^\s@]+/g
     const redactDirective = getDirective(schema, fieldConfig, 'redact')?.[0]
     if (redactDirective) {
       const { find } = redactDirective
       fieldConfig.resolve = async (obj, _args, ctx, info) => {
         const value = obj[info.fieldName]
-        if (!ctx.redaction) {
+        if (!ctx.redact) {
           return document
         }
-        return value.replace(find, '**********')
+
+        switch (find) {
+          case 'email':
+            return value.replace(EMAIL_REGEXP, '****@*****.***')
+          case 'phone':
+            return value.replace(PHONE_REGEXP, m => '*'.repeat(m.length))
+          default:
+            return value
+        }
       }
     }
   }
@@ -60,7 +67,7 @@ app.register(mercurius, {
   schema: redactionSchemaTransformer(schema),
   context: (request, reply) => {
     return {
-      redaction: true
+      redact: true
     }
   },
   graphiql: true
