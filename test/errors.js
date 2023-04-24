@@ -889,7 +889,7 @@ test('bad json', async (t) => {
 
   t.equal(res.statusCode, 400)
   t.same(res.json(),
-    { data: null, errors: [{ message: 'Unexpected token h in JSON at position 1' }] }
+    { data: null, errors: [{ message: "Unexpected token 'h', \"this is not a json\" is not valid JSON" }] }
   )
 })
 

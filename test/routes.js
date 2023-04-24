@@ -387,7 +387,7 @@ test('GET route with bad JSON extensions', async (t) => {
   t.equal(res.statusCode, 400)
   t.strictSame(JSON.parse(res.body), {
     data: null,
-    errors: [{ message: 'Unexpected token o in JSON at position 1' }]
+    errors: [{ message: "Unexpected token 'o', \"notajson\" is not valid JSON" }]
   })
 })
 

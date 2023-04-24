@@ -7,6 +7,7 @@ const { mapSchema } = require('@graphql-tools/utils')
 const { parse, buildSchema, GraphQLSchema } = require('graphql')
 const { promisify } = require('util')
 const GQL = require('..')
+const mercuriusValidation = require('mercurius-validation')
 const { ErrorWithProps } = GQL
 
 const immediate = promisify(setImmediate)
@@ -944,4 +945,44 @@ test('onResolution hooks should be able to add extensions data', async t => {
       extensionKey: 'extensionValue'
     }
   })
+})
+
+test('onExtendSchema hooks should be able to add schema validations', async t => {
+  t.plan(2)
+
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onExtendSchema', async (schema, context) => {
+    app.register(mercuriusValidation)
+  })
+
+  const extendedSchema = `
+    ${mercuriusValidation.graphQLTypeDefs}
+
+    extend type Query {
+      sub(x: Int, y: Int @constraint(minimum: 1)): Int
+    }
+  `
+
+  const extendedResolvers = {
+    Query: {
+      sub: async (_, { x, y }) => x - y
+    }
+  }
+
+  await app.register(async function (app) {
+    app.graphql.extendSchema(extendedSchema)
+    app.graphql.defineResolvers(extendedResolvers)
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query: '{ sub(x: 2, y: 0) }' })
+  })
+
+  const payload = JSON.parse(res.payload)
+  t.same(payload.errors[0].message, "Failed Validation on arguments for field 'Query.sub'")
+  t.same(payload.errors[0].extensions.code, 'MER_VALIDATION_ERR_FAILED_VALIDATION')
 })

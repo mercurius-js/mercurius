@@ -175,6 +175,13 @@ export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
 // Application Lifecycle hooks
 // ----------------------------
 
+export interface onExtendSchemaHandler<TContext = MercuriusContext> {
+  (
+    schema: GraphQLSchema,
+    context: TContext,
+  ): Promise<void> | void;
+}
+
 interface ServiceConfig {
   setSchema: (schema: string) => ServiceConfig;
 }
@@ -280,6 +287,7 @@ export interface MercuriusPlugin {
   addHook<TContext = MercuriusContext>(name: 'onSubscriptionEnd', hook: onSubscriptionEndHookHandler<TContext>): void;
 
   // Application lifecycle addHooks
+  addHook<TContext = MercuriusContext>(name: 'onExtendSchema', hook: onExtendSchemaHandler<TContext>): void;
 }
 
 interface QueryRequest {
