@@ -471,7 +471,7 @@ const plugin = fp(async function (app, opts) {
       document = cached.document
     }
 
-    if (reply && reply.request.raw.method === 'GET') {
+    if (reply && reply.request.raw.method === 'GET' && reply.request.headers.upgrade?.toLowerCase() !== 'websocket') {
       // let's validate we cannot do mutations here
       const operationAST = getOperationAST(document, operationName)
       if (operationAST.operation !== 'query') {
