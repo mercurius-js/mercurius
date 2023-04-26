@@ -791,6 +791,13 @@ test('HTTP mutation with GET errors', async (t) => {
 
 test('websocket mutation with GET allowed', async (t) => {
   const app = Fastify()
+
+  // Simulate fastify-websocket logic
+  app.addHook('onRequest', (request, reply, done) => {
+    request.ws = true
+    done()
+  })
+
   const schema = `
     type Mutation {
       setMessage(message: String): String
