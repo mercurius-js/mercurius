@@ -392,7 +392,7 @@ test('GET route with bad JSON extensions', async (t) => {
     )
   } else {
     t.same(res.json(),
-      { data: null, errors: [{ message: 'Unexpected token h in JSON at position 1' }] }
+      { data: null, errors: [{ message: 'Unexpected token o in JSON at position 1' }] }
     )
   }
 })
