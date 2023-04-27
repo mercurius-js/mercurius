@@ -6,6 +6,7 @@ const split = require('split2')
 const querystring = require('querystring')
 const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
+const semver = require('semver')
 const GQL = require('..')
 
 test('POST route', async (t) => {
@@ -385,10 +386,15 @@ test('GET route with bad JSON extensions', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.strictSame(JSON.parse(res.body), {
-    data: null,
-    errors: [{ message: 'Unexpected token o in JSON at position 1' }]
-  })
+  if (semver.gte(process.version, '20.0.0')) {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token \'o\', "notajson" is not valid JSON' }] }
+    )
+  } else {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token o in JSON at position 1' }] }
+    )
+  }
 })
 
 test('POST route variables', async (t) => {
