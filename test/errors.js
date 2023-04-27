@@ -9,6 +9,7 @@ const { ErrorWithProps } = GQL
 const { kRequestContext } = require('../lib/symbols')
 const split = require('split2')
 const { GraphQLError } = require('graphql-jit/dist/error')
+const semver = require('semver')
 
 test('ErrorWithProps - support status code in the constructor', async (t) => {
   const error = new ErrorWithProps('error', { }, 500)
@@ -888,9 +889,15 @@ test('bad json', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.same(res.json(),
-    { data: null, errors: [{ message: 'Unexpected token h in JSON at position 1' }] }
-  )
+  if (semver.gte(process.version, '20.0.0')) {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token \'h\', "this is not a json" is not valid JSON' }] }
+    )
+  } else {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token h in JSON at position 1' }] }
+    )
+  }
 })
 
 test('bad json with custom error formatter and custom context', async (t) => {
