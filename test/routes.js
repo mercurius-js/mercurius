@@ -6,6 +6,7 @@ const split = require('split2')
 const querystring = require('querystring')
 const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
+const semver = require('semver')
 const GQL = require('..')
 
 test('POST route', async (t) => {
@@ -385,10 +386,15 @@ test('GET route with bad JSON extensions', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.strictSame(JSON.parse(res.body), {
-    data: null,
-    errors: [{ message: "Unexpected token 'o', \"notajson\" is not valid JSON" }]
-  })
+  if (semver.gte(process.version, '20.0.0')) {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token \'o\', "notajson" is not valid JSON' }] }
+    )
+  } else {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token o in JSON at position 1' }] }
+    )
+  }
 })
 
 test('POST route variables', async (t) => {
@@ -756,7 +762,7 @@ test('mutation with POST application/graphql', async (t) => {
   t.equal(msg, 'hello world')
 })
 
-test('mutation with GET errors', async (t) => {
+test('HTTP mutation with GET errors', async (t) => {
   const app = Fastify()
   const schema = `
     type Mutation {
@@ -787,6 +793,61 @@ test('mutation with GET errors', async (t) => {
 
   t.equal(res.statusCode, 405) // method not allowed
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+})
+
+test('websocket mutation with GET allowed', async (t) => {
+  const app = Fastify()
+
+  // Simulate fastify-websocket logic
+  app.addHook('onRequest', (request, reply, done) => {
+    request.ws = true
+    done()
+  })
+
+  const schema = `
+    type Mutation {
+      setMessage(message: String): String
+    }
+    type Query {
+      getMessage: String
+    }
+  `
+
+  let msg = 'hello'
+  const resolvers = {
+    setMessage: async ({ message }) => {
+      msg = message
+      return message
+    },
+    async getMessage () {
+      return msg
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = querystring.stringify({
+    query: 'mutation { setMessage(message: "hello world") }'
+  })
+
+  const res = await app.inject({
+    headers: {
+      connection: 'upgrade',
+      upgrade: 'websocket'
+    },
+    method: 'GET',
+    url: '/graphql?' + query
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      setMessage: 'hello world'
+    }
+  })
+  t.equal(msg, 'hello world')
 })
 
 test('POST should support null variables', async (t) => {
