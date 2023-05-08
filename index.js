@@ -240,24 +240,19 @@ const plugin = fp(async function (app, opts) {
     }
   }
 
-  const initialExtendSchema = fastifyGraphQl.extendSchema
-  fastifyGraphQl.extendSchema = (s) => {
-    if (initialExtendSchema) {
-      initialExtendSchema(s)
-    } else {
-      if (typeof s === 'string') {
-        s = parse(s)
-      } else if (!s || typeof s !== 'object') {
-        throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
-      }
-
-      fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
+  fastifyGraphQl.extendSchema = fastifyGraphQl.extendSchema || function (s) {
+    if (typeof s === 'string') {
+      s = parse(s)
+    } else if (!s || typeof s !== 'object') {
+      throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
     }
+
+    fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
 
     const context = assignApplicationHooksToContext({}, fastifyGraphQl[kHooks])
 
     if (context.onExtendSchema !== null) {
-      onExtendSchemaHandler({ schema: fastifyGraphQl.schema, context })
+      return onExtendSchemaHandler({ schema: fastifyGraphQl.schema, context })
     }
   }
 
