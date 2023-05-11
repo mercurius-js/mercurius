@@ -200,10 +200,18 @@ fastify.graphql.addHook('preSubscriptionParsing', async (schema, source, context
 
 ## GraphQL Application lifecycle Hooks
 
-There is one hook that you can use in a GraphQL application.
-
 When registering hooks, you must wait for Mercurius to be registered in Fastify.
 
 ```js
 await fastify.ready()
+```
+
+### onExtendSchema
+
+This hook will be triggered when `extendSchema` is called. It receives the new schema and context object.
+
+```js
+app.graphql.addHook('onExtendSchema', async (schema, context) => {
+  await asyncMethod()
+})
 ```
