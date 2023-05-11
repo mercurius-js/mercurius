@@ -1075,6 +1075,32 @@ test('extended Schema is an object', async t => {
   await app.ready()
 })
 
+test('array of schemas contains a non-string schema', async t => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema: [makeExecutableSchema({
+      typeDefs: `
+          type Query {
+            add(x: Int, y: Int): Int
+          }
+        `,
+      resolvers: {
+        Query: {
+          add: async (_, { x, y }) => x + y
+        }
+      }
+    }
+    )]
+  })
+
+  try {
+    await app.ready()
+  } catch (error) {
+    t.equal(error.message, 'Invalid options: when providing an array to the "schema" option, only string schemas are allowed')
+  }
+})
+
 test('Error in schema', async (t) => {
   const schema = `
     interface Event {
