@@ -1076,6 +1076,7 @@ test('extended Schema is an object', async t => {
 })
 
 test('array of schemas contains a non-string schema', async t => {
+  t.plan(1)
   const app = Fastify()
 
   app.register(GQL, {
@@ -1090,8 +1091,7 @@ test('array of schemas contains a non-string schema', async t => {
           add: async (_, { x, y }) => x + y
         }
       }
-    }
-    )]
+    })]
   })
 
   try {
