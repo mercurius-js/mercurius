@@ -73,9 +73,6 @@ test('reply decorator operationName', async (t) => {
     }, 'Double')
   })
 
-  // needed so that graphql is defined
-  await app.ready()
-
   const res = await app.inject({
     method: 'GET',
     url: '/'
@@ -125,7 +122,20 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
+  t.same(res.json(), {
+    errors: [
+      {
+        message: 'Syntax Error: Expected Name, found <EOF>.',
+        locations: [
+          {
+            line: 1,
+            column: 18
+          }
+        ]
+      }
+    ]
+
+  })
 })
 
 test('reply decorator supports encapsulation when loaders are defined in parent object', async (t) => {
@@ -178,5 +188,9 @@ test('reply decorator supports encapsulation when loaders are defined in parent 
     }
   })
 
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
+  t.same(res.json(), {
+    data: {
+      multiply: 25
+    }
+  })
 })
