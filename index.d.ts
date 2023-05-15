@@ -205,7 +205,7 @@ export interface MercuriusPlugin {
    * Extend existing schema
    * @param schema graphql schema
    */
-  extendSchema(schema: string | Source | DocumentNode): void;
+  extendSchema(schema: string | Source | DocumentNode): Promise<void> | void;
   /**
    * Define additional resolvers
    * @param resolvers object with resolver functions
