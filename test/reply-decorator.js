@@ -11,6 +11,7 @@ test('reply decorator', async (t) => {
       add(x: Int, y: Int): Int
     }
   `
+  t.teardown(app.close.bind(app))
 
   const resolvers = {
     add: async ({ x, y }) => x + y
@@ -40,6 +41,7 @@ test('reply decorator', async (t) => {
 
 test('reply decorator operationName', async (t) => {
   const app = Fastify()
+  t.teardown(app.close.bind(app))
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -71,9 +73,6 @@ test('reply decorator operationName', async (t) => {
     }, 'Double')
   })
 
-  // needed so that graphql is defined
-  await app.ready()
-
   const res = await app.inject({
     method: 'GET',
     url: '/'
@@ -90,6 +89,7 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   t.plan(3)
 
   const app = Fastify()
+  t.teardown(app.close.bind(app))
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -122,11 +122,25 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
+  t.same(res.json(), {
+    errors: [
+      {
+        message: 'Syntax Error: Expected Name, found <EOF>.',
+        locations: [
+          {
+            line: 1,
+            column: 18
+          }
+        ]
+      }
+    ]
+
+  })
 })
 
 test('reply decorator supports encapsulation when loaders are defined in parent object', async (t) => {
   const app = Fastify()
+  t.teardown(app.close.bind(app))
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -174,5 +188,9 @@ test('reply decorator supports encapsulation when loaders are defined in parent 
     }
   })
 
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body)))
+  t.same(res.json(), {
+    data: {
+      multiply: 25
+    }
+  })
 })
