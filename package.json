@@ -35,7 +35,7 @@
     "@graphql-tools/utils": "^9.1.4",
     "@sinonjs/fake-timers": "^10.0.2",
     "@types/isomorphic-form-data": "^2.0.0",
-    "@types/node": "^18.0.0",
+    "@types/node": "^20.1.4",
     "@types/ws": "^8.2.0",
     "@typescript-eslint/eslint-plugin": "^5.21.0",
     "@typescript-eslint/parser": "^5.21.0",
