@@ -6,8 +6,8 @@ const split = require('split2')
 const querystring = require('querystring')
 const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
+const semver = require('semver')
 const GQL = require('..')
-const { FederatedError } = require('../lib/errors')
 
 test('POST route', async (t) => {
   const app = Fastify()
@@ -173,6 +173,35 @@ test('GET route', async (t) => {
   })
 })
 
+test('GET route, no query error', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql'
+  })
+
+  t.equal(res.statusCode, 400)
+  t.same(JSON.parse(res.body), {
+    errors: [{ message: 'Unknown query' }],
+    data: null
+  })
+})
+
 test('GET route with variables', async (t) => {
   const app = Fastify()
   const schema = `
@@ -310,7 +339,12 @@ test('GET route with extensions', async (t) => {
 
   const res = await app.inject({
     method: 'GET',
-    url: `/graphql?extensions=${JSON.stringify({ persistedQuery: { version: 1, sha256Hash } })}&variables=${JSON.stringify({ x: 2, y: 2 })}`
+    url: `/graphql?extensions=${JSON.stringify({
+      persistedQuery: {
+        version: 1,
+        sha256Hash
+      }
+    })}&variables=${JSON.stringify({ x: 2, y: 2 })}`
   })
 
   t.same(JSON.parse(res.body), {
@@ -320,8 +354,8 @@ test('GET route with extensions', async (t) => {
   })
 })
 
-test('GET route with bad JSON extensions', { only: true }, async (t) => {
-  t.plan(3)
+test('GET route with bad JSON extensions', async (t) => {
+  t.plan(2)
   const lines = split(JSON.parse)
   const app = Fastify({
     logger: {
@@ -352,13 +386,14 @@ test('GET route with bad JSON extensions', { only: true }, async (t) => {
   })
 
   t.equal(res.statusCode, 400)
-
-  for await (const line of lines) {
-    if (line.err) {
-      t.equal(line.err.message, 'Unexpected token o in JSON at position 1')
-      t.equal(line.err.code, 'MER_ERR_GQL_VALIDATION')
-      break
-    }
+  if (semver.gte(process.version, '20.0.0')) {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token \'o\', "notajson" is not valid JSON' }] }
+    )
+  } else {
+    t.same(res.json(),
+      { data: null, errors: [{ message: 'Unexpected token o in JSON at position 1' }] }
+    )
   }
 })
 
@@ -727,7 +762,7 @@ test('mutation with POST application/graphql', async (t) => {
   t.equal(msg, 'hello world')
 })
 
-test('mutation with GET errors', async (t) => {
+test('HTTP mutation with GET errors', async (t) => {
   const app = Fastify()
   const schema = `
     type Mutation {
@@ -758,6 +793,61 @@ test('mutation with GET errors', async (t) => {
 
   t.equal(res.statusCode, 405) // method not allowed
   t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+})
+
+test('websocket mutation with GET allowed', async (t) => {
+  const app = Fastify()
+
+  // Simulate fastify-websocket logic
+  app.addHook('onRequest', (request, reply, done) => {
+    request.ws = true
+    done()
+  })
+
+  const schema = `
+    type Mutation {
+      setMessage(message: String): String
+    }
+    type Query {
+      getMessage: String
+    }
+  `
+
+  let msg = 'hello'
+  const resolvers = {
+    setMessage: async ({ message }) => {
+      msg = message
+      return message
+    },
+    async getMessage () {
+      return msg
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = querystring.stringify({
+    query: 'mutation { setMessage(message: "hello world") }'
+  })
+
+  const res = await app.inject({
+    headers: {
+      connection: 'upgrade',
+      upgrade: 'websocket'
+    },
+    method: 'GET',
+    url: '/graphql?' + query
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      setMessage: 'hello world'
+    }
+  })
+  t.equal(msg, 'hello world')
 })
 
 test('POST should support null variables', async (t) => {
@@ -1119,7 +1209,7 @@ test('server should return 200 on graphql errors (if field can be null)', async 
   t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
-test('server should return 500 on graphql errors (if field can not be null)', async (t) => {
+test('server should return 200 on graphql errors (if field can not be null)', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -1148,7 +1238,7 @@ test('server should return 500 on graphql errors (if field can not be null)', as
     body: { query }
   })
 
-  t.equal(response.statusCode, 500)
+  t.equal(response.statusCode, 200)
   t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
@@ -1247,56 +1337,9 @@ test('route validation is catched and parsed to graphql error', async (t) => {
     url: '/graphql'
   })
 
-  const expectedResult = { errors: [{ message: 'body should be object' }], data: null }
+  const expectedResult = { errors: [{ message: 'body must be object' }], data: null }
 
   t.equal(res.statusCode, 400)
-  t.strictSame(JSON.parse(res.body), expectedResult)
-})
-
-test('Error handler flattens federated errors', async (t) => {
-  const app = Fastify()
-  const schema = `
-    type Query {
-      add(x: Int, y: Int): Int
-    }
-  `
-
-  const resolvers = {
-    add: async ({ x, y }) => {
-      throw new FederatedError([{
-        message: 'Service error',
-        path: ['add'],
-        locations: [{ column: 3, line: 2 }],
-        extensions: { code: 'NOT_IMPLEMENTED' }
-      }])
-    }
-  }
-
-  app.register(GQL, {
-    schema,
-    resolvers,
-    errorHandler: true
-  })
-
-  // Invalid query
-  const res = await app.inject({
-    method: 'GET',
-    url: '/graphql?query={add(x:2,y:2)}'
-  })
-
-  const expectedResult = {
-    errors: [{
-      message: 'Service error',
-      path: ['add'],
-      locations: [{ column: 3, line: 2 }],
-      extensions: { code: 'NOT_IMPLEMENTED' }
-    }],
-    data: {
-      add: null
-    }
-  }
-
-  t.equal(res.statusCode, 200)
   t.strictSame(JSON.parse(res.body), expectedResult)
 })
 
@@ -1456,7 +1499,7 @@ test('connection is not allowed when verifyClient callback called with `false`',
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws', {
       headers: { 'x-custom-header': 'fastify is awesome !' }
@@ -1521,7 +1564,7 @@ test('connection is not allowed when onConnect callback called with `false`', t 
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1588,7 +1631,7 @@ test('connection is not allowed when onConnect callback throws', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1642,7 +1685,7 @@ test('onDisconnect is called with connection context when connection gets discon
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1691,7 +1734,7 @@ test('promise returned from onDisconnect resolves', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1742,7 +1785,7 @@ test('error thrown from onDisconnect is logged', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1792,7 +1835,7 @@ test('promise rejection from onDisconnect is logged', t => {
     }
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -1970,7 +2013,7 @@ test('if ide is graphiql with a prefix, serve config.js with the correct endpoin
   })
   t.equal(res.statusCode, 200)
   t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\'')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
 })
 
 test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js with the correct endpoint', async (t) => {
@@ -1995,7 +2038,7 @@ test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js w
   })
   t.equal(res.statusCode, 200)
   t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\'')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
 })
 
 test('if operationName is null, it should work fine', async (t) => {
@@ -2036,4 +2079,111 @@ test('if operationName is null, it should work fine', async (t) => {
       add: 5
     }
   })
+})
+
+test('GET graphiql endpoint with object and enabled', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: {},
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.equal(res.statusCode, 200)
+})
+
+test('disable GET graphiql endpoint with object if note enabled', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: { enabled: false },
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql'
+  })
+  t.equal(res.statusCode, 404)
+})
+
+test('if ide has plugin set, serve config.js with the correct endpoint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: {
+      enabled: true,
+      plugins: [
+        {
+          name: 'samplePlugin',
+          props: { foo: 'bar' },
+          umdUrl: '/graphiql/explain.js',
+          fetcherWrapper: 'parsePlugin'
+        }
+      ]
+    },
+    path: '/app/graphql',
+    prefix: '/something',
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/something/graphiql/config.js'
+  })
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['content-type'], 'application/javascript')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
+    'window.GRAPIHQL_PLUGIN_SAMPLEPLUGIN = ' +
+    '{"name":"samplePlugin","props":{"foo":"bar"},"umdUrl":"/graphiql/explain.js","fetcherWrapper":"parsePlugin"};\n' +
+    'window.GRAPHIQL_PLUGIN_LIST = ["samplePlugin"]')
+})
+
+test('if ide has plugin set, serve config.js with the correct endpoint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: {
+      enabled: true,
+      plugins: [
+        {
+          props: { foo: 'bar' },
+          umdUrl: '/graphiql/explain.js',
+          fetcherWrapper: 'parsePlugin'
+        }
+      ]
+    },
+    path: '/app/graphql',
+    prefix: '/something',
+    schema
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/something/graphiql/config.js'
+  })
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['content-type'], 'application/javascript')
+  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
+    'window.GRAPHIQL_PLUGIN_LIST = []')
 })

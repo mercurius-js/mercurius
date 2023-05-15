@@ -12,6 +12,7 @@ import {
   GraphQLResolveInfo,
   GraphQLScalarType,
   ValidationRule,
+  FormattedExecutionResult,
 } from "graphql";
 import { SocketStream } from "@fastify/websocket"
 import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
@@ -25,6 +26,9 @@ export interface PubSub {
 export interface MercuriusContext {
   app: FastifyInstance;
   reply: FastifyReply;
+  operationsCount?: number;
+  operationId?: number;
+  __currentQuery: string;
   /**
    * __Caution__: Only available if `subscriptions` are enabled
    */
@@ -54,7 +58,7 @@ export interface Loader<
 export interface MercuriusLoaders<TContext extends Record<string, any> = MercuriusContext> {
   [root: string]: {
     [field: string]:
-      | Loader
+      | Loader<any, any, TContext>
       | {
           loader: Loader<any, any, TContext>;
           opts?: {
@@ -62,13 +66,6 @@ export interface MercuriusLoaders<TContext extends Record<string, any> = Mercuri
           };
         };
   };
-}
-
-/**
- * Federated GraphQL Service metadata
- */
-export interface MercuriusServiceMetadata {
-  name: string;
 }
 
 // ------------------------
@@ -83,7 +80,7 @@ export interface preParsingHookHandler<TContext = MercuriusContext> {
     schema: GraphQLSchema,
     source: string,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -94,40 +91,24 @@ export interface preValidationHookHandler<TContext = MercuriusContext> {
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
- * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`, the next hook will be `preGatewayExecution`.
+ * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`.
  * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
+ *  - `schema`
  *  - `document`
  *  - `errors`
+ *  - `variables`
  */
 export interface preExecutionHookHandler<TContext = MercuriusContext, TError extends Error = Error> {
   (
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
-  ): Promise<PreExecutionHookResponse<TError> | void>;
-}
-
-/**
- * `preGatewayExecution` is the fourth hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`, the next hook will be `onResolution`.
- * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
- *  - `document`
- *  - `errors`
- * This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
- *
- * Because it is a gateway hook, this hook contains service metadata in the `service` parameter:
- *  - `name`: service name
- */
-export interface preGatewayExecutionHookHandler<TContext = MercuriusContext, TError extends Error = Error> {
-  (
-    schema: GraphQLSchema,
-    source: DocumentNode,
-    context: TContext,
-    service: MercuriusServiceMetadata
-  ): Promise<PreExecutionHookResponse<TError> | void>;
+    variables: Record<string, any>,
+  ): Promise<PreExecutionHookResponse<TError> | void> | PreExecutionHookResponse<TError> | void;
 }
 
 /**
@@ -137,7 +118,7 @@ export interface onResolutionHookHandler<TData extends Record<string, any> = Rec
   (
     execution: ExecutionResult<TData>,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 // -----------------------------
@@ -153,11 +134,11 @@ export interface preSubscriptionParsingHookHandler<TContext = MercuriusContext> 
     schema: GraphQLSchema,
     source: string,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
- * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`, the next hook will be `preGatewaySubscriptionExecution`.
+ * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`.
  * This hook will only be triggered when subscriptions are enabled.
  */
 export interface preSubscriptionExecutionHookHandler<TContext = MercuriusContext> {
@@ -165,34 +146,18 @@ export interface preSubscriptionExecutionHookHandler<TContext = MercuriusContext
     schema: GraphQLSchema,
     source: DocumentNode,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
- * `preGatewaySubscriptionExecution` is the third hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionExecution`, the next hook will be `onSubscriptionResolution`.
- * This hook will only be triggered in gateway mode when subscriptions are enabled.
- *
- * Because it is a gateway hook, this hook contains service metadata in the `service` parameter:
- *  - `name`: service name
- */
-export interface preGatewaySubscriptionExecutionHookHandler<TContext = MercuriusContext> {
-  (
-    schema: GraphQLSchema,
-    source: DocumentNode,
-    context: TContext,
-    service: MercuriusServiceMetadata
-  ): Promise<void>;
-}
-
-/**
- * `onSubscriptionResolution` is the fourth hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preGatewaySubscriptionExecution`, the next hook will be `onSubscriptionEnd`.
+ * `onSubscriptionResolution` is the fourth hook to be executed in the GraphQL subscription lifecycle. The next hook will be `onSubscriptionEnd`.
  * This hook will only be triggered when subscriptions are enabled.
  */
 export interface onSubscriptionResolutionHookHandler<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext> {
   (
     execution: ExecutionResult<TData>,
     context: TContext,
-  ): Promise<void>;
+  ): Promise<void> | void;
 }
 
 /**
@@ -202,33 +167,16 @@ export interface onSubscriptionResolutionHookHandler<TData extends Record<string
 export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
   (
     context: TContext,
-  ): Promise<void>;
+    id: string | number,
+  ): Promise<void> | void;
 }
 
 // ----------------------------
 // Application Lifecycle hooks
 // ----------------------------
 
-/**
- * `onGatewayReplaceSchema` is an application lifeycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
- * This hook will only be triggered in gateway mode. It has the following parameters:
- *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
- *  - `schema` - The new schema that has been built from the gateway refresh.
- */
-export interface onGatewayReplaceSchemaHookHandler {
-  (
-    instance: FastifyInstance,
-    schema: GraphQLSchema
-  ): Promise<void>;
-}
-
 interface ServiceConfig {
   setSchema: (schema: string) => ServiceConfig;
-}
-
-interface Gateway {
-  refresh: (isRetry?: boolean) => Promise<GraphQLSchema | null>;
-  serviceMap: Record<string, ServiceConfig>;
 }
 
 export interface MercuriusPlugin {
@@ -255,12 +203,12 @@ export interface MercuriusPlugin {
    * Define additional resolvers
    * @param resolvers object with resolver functions
    */
-  defineResolvers<TContext = MercuriusContext>(resolvers: IResolvers<any, TContext>): void;
+  defineResolvers<TContext extends Record<string, any> = MercuriusContext>(resolvers: IResolvers<any, TContext>): void;
   /**
    * Define data loaders
    * @param loaders object with data loader functions
    */
-  defineLoaders<TContext = MercuriusContext>(loaders: MercuriusLoaders<TContext>): void;
+  defineLoaders<TContext extends Record<string, any> = MercuriusContext>(loaders: MercuriusLoaders<TContext>): void;
   /**
    * Transform the existing schema
    */
@@ -278,8 +226,6 @@ export interface MercuriusPlugin {
    */
   schema: GraphQLSchema;
 
-  gateway: Gateway;
-
   // addHook: overloads
 
   // Request lifecycle addHooks
@@ -295,21 +241,12 @@ export interface MercuriusPlugin {
   addHook<TContext = MercuriusContext>(name: 'preValidation', hook: preValidationHookHandler<TContext>): void;
 
   /**
-   * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`, the next hook will be `preGatewayExecution`.
+   * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`.
    * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
    *  - `document`
    *  - `errors`
    */
   addHook<TContext = MercuriusContext, TError extends Error = Error>(name: 'preExecution', hook: preExecutionHookHandler<TContext, TError>): void;
-
-  /**
-   * `preGatewayExecution` is the fourth hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`, the next hook will be `onResolution`.
-   * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
-   *  - `document`
-   *  - `errors`
-   * This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
-   */
-  addHook<TContext = MercuriusContext, TError extends Error = Error>(name: 'preGatewayExecution', hook: preGatewayExecutionHookHandler<TContext, TError>): void;
 
   /**
    * `onResolution` is the fifth and final hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`.
@@ -325,19 +262,13 @@ export interface MercuriusPlugin {
   addHook<TContext = MercuriusContext>(name: 'preSubscriptionParsing', hook: preSubscriptionParsingHookHandler<TContext>): void;
 
   /**
-   * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`, the next hook will be `preGatewaySubscriptionExecution`.
+   * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`.
    * This hook will only be triggered when subscriptions are enabled.
    */
   addHook<TContext = MercuriusContext>(name: 'preSubscriptionExecution', hook: preSubscriptionExecutionHookHandler<TContext>): void;
 
   /**
-   * `preGatewaySubscriptionExecution` is the third hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionExecution`, the next hook will be `onSubscriptionResolution`.
-   * This hook will only be triggered in gateway mode when subscriptions are enabled.
-   */
-  addHook<TContext = MercuriusContext>(name: 'preGatewaySubscriptionExecution', hook: preGatewaySubscriptionExecutionHookHandler<TContext>): void;
-
-  /**
-   * `onSubscriptionResolution` is the fourth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preGatewaySubscriptionExecution`.
+   * `onSubscriptionResolution` is the fourth and final hook to be executed in the GraphQL subscription lifecycle.
    * This hook will only be triggered when subscriptions are enabled.
    */
   addHook<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext>(name: 'onSubscriptionResolution', hook: onSubscriptionResolutionHookHandler<TData, TContext>): void;
@@ -349,14 +280,6 @@ export interface MercuriusPlugin {
   addHook<TContext = MercuriusContext>(name: 'onSubscriptionEnd', hook: onSubscriptionEndHookHandler<TContext>): void;
 
   // Application lifecycle addHooks
-
-  /**
-   * `onGatewayReplaceSchema` is an application lifeycle hook. When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
-   * This hook will only be triggered in gateway mode. It has the following parameters:
-   *  - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
-   *  - `schema` - The new schema that has been built from the gateway refresh.
-   */
-  addHook(name: 'onGatewayReplaceSchema', hook: onGatewayReplaceSchemaHookHandler): void;
 }
 
 interface QueryRequest {
@@ -378,41 +301,6 @@ interface WsConnectionParams {
   rewriteConnectionInitPayload?:  <TContext extends MercuriusContext = MercuriusContext>(payload: Record<string, any> | undefined, context: TContext) => Record<string, any>;
 }
 
-export interface MercuriusGatewayService {
-  name: string;
-  url: string | string[];
-  schema?: string;
-  wsUrl?: string;
-  mandatory?: boolean;
-  initHeaders?:
-    | (() => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>)
-    | OutgoingHttpHeaders;
-  rewriteHeaders?: <TContext extends MercuriusContext = MercuriusContext>(
-    headers: IncomingHttpHeaders,
-    context: TContext
-  ) => OutgoingHttpHeaders | Promise<OutgoingHttpHeaders>;
-  connections?: number;
-  keepAlive?: number;
-  keepAliveMaxTimeout?: number;
-  rejectUnauthorized?: boolean;
-  wsConnectionParams?:
-    | (() => WsConnectionParams | Promise<WsConnectionParams>)
-    | WsConnectionParams;
-}
-
-export interface MercuriusGatewayOptions {
-  /**
-   * A list of GraphQL services to be combined into the gateway schema
-   */
-  gateway: {
-    services: Array<MercuriusGatewayService>;
-    pollingInterval?: number;
-    errorHandler?(error: Error, service: MercuriusGatewayService): void;
-    retryServicesCount?: number;
-    retryServicesInterval?: number;
-  };
-}
-
 export interface MercuriusSchemaOptions {
   /**
    * The GraphQL schema. String schema will be parsed
@@ -432,15 +320,43 @@ export interface MercuriusSchemaOptions {
   schemaTransforms?: ((originalSchema: GraphQLSchema) => GraphQLSchema) | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
 }
 
+export interface MercuriusGraphiQLOptions {
+  /**
+   * Expose the graphiql app, default `true`
+   */
+  enabled?: boolean;
+  /**
+   * The list of plugin to add to GraphiQL
+   */
+  plugins?: Array<{
+    /**
+     * The name of the plugin, it should be the same exported in the `umd`
+     */
+    name: string;
+    /**
+     * The props to be passed to the plugin
+     */
+    props?: Object;
+    /**
+     * The urls of the plugin, it's downloaded at runtime. (eg. https://unpkg.com/myplugin/....)
+     */
+    umdUrl: string;
+    /**
+     * A function name exported by the plugin to read/enrich the fetch response
+     */
+    fetcherWrapper?: string;
+  }>
+}
+
 export interface MercuriusCommonOptions {
   /**
    * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
    */
-  graphiql?: boolean | 'graphiql';
-  ide?: boolean | 'graphiql';
+  graphiql?: boolean | 'graphiql' | MercuriusGraphiQLOptions;
+  ide?: boolean | 'graphiql' | MercuriusGraphiQLOptions;
   /**
    * The minimum number of execution a query needs to be executed before being jit'ed.
-   * @default true
+   * @default 0 - disabled
    */
   jit?: number;
   /**
@@ -479,11 +395,11 @@ export interface MercuriusCommonOptions {
    * Change the default error formatter.
    */
   errorFormatter?: <TContext extends MercuriusContext = MercuriusContext>(
-    execution: ExecutionResult,
+    execution: ExecutionResult & Required<Pick<ExecutionResult, 'errors'>>,
     context: TContext
   ) => {
     statusCode: number;
-    response: ExecutionResult;
+    response: ExecutionResult | FormattedExecutionResult;
   };
   /**
    * The maximum depth allowed for a single query.
@@ -522,15 +438,11 @@ export interface MercuriusCommonOptions {
         onConnect?: (data: {
           type: 'connection_init';
           payload: any;
-        }) => Record<string, any> | Promise<Record<string, any>>;
+        }) => any;
         onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
         keepAlive?: number,
         fullWsTransport?: boolean,
       };
-  /**
-   * Enable federation metadata support so the service can be deployed behind an Apollo Gateway
-   */
-  federationMetadata?: boolean;
   /**
    * Persisted queries, overrides persistedQueryProvider.
    */
@@ -552,7 +464,7 @@ export interface MercuriusCommonOptions {
   allowBatchedQueries?: boolean;
 }
 
-export type MercuriusOptions = MercuriusCommonOptions & (MercuriusGatewayOptions | MercuriusSchemaOptions)
+export type MercuriusOptions = MercuriusCommonOptions & (MercuriusSchemaOptions)
 
 declare function mercurius
   (
@@ -623,14 +535,9 @@ declare namespace mercurius {
    * Default error formatter.
    */
   const defaultErrorFormatter: (
-    execution: ExecutionResult | Error,
+    execution: ExecutionResult & Required<Pick<ExecutionResult, 'errors'>>,
     context: MercuriusContext
-  ) => { statusCode: number; response: ExecutionResult };
-
-  /**
-   * Builds schema with support for federation mode.
-   */
-  const buildFederationSchema: (schema: string) => GraphQLSchema;
+  ) => { statusCode: number; response: FormattedExecutionResult };
 
   /**
    * Subscriptions with filter functionality
@@ -798,5 +705,6 @@ type ValidationRules =
 export interface PreExecutionHookResponse<TError extends Error> {
   schema?: GraphQLSchema
   document?: DocumentNode
-  errors?: TError[]
+  errors?: TError[],
+  variables?: Record<string, any>,
 }

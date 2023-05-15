@@ -1,5 +1,4 @@
-
-![Mercurius Logo](https://github.com/mercurius-js/graphics/blob/main/mercurius-horizontal.svg)
+![Mercurius Logo](https://raw.githubusercontent.com/mercurius-js/graphics/main/mercurius-horizontal.svg)
 
 # mercurius
 
@@ -13,9 +12,8 @@ Features:
 - Automatic loader integration to avoid 1 + N queries.
 - Just-In-Time compiler via [graphql-jit](http://npm.im/graphql-jit).
 - Subscriptions.
-- Federation support.
-- Federated subscriptions support.
-- Gateway implementation, including Subscriptions.
+- Federation support via [@mercuriusjs/federation](https://github.com/mercurius-js/mercurius-federation), including Subscriptions.
+- Gateway implementation via [@mercuriusjs/gateway](https://github.com/mercurius-js/mercurius-gateway), including Subscriptions.
 - Batched query support.
 - Customisable persisted queries.
 
@@ -84,7 +82,7 @@ app.get('/', async function (req, reply) {
   return reply.graphql(query)
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 ## Examples
@@ -95,7 +93,8 @@ Check [GitHub repo](https://github.com/mercurius-js/mercurius/tree/master/exampl
 
 The project is kindly sponsored by:
 
-- [NearForm](https://www.nearform.com) for [Matteo](https://github.com/mcollina)'s time in maintaining this module.
+- [NearForm](https://www.nearform.com)
+- [Platformatic](https://platformatic.dev)
 
 The Mercurius name was gracefully donated by [Marco Castelluccio](https://github.com/marco-c).
 The usage of that library was described in https://hacks.mozilla.org/2015/12/web-push-notifications-from-irssi/, and

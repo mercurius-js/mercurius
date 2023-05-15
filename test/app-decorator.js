@@ -1174,32 +1174,263 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
   await app.ready()
 })
 
-test('calling extendSchema throws an error if federationMetadata is enabled', async (t) => {
-  const service = Fastify()
-  t.teardown(() => service.close())
-  service.register(GQL, {
-    schema: `
-      extend type Query {
-        me: User
-      }
+test('support ast input', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
 
-      type User @key(fields: "id") {
-        id: ID!
-        name: String!
-      }
-    `,
-    federationMetadata: true
-  })
-  await service.ready()
-
-  try {
-    service.graphql.extendSchema(`
-      extend type Query {
-        field: String!
-      }
-    `)
-  } catch (err) {
-    t.equal(err.message, 'Invalid method: Calling extendSchema method when federationMetadata is enabled is not allowed')
-    t.end()
+  const resolvers = {
+    add: async ({ x, y }) => x + y
   }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = `{
+    "kind": "Document",
+    "definitions": [
+      {
+        "kind": "OperationDefinition",
+        "operation": "query",
+        "variableDefinitions": [],
+        "directives": [],
+        "selectionSet": {
+          "kind": "SelectionSet",
+          "selections": [
+            {
+              "kind": "Field",
+              "name": {
+                "kind": "Name",
+                "value": "add"
+              },
+              "arguments": [
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "x"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                },
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "y"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                }
+              ],
+              "directives": []
+            }
+          ]
+        }
+      }
+    ]
+  }`
+  const res = await app.graphql(query)
+
+  t.same(res, {
+    data: {
+      add: 4
+    }
+  })
+})
+
+test('throws on invalid ast input', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  // missing "kind": "Document",
+  const query = `{
+    "definitions": [
+      {
+        "kind": "OperationDefinition",
+        "operation": "query",
+        "variableDefinitions": [],
+        "directives": [],
+        "selectionSet": {
+          "kind": "SelectionSet",
+          "selections": [
+            {
+              "kind": "Field",
+              "name": {
+                "kind": "Name",
+                "value": "add"
+              },
+              "arguments": [
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "x"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                },
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "y"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                }
+              ],
+              "directives": []
+            }
+          ]
+        }
+      }
+    ]
+  }`
+  try {
+    await app.graphql(query)
+  } catch (err) {
+    t.equal(err.message, 'Invalid AST Node: { definitions: [[Object]] }.')
+    t.equal(err.name, 'Error')
+  }
+})
+
+test('support ast input on external requests', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = `{
+    "kind": "Document",
+    "definitions": [
+      {
+        "kind": "OperationDefinition",
+        "operation": "query",
+        "variableDefinitions": [],
+        "directives": [],
+        "selectionSet": {
+          "kind": "SelectionSet",
+          "selections": [
+            {
+              "kind": "Field",
+              "name": {
+                "kind": "Name",
+                "value": "add"
+              },
+              "arguments": [
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "x"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                },
+                {
+                  "kind": "Argument",
+                  "name": {
+                    "kind": "Name",
+                    "value": "y"
+                  },
+                  "value": {
+                    "kind": "IntValue",
+                    "value": "2"
+                  }
+                }
+              ],
+              "directives": []
+            }
+          ]
+        }
+      }
+    ]
+  }`
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: {
+      add: 4
+    }
+  })
+})
+
+test('defineResolvers should support __resolveReference', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      me: User
+    }
+    type User {
+      id: String
+    }
+  `
+  const resolvers = {
+    User: {
+      __resolveReference: async () => ({ id: 1 })
+    }
+  }
+
+  app.register(GQL, { schema })
+
+  app.register(async function (app) {
+    app.graphql.defineResolvers(resolvers)
+    t.pass('No errors occurred')
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
 })

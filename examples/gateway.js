@@ -1,15 +1,16 @@
 'use strict'
 const Fastify = require('fastify')
+const mercuriusWithFederation = require('@mercuriusjs/federation')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 const mercurius = require('..')
 const { ErrorWithProps } = mercurius
 
 async function createService (port, schema, resolvers = {}) {
   const service = Fastify()
 
-  service.register(mercurius, {
+  service.register(mercuriusWithFederation, {
     schema,
     resolvers,
-    federationMetadata: true,
     graphiql: true,
     jit: 1
   })
@@ -168,13 +169,16 @@ async function start () {
   })
 
   const gateway = Fastify()
-  gateway.register(mercurius, {
+  gateway.register(mercuriusWithGateway, {
     graphiql: true,
     jit: 1,
     gateway: {
       services: [{
         name: 'user',
-        url: 'http://localhost:4001/graphql'
+        url: 'http://localhost:4001/graphql',
+        setResponseHeaders: (reply) => {
+          reply.header('abc', 'abc')
+        }
       }, {
         name: 'post',
         url: 'http://localhost:4002/graphql'
@@ -182,7 +186,7 @@ async function start () {
     }
   })
 
-  await gateway.listen(4000)
+  await gateway.listen({ port: 4000 })
 }
 
 start()

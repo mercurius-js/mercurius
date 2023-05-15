@@ -58,4 +58,4 @@ app.register(mercurius, {
   jit: 1
 })
 
-app.listen(3001)
+app.listen({ port: 3001 })

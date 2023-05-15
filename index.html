@@ -29,11 +29,11 @@
         --sidebar-name-padding: 0;
         --code-font-size: 0.9em;
       }
-      .sidebar > h1 {
+    .sidebar > h1 {
         margin-bottom: -0.75em;
         margin-top: 0.75em;
       }
-      .sidebar > h1 img {
+    .sidebar > h1 img {
         height: 4em;
       }
       .markdown-section a code {
@@ -41,6 +41,89 @@
       }
       .markdown-section code:not([class*='lang-']):not([class*='language-']) {
         white-space: unset;
+      }
+
+      #issues {
+        display: flex;
+        flex-direction: column;
+      }
+
+
+      .good-issue {
+        margin: 0 0 1em 0;
+      }
+
+      .good-issue .card {
+        border-radius: 5px;
+        -webkit-box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+        -moz-box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+        -o-box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+        box-shadow: 3px 3px 10px 4px rgba(40, 40, 40, 0.99);
+      }
+
+      .good-issue .card .card-content {
+        display: flex;
+        flex-direction: column;
+        padding: 0 1em .5em 1em;
+      }
+
+      .good-issue .card .card-content .title{
+        font-size: 24px;
+        margin-bottom: 0.5em;
+      }
+
+      .good-issue .card .card-content .issue-labels {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .good-issue .card .card-content .issue-label{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-size: 15px;
+        background-color: #111111;
+        padding: .1em 1em;
+        margin-right: .3em;
+        margin-bottom: .3em;
+        border-radius: 15px;
+      }
+
+      .good-issue .card .card-content .issue-comments{
+        margin-left: .3em;
+        font-size: 15px;
+      }
+      .good-issue .card .card-header{
+        display: flex;
+        justify-content: right;
+        padding: 0 .5em;
+      }
+
+      .good-issue .card .card-header .subtitle{
+        font-size: 18px;
+      }
+
+      .error-result,
+      .no-issues {
+        padding: 1rem;
+        width: 100%;
+        text-align: center;
+        border-top: 1px solid #ccc;
+      }
+
+      .spinner {
+        animation: rotate360 1s linear infinite;
+        transform: translateZ(0);
+
+        border-top: 3px solid #04625C;
+        border-right: 3px solid #04625C;
+        border-bottom: 3px solid #04625C;
+        border-left: 3px solid #333;
+        background: transparent;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin: 0 auto;
       }
     </style>
   </head>
@@ -51,7 +134,64 @@
         loadSidebar: 'docsify/sidebar.md',
         name: 'Mercurius',
         repo: 'https://github.com/mercurius-js/mercurius',
-        auto2top: true
+      auto2top: true,
+      vueMounts: {
+        '#issues': {
+          data: function () {
+            return {
+              loading: false,
+              error: null,
+              issues: [],
+              projects: {},
+              filteredIssues: []
+            }
+          },
+          created() {
+            this.loading = true
+            fetch('https://goodfirstissue.fastify.io/api/find-issues?org=mercurius-js')
+              .then(resp => resp.json())
+              .then(data => {
+                this.issues = data.results
+                this.filteredIssues = data.results
+                this.projects = data.results.reduce((acc, curr) => {
+                  if (!acc[curr.project.name]) {
+                    acc[curr.project.name] = { count: 0, selected: true }
+                  }
+                  acc[curr.project.name].count += 1
+                  return acc
+                }, {})
+              })
+              .catch(err => {
+                this.error = err.message
+              })
+              .finally(() => {
+                this.loading = false
+              })
+          },
+          methods: {
+            toggle_toggleProject(name, selected) {
+              const projects = { ...this.projects }
+              if (projects[name]) {
+                projects[name].selected = typeof selected === 'undefined' ? !projects[name].selected : selected
+              }
+              this.filteredIssues = this.issues.filter(issue => {
+                return projects[issue.project.name].selected
+              })
+              this.projects = projects
+            },
+            _toggleProjects(selected) {
+              const projects = { ...this.projects }
+              for (let name in projects) {
+                projects[name].selected = selected
+              }
+              this.filteredIssues = this.issues.filter(issue => {
+                return projects[issue.project.name].selected
+              })
+              this.projects = projects
+            }
+          }
+        },
+      },
       }
     </script>
     <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
@@ -59,5 +199,6 @@
     <script src="//cdn.jsdelivr.net/npm/docsify-copy-code"></script>
     <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script>
   </body>
 </html>

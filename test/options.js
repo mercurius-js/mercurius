@@ -30,8 +30,6 @@ const resolvers = {
 }
 
 test('call compileQuery with correct options if compilerOptions specified', async t => {
-  t.plan(1)
-
   const app = Fastify()
   t.teardown(() => app.close())
 
@@ -82,5 +80,5 @@ test('call compileQuery with correct options if compilerOptions specified', asyn
     body: JSON.stringify({ query })
   })
 
-  t.ok(compileQueryStub.calledOnceWith(sinon.match.any, sinon.match.any, sinon.match.any, { customJSONSerializer: true }))
+  sinon.assert.calledOnceWithExactly(compileQueryStub, sinon.match.any, sinon.match.any, sinon.match.any, { customJSONSerializer: true })
 })

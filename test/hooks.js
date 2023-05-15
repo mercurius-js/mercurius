@@ -70,10 +70,6 @@ test('hooks', async t => {
     t.ok('preExecution called')
   })
 
-  app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
-    t.fail('this should not be called')
-  })
-
   app.graphql.addHook('onResolution', async function (execution, context) {
     await immediate()
     t.type(execution, 'object')
@@ -191,10 +187,6 @@ test('hooks should trigger when JIT is enabled', async t => {
     t.same(document, parse(query))
     t.type(context, 'object')
     t.ok('preExecution called')
-  })
-
-  app.graphql.addHook('preGatewayExecution', async function (schema, document, context) {
-    t.fail('this should not be called')
   })
 
   app.graphql.addHook('onResolution', async function (execution, context) {
@@ -768,6 +760,13 @@ test('preExecution hooks should be able to add to the errors array that is alrea
 
   const query = '{ add(x: 2, y: 2) }'
 
+  // Simulate an error and add it in the context error.
+  // Required to test the add error on existing errors
+  // The test was previously done by the preGatewayExecution hook
+  app.graphql.addHook('preValidation', async (schema, document, context) => {
+    context.errors = [new Error('pre')]
+  })
+
   app.graphql.addHook('preExecution', async (schema, document, context) => {
     t.type(schema, GraphQLSchema)
     t.same(document, parse(query))
@@ -804,6 +803,9 @@ test('preExecution hooks should be able to add to the errors array that is alrea
         path: ['add']
       },
       {
+        message: 'pre'
+      },
+      {
         message: 'foo'
       },
       {
@@ -813,27 +815,33 @@ test('preExecution hooks should be able to add to the errors array that is alrea
   })
 })
 
-// -------------
-// preGatewayExecution
-// -------------
-test('preGatewayExecution hooks should never be called in a non-gateway graphql server', async t => {
+test('preExecution hooks should be able to modify variables', async t => {
   t.plan(1)
   const app = await createTestServer(t)
 
-  app.graphql.addHook('preGatewayExecution', async (schema, document, context) => {
-    t.fail('this should not be called')
+  app.graphql.addHook('preExecution', async (schema, document, context, variables) => {
+    // double x, leave y
+    return { variables: { x: variables.x * 2, y: variables.y } }
+  })
+
+  app.graphql.addHook('preExecution', async (schema, document, context, variables) => {
+    // leave x, double y
+    return { variables: { x: variables.x, y: variables.y * 2 } }
   })
 
   const res = await app.inject({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     url: '/graphql',
-    body: JSON.stringify({ query })
+    body: JSON.stringify({
+      query: 'query ($x: Int!, $y: Int!) { add(x: $x, y: $y) }',
+      variables: { x: 1, y: 2 }
+    })
   })
 
   t.same(JSON.parse(res.body), {
     data: {
-      add: 4
+      add: 6
     }
   })
 })

@@ -2,7 +2,9 @@
 
 const { test } = require('tap')
 const Fastify = require('fastify')
+const proxyquire = require('proxyquire')
 const GQL = require('..')
+const { GraphQLError } = require('graphql-jit/dist/error')
 
 const schema = `
 type User {
@@ -101,5 +103,50 @@ test('cache skipped when the GQL Schema has been changed', async t => {
         ]
       }
     }, msg)
+  }
+})
+
+const GQLMock = proxyquire('../index', {
+  'graphql-jit': {
+    compileQuery: () => new GraphQLError('compileQuery stub')
+  }
+})
+
+test('cache skipped when no jit response', async t => {
+  t.plan(1)
+
+  const app = Fastify()
+  t.teardown(() => app.close())
+
+  await app.register(GQLMock, {
+    schema,
+    resolvers,
+    jit: 1
+  })
+
+  const query = `{
+    read {
+      name
+      password
+    }
+  }`
+
+  {
+    const res = await app.inject({
+      method: 'POST',
+      headers: { 'content-type': 'application/json', super: 'false' },
+      url: '/graphql',
+      body: JSON.stringify({ query })
+    })
+    t.same(res.json(), {
+      data: {
+        read: [
+          {
+            name: 'foo',
+            password: 'bar'
+          }
+        ]
+      }
+    }, 'this query should not use the cached query')
   }
 })

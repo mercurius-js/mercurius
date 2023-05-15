@@ -4,7 +4,7 @@
 
 Mercurius is compatible with open-telemetry (Note that, for now, jitted requests are not able to trace the graphql execution). Also make sure that registration of opentelemetry instrumentation happens before requiring `mercurius`.
 
-Here is a simple exemple on how to enable tracing on Mercurius with OpenTelemetry:
+Here is a simple example on how to enable tracing on Mercurius with OpenTelemetry:
 
 tracer.js
 ```js
@@ -15,7 +15,7 @@ const { NodeTracerProvider } = require('@opentelemetry/node')
 const { SimpleSpanProcessor } = require('@opentelemetry/tracing')
 const { JaegerExporter } = require('@opentelemetry/exporter-jaeger')
 const { GraphQLInstrumentation } = require('@opentelemetry/instrumentation-graphql')
-const { HttpTraceContext } = require('@opentelemetry/core')
+const { W3CTraceContextPropagator } = require('@opentelemetry/core')
 const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin')
 // or
 // const { JaegerExporter } = require('@opentelemetry/exporter-jaeger')
@@ -26,7 +26,7 @@ module.exports = serviceName => {
   graphQLInstrumentation.setTracerProvider(provider)
   graphQLInstrumentation.enable()
 
-  api.propagation.setGlobalPropagator(new HttpTraceContext())
+  api.propagation.setGlobalPropagator(new W3CTraceContextPropagator())
   api.trace.setGlobalTracerProvider(provider)
 
   provider.addSpanProcessor(
@@ -80,10 +80,9 @@ service.register(mercurius, {
       }
     }
   },
-  federationMetadata: true
 })
 
-service.listen(4001, 'localhost', err => {
+service.listen({ port: 4001, host: 'localhost' }, err => {
   if (err) {
     console.error(err)
     process.exit(1)
@@ -116,7 +115,7 @@ gateway.register(mercurius, {
   }
 })
 
-gateway.listen(3000, 'localhost', err => {
+gateway.listen({ port: 3000, host: 'localhost' }, err => {
   if (err) {
     process.exit(1)
   }

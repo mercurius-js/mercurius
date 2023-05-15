@@ -70,7 +70,7 @@ app.get("/", async function (req, reply) {
   return reply.graphql(query);
 });
 
-app.listen(3000);
+app.listen({ port: 3000 });
 ```
 
 If you run this, you will get type definitions and a generated GraphQL based on your code:

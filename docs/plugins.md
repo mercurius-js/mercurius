@@ -10,6 +10,9 @@ Related plugins for mercurius
 - [mercurius-apollo-registry](#mercurius-apollo-registry)
 - [mercurius-apollo-tracing](#mercurius-apollo-tracing)
 - [mercurius-postgraphile](#mercurius-postgraphile)
+- [mercurius-logging](#mercurius-logging)
+- [mercurius-fetch](#mercurius-fetch)
+- [mercurius-hit-map](#mercurius-hit-map)
 
 ## mercurius-auth
 
@@ -62,7 +65,7 @@ app.register(AltairFastify, {
   endpointURL: '/graphql'
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 And it will be available at `http://localhost:3000/altair` 🎉
@@ -100,7 +103,7 @@ app.register(mercuriusApolloRegistry, {
   apiKey: 'REPLACE-THIS-VALUE-WITH-APOLLO-API-KEY'
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 ## mercurius-apollo-tracing
@@ -124,3 +127,48 @@ app.register(mercuriusTracing, {
 A Mercurius plugin for integrating PostGraphile schemas with Mercurius
 
 Check [https://github.com/autotelic/mercurius-postgraphile](https://github.com/autotelic/mercurius-postgraphile) for usage and readme.
+
+## mercurius-logging
+A Mercurius plugin to enhance the GQL request logging adding useful insights:
+
+```json
+{
+  "level": 30,
+  "time": 1660395516406,
+  "hostname": "eomm",
+  "reqId": "req-1",
+  "graphql": {
+    "queries": [
+      "firstQuery:myTeam",
+      "secondQuery:myTeam"
+    ]
+  }
+}
+```
+
+Check the [`mercurius-logging`](https://github.com/Eomm/mercurius-logging) documentation for usage and settings.
+
+## mercurius-fetch
+Mercurius Fetch is a plugin for [Mercurius](https://mercurius.dev) that adds fetch to a rest api directly on query or properties of query.
+
+Check the [`mercurius-fetch` documentation](https://github.com/rbonillajr/mercurius-fetch) for detailed usage.
+
+## mercurius-hit-map
+A Mercurius plugin to count how many times the application's resolvers are executed by the clients.
+
+```js
+const app = Fastify()
+app.register(mercurius, {
+  schema,
+  resolvers
+})
+
+app.register(require('mercurius-hit-map'))
+
+app.get('/hit', async () => {
+  const hitMap = await app.getHitMap()
+  return hitMap
+})
+```
+
+Check the [`mercurius-hit-map`](https://github.com/Eomm/mercurius-hit-map) documentation for usage and settings.

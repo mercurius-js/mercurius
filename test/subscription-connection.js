@@ -5,6 +5,7 @@ const sinon = require('sinon')
 const WebSocket = require('ws')
 const fastify = require('fastify')
 const mq = require('mqemitter')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
 const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protocol')
@@ -46,7 +47,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     subscriber: new PubSub(mq())
   })
 
-  app.listen(0, () => {
+  app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-transport-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
@@ -340,6 +341,69 @@ test('subscription connection handles when GQL_START is called before GQL_INIT',
   }))
 })
 
+test('subscription connection replies to GQL_CONNECTION_KEEP_ALIVE message with GQL_CONNECTION_KEEP_ALIVE_ACK', async (t) => {
+  t.plan(1)
+
+  const sc = new SubscriptionConnection(
+    {
+      on () {},
+      close () {},
+      send (message) {
+        t.equal(
+          JSON.stringify({
+            type: 'pong',
+            id: 1
+          }),
+          message
+        )
+      },
+      protocol: GRAPHQL_TRANSPORT_WS
+    },
+    {}
+  )
+
+  await sc.handleMessage(
+    JSON.stringify({
+      id: 1,
+      type: 'ping',
+      payload: {}
+    })
+  )
+})
+
+test('subscription connection does not error if client sends GQL_CONNECTION_KEEP_ALIVE_ACK', async (t) => {
+  t.plan(1)
+
+  const sc = new SubscriptionConnection(
+    {
+      on () {},
+      close () {},
+      send (message) {
+        t.fail()
+      },
+      protocol: GRAPHQL_TRANSPORT_WS
+    },
+    {}
+  )
+
+  await sc.handleMessage(
+    JSON.stringify({
+      id: 1,
+      type: 'pong',
+      payload: {}
+    })
+  )
+
+  await sc.handleMessage(
+    JSON.stringify({
+      id: 1,
+      type: 'complete'
+    })
+  )
+
+  t.equal(sc.subscriptionContexts.size, 0)
+})
+
 test('subscription connection extends context with onConnect return value', async (t) => {
   t.plan(3)
 
@@ -573,24 +637,17 @@ test('subscription connection handles query when fullWsTransport: true', async (
     })
   )
 
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'next',
-        id: 1,
-        payload: {}
-      })
-    ).calledOnce
-  )
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'complete',
-        id: 1,
-        payload: null
-      })
-    ).calledOnce
-  )
+  sinon.assert.calledTwice(send)
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'next',
+    id: 1,
+    payload: {}
+  }))
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'complete',
+    id: 1,
+    payload: null
+  }))
 })
 
 test('subscription connection handles mutation when fullWsTransport: true', async (t) => {
@@ -624,22 +681,72 @@ test('subscription connection handles mutation when fullWsTransport: true', asyn
     })
   )
 
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'next',
-        id: 1,
-        payload: {}
-      })
-    ).calledOnce
-  )
-  t.ok(
-    send.withArgs(
-      JSON.stringify({
-        type: 'complete',
-        id: 1,
-        payload: null
-      })
-    ).calledOnce
-  )
+  sinon.assert.calledTwice(send)
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'next',
+    id: 1,
+    payload: {}
+  }))
+  sinon.assert.calledWith(send, JSON.stringify({
+    type: 'complete',
+    id: 1,
+    payload: null
+  }))
+})
+
+test('subscription data is released right after it ends', async (t) => {
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send () {},
+    protocol: GRAPHQL_TRANSPORT_WS
+  }, {
+    context: { preSubscriptionParsing: null, preSubscriptionExecution: null },
+    fastify: {
+      graphql: {
+        schema: makeExecutableSchema({
+          typeDefs: ['type Query { blah: String! }', 'type Subscription { onMessage: String! }'],
+          resolvers: {
+            Query: {},
+            Subscription: {
+              onMessage: {
+                async * subscribe () {
+                  return 'blah'
+                }
+              }
+            }
+          }
+        })
+      }
+    }
+  })
+
+  sc.isReady = true
+
+  t.equal(sc.subscriptionIters.size, 0)
+  t.equal(sc.subscriptionContexts.size, 0)
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'subscribe',
+    payload: {
+      query: 'subscription { onMessage } '
+    }
+  }))
+
+  await new Promise(resolve => {
+    sc.sendMessage = (type, id, payload) => {
+      t.equal(id, 1)
+      t.equal(type, 'complete')
+      t.equal(payload, null)
+
+      t.equal(sc.subscriptionIters.size, 1)
+      t.equal(sc.subscriptionContexts.size, 1)
+
+      resolve()
+    }
+  })
+
+  t.equal(sc.subscriptionIters.size, 0)
+  t.equal(sc.subscriptionContexts.size, 0)
 })

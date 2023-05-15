@@ -15,6 +15,8 @@
 
 ## Federation
 
+Federation support is managed by the plugin [`@mercuriusjs/federation`](https://github.com/mercurius-js/mercurius-federation) and the plugin [`@mercuriusjs/gateway`](https://github.com/mercurius-js/mercurius-gateway)
+
 ### Federation metadata support
 
 The signature of the method is the same as a standard resolver: `__resolveReference(source, args, context, info)` where the `source` will contain the reference object that needs to be resolved.
@@ -23,7 +25,7 @@ The signature of the method is the same as a standard resolver: `__resolveRefere
 'use strict'
 
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithFederation = require('@mercuriusjs/federation')
 
 const users = {
   1: {
@@ -64,10 +66,9 @@ const resolvers = {
   }
 }
 
-app.register(mercurius, {
+app.register(mercuriusWithFederation, {
   schema,
   resolvers,
-  federationMetadata: true
 })
 
 app.get('/', async function (req, reply) {
@@ -75,7 +76,7 @@ app.get('/', async function (req, reply) {
   return app.graphql(query)
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 ### Federation with \_\_resolveReference caching
@@ -86,7 +87,7 @@ Just like standard resolvers, the `__resolveReference` resolver can be a perform
 'use strict'
 
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithFederation = require('@mercuriusjs/federation')
 
 const users = {
   1: {
@@ -131,11 +132,10 @@ const loaders = {
   }
 }
 
-app.register(mercurius, {
+app.register(mercuriusWithFederation, {
   schema,
   resolvers,
   loaders,
-  federationMetadata: true
 })
 
 app.get('/', async function (req, reply) {
@@ -143,12 +143,12 @@ app.get('/', async function (req, reply) {
   return app.graphql(query)
 })
 
-app.listen(3000)
+app.listen({ port: 3000 })
 ```
 
 ### Use GraphQL server as a Gateway for federated schemas
 
-A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that supports the federation.
+A GraphQL server can act as a Gateway that composes the schemas of the underlying services into one federated schema and executes queries across the services. Every underlying service must be a GraphQL server that [supports the federation](https://www.apollographql.com/docs/federation/supported-subgraphs/).
 
 In Gateway mode the following options are not allowed (the plugin will throw an error if any of them are defined):
 
@@ -164,9 +164,9 @@ Also, using the following decorator methods will throw:
 
 ```js
 const gateway = Fastify()
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
-gateway.register(mercurius, {
+gateway.register(mercuriusWithGateway, {
   gateway: {
     services: [
       {
@@ -182,6 +182,9 @@ gateway.register(mercurius, {
           return {
             'x-api-key': 'secret-api-key'
           }
+        },
+        setResponseHeaders: (reply) => {
+          reply.header('set-cookie', 'sessionId=12345')
         }
       },
       {
@@ -192,7 +195,7 @@ gateway.register(mercurius, {
   }
 })
 
-await gateway.listen(4000)
+await gateway.listen({ port: 4000 })
 ```
 
 #### Periodically refresh federated schemas in Gateway mode
@@ -203,9 +206,9 @@ The Gateway service can obtain new versions of federated schemas automatically w
 
 ```js
 const gateway = Fastify()
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
-gateway.register(mercurius, {
+gateway.register(mercuriusWithGateway, {
   gateway: {
     services: [
       {
@@ -217,7 +220,7 @@ gateway.register(mercurius, {
   }
 })
 
-gateway.listen(3001)
+gateway.listen({ port: 3001 })
 ```
 
 #### Programmatically refresh federated schemas in Gateway mode
@@ -226,11 +229,11 @@ The service acting as the Gateway can manually trigger re-fetching the federated
 
 ```js
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(mercurius, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -246,7 +249,7 @@ server.register(mercurius, {
   }
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 
 setTimeout(async () => {
   const schema = await server.graphql.gateway.refresh()
@@ -263,11 +266,11 @@ The service acting as the Gateway can use supplied schema definitions instead of
 
 ```js
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(mercurius, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -303,7 +306,7 @@ server.register(mercurius, {
   }
 })
 
-await server.listen(3002)
+await server.listen({ port: 3002 })
 
 server.graphql.gateway.serviceMap.user.setSchema(`
   extend type Query {
@@ -330,11 +333,11 @@ Gateway service can handle federated services in 2 different modes, `mandatory` 
 
 ```js
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(mercurius, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -364,11 +367,11 @@ Enabling batched queries for a service that doesn't support it will generate err
 
 ```js
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(mercurius, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -387,7 +390,7 @@ server.register(mercurius, {
   pollingInterval: 2000
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 ```
 
 #### Using a custom errorHandler for handling downstream service errors in Gateway mode
@@ -396,11 +399,11 @@ Service which uses Gateway mode can process different types of issues that can b
 
 ```js
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(mercurius, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -423,7 +426,7 @@ server.register(mercurius, {
   pollingInterval: 2000
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 ```
 
 _Note: The default behavior of `errorHandler` is call `errorFormatter` to send the result. When is provided an `errorHandler` make sure to **call `errorFormatter` manually if needed**._
@@ -434,11 +437,11 @@ Gateway service responses can be securely parsed using the `useSecureParse` flag
 
 ```js
 const Fastify = require('fastify')
-const mercurius = require('mercurius')
+const mercuriusWithGateway = require('@mercuriusjs/gateway')
 
 const server = Fastify()
 
-server.register(mercurius, {
+server.register(mercuriusWithGateway, {
   graphiql: true,
   gateway: {
     services: [
@@ -456,5 +459,5 @@ server.register(mercurius, {
   pollingInterval: 2000
 })
 
-server.listen(3002)
+server.listen({ port: 3002 })
 ```

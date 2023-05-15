@@ -116,9 +116,6 @@ test('subscription - hooks basic', async t => {
     t.type(context, 'object')
     t.ok('preSubscriptionExecution called')
   })
-  app.graphql.addHook('preGatewaySubscriptionExecution', async (schema, document, context) => {
-    t.fail('preGatewaySubscriptionExecution should not be called in non-gateway mode')
-  })
   app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
     t.same(execution, {
       data: {
@@ -132,7 +129,7 @@ test('subscription - hooks basic', async t => {
     t.ok('onSubscriptionResolution called')
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, app)
 
@@ -193,7 +190,7 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
     t.fail('onSubscriptionResolution should not be called')
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, app)
 
@@ -243,7 +240,7 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
     t.fail('onSubscriptionResolution should not be called')
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, app)
 
@@ -291,7 +288,7 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
     t.fail('onSubscriptionResolution should not be called agin')
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const { client, ws } = createWebSocketClient(t, app)
 
@@ -322,15 +319,16 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
 // onSubscriptionEnd
 // -----------------
 test('subscription - should call onSubscriptionEnd when subscription ends', async t => {
-  t.plan(4)
+  t.plan(5)
   const app = await createTestServer(t)
 
-  app.graphql.addHook('onSubscriptionEnd', async (context) => {
+  app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
     t.type(context, 'object')
+    t.equal(id, 1)
     t.ok('onSubscriptionEnd called')
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const { client } = createWebSocketClient(t, app)
 
@@ -367,11 +365,11 @@ test('subscription - should handle onSubscriptionEnd hook errors', async t => {
   t.plan(2)
   const app = await createTestServer(t)
 
-  app.graphql.addHook('onSubscriptionEnd', async (context) => {
+  app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
     throw new Error('kaboom')
   })
 
-  await app.listen(0)
+  await app.listen({ port: 0 })
 
   const { client, ws } = createWebSocketClient(t, app)
 

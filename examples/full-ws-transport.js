@@ -87,4 +87,4 @@ app.register(mercurius, {
   }
 })
 
-app.listen(4000)
+app.listen({ port: 4000 })

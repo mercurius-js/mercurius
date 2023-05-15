@@ -8,14 +8,12 @@ By using hooks you can interact directly with the GraphQL lifecycle of Mercurius
   - [preParsing](#preparsing)
   - [preValidation](#prevalidation)
   - [preExecution](#preexecution)
-  - [preGatewayExecution](#pregatewayexecution)
   - [onResolution](#onresolution)
   - [Manage Errors from a request hook](#manage-errors-from-a-request-hook)
   - [Add errors to the GraphQL response from a hook](#add-errors-to-the-graphql-response-from-a-hook)
 - [GraphQL Subscription Hooks](#graphql-subscription-hooks)
   - [preSubscriptionParsing](#presubscriptionparsing)
   - [preSubscriptionExecution](#presubscriptionexecution)
-  - [preGatewaySubscriptionExecution](#pregatewaysubscriptionexecution)
   - [onSubscriptionResolution](#onsubscriptionresolution)
   - [onSubscriptionEnd](#onsubscriptionend)
   - [Manage Errors from a subscription hook](#manage-errors-from-a-subscription-hook)
@@ -62,39 +60,24 @@ fastify.graphql.addHook('preValidation', async (schema, document, context) => {
 In the `preExecution` hook, you can modify the following items by returning them in the hook definition:
   - `document`
   - `schema`
+  - `variables`
   - `errors`
 
 Note that if you modify the `schema` or the `document` object, the [jit](./api/options.md#plugin-options) compilation will be disabled for the request.
 
 ```js
-fastify.graphql.addHook('preExecution', async (schema, document, context) => {
-  const { modifiedSchema, modifiedDocument, errors } = await asyncMethod(document)
+fastify.graphql.addHook('preExecution', async (schema, document, context, variables) => {
+  const {
+    modifiedSchema,
+    modifiedDocument,
+    modifiedVariables,
+    errors
+  } = await asyncMethod(document)
 
   return {
     schema: modifiedSchema, // ⚠️ changing the schema may break the query execution. Use it carefully.
     document: modifiedDocument,
-    errors
-  }
-})
-```
-
-### preGatewayExecution
-
-In the `preGatewayExecution` hook, you can modify the following items by returning them in the hook definition:
-  - `document`
-  - `errors`
-
-This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger multiple times in a single request just before executing remote GraphQL queries on the federated services.
-
-Note, this hook contains service metadata in the `service` parameter:
-- `name`: service name
-
-```js
-fastify.graphql.addHook('preGatewayExecution', async (schema, document, context, service) => {
-  const { modifiedDocument, errors } = await asyncMethod(document)
-
-  return {
-    document: modifiedDocument,
+    variables: modifiedVariables,
     errors
   }
 })
@@ -113,8 +96,6 @@ fastify.graphql.addHook('onResolution', async (execution, context) => {
 ### Manage Errors from a request hook
 If you get an error during the execution of your hook, you can just throw an error and Mercurius will automatically close the GraphQL request and send the appropriate errors to the user.`
 
-**Notice:** there is one exception to this with the `preGatewayExecution` hook, which will continue execution of the rest of the query and append the error to the errors array in the response.
-
 ```js
 fastify.graphql.addHook('preParsing', async (schema, source, context) => {
   throw new Error('Some error')
@@ -126,18 +107,11 @@ fastify.graphql.addHook('preParsing', async (schema, source, context) => {
 The following hooks support adding errors to the GraphQL response. These are:
 
  - `preExecution`
- - `preGatewayExecution`
 
 ```js
 fastify.graphql.addHook('preExecution', async (schema, document, context) => {
   return {
     errors: [new Error('foo')]
-  }
-})
-
-fastify.graphql.addHook('preExecution', async (schema, document, context) => {
-  return {
-    errors: [new Error('bar')]
   }
 })
 ```
@@ -194,19 +168,6 @@ fastify.graphql.addHook('preSubscriptionExecution', async (schema, document, con
 })
 ```
 
-### preGatewaySubscriptionExecution
-
-This hook will only be triggered in gateway mode. When in gateway mode, each hook definition will trigger when creating a subscription with a federated service.
-
-Note, this hook contains service metadata in the `service` parameter:
-- `name`: service name
-
-```js
-fastify.graphql.addHook('preGatewaySubscriptionExecution', async (schema, document, context, service) => {
-  await asyncMethod()
-})
-```
-
 ### onSubscriptionResolution
 
 ```js
@@ -220,7 +181,7 @@ fastify.graphql.addHook('onSubscriptionResolution', async (execution, context) =
 This hook will be triggered when a subscription ends.
 
 ```js
-fastify.graphql.addHook('onSubscriptionEnd', async (context) => {
+fastify.graphql.addHook('onSubscriptionEnd', async (context, id) => {
   await asyncMethod()
 })
 ```
@@ -246,20 +207,3 @@ When registering hooks, you must wait for Mercurius to be registered in Fastify.
 ```js
 await fastify.ready()
 ```
-
-### onGatewayReplaceSchema
-
-When the Gateway service obtains new versions of federated schemas within a defined polling interval, the `onGatewayReplaceSchema` hook will be triggered every time a new schema is built. It is called just before the old schema is replaced with the new one.
-
-This hook will only be triggered in gateway mode. It has the following parameters:
-
- - `instance` - The gateway server `FastifyInstance` (this contains the old schema).
- - `schema` - The new schema that has been built from the gateway refresh.
-
-```js
-fastify.graphql.addHook('onGatewayReplaceSchema', async (instance, schema) => {
-  await someSchemaTraversalFn()
-})
-```
-
-If this hook throws, the error will be caught and logged using the `FastifyInstance` logger. Subsequent `onGatewayReplaceSchema` hooks that are registered will not be run for this interval.
