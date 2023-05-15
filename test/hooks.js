@@ -126,38 +126,24 @@ test('hooks can be called multiple times', async t => {
 })
 
 test('hooks validation should handle invalid hook names', async t => {
-  t.plan(1)
   const app = await createTestServer(t)
-
-  try {
-    app.graphql.addHook('unsupportedHook', async () => {})
-  } catch (e) {
-    t.equal(e.message, 'unsupportedHook hook not supported!')
-  }
+  t.rejects(async () => app.graphql.addHook('unsupportedHook', async () => {}), { message: 'unsupportedHook hook not supported!' })
 })
 
 test('hooks validation should handle invalid hook name types', async t => {
-  t.plan(2)
   const app = await createTestServer(t)
-
-  try {
-    app.graphql.addHook(1, async () => {})
-  } catch (e) {
-    t.equal(e.code, 'MER_ERR_HOOK_INVALID_TYPE')
-    t.equal(e.message, 'The hook name must be a string')
-  }
+  t.rejects(async () => app.graphql.addHook(1, async () => {}), {
+    code: 'MER_ERR_HOOK_INVALID_TYPE',
+    message: 'The hook name must be a string'
+  })
 })
 
 test('hooks validation should handle invalid hook handlers', async t => {
-  t.plan(2)
   const app = await createTestServer(t)
-
-  try {
-    app.graphql.addHook('preParsing', 'not a function')
-  } catch (e) {
-    t.equal(e.code, 'MER_ERR_HOOK_INVALID_HANDLER')
-    t.equal(e.message, 'The hook callback must be a function')
-  }
+  t.rejects(async () => app.graphql.addHook('preParsing', 'not a function'), {
+    code: 'MER_ERR_HOOK_INVALID_HANDLER',
+    message: 'The hook callback must be a function'
+  })
 })
 
 test('hooks should trigger when JIT is enabled', async t => {

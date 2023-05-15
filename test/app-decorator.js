@@ -246,11 +246,8 @@ test('replaceSchema (clearing cache)', async (t) => {
   )
 
   query = '{ subtract(x: 4, y: 2) }'
-  try {
-    await app.graphql(query)
-  } catch (err) {
-    t.equal(err.errors[0].message, 'Cannot query field "subtract" on type "Query".')
-  }
+
+  await t.rejects(app.graphql(query), { errors: [{ message: 'Cannot query field "subtract" on type "Query".' }] })
 })
 
 test('replaceSchema (without cache)', async (t) => {
@@ -304,11 +301,8 @@ test('replaceSchema (without cache)', async (t) => {
   )
 
   query = '{ subtract(x: 4, y: 2) }'
-  try {
-    await app.graphql(query)
-  } catch (err) {
-    t.equal(err.errors[0].message, 'Cannot query field "subtract" on type "Query".')
-  }
+
+  await t.rejects(app.graphql(query), { errors: [{ message: 'Cannot query field "subtract" on type "Query".' }] })
 })
 
 test('replaceSchema with makeSchemaExecutable (schema should be provided)', async (t) => {
@@ -333,11 +327,7 @@ test('replaceSchema with makeSchemaExecutable (schema should be provided)', asyn
     app.graphql.replaceSchema()
   })
 
-  try {
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
-  }
+  await t.rejects(app.ready(), 'Invalid options: Must provide valid Document AST')
 })
 
 test('extendSchema and defineResolvers for query', async (t) => {
@@ -1003,11 +993,7 @@ test('extended Schema is not string', async t => {
     app.graphql.extendSchema(schema2)
   })
 
-  try {
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
-  }
+  await t.rejects(app.ready(), { message: 'Invalid options: Must provide valid Document AST' })
 })
 
 test('extended Schema is undefined', async t => {
@@ -1022,11 +1008,7 @@ test('extended Schema is undefined', async t => {
     app.graphql.extendSchema()
   })
 
-  try {
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Invalid options: Must provide valid Document AST')
-  }
+  await t.rejects(app.ready(), { message: 'Invalid options: Must provide valid Document AST' })
 })
 
 test('extended Schema is an object', async t => {
@@ -1095,16 +1077,14 @@ test('Error in schema', async (t) => {
 
   const app = Fastify()
 
-  try {
-    app.register(GQL, {
-      schema,
-      resolvers
-    })
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Interface field Event.Id expected but CustomEvent does not provide it.')
-    t.equal(error.name, 'GraphQLError')
-  }
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+  await t.rejects(app.ready(), {
+    message: 'Interface field Event.Id expected but CustomEvent does not provide it.',
+    name: 'GraphQLError'
+  })
 })
 
 test('Multiple errors in schema', async (t) => {
@@ -1131,20 +1111,24 @@ test('Multiple errors in schema', async (t) => {
 
   const app = Fastify()
 
-  try {
-    app.register(GQL, {
-      schema,
-      resolvers
-    })
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Invalid schema: check out the .errors property on the Error')
-    t.equal(error.name, 'FastifyError')
-    t.equal(error.errors[0].message, 'Interface field Event.Id expected but CustomEvent does not provide it.')
-    t.equal(error.errors[0].name, 'GraphQLError')
-    t.equal(error.errors[1].message, 'Interface field Event.Id expected but AnotherEvent does not provide it.')
-    t.equal(error.errors[1].name, 'GraphQLError')
-  }
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+  await t.rejects(app.ready(), {
+    message: 'Invalid schema: check out the .errors property on the Error',
+    name: 'FastifyError',
+    errors: [
+      {
+        message: 'Interface field Event.Id expected but CustomEvent does not provide it.',
+        name: 'GraphQLError'
+      },
+      {
+        message: 'Interface field Event.Id expected but AnotherEvent does not provide it.',
+        name: 'GraphQLError'
+      }
+    ]
+  })
 })
 
 test('defineResolvers should throw if field is not defined in schema', async (t) => {
@@ -1319,12 +1303,10 @@ test('throws on invalid ast input', async (t) => {
       }
     ]
   }`
-  try {
-    await app.graphql(query)
-  } catch (err) {
-    t.equal(err.message, 'Invalid AST Node: { definitions: [[Object]] }.')
-    t.equal(err.name, 'Error')
-  }
+  await t.rejects(app.graphql(query), {
+    message: 'Invalid AST Node: { definitions: [[Object]] }.',
+    name: 'Error'
+  })
 })
 
 test('support ast input on external requests', async (t) => {

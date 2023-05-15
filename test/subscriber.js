@@ -67,7 +67,6 @@ test('subscription context publish event errs, error is catched', t => {
 })
 
 test('subscription context publish event returns a promise reject on error', async t => {
-  t.plan(1)
   const emitter = mq()
   const error = new Error('Dummy error')
   emitter.on = (topic, listener, done) => done(error)
@@ -75,11 +74,7 @@ test('subscription context publish event returns a promise reject on error', asy
   const pubsub = new PubSub(emitter)
   const sc = new SubscriptionContext({ pubsub })
 
-  try {
-    await sc.subscribe('TOPIC')
-  } catch (e) {
-    t.same(error, e)
-  }
+  await t.rejects(sc.subscribe('TOPIC'), error)
 })
 
 test('subscription context can handle multiple topics', t => {

@@ -31,11 +31,7 @@ test('hooksRunner - Basic', (t) => {
 test('hooksRunner - In case of error should skip subsequent functions', async (t) => {
   t.plan(3)
 
-  try {
-    await hooksRunner([fn1, fn2, fn3], iterator, 'a')
-  } catch (err) {
-    t.equal(err.message, 'kaboom')
-  }
+  await t.rejects(hooksRunner([fn1, fn2, fn3], iterator, 'a'), { message: 'kaboom' })
 
   function iterator (fn, a) {
     return fn(a)
@@ -118,13 +114,7 @@ test('hooksRunner - Promises that resolve to a value do not change the state', (
 })
 
 test('hooksRunner - Should handle when iterator errors', async (t) => {
-  t.plan(1)
-
-  try {
-    await hooksRunner([fn1, fn2], iterator, 'a')
-  } catch (err) {
-    t.equal(err.message, 'kaboom')
-  }
+  await t.rejects(hooksRunner([fn1, fn2], iterator, 'a'), { message: 'kaboom' })
 
   function iterator (fn) {
     throw new Error('kaboom')
@@ -172,12 +162,7 @@ test('preExecutionHooksRunner - In case of error should skip subsequent function
   t.plan(7)
 
   const originalRequest = { schema: 'schema', document: 'document', context: 'context' }
-
-  try {
-    await preExecutionHooksRunner([fn1, fn2, fn3], originalRequest)
-  } catch (err) {
-    t.equal(err.message, 'kaboom')
-  }
+  await t.rejects(preExecutionHooksRunner([fn1, fn2, fn3], originalRequest), { message: 'kaboom' })
 
   function fn1 (schema, document, context) {
     t.equal(schema, 'schema')
@@ -269,13 +254,8 @@ test('preExecutionHooksRunner - Should handle thrown errors', async t => {
   t.plan(8)
 
   const originalRequest = { schema: 'schema', document: 'document', context: 'context' }
-
-  try {
-    await preExecutionHooksRunner([fn1, fn2, fn3], originalRequest)
-  } catch (err) {
-    t.equal(err.message, 'kaboom')
-    t.same(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
-  }
+  await t.rejects(preExecutionHooksRunner([fn1, fn2, fn3], originalRequest), { message: 'kaboom' })
+  t.same(originalRequest, { schema: 'schema', document: 'document', context: 'context' })
 
   function fn1 (schema, document, context) {
     t.equal(schema, 'schema')

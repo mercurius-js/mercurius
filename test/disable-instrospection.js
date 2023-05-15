@@ -34,13 +34,7 @@ test('should disallow instrospection with "__schema" when NoSchemaIntrospectionC
 
   // needed so that graphql is defined
   await app.ready()
-
-  try {
-    await app.graphql(query)
-  } catch (e) {
-    t.equal(e.errors.length > 0, true)
-    t.equal(e.errors[0].message, 'GraphQL introspection has been disabled, but the requested query contained the field "__schema".')
-  }
+  await t.rejects(app.graphql(query), { errors: [{ message: 'GraphQL introspection has been disabled, but the requested query contained the field "__schema".' }] })
 })
 
 test('should disallow instrospection with "__type" when NoSchemaIntrospectionCustomRule are applied to validationRules', async (t) => {
@@ -57,11 +51,5 @@ test('should disallow instrospection with "__type" when NoSchemaIntrospectionCus
 
   // needed so that graphql is defined
   await app.ready()
-
-  try {
-    await app.graphql(query)
-  } catch (e) {
-    t.equal(e.errors.length > 0, true)
-    t.equal(e.errors[0].message, 'GraphQL introspection has been disabled, but the requested query contained the field "__type".')
-  }
+  await t.rejects(app.graphql(query), { errors: [{ message: 'GraphQL introspection has been disabled, but the requested query contained the field "__type".' }] })
 })
