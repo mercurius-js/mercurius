@@ -11,6 +11,7 @@ test('reply decorator', async (t) => {
       add(x: Int, y: Int): Int
     }
   `
+  t.teardown(app.close.bind(app))
 
   const resolvers = {
     add: async ({ x, y }) => x + y
@@ -40,6 +41,7 @@ test('reply decorator', async (t) => {
 
 test('reply decorator operationName', async (t) => {
   const app = Fastify()
+  t.teardown(app.close.bind(app))
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -90,6 +92,7 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   t.plan(3)
 
   const app = Fastify()
+  t.teardown(app.close.bind(app))
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -126,6 +129,7 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
 
 test('reply decorator supports encapsulation when loaders are defined in parent object', async (t) => {
   const app = Fastify()
+  t.teardown(app.close.bind(app))
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
