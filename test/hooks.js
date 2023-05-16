@@ -1,6 +1,7 @@
 'use strict'
 
 const { test } = require('tap')
+const sinon = require('sinon')
 const Fastify = require('fastify')
 const proxyquire = require('proxyquire')
 const { mapSchema } = require('@graphql-tools/utils')
@@ -557,12 +558,12 @@ test('preExecution hooks should be able to modify the schema document AST', asyn
   t.plan(8)
   const app = await createTestServer(t)
 
-  const query = `{ 
-    __type(name:"Query") { 
+  const query = `{
+    __type(name:"Query") {
       name
       fields {
         name
-      }  
+      }
     }
   }`
 
@@ -930,4 +931,43 @@ test('onResolution hooks should be able to add extensions data', async t => {
       extensionKey: 'extensionValue'
     }
   })
+})
+
+test('onExtendSchema hooks should be triggered when extendSchema is called', async t => {
+  t.plan(1)
+
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onExtendSchema', async (schema, context) => {
+    t.pass('onExtendSchema called')
+  })
+
+  const extendedSchema = `
+    extend type Query {
+      sub(x: Int, y: Int): Int
+    }
+  `
+
+  const extendedResolvers = {
+    Query: {
+      sub: async (_, { x, y }) => x - y
+    }
+  }
+
+  await app.register(async function (app) {
+    app.graphql.extendSchema(extendedSchema)
+    app.graphql.defineResolvers(extendedResolvers)
+  })
+})
+
+test('onExtendSchema hooks should not be triggered if extendSchema is not called', async t => {
+  const onExtendSchemaFn = sinon.stub()
+
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onExtendSchema', async (schema, context) => {
+    onExtendSchemaFn()
+  })
+
+  sinon.assert.notCalled(onExtendSchemaFn)
 })

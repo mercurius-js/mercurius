@@ -36,13 +36,14 @@ const {
   MER_ERR_INVALID_OPTS,
   MER_ERR_METHOD_NOT_ALLOWED
 } = require('./lib/errors')
-const { Hooks, assignLifeCycleHooksToContext } = require('./lib/hooks')
+const { Hooks, assignLifeCycleHooksToContext, assignApplicationHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
 const {
   preParsingHandler,
   preValidationHandler,
   preExecutionHandler,
-  onResolutionHandler
+  onResolutionHandler,
+  onExtendSchemaHandler
 } = require('./lib/handlers')
 
 function buildCache (opts) {
@@ -247,6 +248,12 @@ const plugin = fp(async function (app, opts) {
     }
 
     fastifyGraphQl.schema = extendSchema(fastifyGraphQl.schema, s)
+
+    const context = assignApplicationHooksToContext({}, fastifyGraphQl[kHooks])
+
+    if (context.onExtendSchema !== null) {
+      return onExtendSchemaHandler({ schema: fastifyGraphQl.schema, context })
+    }
   }
 
   fastifyGraphQl.defineResolvers = fastifyGraphQl.defineResolvers || function (resolvers) {
