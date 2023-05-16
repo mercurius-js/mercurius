@@ -23,7 +23,6 @@ const resolvers = {
 const query = '{ add(x: 2, y: 2) }'
 
 test('validationRules array - reports an error', async (t) => {
-  t.plan(2)
   const app = Fastify()
 
   app.register(GQL, {
@@ -43,13 +42,7 @@ test('validationRules array - reports an error', async (t) => {
 
   // needed so that graphql is defined
   await app.ready()
-
-  try {
-    await app.graphql(query)
-  } catch (e) {
-    t.equal(e.errors.length, 1)
-    t.equal(e.errors[0].message, 'Validation rule error')
-  }
+  await t.rejects(app.graphql(query), { errors: [{ message: 'Validation rule error' }] })
 })
 
 test('validationRules array - passes when no errors', async (t) => {
@@ -96,7 +89,6 @@ test('validationRules array - works with empty validationRules', async (t) => {
 })
 
 test('validationRules - reports an error', async (t) => {
-  t.plan(2)
   const app = Fastify()
 
   app.register(GQL, {
@@ -117,13 +109,7 @@ test('validationRules - reports an error', async (t) => {
 
   // needed so that graphql is defined
   await app.ready()
-
-  try {
-    await app.graphql(query)
-  } catch (e) {
-    t.equal(e.errors.length, 1)
-    t.equal(e.errors[0].message, 'Validation rule error')
-  }
+  await t.rejects(app.graphql(query), { errors: [{ message: 'Validation rule error' }] })
 })
 
 test('validationRules - passes when no errors', async (t) => {
@@ -227,7 +213,6 @@ test('validationRules - includes graphql request metadata', async (t) => {
 })
 
 test('validationRules - errors if cache is used with the function', async (t) => {
-  t.plan(1)
   const app = Fastify()
 
   app.register(GQL, {
@@ -238,10 +223,5 @@ test('validationRules - errors if cache is used with the function', async (t) =>
   })
 
   // needed so that graphql is defined
-
-  try {
-    await app.ready()
-  } catch (e) {
-    t.equal(e.message, 'Invalid options: Using a function for the validationRules is incompatible with query caching')
-  }
+  await t.rejects(app.ready(), { message: 'Invalid options: Using a function for the validationRules is incompatible with query caching' })
 })

@@ -156,7 +156,6 @@ test('queryDepth - test total depth is within queryDepth parameter', async (t) =
 })
 
 test('queryDepth - test total depth is over queryDepth parameter', async (t) => {
-  t.plan(1)
   const app = Fastify()
 
   app.register(GQL, {
@@ -172,11 +171,7 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   const queryDepthError = new MER_ERR_GQL_QUERY_DEPTH('unnamedQuery', 6, 5)
   err.errors = [queryDepthError]
 
-  try {
-    await app.graphql(query)
-  } catch (error) {
-    t.same(error, err)
-  }
+  await t.rejects(app.graphql(query), err)
 })
 
 test('queryDepth - queryDepth is not number', async (t) => {

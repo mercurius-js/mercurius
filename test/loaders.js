@@ -448,13 +448,10 @@ test('rersolver unknown type', async t => {
     resolvers
   })
 
-  try {
-    // needed so that graphql is defined
+  await t.rejects(async () => {
     await app.ready()
     app.graphql('query { test }')
-  } catch (error) {
-    t.equal(error.message, 'Invalid options: Cannot find type test')
-  }
+  }, { message: 'Invalid options: Cannot find type test' })
 })
 
 test('minJit is not a number, throw error', async t => {
@@ -464,11 +461,7 @@ test('minJit is not a number, throw error', async t => {
     jit: '0'
   })
 
-  try {
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Invalid options: the jit option must be a number')
-  }
+  await t.rejects(app.ready(), { message: 'Invalid options: the jit option must be a number' })
 })
 
 test('options cache is type = number', async t => {
@@ -482,21 +475,6 @@ test('options cache is type = number', async t => {
   await app.ready()
 })
 
-test('options cache is boolean', async t => {
-  const app = Fastify()
-
-  app.register(GQL, {
-    cache: true,
-    schema
-  })
-
-  try {
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Invalid options: Cache type is not supported')
-  }
-})
-
 test('options cache is !number && !boolean', async t => {
   const app = Fastify()
 
@@ -504,11 +482,7 @@ test('options cache is !number && !boolean', async t => {
     cache: 'cache'
   })
 
-  try {
-    await app.ready()
-  } catch (error) {
-    t.equal(error.message, 'Invalid options: Cache type is not supported')
-  }
+  await t.rejects(app.ready(), { message: 'Invalid options: Cache type is not supported' })
 })
 
 test('options cache is false and lruErrors exists', async t => {
@@ -521,13 +495,7 @@ test('options cache is false and lruErrors exists', async t => {
 
   // needed so that graphql is defined
   await app.ready()
-
-  try {
-    await app.graphql('{ dogs { name { owner } } }')
-  } catch (error) {
-    t.equal(error.message, 'Graphql validation error')
-    t.end()
-  }
+  await t.rejects(app.graphql('{ dogs { name { owner } } }'), { message: 'Graphql validation error' })
 })
 
 test('reply is empty, throw error', async (t) => {
