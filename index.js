@@ -149,6 +149,10 @@ const plugin = fp(async function (app, opts) {
   let schema = opts.schema
 
   if (Array.isArray(schema)) {
+    if (schema.some(s => typeof s !== 'string')) {
+      throw new MER_ERR_INVALID_OPTS('when providing an array to the "schema" option, only string schemas are allowed')
+    }
+
     schema = schema.join('\n')
   }
 
