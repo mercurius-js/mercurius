@@ -30,7 +30,7 @@
     "graphql": "^16.0.0"
   },
   "devDependencies": {
-    "@graphql-tools/merge": "^8.0.0",
+    "@graphql-tools/merge": "^9.0.0",
     "@graphql-tools/schema": "^9.0.2",
     "@graphql-tools/utils": "^9.1.4",
     "@sinonjs/fake-timers": "^10.0.2",
