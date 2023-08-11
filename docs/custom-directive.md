@@ -56,10 +56,10 @@ const { mapSchema, getDirective, MapperKind } = require("@graphql-tools/utils");
 const PHONE_REGEXP = /(?:\+?\d{2}[ -]?\d{3}[ -]?\d{5}|\d{4})/g;
 const EMAIL_REGEXP = /([^\s@])+@[^\s@]+\.[^\s@]+/g;
 
-const redactionSchemaTransformer = (schema) =>
+const redactionSchemaTransformer = schema =>
   mapSchema(schema, {
     // When parsing the schema we find a FIELD
-    [MapperKind.FIELD]: (fieldConfig) => {
+    [MapperKind.FIELD]: fieldConfig => {
       // Get the directive information
       const redactDirective = getDirective(schema, fieldConfig, "redact")?.[0];
       if (redactDirective) {
@@ -77,7 +77,7 @@ const redactionSchemaTransformer = (schema) =>
             case "email":
               return value.replace(EMAIL_REGEXP, "****@*****.***");
             case "phone":
-              return value.replace(PHONE_REGEXP, (m) => "*".repeat(m.length));
+              return value.replace(PHONE_REGEXP, m => "*".repeat(m.length));
             default:
               return value;
           }
@@ -127,3 +127,92 @@ app.register(mercurius, {
 ## Example
 
 We have a runnable example on "example/custom-directive.js"
+
+# Federation and Custom Directives
+
+If we are using Federation, we must follow a different approach to create custom directives.
+
+Schema definitions and transformer use the same approach indicated above. But schema generation and transformation have different implementations.
+
+## Schema Definition
+
+The schema definition is the same as the one used in the previous example.
+
+```js
+const schema = `
+  directive @upper on FIELD_DEFINITION
+
+  extend type Query {
+    me: User
+  }
+
+  type User @key(fields: "id") {
+    id: ID! 
+    name: String @upper
+    username: String
+  }`;
+```
+
+## Transformer
+
+Also, the transformer follows the same approach used in the previous example.
+
+```js
+const { mapSchema, getDirective, MapperKind } = require("@graphql-tools/utils");
+
+const uppercaseTransformer = schema =>
+  mapSchema(schema, {
+    [MapperKind.FIELD]: fieldConfig => {
+      const upperDirective = getDirective(schema, fieldConfig, "upper")?.[0];
+      if (upperDirective) {
+        fieldConfig.resolve = async (obj, _args, _ctx, info) => {
+          const value = obj[info.fieldName];
+          return typeof value === "string" ? value.toUpperCase() : value;
+        };
+      }
+    },
+  });
+```
+
+## Generate executable schema
+
+This section starts to be different. First, we need to create the federation schema using the `buildFederationSchema` function from the `mercurius-federation` library; then, we can use the `makeExecutableSchema` function from the `@graphql-tools/schema` library to create the executable schema.
+
+```js
+const { buildFederationSchema } = require("mercurius-federation");
+const {
+  printSchemaWithDirectives,
+  getResolversFromSchema,
+} = require("@graphql-tools/utils");
+const { mergeResolvers } = require("@graphql-tools/merge");
+const { makeExecutableSchema } = require("@graphql-tools/schema");
+
+const federationSchema = buildFederationSchema(schema);
+
+const executableSchema = makeExecutableSchema({
+  typeDefs: printSchemaWithDirectives(federationSchema),
+  resolvers: mergeResolvers([
+    getResolversFromSchema(federationSchema),
+    resolvers,
+  ]),
+});
+```
+
+## Apply transformations to the executable schema
+
+To apply the transformation, we have to use the mercurius plugin and pass the options:
+
+- **schema**: with the executableSchema already generated
+- **schemaTransforms**: with the transformer functions
+
+```js
+app.register(mercurius, {
+  schema: executableSchema,
+  schemaTransforms: [redactionSchemaTransformer],
+  graphiql: true,
+});
+```
+
+## Example
+
+We have a runnable example in the Federation repo that you can find here [examples/withCustomDirectives.js](https://github.com/mercurius-js/mercurius-federation/tree/main/examples/withCustomDirectives.js).
