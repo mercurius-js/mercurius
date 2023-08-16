@@ -130,10 +130,9 @@ We have a runnable example on "example/custom-directive.js"
 
 ## Federation and Custom Directives
 
-With Federation, we use special syntaxes and custom directives already defined; for instance, `extends` or `@key`. These directives are not defined in the schema but are added by the `buildFederationSchema` function from the `@mercuriusjs/federation` library.  Hence, to work with the Federation, we must follow a different approach to maintain the Federation's custom directives and add ours as well.
-This approach is not entirely different from the one used before, but some steps are different.
+Because schemas involved in GraphQL federation may use special syntax (e.g. `extends`) and custom directives (e.g. `@key`) that are not available in non-federated schemas, there are some extra steps that need to be run to generate the executable schema, involving the use of `buildFederationSchema` from the `@mercuriusjs/federation` library and `printSchemaWithDirectives` from the `@graphql-tools/utils` library.
 
-In the following example, we will create a custom directive to uppercase the value of a field in a federated environment.
+To see how this works, we will go through another example where we create a custom directive to uppercase the value of a field in a federated environment.
 
 ### Schema Definition
 
