@@ -37,7 +37,7 @@
     "@types/isomorphic-form-data": "^2.0.0",
     "@types/node": "^20.1.4",
     "@types/ws": "^8.2.0",
-    "@typescript-eslint/eslint-plugin": "^5.21.0",
+    "@typescript-eslint/eslint-plugin": "^6.6.0",
     "@typescript-eslint/parser": "^5.21.0",
     "autocannon": "^7.3.0",
     "concurrently": "^8.0.1",
