@@ -554,3 +554,25 @@ app.register(mercurius, {
     errorFormatter: (result) => ({ statusCode: result.errors[0].originalError.statusCode, response: result })
 })
 ```
+
+Using the errorFormatter means overriding the `defaultErrorFormatter` and it could cause ambiguous GraphQL error message like `GraphQL validation error` without indicating where and why the error happens. To retain the default error behaviour, you can reimplement the `defaultErrorFormatter`.
+```javascript
+import mercurius from 'mercurius';
+const { defaultErrorFormatter } = mercurius;
+
+app.register(mercurius, {
+    schema,
+    resolvers,
+    errorFormatter: (result, context) => {
+      const formatter = defaultErrorFormatter(result, context);
+
+      // your custom behaviour here
+
+      return {
+        statusCode: formatter.statusCode || 500,
+        response: formatter.response,
+      };
+    },
+});
+
+```
