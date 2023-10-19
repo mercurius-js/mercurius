@@ -97,11 +97,16 @@ function fetcherWrapper (fetcher, cbs = []) {
 
 function render () {
   const host = window.location.host
-
   const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-
-  const url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
-  const subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
+  let url = ''
+  let subscriptionUrl = ''
+  if (window.baseurl) {
+    url = `${window.location.protocol}//${host}${window.baseurl}${window.GRAPHQL_ENDPOINT}`
+    subscriptionUrl = `${websocketProtocol}//${host}${window.baseurl}${window.GRAPHQL_ENDPOINT}`
+  } else {
+    url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
+    subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
+  }
 
   const availablePlugins = window.GRAPHIQL_PLUGIN_LIST
     .map(plugin => window[`GRAPIHQL_PLUGIN_${plugin.toUpperCase()}`])
