@@ -78,9 +78,10 @@ test('subscription context publish event returns a promise reject on error', asy
 })
 
 test('subscription context can handle multiple topics', t => {
-  t.plan(2)
+  t.plan(4)
 
-  const pubsub = new PubSub(mq())
+  const q = mq()
+  const pubsub = new PubSub(q)
   const sc = new SubscriptionContext({ pubsub })
 
   sc.subscribe(['TOPIC1', 'TOPIC2'])
@@ -96,4 +97,8 @@ test('subscription context can handle multiple topics', t => {
   }).then(() => {
     t.pass()
   })
+
+  t.equal(q._matcher._trie.size, 2, 'Two listeners not found')
+  sc.close()
+  setImmediate(() => { t.equal(q._matcher._trie.size, 0, 'All listeners not removed') })
 })
