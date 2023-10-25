@@ -100,9 +100,15 @@ function render () {
   const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   let url = ''
   let subscriptionUrl = ''
-  if (window.baseurl) {
-    url = `${window.location.protocol}//${host}${window.baseurl}${window.GRAPHQL_ENDPOINT}`
-    subscriptionUrl = `${websocketProtocol}//${host}${window.baseurl}${window.GRAPHQL_ENDPOINT}`
+  let pathName = window.location.pathname
+  if (pathName.startsWith('/')) {
+    pathName = pathName.substring(1)
+  }
+  pathName = pathName.split('/')
+  const baseUrl = pathName[0]
+  if (baseUrl !== 'graphiql') {
+    url = `${window.location.protocol}//${host}//${baseUrl}${window.GRAPHQL_ENDPOINT}`
+    subscriptionUrl = `${websocketProtocol}//${host}//${baseUrl}${window.GRAPHQL_ENDPOINT}`
   } else {
     url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
     subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
