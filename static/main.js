@@ -107,8 +107,8 @@ function render () {
   pathName = pathName.split('/')
   const baseUrl = pathName[0]
   if (baseUrl !== 'graphiql') {
-    url = `${window.location.protocol}//${host}${baseUrl}${window.GRAPHQL_ENDPOINT}`
-    subscriptionUrl = `${websocketProtocol}//${host}${baseUrl}${window.GRAPHQL_ENDPOINT}`
+    url = `${window.location.protocol}//${host}//${baseUrl}${window.GRAPHQL_ENDPOINT}`
+    subscriptionUrl = `${websocketProtocol}//${host}//${baseUrl}${window.GRAPHQL_ENDPOINT}`
   } else {
     url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
     subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
