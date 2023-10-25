@@ -101,8 +101,14 @@ function render () {
   let url = ''
   let subscriptionUrl = ''
   if (window.baseurl) {
-    url = `${window.location.protocol}//${host}${window.baseurl}${window.GRAPHQL_ENDPOINT}`
-    subscriptionUrl = `${websocketProtocol}//${host}${window.baseurl}${window.GRAPHQL_ENDPOINT}`
+    let pathname = window.location.pathname
+    if (pathname.startsWith('/')) {
+      pathname = pathname.substring(1)
+    }
+    pathname = pathname.split('/')
+    const baseurl = parts[0]
+    url = `${window.location.protocol}//${host}${baseurl}${window.GRAPHQL_ENDPOINT}`
+    subscriptionUrl = `${websocketProtocol}//${host}${baseurl}${window.GRAPHQL_ENDPOINT}`
   } else {
     url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
     subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
