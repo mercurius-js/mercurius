@@ -78,6 +78,10 @@ const plugin = fp(async function (app, opts) {
   const queryDepthLimit = opts.queryDepth
   const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
 
+  opts.graphql = opts.graphql || {}
+  const gqlParseOpts = opts.graphql.parseOptions || {}
+  const gqlValidateOpts = opts.graphql.validateOptions || {}
+
   if (opts.persistedQueries) {
     if (opts.onlyPersisted) {
       opts.persistedQueryProvider = persistedQueryDefaults.preparedOnly(opts.persistedQueries)
@@ -246,7 +250,7 @@ const plugin = fp(async function (app, opts) {
 
   fastifyGraphQl.extendSchema = fastifyGraphQl.extendSchema || function (s) {
     if (typeof s === 'string') {
-      s = parse(s)
+      s = parse(s, gqlParseOpts)
     } else if (!s || typeof s !== 'object') {
       throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
     }
@@ -428,9 +432,14 @@ const plugin = fp(async function (app, opts) {
       }
 
       try {
-        document = parse(source)
+        document = parse(source, gqlParseOpts)
       } catch (syntaxError) {
         try {
+          // Do not try to JSON.parse maxToken exceeded validation errors
+          if (gqlParseOpts.maxTokens && syntaxError.message === `Syntax Error: Document contains more that ${gqlParseOpts.maxTokens} tokens. Parsing aborted.`) {
+            throw syntaxError
+          }
+
           // Try to parse the source as ast
           document = JSON.parse(source)
         } catch {
@@ -454,7 +463,7 @@ const plugin = fp(async function (app, opts) {
           validationRules = opts.validationRules({ source, variables, operationName })
         }
       }
-      const validationErrors = validate(fastifyGraphQl.schema, document, [...specifiedRules, ...validationRules])
+      const validationErrors = validate(fastifyGraphQl.schema, document, [...specifiedRules, ...validationRules], gqlValidateOpts)
 
       if (validationErrors.length > 0) {
         if (lruErrors) {

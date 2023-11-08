@@ -13,6 +13,7 @@ import {
   GraphQLScalarType,
   ValidationRule,
   FormattedExecutionResult,
+  ParseOptions,
 } from "graphql";
 import { SocketStream } from "@fastify/websocket"
 import { IncomingMessage, IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
@@ -356,6 +357,15 @@ export interface MercuriusGraphiQLOptions {
   }>
 }
 
+export interface GrapQLValidateOptions {
+  maxErrors?: number;
+}
+
+export interface MercuriusGraphQLOptions {
+  parseOptions?: ParseOptions,
+  validateOptions?: GrapQLValidateOptions
+}
+
 export interface MercuriusCommonOptions {
   /**
    * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
@@ -413,6 +423,10 @@ export interface MercuriusCommonOptions {
    * The maximum depth allowed for a single query.
    */
   queryDepth?: number;
+  /**
+   * GraphQL function optional option overrides
+   */
+  graphql?: MercuriusGraphQLOptions,
   context?: (
     request: FastifyRequest,
     reply: FastifyReply
