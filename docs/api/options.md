@@ -34,6 +34,9 @@
 - `loaders`: Object. See [defineLoaders](#appgraphqlextendschemaschema-appgraphqldefineresolversresolvers-and-appgraphqldefineloadersloaders) for more
   details.
 - `schemaTransforms`: Array of schema-transformation functions. Accept a schema as an argument and return a schema.
+- `graphql`: Object. Override options for graphql function that Mercurius utilizes.
+  - `parseOptions`: Object. [GraphQL's parse function options](https://github.com/graphql/graphql-js/blob/main/src/language/parser.ts)
+  - `validateOptions`: Object. [GraphQL's validate function options](https://github.com/graphql/graphql-js/blob/main/src/validation/validate.ts)
 - `graphiql`: boolean | string | Object. Serve
   [GraphiQL](https://www.npmjs.com/package/graphiql) on `/graphiql` if `true` or `'graphiql'`. Leave empty or `false` to disable.
   _only applies if `onlyPersisted` option is not `true`_
