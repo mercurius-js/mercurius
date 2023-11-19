@@ -95,6 +95,17 @@ function fetcherWrapper (fetcher, cbs = []) {
   }
 }
 
+/**
+ * Verify if the baseUrl is already present in the first part of GRAPHQL_ENDPOINT url
+ * to avoid unexpected duplication of paths
+ * @param {string} baseUrl [comes from {@link render} function]
+ * @returns boolean
+ */
+function isDuplicatedUrlArg (baseUrl) {
+  const checker = window.GRAPHQL_ENDPOINT.split('/')
+  return (checker[1] === baseUrl)
+}
+
 function render () {
   const host = window.location.host
   const websocketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -109,6 +120,10 @@ function render () {
   if (baseUrl !== 'graphiql') {
     url = `${window.location.protocol}//${host}/${baseUrl}${window.GRAPHQL_ENDPOINT}`
     subscriptionUrl = `${websocketProtocol}//${host}/${baseUrl}${window.GRAPHQL_ENDPOINT}`
+    if (isDuplicatedUrlArg(baseUrl)) {
+      url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
+      subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
+    }
   } else {
     url = `${window.location.protocol}//${host}${window.GRAPHQL_ENDPOINT}`
     subscriptionUrl = `${websocketProtocol}//${host}${window.GRAPHQL_ENDPOINT}`
