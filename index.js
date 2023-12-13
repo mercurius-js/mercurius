@@ -66,7 +66,7 @@ function buildCache (opts) {
   return LRU(1024)
 }
 
-const plugin = fp(async function (app, opts) {
+const mercurius = fp(async function (app, opts) {
   const lru = buildCache(opts)
   const lruErrors = buildCache(opts)
 
@@ -584,9 +584,22 @@ const plugin = fp(async function (app, opts) {
   fastify: '4.x'
 })
 
-plugin.ErrorWithProps = ErrorWithProps
-plugin.defaultErrorFormatter = defaultErrorFormatter
-plugin.persistedQueryDefaults = persistedQueryDefaults
-plugin.withFilter = withFilter
+mercurius.ErrorWithProps = ErrorWithProps
+mercurius.defaultErrorFormatter = defaultErrorFormatter
+mercurius.persistedQueryDefaults = persistedQueryDefaults
+mercurius.withFilter = withFilter
 
-module.exports = plugin
+/**
+ * These export configurations enable JS and TS developers
+ * to consume mercurius in whatever way best suits their needs.
+ * Some examples of supported import syntax includes:
+ * - `const mercurius = require('mercurius')`
+ * - `const { mercurius } = require('mercurius')`
+ * - `import * as mercurius from 'mercurius'`
+ * - `import { mercurius, TS_definition } from 'mercurius'`
+ * - `import mercurius from 'mercurius'`
+ * - `import mercurius, { TS_definition } from 'mercurius'`
+ */
+module.exports = mercurius
+module.exports.mercurius = mercurius
+module.exports.default = mercurius

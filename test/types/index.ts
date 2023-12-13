@@ -6,7 +6,13 @@ import Fastify, { FastifyRequest } from 'fastify'
 // eslint-disable-next-line no-unused-vars
 import { Readable } from 'stream'
 // eslint-disable-next-line no-unused-vars
+import * as mercuriusNamespaceImport from '../..'
 import mercurius, {
+  mercurius as mercuriusNamedImport,
+  ErrorWithProps,
+  defaultErrorFormatter,
+  persistedQueryDefaults,
+  withFilter,
   MercuriusOptions,
   IResolvers,
   MercuriusContext,
@@ -60,6 +66,10 @@ declare module '../../' {
     request: FastifyRequest
   }
 }
+
+expectType<typeof mercurius>(mercuriusNamedImport)
+expectType<typeof mercurius>(mercuriusNamespaceImport.default)
+expectType<typeof mercurius>(mercuriusNamespaceImport.mercurius)
 
 app.register(mercurius, {
   schema,
@@ -635,3 +645,8 @@ expectAssignable<MercuriusLoaders<CustomLoaderContext>>({
     }
   }
 })
+
+expectType<typeof mercurius.ErrorWithProps>(ErrorWithProps)
+expectType<typeof mercurius.defaultErrorFormatter>(defaultErrorFormatter)
+expectType<typeof mercurius.persistedQueryDefaults>(persistedQueryDefaults)
+expectType<typeof mercurius.withFilter>(withFilter)
