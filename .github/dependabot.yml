@@ -11,3 +11,5 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "undici"
