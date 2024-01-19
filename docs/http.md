@@ -45,7 +45,7 @@ When a GraphQL response contains errors, the HTTP Status Code is `200 OK` as def
 
 #### Single error with `statusCode` property
 
-When a GraphQL response contains a single error with the `statusCode` property set and no data, the HTTP Status Code is set to this value. See [ErrorWithProps](./api/options.md#errorwithprops) for more details.
+When a GraphQL response contains a single error with the `statusCode` property set and no data, the HTTP Status Code is set to this value. See [ErrorWithProps](/docs/api/options.md#errorwithprops) for more details.
 
 - **HTTP Status Code**: `Error statusCode`
 - **Data**: `null`
@@ -53,4 +53,4 @@ When a GraphQL response contains a single error with the `statusCode` property s
 
 ### Custom behaviour
 
-If you wish to customise the default HTTP Status Code behaviour, one can do this using the [`errorFormatter`](./api/options.md#plugin-options) option.
+If you wish to customise the default HTTP Status Code behaviour, one can do this using the [`errorFormatter`](/docs/api/options.md#plugin-options) option.
