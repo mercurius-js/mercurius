@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@fastify/error": "^3.0.0",
-    "@fastify/static": "^6.0.0",
+    "@fastify/static": "^7.0.0",
     "@fastify/websocket": "^8.0.0",
     "fastify-plugin": "^4.2.0",
     "graphql-jit": "^0.8.0",
