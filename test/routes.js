@@ -2187,3 +2187,100 @@ test('if ide has plugin set, serve config.js with the correct endpoint', async (
   t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
     'window.GRAPHIQL_PLUGIN_LIST = []')
 })
+
+test('GET graphql endpoint with invalid additionalRouteProp constraint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    schema,
+    additionalRouteProps: {
+      constraints: {
+        host: 'auth.fastify.dev'
+      }
+    }
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphiql',
+    headers: {
+      Host: 'fail.fastify.dev'
+    }
+  })
+
+  t.equal(res.statusCode, 404)
+})
+
+test('GET graphql endpoint with valid additionalRouteProp constraint', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    schema,
+    additionalRouteProps: {
+      constraints: {
+        host: 'auth.fastify.dev'
+      }
+    }
+  })
+
+  const query = '{ add(x: 2, y: 2) }'
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql',
+    headers: {
+      Host: 'auth.fastify.dev',
+      'Content-Type': 'text/plain'
+    },
+    query: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+})
+
+test('GET graphql endpoint, additionalRouteProps should ignore custom handler', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  let executed = false
+
+  app.register(GQL, {
+    schema,
+    additionalRouteProps: {
+      // @ts-ignore
+      handler (req, reply) {
+        executed = true
+      }
+    }
+  })
+
+  const query = '{ add(x: 2, y: 2) }'
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql',
+    headers: {
+      'Content-Type': 'text/plain'
+    },
+    query: {
+      query
+    }
+  })
+
+  t.equal(res.statusCode, 200)
+  t.notOk(executed)
+})
