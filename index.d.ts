@@ -495,7 +495,7 @@ declare namespace mercurius {
      * 
      * Usecases:
      * - Add more validation 
-     * - change how the schema behaves 
+     * - change the schema structure 
      * - Hook on the request's life cycle
      * - Increase body size limit for larger queries
     */
