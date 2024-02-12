@@ -3,6 +3,7 @@ import {
   FastifyReply,
   FastifyRequest,
   FastifyInstance,
+  RouteOptions
 } from "fastify";
 import {
   DocumentNode,
@@ -487,6 +488,18 @@ declare namespace mercurius {
      * receive an array of responses within a single request.
      */
     allowBatchedQueries?: boolean;
+
+    /**
+     * Customize the graphql routers initialized by mercurius with 
+     * more fastify route options. 
+     * 
+     * Usecases:
+     * - Add more validation 
+     * - change how the schema behaves 
+     * - Hook on the request's life cycle
+     * - Increase body size limit for larger queries
+    */
+    additionalRouteProps?:Omit<RouteOptions,"handler" | "wsHandler">
   }
   
   export type MercuriusOptions = MercuriusCommonOptions & (MercuriusSchemaOptions)
