@@ -2261,7 +2261,7 @@ test('GET graphql endpoint, additionalRouteProps should ignore custom handler', 
   app.register(GQL, {
     schema,
     additionalRouteProps: {
-      // @ts-ignore
+      // @ts-expect-error `handler` property is ignored in props
       handler (req, reply) {
         executed = true
       }
