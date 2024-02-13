@@ -89,7 +89,7 @@
 - `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
 - `compilerOptions`: Object. Configurable options for the graphql-jit compiler. For more details check https://github.com/zalando-incubator/graphql-jit
-- `additionalRouteProps`: Object. Takes similar configuration to the Route Options of Fastify. Usecases include being able to add constraints, modify validation schema, increase the `bodyLimit`, etc. You can read more about the possible values on [fastify.dev's Routes Options](https://fastify.dev/docs/latest/Reference/Routes/#options)
+- `additionalRouteOptions`: Object. Takes similar configuration to the Route Options of Fastify. Use cases include being able to add constraints, modify validation schema, increase the `bodyLimit`, etc. You can read more about the possible values on [fastify.dev's Routes Options](https://fastify.dev/docs/latest/Reference/Routes/#options)
 
 #### queryDepth example
 

@@ -499,7 +499,7 @@ declare namespace mercurius {
      * - Hook on the request's life cycle
      * - Increase body size limit for larger queries
     */
-    additionalRouteProps?:Omit<RouteOptions,"handler" | "wsHandler">
+    additionalRouteOptions?:Omit<RouteOptions,"handler" | "wsHandler">
   }
   
   export type MercuriusOptions = MercuriusCommonOptions & (MercuriusSchemaOptions)

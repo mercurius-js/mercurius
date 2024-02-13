@@ -2197,7 +2197,7 @@ test('GET graphql endpoint with invalid additionalRouteProp constraint', async (
   `
   app.register(GQL, {
     schema,
-    additionalRouteProps: {
+    additionalRouteOptions: {
       constraints: {
         host: 'auth.fastify.dev'
       }
@@ -2224,7 +2224,7 @@ test('GET graphql endpoint with valid additionalRouteProp constraint', async (t)
   `
   app.register(GQL, {
     schema,
-    additionalRouteProps: {
+    additionalRouteOptions: {
       constraints: {
         host: 'auth.fastify.dev'
       }
@@ -2248,7 +2248,7 @@ test('GET graphql endpoint with valid additionalRouteProp constraint', async (t)
   t.equal(res.statusCode, 200)
 })
 
-test('GET graphql endpoint, additionalRouteProps should ignore custom handler', async (t) => {
+test('GET graphql endpoint, additionalRouteOptions should ignore custom handler', async (t) => {
   const app = Fastify()
   const schema = `
     type Query {
@@ -2260,7 +2260,7 @@ test('GET graphql endpoint, additionalRouteProps should ignore custom handler', 
 
   app.register(GQL, {
     schema,
-    additionalRouteProps: {
+    additionalRouteOptions: {
       // @ts-expect-error `handler` property is ignored in props
       handler (req, reply) {
         executed = true

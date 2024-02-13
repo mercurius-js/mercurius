@@ -211,7 +211,7 @@ const mercurius = fp(async function (app, opts) {
       subscriptionContextFn,
       keepAlive,
       fullWsTransport,
-      additionalRouteProps: opts.additionalRouteProps
+      additionalRouteOptions: opts.additionalRouteOptions
     })
   }
 
