@@ -210,7 +210,8 @@ const mercurius = fp(async function (app, opts) {
       entityResolversFactory: undefined,
       subscriptionContextFn,
       keepAlive,
-      fullWsTransport
+      fullWsTransport,
+      additionalRouteOptions: opts.additionalRouteOptions
     })
   }
 

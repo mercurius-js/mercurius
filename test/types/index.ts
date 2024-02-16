@@ -265,6 +265,13 @@ makeGraphqlServer({
 })
 makeGraphqlServer({ schema, errorFormatter: mercurius.defaultErrorFormatter })
 makeGraphqlServer({ schema: [schema, 'extend type Query { foo: String }'] })
+makeGraphqlServer({
+  additionalRouteOptions: {
+    constraints: {
+      version: '1.2'
+    }
+  }
+})
 
 // Subscriptions
 
