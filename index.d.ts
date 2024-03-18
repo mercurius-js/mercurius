@@ -16,7 +16,7 @@ import {
   FormattedExecutionResult,
   ParseOptions,
 } from "graphql";
-import { SocketStream } from "@fastify/websocket"
+import type { WebSocket } from "ws";
 import { IncomingMessage, OutgoingHttpHeaders } from "http";
 import { Readable } from "stream";
 
@@ -458,7 +458,7 @@ declare namespace mercurius {
             ) => void
           ) => void;
           context?: (
-            connection: SocketStream,
+            sockeet: WebSocket,
             request: FastifyRequest
           ) => Record<string, any> | Promise<Record<string, any>>;
           onConnect?: (data: {
