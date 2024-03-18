@@ -458,7 +458,7 @@ declare namespace mercurius {
             ) => void
           ) => void;
           context?: (
-            sockeet: WebSocket,
+            socket: WebSocket,
             request: FastifyRequest
           ) => Record<string, any> | Promise<Record<string, any>>;
           onConnect?: (data: {
