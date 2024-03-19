@@ -63,7 +63,7 @@ const resolvers: IResolvers = {
 // declare module 'mercurius' {
 declare module '../../' {
   interface MercuriusContext { // eslint-disable-line
-    request: FastifyRequest
+    extra: boolean
   }
 }
 
@@ -89,9 +89,9 @@ app.register(mercurius, {
   },
   queryDepth: 8,
   cache: true,
-  context: (request) => {
+  context: () => {
     return {
-      request
+      extra: true
     }
   },
   schemaTransforms: (schema) => schema
@@ -117,9 +117,9 @@ app.register(mercurius, {
   },
   queryDepth: 8,
   cache: true,
-  context: (request) => {
+  context: () => {
     return {
-      request
+      extra: true
     }
   },
   schemaTransforms: (schema) => schema
@@ -197,6 +197,7 @@ app.register(async function (app) {
   app.graphql.defineResolvers({
     Query: {
       dogs (_root, _params, ctx) {
+        ctx.extra
         ctx.request
         ctx.reply
         ctx.pubsub

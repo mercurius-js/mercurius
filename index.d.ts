@@ -30,6 +30,7 @@ declare namespace mercurius {
   
   export interface MercuriusContext {
     app: FastifyInstance;
+    request: FastifyRequest;
     reply: FastifyReply;
     operationsCount?: number;
     operationId?: number;
