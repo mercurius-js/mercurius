@@ -293,8 +293,8 @@ app.register(mercurius, {
       next(true)
       next(false)
     },
-    context: (connection, request) => {
-      connection.socket
+    context: (socket, request) => {
+      socket.send('hello')
       request.headers
       return {}
     },
@@ -319,8 +319,8 @@ app.register(mercurius, {
   schema,
   resolvers,
   subscription: {
-    context: async (connection, request) => {
-      connection.socket
+    context: async (socket, request) => {
+      socket.send('hello')
       request.headers
       return {}
     },
