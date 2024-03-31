@@ -1968,9 +1968,9 @@ test('subscription server works with fastify websocket', t => {
   })
 
   app.register(async function (app) {
-    app.get('/fastify-websocket', { websocket: true }, (connection, req) => {
-      connection.socket.on('message', message => {
-        connection.socket.send('hi from server')
+    app.get('/fastify-websocket', { websocket: true }, (socket, req) => {
+      socket.on('message', message => {
+        socket.send('hi from server')
       })
     })
   })
