@@ -62,7 +62,7 @@
     "@fastify/static": "^7.0.0",
     "@fastify/websocket": "^10.0.0",
     "fastify-plugin": "^4.2.0",
-    "graphql-jit": "0.8.4",
+    "graphql-jit": "0.8.6",
     "mqemitter": "^5.0.0",
     "p-map": "^4.0.0",
     "readable-stream": "^4.0.0",
