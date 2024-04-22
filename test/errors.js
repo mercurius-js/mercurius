@@ -1239,3 +1239,81 @@ test('errors - should default to HTTP Status Code `200 OK` if single error prese
   })
   t.equal(res.statusCode, 200)
 })
+
+test('errors - return GraphQLError when `error.originalError.errors` is of type array', async (t) => {
+  t.plan(2)
+
+  const schema = `
+    type Query {
+      errors: [String!]!
+    }
+  `
+
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+
+  app.register(GQL, {
+    schema,
+    resolvers: {
+      Query: {
+        errors () {
+          throw new ErrorWithProps('Error', undefined, 500)
+        }
+      }
+    }
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={array}'
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: null,
+    errors: [
+      {
+        message: 'Cannot query field "array" on type "Query".',
+        locations: [{ line: 1, column: 2 }]
+      }
+    ]
+  })
+  t.equal(res.statusCode, 400)
+})
+
+test('errors - return error when `error.originalError.errors` is not an array or not defined', async (t) => {
+  t.plan(2)
+
+  const schema = `
+    type Query {
+      errorArray: [String!]!
+    }
+  `
+  const app = Fastify()
+  t.teardown(app.close.bind(app))
+
+  app.register(GQL, {
+    schema,
+    resolvers: {}
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={errorArray}'
+  })
+
+  t.same(JSON.parse(res.body), {
+    data: null,
+    errors: [
+      {
+        message: 'Cannot return null for non-nullable field Query.errorArray.',
+        locations: [{ line: 1, column: 2 }],
+        path: ['errorArray']
+      }
+    ]
+  })
+  t.equal(res.statusCode, 200)
+})
