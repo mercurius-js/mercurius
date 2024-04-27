@@ -40,7 +40,7 @@ Check [https://github.com/mercurius-js/mercurius-upload](https://github.com/merc
 
 ## altair-fastify-plugin
 
-[**Altair**](https://altair.sirmuel.design/) plugin. Fully featured GraphQL Client IDE, good alternative of `graphiql`.
+[**Altair**](https://altairgraphql.dev/) plugin. Fully featured GraphQL Client IDE, good alternative of `graphiql`.
 
 ```bash
 npm install altair-fastify-plugin
