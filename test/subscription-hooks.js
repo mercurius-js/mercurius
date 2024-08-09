@@ -218,7 +218,7 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
     t.same(data, {
       id: 1,
       type: 'error',
-      payload: 'a preSubscriptionParsing error occurred'
+      payload: [{ message: 'a preSubscriptionParsing error occurred' }]
     })
   }
 })
@@ -268,7 +268,7 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
     t.same(data, {
       id: 1,
       type: 'error',
-      payload: 'a preSubscriptionExecution error occurred'
+      payload: [{ message: 'a preSubscriptionExecution error occurred' }]
     })
   }
 })

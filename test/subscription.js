@@ -1049,7 +1049,11 @@ test('subscription server sends correct error if execution throws', t => {
         t.equal(chunk, JSON.stringify({
           type: 'error',
           id: 1,
-          payload: 'custom execution error'
+          payload: [{
+            message: 'custom execution error',
+            locations: [{ line: 3, column: 13 }],
+            path: ['notificationAdded']
+          }]
         }))
 
         client.end()
