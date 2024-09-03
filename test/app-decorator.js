@@ -4,6 +4,7 @@ const { test } = require('tap')
 const Fastify = require('fastify')
 const GQL = require('..')
 const { GraphQLError } = require('graphql')
+const gql = require('graphql-tag')
 
 const {
   GraphQLScalarType,
@@ -1438,4 +1439,34 @@ test('defineResolvers should support __resolveReference', async (t) => {
 
   // needed so that graphql is defined
   await app.ready()
+})
+
+test('graphql-tag', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const query = gql`{ add(x: 2, y: 2) }`
+  const res = await app.graphql(query)
+
+  t.same(res, {
+    data: {
+      add: 4
+    }
+  })
 })

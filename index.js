@@ -1,7 +1,6 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const LRU = require('tiny-lru').lru
 const routes = require('./lib/routes')
 const { compileQuery, isCompiledQuery } = require('graphql-jit')
 const { Factory } = require('single-user-cache')
@@ -46,7 +45,7 @@ const {
   onExtendSchemaHandler
 } = require('./lib/handlers')
 
-function buildCache (opts) {
+async function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
     const isBoolean = typeof opts.cache === 'boolean'
     const isNumber = typeof opts.cache === 'number'
@@ -55,20 +54,22 @@ function buildCache (opts) {
       // no cache
       return null
     } else if (isNumber) {
+      const QuickLRU = (await import('quick-lru')).default
       // cache size as specified
-      return LRU(opts.cache)
+      return new QuickLRU({ maxSize: opts.cache })
     } else if (!isBoolean && !isNumber) {
       throw new MER_ERR_INVALID_OPTS('Cache type is not supported')
     }
   }
 
+  const QuickLRU = (await import('quick-lru')).default
   // default cache, 1024 entries
-  return LRU(1024)
+  return new QuickLRU({ maxSize: 1024 })
 }
 
 const mercurius = fp(async function (app, opts) {
-  const lru = buildCache(opts)
-  const lruErrors = buildCache(opts)
+  const lru = await buildCache(opts)
+  const lruErrors = await buildCache(opts)
 
   if (lru && opts.validationRules && typeof opts.validationRules === 'function') {
     throw new MER_ERR_INVALID_OPTS('Using a function for the validationRules is incompatible with query caching')
@@ -413,7 +414,7 @@ const mercurius = fp(async function (app, opts) {
     const reply = context.reply
 
     // Trigger preParsing hook
-    if (context.preParsing !== null) {
+    if (context.preParsing !== null && typeof source === 'string') {
       await preParsingHandler({ schema: fastifyGraphQl.schema, source, context })
     }
 
@@ -433,7 +434,9 @@ const mercurius = fp(async function (app, opts) {
       }
 
       try {
-        document = parse(source, gqlParseOpts)
+        document = typeof source === 'string'
+          ? parse(source, gqlParseOpts)
+          : structuredClone(source)
       } catch (syntaxError) {
         try {
           // Do not try to JSON.parse maxToken exceeded validation errors
