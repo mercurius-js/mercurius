@@ -2,7 +2,10 @@
 
 # mercurius
 
-![CI workflow](https://github.com/mercurius-js/mercurius/workflows/CI%20workflow/badge.svg)
+[![CI workflow](https://github.com/mercurius-js/mercurius/actions/workflows/ci.yml/badge.svg)](https://github.com/mercurius-js/mercurius/actions/workflows/ci.yml)
+[![NPM version](https://img.shields.io/npm/v/mercurius.svg?style=flat)](https://www.npmjs.com/package/mercurius)
+[![NPM downloads](https://img.shields.io/npm/dm/mercurius.svg?style=flat)](https://www.npmjs.com/package/mercurius)
+[![neostandard javascript style](https://img.shields.io/badge/code_style-neostandard-brightgreen?style=flat)](https://github.com/neostandard/neostandard)
 
 Mercurius is a [**GraphQL**](https://graphql.org/) adapter for [**Fastify**](https://www.fastify.io)
 

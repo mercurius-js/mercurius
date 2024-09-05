@@ -4,7 +4,7 @@ import {
   FastifyRequest,
   FastifyInstance,
   RouteOptions
-} from "fastify";
+} from 'fastify'
 import {
   DocumentNode,
   ExecutionResult,
@@ -15,10 +15,10 @@ import {
   ValidationRule,
   FormattedExecutionResult,
   ParseOptions,
-} from "graphql";
-import type { WebSocket } from "ws";
-import { IncomingMessage, OutgoingHttpHeaders } from "http";
-import { Readable } from "stream";
+} from 'graphql'
+import type { WebSocket } from 'ws'
+import { IncomingMessage, OutgoingHttpHeaders } from 'http'
+import { Readable } from 'stream'
 
 type Mercurius = typeof mercurius
 
@@ -27,7 +27,7 @@ declare namespace mercurius {
     subscribe<TResult = any>(topics: string | string[]): Promise<Readable & AsyncIterableIterator<TResult>>;
     publish<TResult = any>(event: { topic: string; payload: TResult }, callback?: () => void): void;
   }
-  
+
   export interface MercuriusContext {
     app: FastifyInstance;
     reply: FastifyReply;
@@ -39,11 +39,11 @@ declare namespace mercurius {
      */
     pubsub: PubSub;
   }
-  
+
   export interface MercuriusError<TError extends Error = Error> extends FastifyError {
     errors?: TError[]
   }
-  
+
   export interface Loader<
     TObj extends Record<string, any> = any,
     TParams extends Record<string, any> = any,
@@ -59,24 +59,24 @@ declare namespace mercurius {
       }
     ): any;
   }
-  
+
   export interface MercuriusLoaders<TContext extends Record<string, any> = MercuriusContext> {
     [root: string]: {
       [field: string]:
         | Loader<any, any, TContext>
         | {
-            loader: Loader<any, any, TContext>;
-            opts?: {
-              cache?: boolean;
-            };
+          loader: Loader<any, any, TContext>;
+          opts?: {
+            cache?: boolean;
           };
+        };
     };
   }
-  
+
   // ------------------------
   // Request Lifecycle hooks
   // ------------------------
-  
+
   /**
    * `preParsing` is the first hook to be executed in the GraphQL request lifecycle. The next hook will be `preValidation`.
    */
@@ -87,7 +87,7 @@ declare namespace mercurius {
       context: TContext,
     ): Promise<void> | void;
   }
-  
+
   /**
    * `preValidation` is the second hook to be executed in the GraphQL request lifecycle. The previous hook was `preParsing`, the next hook will be `preExecution`.
    */
@@ -98,7 +98,7 @@ declare namespace mercurius {
       context: TContext,
     ): Promise<void> | void;
   }
-  
+
   /**
    * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`.
    * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
@@ -115,7 +115,7 @@ declare namespace mercurius {
       variables: Record<string, any>,
     ): Promise<PreExecutionHookResponse<TError> | void> | PreExecutionHookResponse<TError> | void;
   }
-  
+
   /**
    * `onResolution` is the fifth and final hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`.
    */
@@ -125,11 +125,11 @@ declare namespace mercurius {
       context: TContext,
     ): Promise<void> | void;
   }
-  
+
   // -----------------------------
   // Subscription Lifecycle hooks
   // -----------------------------
-  
+
   /**
    * `preSubscriptionParsing` is the first hook to be executed in the GraphQL subscription lifecycle. The next hook will be `preSubscriptionExecution`.
    * This hook will only be triggered when subscriptions are enabled.
@@ -141,7 +141,7 @@ declare namespace mercurius {
       context: TContext,
     ): Promise<void> | void;
   }
-  
+
   /**
    * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`.
    * This hook will only be triggered when subscriptions are enabled.
@@ -153,7 +153,7 @@ declare namespace mercurius {
       context: TContext,
     ): Promise<void> | void;
   }
-  
+
   /**
    * `onSubscriptionResolution` is the fourth hook to be executed in the GraphQL subscription lifecycle. The next hook will be `onSubscriptionEnd`.
    * This hook will only be triggered when subscriptions are enabled.
@@ -164,7 +164,7 @@ declare namespace mercurius {
       context: TContext,
     ): Promise<void> | void;
   }
-  
+
   /**
    * `onSubscriptionEnd` is the fifth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `onSubscriptionResolution`.
    * This hook will only be triggered when subscriptions are enabled.
@@ -175,22 +175,22 @@ declare namespace mercurius {
       id: string | number,
     ): Promise<void> | void;
   }
-  
+
   // ----------------------------
   // Application Lifecycle hooks
   // ----------------------------
-  
+
   export interface onExtendSchemaHandler<TContext = MercuriusContext> {
     (
       schema: GraphQLSchema,
       context: TContext,
     ): Promise<void> | void;
   }
-  
+
   interface ServiceConfig {
     setSchema: (schema: string) => ServiceConfig;
   }
-  
+
   export interface MercuriusPlugin {
     <
       TData extends Record<string, any> = Record<string, any>,
@@ -237,21 +237,21 @@ declare namespace mercurius {
      * Managed GraphQL schema object for doing custom execution with. Will reflect changes made via `extendSchema`, `defineResolvers`, etc.
      */
     schema: GraphQLSchema;
-  
+
     // addHook: overloads
-  
+
     // Request lifecycle addHooks
-  
+
     /**
      * `preParsing` is the first hook to be executed in the GraphQL request lifecycle. The next hook will be `preValidation`.
      */
     addHook<TContext = MercuriusContext>(name: 'preParsing', hook: preParsingHookHandler<TContext>): void;
-  
+
     /**
      * `preValidation` is the second hook to be executed in the GraphQL request lifecycle. The previous hook was `preParsing`, the next hook will be `preExecution`.
      */
     addHook<TContext = MercuriusContext>(name: 'preValidation', hook: preValidationHookHandler<TContext>): void;
-  
+
     /**
      * `preExecution` is the third hook to be executed in the GraphQL request lifecycle. The previous hook was `preValidation`.
      * Notice: in the `preExecution` hook, you can modify the following items by returning them in the hook definition:
@@ -259,49 +259,49 @@ declare namespace mercurius {
      *  - `errors`
      */
     addHook<TContext = MercuriusContext, TError extends Error = Error>(name: 'preExecution', hook: preExecutionHookHandler<TContext, TError>): void;
-  
+
     /**
      * `onResolution` is the fifth and final hook to be executed in the GraphQL request lifecycle. The previous hook was `preExecution`.
      */
     addHook<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext>(name: 'onResolution', hook: onResolutionHookHandler<TData, TContext>): void;
-  
+
     // Subscription lifecycle addHooks
-  
+
     /**
      * `preSubscriptionParsing` is the first hook to be executed in the GraphQL subscription lifecycle. The next hook will be `preSubscriptionExecution`.
      * This hook will only be triggered when subscriptions are enabled.
      */
     addHook<TContext = MercuriusContext>(name: 'preSubscriptionParsing', hook: preSubscriptionParsingHookHandler<TContext>): void;
-  
+
     /**
      * `preSubscriptionExecution` is the second hook to be executed in the GraphQL subscription lifecycle. The previous hook was `preSubscriptionParsing`.
      * This hook will only be triggered when subscriptions are enabled.
      */
     addHook<TContext = MercuriusContext>(name: 'preSubscriptionExecution', hook: preSubscriptionExecutionHookHandler<TContext>): void;
-  
+
     /**
      * `onSubscriptionResolution` is the fourth and final hook to be executed in the GraphQL subscription lifecycle.
      * This hook will only be triggered when subscriptions are enabled.
      */
     addHook<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext>(name: 'onSubscriptionResolution', hook: onSubscriptionResolutionHookHandler<TData, TContext>): void;
-  
+
     /**
      * `onSubscriptionEnd` is the fifth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `onSubscriptionResolution`.
      * This hook will only be triggered when subscriptions are enabled.
      */
     addHook<TContext = MercuriusContext>(name: 'onSubscriptionEnd', hook: onSubscriptionEndHookHandler<TContext>): void;
-  
+
     // Application lifecycle addHooks
     addHook<TContext = MercuriusContext>(name: 'onExtendSchema', hook: onExtendSchemaHandler<TContext>): void;
   }
-  
+
   interface QueryRequest {
     operationName?: string;
     query: string;
     variables?: object;
     extensions?: object;
   }
-  
+
   interface WsConnectionParams {
     connectionInitPayload?:
       | (() => Record<string, any> | Promise<Record<string, any>>)
@@ -311,9 +311,9 @@ declare namespace mercurius {
     connectionCallback?: () => void;
     failedConnectionCallback?: (err: { message: string }) => void | Promise<void>;
     failedReconnectCallback?: () => void;
-    rewriteConnectionInitPayload?:  <TContext extends MercuriusContext = MercuriusContext>(payload: Record<string, any> | undefined, context: TContext) => Record<string, any>;
+    rewriteConnectionInitPayload?: <TContext extends MercuriusContext = MercuriusContext>(payload: Record<string, any> | undefined, context: TContext) => Record<string, any>;
   }
-  
+
   export interface MercuriusSchemaOptions {
     /**
      * The GraphQL schema. String schema will be parsed
@@ -332,7 +332,7 @@ declare namespace mercurius {
      */
     schemaTransforms?: ((originalSchema: GraphQLSchema) => GraphQLSchema) | Array<(originalSchema: GraphQLSchema) => GraphQLSchema>;
   }
-  
+
   export interface MercuriusGraphiQLOptions {
     /**
      * Expose the graphiql app, default `true`
@@ -360,16 +360,16 @@ declare namespace mercurius {
       fetcherWrapper?: string;
     }>
   }
-  
+
   export interface GrapQLValidateOptions {
     maxErrors?: number;
   }
-  
+
   export interface MercuriusGraphQLOptions {
     parseOptions?: ParseOptions,
     validateOptions?: GrapQLValidateOptions
   }
-  
+
   export interface MercuriusCommonOptions {
     /**
      * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
@@ -446,33 +446,33 @@ declare namespace mercurius {
     subscription?:
       | boolean
       | {
-          emitter?: object;
-          pubsub?: any; // FIXME: Technically this should be the PubSub type. But PubSub is now typed as SubscriptionContext.
-          verifyClient?: (
-            info: { origin: string; secure: boolean; req: IncomingMessage },
-            next: (
-              result: boolean,
-              code?: number,
-              message?: string,
-              headers?: OutgoingHttpHeaders
-            ) => void
-          ) => void;
-          context?: (
-            socket: WebSocket,
-            request: FastifyRequest
-          ) => Record<string, any> | Promise<Record<string, any>>;
-          onConnect?: (data: {
-            type: 'connection_init';
-            payload: any;
-          }) => any;
-          onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
-          keepAlive?: number,
-          fullWsTransport?: boolean,
-        };
+        emitter?: object;
+        pubsub?: any; // FIXME: Technically this should be the PubSub type. But PubSub is now typed as SubscriptionContext.
+        verifyClient?: (
+          info: { origin: string; secure: boolean; req: IncomingMessage },
+          next: (
+            result: boolean,
+            code?: number,
+            message?: string,
+            headers?: OutgoingHttpHeaders
+          ) => void
+        ) => void;
+        context?: (
+          socket: WebSocket,
+          request: FastifyRequest
+        ) => Record<string, any> | Promise<Record<string, any>>;
+        onConnect?: (data: {
+          type: 'connection_init';
+          payload: any;
+        }) => any;
+        onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
+        keepAlive?: number,
+        fullWsTransport?: boolean,
+      };
     /**
      * Persisted queries, overrides persistedQueryProvider.
      */
-    persistedQueries?: Record<string,string>;
+    persistedQueries?: Record<string, string>;
     /**
      * Only allow persisted queries. Required persistedQueries, overrides persistedQueryProvider.
      */
@@ -481,7 +481,7 @@ declare namespace mercurius {
      * Settings for enabling persisted queries.
      */
     persistedQueryProvider?: PersistedQueryProvider;
-  
+
     /**
      * Enable support for batched queries (POST requests only).
      * Batched query support allows clients to send an array of queries and
@@ -490,18 +490,18 @@ declare namespace mercurius {
     allowBatchedQueries?: boolean;
 
     /**
-     * Customize the graphql routers initialized by mercurius with 
-     * more fastify route options. 
-     * 
+     * Customize the graphql routers initialized by mercurius with
+     * more fastify route options.
+     *
      * Usecases:
-     * - Add more validation 
-     * - change the schema structure 
+     * - Add more validation
+     * - change the schema structure
      * - Hook on the request's life cycle
      * - Increase body size limit for larger queries
     */
-    additionalRouteOptions?:Omit<RouteOptions,"handler"|"wsHandler"|"method"|"url">
+    additionalRouteOptions?: Omit<RouteOptions, 'handler' | 'wsHandler' | 'method' | 'url'>
   }
-  
+
   export type MercuriusOptions = MercuriusCommonOptions & (MercuriusSchemaOptions)
 
   export interface IResolvers<TSource = any, TContext = MercuriusContext> {
@@ -513,7 +513,7 @@ declare namespace mercurius {
       | IEnumResolver
       | undefined;
   }
-  
+
   export type IResolverObject<TSource = any, TContext = MercuriusContext, TArgs = any> = {
     [key: string]:
       | IFieldResolver<TSource, TContext, TArgs>
@@ -521,17 +521,17 @@ declare namespace mercurius {
       | IResolverObject<TSource, TContext>
       | undefined;
   }
-  
+
   export interface IResolverOptions<TSource = any, TContext = MercuriusContext, TArgs = any> {
     fragment?: string;
     resolve?: IFieldResolver<TSource, TContext, TArgs>;
     subscribe?: IFieldResolver<TSource, TContext, TArgs>;
   }
-  
+
   type IEnumResolver = {
     [key: string]: string | number;
-  };
-  
+  }
+
   export interface IFieldResolver<TSource, TContext = MercuriusContext, TArgs = Record<string, any>> {
     (
       source: TSource,
@@ -542,10 +542,10 @@ declare namespace mercurius {
       }
     ): any;
   }
-  
+
   type MergeInfo = {
     delegate: (
-      type: "query" | "mutation" | "subscription",
+      type: 'query' | 'mutation' | 'subscription',
       fieldName: string,
       args: {
         [key: string]: any;
@@ -561,14 +561,14 @@ declare namespace mercurius {
       field: string;
       fragment: string;
     }>;
-  };
-  
+  }
+
   type Transform = {
     transformSchema?: (schema: GraphQLSchema) => GraphQLSchema;
     transformRequest?: (originalRequest: Request) => Request;
     transformResult?: (result: Result) => Result;
-  };
-  
+  }
+
   interface IDelegateToSchemaOptions<
     TContext = {
       [key: string]: any;
@@ -585,31 +585,31 @@ declare namespace mercurius {
     transforms?: Array<Transform>;
     skipValidation?: boolean;
   }
-  
-  type Operation = "query" | "mutation" | "subscription";
-  
+
+  type Operation = 'query' | 'mutation' | 'subscription'
+
   type Result = ExecutionResult & {
     extensions?: Record<string, any>;
-  };
-  
+  }
+
   interface IGraphQLToolsResolveInfo extends GraphQLResolveInfo {
     mergeInfo?: MergeInfo;
   }
-  
+
   type Request = {
     document: DocumentNode;
     variables: Record<string, any>;
     extensions?: Record<string, any>;
-  };
-  
+  }
+
   type ValidationRules =
     | ValidationRule[]
     | ((params: {
-        source: string;
-        variables?: Record<string, any>;
-        operationName?: string;
-      }) => ValidationRule[]);
-  
+      source: string;
+      variables?: Record<string, any>;
+      operationName?: string;
+    }) => ValidationRule[])
+
   export interface PreExecutionHookResponse<TError extends Error> {
     schema?: GraphQLSchema
     document?: DocumentNode
@@ -657,12 +657,12 @@ declare namespace mercurius {
    * Extended errors for adding additional information in error responses
    */
   export class ErrorWithProps extends Error {
-    constructor(message: string, extensions?: object, statusCode?: number);
+    constructor (message: string, extensions?: object, statusCode?: number)
     /**
      * Custom additional properties of this error
      */
-    extensions?: object;
-    statusCode?: number;
+    extensions?: object
+    statusCode?: number
   }
 
   /**
@@ -672,7 +672,7 @@ declare namespace mercurius {
     prepared: (persistedQueries: object) => PersistedQueryProvider;
     preparedOnly: (persistedQueries: object) => PersistedQueryProvider;
     automatic: (maxSize?: number) => PersistedQueryProvider;
-  };
+  }
 
   /**
    * Default error formatter.
@@ -680,7 +680,7 @@ declare namespace mercurius {
   export const defaultErrorFormatter: (
     execution: ExecutionResult & Required<Pick<ExecutionResult, 'errors'>>,
     context: MercuriusContext
-  ) => { statusCode: number; response: FormattedExecutionResult };
+  ) => { statusCode: number; response: FormattedExecutionResult }
 
   /**
    * Subscriptions with filter functionality
@@ -718,7 +718,7 @@ declare namespace mercurius {
   export { mercurius as default }
 }
 
-declare module "fastify" {
+declare module 'fastify' {
   interface FastifyInstance {
     /**
      * GraphQL plugin
@@ -752,12 +752,11 @@ declare module "fastify" {
  * @param opts Mercurius options
  */
 declare function mercurius
-  (
-    instance: FastifyInstance,
-    opts: mercurius.MercuriusOptions
-  ): void;
-
+(
+  instance: FastifyInstance,
+  opts: mercurius.MercuriusOptions
+): void
 
 // CJS export
 // const mercurius = require('mercurius')
-export = mercurius;
+export = mercurius

@@ -1,11 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
+
 import { expectAssignable, expectError, expectType } from 'tsd'
-/* eslint-disable no-unused-expressions */
 import { EventEmitter } from 'events'
-// eslint-disable-next-line no-unused-vars
 import Fastify, { FastifyRequest } from 'fastify'
-// eslint-disable-next-line no-unused-vars
 import { Readable } from 'stream'
-// eslint-disable-next-line no-unused-vars
 import * as mercuriusNamespaceImport from '../..'
 import mercurius, {
   mercurius as mercuriusNamedImport,
@@ -19,7 +17,6 @@ import mercurius, {
   MercuriusPlugin,
   MercuriusLoaders
 } from '../..'
-// eslint-disable-next-line no-unused-vars
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { mapSchema } from '@graphql-tools/utils'
 import mq from 'mqemitter'
@@ -62,7 +59,7 @@ const resolvers: IResolvers = {
 
 // declare module 'mercurius' {
 declare module '../../' {
-  interface MercuriusContext { // eslint-disable-line
+  interface MercuriusContext {
     request: FastifyRequest
   }
 }
@@ -139,7 +136,7 @@ app.register(mercurius, {
       }
     },
     Mutation: {
-      addDog (_root, { name, breed }: { name: string; breed?:string }, ctx) {
+      addDog (_root, { name, breed }: { name: string; breed?: string }, ctx) {
         ctx.pubsub.publish({
           topic: 'new_dog',
           payload: {
@@ -208,7 +205,7 @@ app.register(async function (app) {
   })
   app.graphql.defineLoaders({
     Dog: {
-      owner: async (queries: Array<{ obj: { name: keyof typeof owners }, params: {a: string} }>, _ctx) => {
+      owner: async (queries: Array<{ obj: { name: keyof typeof owners }, params: { a: string } }>, _ctx) => {
         return queries.map(({ obj }) => owners[obj.name])
       }
     }
@@ -580,7 +577,7 @@ expectError(() => {
 })
 
 declare module 'fastify' {
-// eslint-disable-next-line no-unused-vars
+
   interface FastifyInstance {
     graphql: MercuriusPlugin
   }
