@@ -73,6 +73,6 @@
     "directory": "test/types"
   },
   "engines": {
-    "node": ">=14.19.3"
+    "node": "^20.9.0 || >=22.0.0"
   }
 }
