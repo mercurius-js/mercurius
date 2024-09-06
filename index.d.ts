@@ -196,7 +196,7 @@ declare namespace mercurius {
       TData extends Record<string, any> = Record<string, any>,
       TVariables extends Record<string, any> = Record<string, any>
     >(
-      source: string,
+      source: string | DocumentNode,
       context?: Record<string, any>,
       variables?: TVariables,
       operationName?: string
@@ -737,7 +737,7 @@ declare module 'fastify' {
       TData extends Record<string, any> = Record<string, any>,
       TVariables extends Record<string, any> = Record<string, any>
     >(
-      source: string,
+      source: string | DocumentNode,
       context?: Record<string, any>,
       variables?: TVariables,
       operationName?: string
