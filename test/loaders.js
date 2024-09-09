@@ -253,11 +253,6 @@ test('disable cache for each loader', async (t) => {
               name: 'Buddy'
             },
             params: {}
-          }, {
-            obj: {
-              name: 'Max'
-            },
-            params: {}
           }])
           return queries.map(({ obj }) => {
             return { ...owners[obj.name] }
@@ -994,7 +989,7 @@ test('should not pass info to loader if cache is enabled', async (t) => {
   })
 })
 
-test('loaders create batching resolvers', { only: true }, async (t) => {
+test('loaders create batching resolvers', async (t) => {
   const app = Fastify()
 
   const loaders = {
@@ -1017,11 +1012,6 @@ test('loaders create batching resolvers', { only: true }, async (t) => {
         }, {
           obj: {
             name: 'Buddy'
-          },
-          params: {}
-        }, {
-          obj: {
-            name: 'Max'
           },
           params: {}
         }])
