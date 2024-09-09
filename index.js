@@ -585,7 +585,7 @@ const mercurius = fp(async function (app, opts) {
   }
 }, {
   name: 'mercurius',
-  fastify: '4.x'
+  fastify: '5.x'
 })
 
 mercurius.ErrorWithProps = ErrorWithProps
