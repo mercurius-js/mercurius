@@ -73,7 +73,7 @@ test('subscription connection sends error message when message is not json strin
       t.equal(JSON.stringify({
         type: 'error',
         id: null,
-        payload: 'Message must be a JSON string'
+        payload: [{ message: 'Message must be a JSON string' }]
       }), message)
     },
     protocol: GRAPHQL_TRANSPORT_WS
@@ -255,7 +255,7 @@ test('subscription connection send error message when GQL_START handler errs', a
       t.equal(JSON.stringify({
         type: 'error',
         id: 1,
-        payload: 'handleGQLStart error'
+        payload: [{ message: 'handleGQLStart error' }]
       }), message)
     },
     protocol: GRAPHQL_TRANSPORT_WS
@@ -284,7 +284,7 @@ test('subscription connection send error message when client message type is inv
       t.equal(JSON.stringify({
         type: 'error',
         id: 1,
-        payload: 'Invalid payload type'
+        payload: [{ message: 'Invalid payload type' }]
       }), message)
     },
     protocol: GRAPHQL_TRANSPORT_WS
@@ -305,7 +305,7 @@ test('subscription connection handles GQL_START message correctly, when payload.
     close () {},
     send (message) {
       t.equal(JSON.stringify(
-        { type: 'error', id: 1, payload: 'Must provide document.' }
+        { type: 'error', id: 1, payload: [{ message: 'Must provide document.' }] }
       ), message)
     },
     protocol: GRAPHQL_TRANSPORT_WS
@@ -440,7 +440,7 @@ test('subscription connection send GQL_ERROR message if connectionInit extension
       t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
-        payload: 'Forbidden'
+        payload: [{ message: 'Forbidden' }]
       })
     },
     protocol: GRAPHQL_TRANSPORT_WS
@@ -509,7 +509,7 @@ test('subscription connection send GQL_ERROR on unknown extension', async (t) =>
       t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
-        payload: 'Unknown extension unknown'
+        payload: [{ message: 'Unknown extension unknown' }]
       })
     },
     protocol: GRAPHQL_TRANSPORT_WS
@@ -584,7 +584,7 @@ test('subscription connection sends error when trying to execute invalid operati
           JSON.stringify({
             type: 'error',
             id: 1,
-            payload: 'Invalid operation: query'
+            payload: [{ message: 'Invalid operation: query' }]
           }),
           message
         )
