@@ -23,9 +23,20 @@ import { Readable } from 'stream'
 type Mercurius = typeof mercurius
 
 declare namespace mercurius {
-  export interface PubSub {
-    subscribe<TResult = any>(topics: string | string[]): Promise<Readable & AsyncIterableIterator<TResult>>;
-    publish<TResult = any>(event: { topic: string; payload: TResult }, callback?: () => void): void;
+  export type PubSubPublishArgsByKey = {
+    [key: string]: any;
+  };
+
+  export interface PubSub<
+    TPubSubPublishArgsByKey extends PubSubPublishArgsByKey,
+  > {
+      subscribe<TKey extends Extract<keyof TPubSubPublishArgsByKey, string>>(
+        topics: TKey | TKey[],
+      ): Promise<Readable & AsyncIterableIterator<TPubSubPublishArgsByKey[TKey]>>;
+      publish<TKey extends Extract<keyof TPubSubPublishArgsByKey, string>>(
+        event: { topic: TKey; payload: TPubSubPublishArgsByKey[TKey] },
+        callback?: () => void,
+      ): void;
   }
 
   export interface MercuriusContext {
