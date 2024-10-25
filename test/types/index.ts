@@ -654,3 +654,36 @@ expectType<typeof mercurius.ErrorWithProps>(ErrorWithProps)
 expectType<typeof mercurius.defaultErrorFormatter>(defaultErrorFormatter)
 expectType<typeof mercurius.persistedQueryDefaults>(persistedQueryDefaults)
 expectType<typeof mercurius.withFilter>(withFilter)
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  persistedQueryProvider: {
+    ...persistedQueryDefaults.automatic(),
+    getQueryFromHash: () => {
+      return Promise.resolve('foo')
+    },
+  }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  persistedQueryProvider: {
+    ...persistedQueryDefaults.automatic(),
+    getQueryFromHash: () => {
+      return Promise.resolve(undefined)
+    },
+  }
+})
+
+expectError(app.register(mercurius, {
+  schema,
+  resolvers,
+  persistedQueryProvider: {
+    ...persistedQueryDefaults.automatic(),
+    getQueryFromHash: () => {
+      return Promise.resolve(false)
+    },
+  }
+}))
