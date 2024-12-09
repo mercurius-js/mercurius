@@ -623,6 +623,10 @@ declare namespace mercurius {
      */
     isPersistedQuery: (r: QueryRequest) => boolean;
     /**
+     *  Return true if a given request matches the desire persisted query retry format.
+     */
+    isPersistedQueryRetry: (r: QueryRequest) => boolean;
+    /**
      *  Return the hash from a given request, or falsy if this request format is not supported.
      */
     getHash: (r: QueryRequest) => string;
@@ -646,6 +650,10 @@ declare namespace mercurius {
      * An error message to return when a query matches isPersistedQuery, but fasly from getHash. Defaults to 'Bad Request'.
      */
     notSupportedError?: string;
+    /**
+     * An error message to return when the hash provided in the request does not match the calculated hash. Defaults to 'Bad Request'.
+     */
+    mismatchError?: string;
   }
 
   /**
