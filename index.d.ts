@@ -633,7 +633,7 @@ declare namespace mercurius {
     /**
      *  Return the query for a given hash.
      */
-    getQueryFromHash: (hash: string) => Promise<string>;
+    getQueryFromHash: (hash: string) => Promise<string | undefined>;
     /**
      *  Return the hash for a given query string. Do not provide if you want to skip saving new queries.
      */
