@@ -775,11 +775,11 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
 
   let res = await app.graphql(query, null, { x: 1 })
 
-  t.matchSnapshot(JSON.stringify(res), null, 2)
+  t.matchSnapshot(JSON.stringify(res, null, 2))
 
   res = await app.graphql(query, null, { x: 1 })
 
-  t.matchSnapshot(JSON.stringify(res), null, 2)
+  t.matchSnapshot(JSON.stringify(res, null, 2))
 
   lines.end()
 

@@ -17,7 +17,8 @@ t.beforeEach(({ context }) => {
   context.clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 40,
+    toFake: ['setTimeout', 'clearTimeout', 'setImmediate', 'clearImmediate', 'setInterval', 'clearInterval', 'Date', 'hrtime', 'performance']
   })
 })
 
@@ -1200,7 +1201,7 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
       payload: {
         query: `
           subscription {
-            notificationAdded {
+            notificationAdded {,
               id
               message
             }
@@ -1245,7 +1246,7 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
   })
 })
 
-test('subscription server exposes pubsub', t => {
+test('subscription server exposes pubsub', { only: true }, t => {
   const app = Fastify()
   t.teardown(() => app.close())
 
