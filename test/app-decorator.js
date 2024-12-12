@@ -628,7 +628,7 @@ test('scalar should be supported', async (t) => {
         return value
       },
       serialize (value) {
-        t.pass(value, 4)
+        t.equal(value, 4)
         return value
       },
       parseLiteral (ast) {

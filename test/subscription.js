@@ -17,7 +17,8 @@ t.beforeEach(({ context }) => {
   context.clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
-    advanceTimeDelta: 40
+    advanceTimeDelta: 40,
+    toFake: ['setTimeout', 'clearTimeout', 'setImmediate', 'clearImmediate', 'setInterval', 'clearInterval', 'Date', 'hrtime', 'performance']
   })
 })
 
