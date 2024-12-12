@@ -80,12 +80,14 @@
 - `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.
 - `persistedQueryProvider`
   - `isPersistedQuery: (request: object) => boolean`: Return true if a given request matches the desired persisted query format.
+  - `isPersistedQueryRetry: (request: object) => boolean`: Return true if a given request matches the desired persisted query retry format.
   - `getHash: (request: object) => string`: Return the hash from a given request, or falsy if this request format is not supported.
   - `getQueryFromHash: async (hash: string) => string`: Return the query for a given hash.
   - `getHashForQuery?: (query: string) => string`: Return the hash for a given query string. Do not provide if you want to skip saving new queries.
   - `saveQuery?: async (hash: string, query: string) => void`: Save a query, given its hash.
   - `notFoundError?: string`: An error message to return when `getQueryFromHash` returns no result. Defaults to `Bad Request`.
   - `notSupportedError?: string`: An error message to return when a query matches `isPersistedQuery`, but returns no valid hash from `getHash`. Defaults to `Bad Request`.
+  - `mismatchError?: string`: An error message to return when the hash provided in the request does not match the calculated hash. Defaults to `Bad Request`.
 - `allowBatchedQueries`: Boolean. Flag to control whether to allow batched queries. When `true`, the server supports recieving an array of queries and returns an array of results.
 
 - `compilerOptions`: Object. Configurable options for the graphql-jit compiler. For more details check https://github.com/zalando-incubator/graphql-jit

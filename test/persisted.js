@@ -194,7 +194,13 @@ test('automatic POST new query, error on saveQuery is handled', async (t) => {
       query: `
         query AddQuery ($x: Int!, $y: Int!) {
             add(x: $x, y: $y)
-        }`
+        }`,
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: '14b859faf7e656329f24f7fdc7a33a3402dbd8b43f4f57364e15e096143927a9'
+        }
+      }
     }
   })
 
@@ -340,7 +346,7 @@ test('automatic POST invalid extension without persistedQueries and error', asyn
   t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotSupported' }] })
 })
 
-test('automatic POST persisted query after priming', async (t) => {
+test('avoid persisting POST query', async (t) => {
   const app = Fastify()
 
   const schema = `
@@ -389,7 +395,7 @@ test('automatic POST persisted query after priming', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), { data: { add: 3 } })
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'PersistedQueryNotFound' }] })
 })
 
 test('automatic POST persisted query after priming, with extension set in both payloads', async (t) => {
@@ -448,6 +454,47 @@ test('automatic POST persisted query after priming, with extension set in both p
   })
 
   t.same(JSON.parse(res.body), { data: { add: 3 } })
+})
+
+test('avoid persisting query if hashes mismatch', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+    `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'AddQuery',
+      variables: { x: 1, y: 2 },
+      query: `
+        query AddQuery ($x: Int!, $y: Int!) {
+            add(x: $x, y: $y)
+        }`,
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: 'foobar'
+        }
+      }
+    }
+  })
+
+  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'provided sha does not match query' }] })
 })
 
 // persistedQueryProvider
