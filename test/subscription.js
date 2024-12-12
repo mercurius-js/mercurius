@@ -1201,7 +1201,7 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
       payload: {
         query: `
           subscription {
-            notificationAdded {,
+            notificationAdded {
               id
               message
             }
@@ -1246,7 +1246,7 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
   })
 })
 
-test('subscription server exposes pubsub', { only: true }, t => {
+test('subscription server exposes pubsub', t => {
   const app = Fastify()
   t.teardown(() => app.close())
 
