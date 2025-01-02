@@ -398,7 +398,7 @@ app.graphql.pubsub.publish({
 })
 
 async () => {
-  const subscription = await app.graphql.pubsub.subscribe<{ newNotification: string }>('topic')
+  const subscription = await app.graphql.pubsub.subscribe('topic')
 
   subscription.on('data', (chunk) => {
     console.log(chunk)
