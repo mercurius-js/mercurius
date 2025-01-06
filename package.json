@@ -39,7 +39,7 @@
     "concurrently": "^9.0.0",
     "docsify-cli": "^4.4.3",
     "eslint": "^9.9.1",
-    "fastify": "^5.0.0-alpha.4",
+    "fastify": "^5.0.0",
     "graphql": "^16.0.0",
     "graphql-tag": "^2.12.6",
     "graphql-ws": "^5.11.2",
