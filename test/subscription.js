@@ -2694,7 +2694,7 @@ test('wrong messages do not crash the server', async (t) => {
 
   t.teardown(fastify.close.bind(fastify))
 
-  const ws = new WebSocket(`ws://127.0.0.1:${fastify.server.address().port}/graphql`, 'graphql-ws')
+  const ws = new WebSocket(`ws://localhost:${fastify.server.address().port}/graphql`, 'graphql-ws')
 
   await once(ws, 'open')
   ws._socket.write(Buffer.from([0xa2, 0x00]))
