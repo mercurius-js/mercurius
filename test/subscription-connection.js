@@ -9,6 +9,7 @@ const { makeExecutableSchema } = require('@graphql-tools/schema')
 const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
 const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protocol')
+const { setImmediate: immediate } = require('timers/promises')
 
 test('socket is closed on unhandled promise rejection in handleMessage', t => {
   t.plan(1)
@@ -326,10 +327,11 @@ test('subscription connection handles when GQL_START is called before GQL_INIT',
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
-    send (message) {
+    send (message, cb) {
       t.equal(JSON.stringify(
         { type: 'connection_error', payload: { message: 'Connection has not been established yet.' } }
       ), message)
+      cb()
     },
     protocol: GRAPHQL_TRANSPORT_WS
   }, {})
@@ -348,7 +350,7 @@ test('subscription connection replies to GQL_CONNECTION_KEEP_ALIVE message with 
     {
       on () {},
       close () {},
-      send (message) {
+      send (message, cb) {
         t.equal(
           JSON.stringify({
             type: 'pong',
@@ -356,6 +358,7 @@ test('subscription connection replies to GQL_CONNECTION_KEEP_ALIVE message with 
           }),
           message
         )
+        cb()
       },
       protocol: GRAPHQL_TRANSPORT_WS
     },
@@ -378,8 +381,9 @@ test('subscription connection does not error if client sends GQL_CONNECTION_KEEP
     {
       on () {},
       close () {},
-      send (message) {
+      send (message, cb) {
         t.fail()
+        cb()
       },
       protocol: GRAPHQL_TRANSPORT_WS
     },
@@ -414,8 +418,9 @@ test('subscription connection extends context with onConnect return value', asyn
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
-    send (message) {
+    send (message, cb) {
       t.equal(JSON.stringify({ type: 'connection_ack' }), message)
+      cb()
     },
     protocol: GRAPHQL_TRANSPORT_WS
   }, {
@@ -436,12 +441,13 @@ test('subscription connection send GQL_ERROR message if connectionInit extension
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
-    send (message) {
+    send (message, cb) {
       t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: [{ message: 'Forbidden' }]
       })
+      cb()
     },
     protocol: GRAPHQL_TRANSPORT_WS
   }, {
@@ -505,12 +511,13 @@ test('subscription connection send GQL_ERROR on unknown extension', async (t) =>
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
-    send (message) {
+    send (message, cb) {
       t.same(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: [{ message: 'Unknown extension unknown' }]
       })
+      cb()
     },
     protocol: GRAPHQL_TRANSPORT_WS
   }, { })
@@ -564,7 +571,7 @@ test('subscription connection extends the context with the connection_init paylo
   const sc = new SubscriptionConnection({
     on () { },
     close () { },
-    send (message) { },
+    send (message, cb) { cb() },
     protocol: GRAPHQL_TRANSPORT_WS
   }, {})
 
@@ -579,7 +586,7 @@ test('subscription connection sends error when trying to execute invalid operati
   const sc = new SubscriptionConnection(
     {
       on () {},
-      send (message) {
+      send (message, cb) {
         t.equal(
           JSON.stringify({
             type: 'error',
@@ -588,6 +595,7 @@ test('subscription connection sends error when trying to execute invalid operati
           }),
           message
         )
+        cb()
       },
       protocol: GRAPHQL_TRANSPORT_WS
     },
@@ -607,7 +615,9 @@ test('subscription connection sends error when trying to execute invalid operati
 })
 
 test('subscription connection handles query when fullWsTransport: true', async (t) => {
-  const send = sinon.stub()
+  const send = sinon.stub().callsFake((message, cb) => {
+    cb()
+  })
 
   const sc = new SubscriptionConnection(
     {
@@ -637,6 +647,8 @@ test('subscription connection handles query when fullWsTransport: true', async (
     })
   )
 
+  await immediate()
+
   sinon.assert.calledTwice(send)
   sinon.assert.calledWith(send, JSON.stringify({
     type: 'next',
@@ -651,7 +663,9 @@ test('subscription connection handles query when fullWsTransport: true', async (
 })
 
 test('subscription connection handles mutation when fullWsTransport: true', async (t) => {
-  const send = sinon.stub()
+  const send = sinon.stub().callsFake((message, cb) => {
+    cb()
+  })
 
   const sc = new SubscriptionConnection(
     {
@@ -671,6 +685,8 @@ test('subscription connection handles mutation when fullWsTransport: true', asyn
 
   sc.isReady = true
 
+  await immediate()
+
   await sc.handleMessage(
     JSON.stringify({
       id: 1,
@@ -680,6 +696,8 @@ test('subscription connection handles mutation when fullWsTransport: true', asyn
       }
     })
   )
+
+  await immediate()
 
   sinon.assert.calledTwice(send)
   sinon.assert.calledWith(send, JSON.stringify({
@@ -698,7 +716,7 @@ test('subscription data is released right after it ends', async (t) => {
   const sc = new SubscriptionConnection({
     on () {},
     close () {},
-    send () {},
+    send (msg, cb) { cb() },
     protocol: GRAPHQL_TRANSPORT_WS
   }, {
     context: { preSubscriptionParsing: null, preSubscriptionExecution: null },
@@ -746,6 +764,8 @@ test('subscription data is released right after it ends', async (t) => {
       resolve()
     }
   })
+
+  await immediate()
 
   t.equal(sc.subscriptionIters.size, 0)
   t.equal(sc.subscriptionContexts.size, 0)
