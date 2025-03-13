@@ -199,7 +199,7 @@ declare namespace mercurius {
     ): Promise<void> | void;
   }
 
-  interface ServiceConfig {
+  export interface ServiceConfig {
     setSchema: (schema: string) => ServiceConfig;
   }
 
@@ -314,7 +314,7 @@ declare namespace mercurius {
     extensions?: object;
   }
 
-  interface WsConnectionParams {
+  export interface WsConnectionParams {
     connectionInitPayload?:
       | (() => Record<string, any> | Promise<Record<string, any>>)
       | Record<string, any>;
