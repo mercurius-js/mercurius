@@ -314,7 +314,8 @@ class CustomPubSub {
     }
 
     this.emitter.on(topic, listener)
-    queue.close = close
+    if (!queue.close) queue.close = []
+    queue.close.push(close)    
   }
 
   publish (event, callback) {
