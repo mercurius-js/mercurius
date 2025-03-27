@@ -94,6 +94,17 @@ test('subscription connection handles connection close when socket emit error ev
   t.equal(Mocked.prototype.handleConnectionClose.calls.length, 1)
 })
 
+test('subscription connection should close socket when close called', async (t) => {
+  const socket = new EventEmitter()
+  socket.protocol = GRAPHQL_TRANSPORT_WS
+  socket.send = () => {}
+  socket.close = () => {}
+  t.capture(socket, 'close')
+  const sc = new SubscriptionConnection(socket, {})
+  sc.close()
+  t.equal(socket.close.calls.length, 1)
+})
+
 test('subscription connection sends error message when message is not json string', async (t) => {
   t.plan(1)
 
