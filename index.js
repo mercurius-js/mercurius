@@ -342,11 +342,30 @@ const mercurius = fp(async function (app, opts) {
       }
     }
 
-    function serialize (query) {
-      if (query.info) {
-        return stringify({ obj: query.obj, params: query.params })
+    /**
+     * Custom serialization function for batching GraphQL loaders.
+     *
+     * This ensures that similar queries (e.g. same obj.id and language) can be grouped
+     * into a single batched call.
+     *
+     * We use `obj.id` when available because:
+     * - It's a common convention (used in most GraphQL schemas)
+     * - It's stable and unique across objects
+     * - It's much faster than serializing the entire object
+     *
+     * If `obj.id` is not available, we fall back to a full serialization of both
+     * `obj` and `params` to ensure uniqueness (at the cost of performance).
+     *
+     * This improves performance for large GraphQL queries that call the same
+     * field resolver many times (e.g. N+1 problems), by allowing batching to work properly.
+     */
+    function serialize ({ obj, params }) {
+      if (obj?.id !== undefined) {
+        const lang = params?.lang ?? null
+        return JSON.stringify([obj.id, lang])
       }
-      return query
+
+      return stringify({ obj, params })
     }
 
     const resolvers = {}
