@@ -2,13 +2,13 @@
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
-    caches.open('graphiql-v3.7.1').then(function (cache) {
+    caches.open('graphiql-v3.8.3').then(function (cache) {
       return cache.addAll([
         './main.js',
-        'https://unpkg.com/graphiql@3.7.1/graphiql.css',
+        'https://unpkg.com/graphiql@3.8.3/graphiql.css',
         'https://unpkg.com/react@18.3.1/umd/react.production.min.js',
         'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js',
-        'https://unpkg.com/graphiql@3.7.1/graphiql.min.js'
+        'https://unpkg.com/graphiql@3.8.3/graphiql.min.js'
       ])
     })
   )
