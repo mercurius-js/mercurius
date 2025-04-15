@@ -102,3 +102,14 @@ test('subscription context can handle multiple topics', t => {
   sc.close()
   setImmediate(() => { t.equal(q._matcher._trie.size, 0, 'All listeners not removed') })
 })
+
+test('subscription context should not call removeListener more than one time when close called multiple times', async t => {
+  const q = mq()
+  const removeListener = t.capture(q, 'removeListener', q.removeListener)
+  const pubsub = new PubSub(q)
+  const sc = new SubscriptionContext({ pubsub })
+  await sc.subscribe('foo')
+  sc.close()
+  sc.close()
+  t.equal(removeListener.calls.length, 1)
+})
