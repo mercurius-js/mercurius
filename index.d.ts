@@ -19,6 +19,7 @@ import {
 import type { WebSocket } from 'ws'
 import { IncomingMessage, OutgoingHttpHeaders } from 'http'
 import { Readable } from 'stream'
+import { EventEmitter } from 'events'
 
 type Mercurius = typeof mercurius
 
@@ -37,6 +38,19 @@ declare namespace mercurius {
         payload: TPubSubTopics[TTopic];
       },
       callback?: () => void,
+    ): void;
+  }
+
+  export interface CustomPubSub {
+    emitter: EventEmitter;
+    subscribe(
+      topic: string | string[],
+      queue: Readable & { close: () => void },
+      ...customArgs: any[]
+    ): Promise<void>;
+    publish(
+      event: { topic: string, payload: any },
+      callback: () => void
     ): void;
   }
 
