@@ -298,13 +298,36 @@ app.register(mercurius, {
 ### Subscriptions with custom PubSub
 > Note that when passing both `pubsub` and `emitter` options, `emitter` will be ignored.
 
+The CustomPubSub interface allows you to implement a custom publish-subscribe mechanism for GraphQL subscriptions. This gives you complete control over how subscription data is published and delivered.
+
+#### CustomPubSub Interface
+
+To create a custom PubSub implementation, you need to implement a class with at least the following methods:
+
+- **subscribe(topic, queue, ...customArgs)**: 
+  - `topic`: String identifier for the subscription topic
+  - `queue`: A Readable stream where subscription data will be pushed
+  - `...customArgs`: Optional additional parameters that can be passed from the subscription resolver
+  - Returns: A Promise that resolves when the subscription is set up
+
+- **publish(event, callback)**:
+  - `event`: Object containing `topic` and `payload` properties
+  - `callback`: Function to be called when the publish operation completes
+  - Expected behavior: Emit the payload to subscribers of the topic
+
+#### Custom Arguments in subscribe method
+
+The `subscribe` method supports passing custom arguments from your GraphQL resolvers. This allows for additional filtering or configuration at the subscription level. For example, you might pass an `offset` parameter to control where a subscription starts reading from, or pass filter criteria to perform server-side filtering.
+
+Here's an example implementation using Node's EventEmitter:
+
 ```js
 class CustomPubSub {
   constructor () {
     this.emitter = new EventEmitter()
   }
 
-  async subscribe (topic, queue) {
+  async subscribe (topic, queue, offset) {
     const listener = (value) => {
       queue.push(value)
     }
@@ -314,8 +337,7 @@ class CustomPubSub {
     }
 
     this.emitter.on(topic, listener)
-    if (!queue.close) queue.close = []
-    queue.close.push(close)    
+    queue.close.push(close)
   }
 
   publish (event, callback) {
@@ -328,7 +350,13 @@ const pubsub = new CustomPubSub()
 
 app.register(mercurius, {
   schema,
-  resolvers,
+  resolvers: {
+    Subscription: {
+      retrieveItems: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('RETRIEVE_ITEMS', args.offset)
+      }
+    }
+  },
   subscription: {
     pubsub
   }

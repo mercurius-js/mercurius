@@ -296,31 +296,31 @@ test('subscription server sends update to subscriptions', t => {
   })
 })
 
-class CustomPubSub {
-  constructor () {
-    this.emitter = new EventEmitter()
-  }
-
-  async subscribe (topic, queue) {
-    const listener = (value) => {
-      queue.push(value)
-    }
-
-    const close = () => {
-      this.emitter.removeListener(topic, listener)
-    }
-
-    this.emitter.on(topic, listener)
-    queue.close = close
-  }
-
-  publish (event, callback) {
-    this.emitter.emit(event.topic, event.payload)
-    callback()
-  }
-}
-
 test('subscription with custom pubsub', t => {
+  class CustomPubSub {
+    constructor () {
+      this.emitter = new EventEmitter()
+    }
+
+    async subscribe (topic, queue) {
+      const listener = (value) => {
+        queue.push(value)
+      }
+
+      const close = () => {
+        this.emitter.removeListener(topic, listener)
+      }
+
+      this.emitter.on(topic, listener)
+      queue.close = close
+    }
+
+    publish (event, callback) {
+      this.emitter.emit(event.topic, event.payload)
+      callback()
+    }
+  }
+
   const app = Fastify()
   t.teardown(() => app.close())
 
@@ -475,6 +475,203 @@ test('subscription with custom pubsub', t => {
           payload: {
             data: {
               notificationAdded: {
+                id: '1',
+                message: 'Hello World'
+              }
+            }
+          }
+        }))
+
+        client.end()
+        t.end()
+      } else if (data.id === 2 && data.type === 'complete') {
+        sendTestQuery()
+      }
+    })
+  })
+})
+
+test('subscription with custom pubsub with custom params on subscribe method', t => {
+  class CustomPubSub {
+    constructor () {
+      this.emitter = new EventEmitter()
+    }
+
+    async subscribe (topic, queue, subscriptionName, filter) {
+      const listener = (value) => {
+        if (value[subscriptionName].message.includes(filter)) {
+          queue.push(value)
+        }
+      }
+
+      const close = () => {
+        this.emitter.removeListener(topic, listener)
+      }
+
+      this.emitter.on(topic, listener)
+      queue.close = close
+    }
+
+    publish (event, callback) {
+      this.emitter.emit(event.topic, event.payload)
+      callback()
+    }
+  }
+
+  const app = Fastify()
+  t.teardown(() => app.close())
+
+  const pubsub = new CustomPubSub()
+
+  const sendTestQuery = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          query {
+            notifications {
+              id
+              message
+            }
+          }
+        `
+      }
+    }, () => {
+      sendTestMutation()
+    })
+  }
+
+  const sendTestMutation = () => {
+    app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: {
+        query: `
+          mutation {
+            addNotification(message: "Hello World") {
+              id
+            }
+          }
+        `
+      }
+    }, () => {})
+  }
+
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Mutation {
+      addNotification(message: String): Notification
+    }
+
+    type Subscription {
+      onNotificationAdded(filter: String!): Notification
+    }
+  `
+
+  let idCount = 1
+  const notifications = [{
+    id: idCount,
+    message: 'Notification message'
+  }]
+
+  const resolvers = {
+    Query: {
+      notifications: () => notifications
+    },
+    Mutation: {
+      addNotification: async (_, { message }) => {
+        const id = idCount++
+        const notification = {
+          id,
+          message
+        }
+        notifications.push(notification)
+        await pubsub.emitter.emit('NOTIFICATION_ADDED', { onNotificationAdded: notification })
+
+        return notification
+      }
+    },
+    Subscription: {
+      onNotificationAdded: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED', 'onNotificationAdded', args.filter)
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      pubsub
+    }
+  })
+
+  app.listen({ port: 0 }, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            onNotificationAdded(filter: "Hello") {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'start',
+      payload: {
+        query: `
+          subscription {
+            onNotificationAdded(filter: "Hello") {
+              id
+              message
+            }
+          }
+        `
+      }
+    }))
+
+    client.write(JSON.stringify({
+      id: 2,
+      type: 'stop'
+    }))
+
+    client.on('data', chunk => {
+      const data = JSON.parse(chunk)
+
+      if (data.id === 1 && data.type === 'data') {
+        t.equal(chunk, JSON.stringify({
+          type: 'data',
+          id: 1,
+          payload: {
+            data: {
+              onNotificationAdded: {
                 id: '1',
                 message: 'Hello World'
               }
