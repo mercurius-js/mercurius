@@ -10,6 +10,7 @@ const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
 const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protocol')
 const { setImmediate: immediate } = require('timers/promises')
+const { EventEmitter } = require('events')
 
 test('socket is closed on unhandled promise rejection in handleMessage', t => {
   t.plan(1)
@@ -63,6 +64,45 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
       t.equal(handleConnectionCloseCalled, true)
     })
   })
+})
+
+test('subscription connection handles connection close when socket emit close event', async (t) => {
+  const socket = new EventEmitter()
+  socket.protocol = GRAPHQL_TRANSPORT_WS
+  socket.send = () => {}
+  socket.close = () => {}
+  class Mocked extends SubscriptionConnection {
+  }
+  t.capture(Mocked.prototype, 'handleConnectionClose')
+  // eslint-disable-next-line no-new
+  new Mocked(socket, {})
+  socket.emit('close')
+  t.equal(Mocked.prototype.handleConnectionClose.calls.length, 1)
+})
+
+test('subscription connection handles connection close when socket emit error event', async (t) => {
+  const socket = new EventEmitter()
+  socket.protocol = GRAPHQL_TRANSPORT_WS
+  socket.send = () => {}
+  socket.close = () => {}
+  class Mocked extends SubscriptionConnection {
+  }
+  t.capture(Mocked.prototype, 'handleConnectionClose')
+  // eslint-disable-next-line no-new
+  new Mocked(socket, {})
+  socket.emit('error')
+  t.equal(Mocked.prototype.handleConnectionClose.calls.length, 1)
+})
+
+test('subscription connection should close socket when close called', async (t) => {
+  const socket = new EventEmitter()
+  socket.protocol = GRAPHQL_TRANSPORT_WS
+  socket.send = () => {}
+  socket.close = () => {}
+  t.capture(socket, 'close')
+  const sc = new SubscriptionConnection(socket, {})
+  sc.close()
+  t.equal(socket.close.calls.length, 1)
 })
 
 test('subscription connection sends error message when message is not json string', async (t) => {
