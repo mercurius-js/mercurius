@@ -11,8 +11,8 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "typescript": "tsd",
-    "test": "npm run lint && npm run unit && npm run typescript",
-    "test2": "npm run unit"
+    "test": "npm run lint && npm run test:unit && npm run typescript",
+    "test:unit": "npm run unit"
   },
   "repository": {
     "type": "git",
@@ -51,7 +51,7 @@
     "split2": "^4.0.0",
     "tap": "^21.0.0",
     "tsd": "^0.32.0",
-    "typescript": "^5.0.2",
+    "typescript": "^5.8.3",
     "undici": "^7.0.0",
     "wait-on": "^8.0.0"
   },
