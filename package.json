@@ -67,7 +67,7 @@
     "readable-stream": "^4.0.0",
     "safe-stable-stringify": "^2.3.0",
     "secure-json-parse": "^3.0.0",
-    "single-user-cache": "^1.0.0",
+    "single-user-cache": "^2.0.0",
     "tiny-lru": "^11.0.0",
     "ws": "^8.2.2"
   },
