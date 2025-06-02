@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
@@ -97,7 +97,7 @@ test('loaders create batching resolvers', async (t) => {
     Dog: {
       async owner (queries, { reply }) {
         // note that the second entry for max is cached
-        t.same(queries, [{
+        t.assert.deepEqual(queries, [{
           obj: {
             name: 'Max'
           },
@@ -134,8 +134,8 @@ test('loaders create batching resolvers', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -169,7 +169,7 @@ test('loaders create batching resolvers with batchedQueries', async (t) => {
     Dog: {
       async owner (queries, { reply }) {
         // note that the second entry for max is cached
-        t.same(queries, [{
+        t.assert.deepEqual(queries, [{
           obj: {
             name: 'Max'
           },
@@ -200,8 +200,8 @@ test('loaders create batching resolvers with batchedQueries', async (t) => {
     body: [{ query: puppiesQuery }, { query: eldersQuery }]
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), [{
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), [{
     data: {
       puppies: [{
         name: 'Max',
@@ -238,7 +238,7 @@ test('disable cache for each loader', async (t) => {
           const found = queries.map((q) => {
             return { obj: q.obj, params: q.params }
           })
-          t.same(found, [{
+          t.assert.deepEqual(found, [{
             obj: {
               name: 'Max'
             },
@@ -279,8 +279,8 @@ test('disable cache for each loader', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -337,8 +337,8 @@ test('defineLoaders method, if factory exists', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -379,7 +379,7 @@ test('support context in loader', async (t) => {
   const loaders = {
     Dog: {
       async owner (queries, context) {
-        t.equal(context.app, app)
+        t.assert.strictEqual(context.app, app)
         return queries.map(({ obj }) => {
           return { ...owners[obj.name] }
         })
@@ -405,7 +405,7 @@ test('support context in loader', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -443,7 +443,7 @@ test('rersolver unknown type', async t => {
     resolvers
   })
 
-  await t.rejects(async () => {
+  await t.assert.rejects(async () => {
     await app.ready()
     app.graphql('query { test }')
   }, { message: 'Invalid options: Cannot find type test' })
@@ -456,7 +456,7 @@ test('minJit is not a number, throw error', async t => {
     jit: '0'
   })
 
-  await t.rejects(app.ready(), { message: 'Invalid options: the jit option must be a number' })
+  await t.assert.rejects(app.ready(), { message: 'Invalid options: the jit option must be a number' })
 })
 
 test('options cache is type = number', async t => {
@@ -477,7 +477,7 @@ test('options cache is !number && !boolean', async t => {
     cache: 'cache'
   })
 
-  await t.rejects(app.ready(), { message: 'Invalid options: Cache type is not supported' })
+  await t.assert.rejects(app.ready(), { message: 'Invalid options: Cache type is not supported' })
 })
 
 test('options cache is false and lruErrors exists', async t => {
@@ -490,7 +490,7 @@ test('options cache is false and lruErrors exists', async t => {
 
   // needed so that graphql is defined
   await app.ready()
-  await t.rejects(app.graphql('{ dogs { name { owner } } }'), { message: 'Graphql validation error' })
+  await t.assert.rejects(app.graphql('{ dogs { name { owner } } }'), { message: 'Graphql validation error' })
 })
 
 test('reply is empty, throw error', async (t) => {
@@ -524,9 +524,9 @@ test('reply is empty, throw error', async (t) => {
   try {
     await app.graphql(query)
   } catch (error) {
-    t.equal(error.message, 'Internal Server Error')
-    t.equal(error.errors.length, 4)
-    t.equal(error.errors[0].message, 'loaders only work via reply.graphql()')
+    t.assert.strictEqual(error.message, 'Internal Server Error')
+    t.assert.strictEqual(error.errors.length, 4)
+    t.assert.strictEqual(error.errors[0].message, 'loaders only work via reply.graphql()')
   }
 })
 
@@ -537,7 +537,7 @@ test('throw when persistedQueries is empty but onlyPersisted is true', async t =
     onlyPersisted: true
   })
 
-  t.rejects(app.ready(), 'onlyPersisted is true but there are no persistedQueries')
+  t.assert.rejects(app.ready(), 'onlyPersisted is true but there are no persistedQueries')
 })
 
 test('loaders support custom context', async (t) => {
@@ -546,9 +546,9 @@ test('loaders support custom context', async (t) => {
   const loaders = {
     Dog: {
       async owner (queries, { reply, test }) {
-        t.equal(test, 'custom')
+        t.assert.strictEqual(test, 'custom')
         // note that the second entry for max is cached
-        t.same(queries, [{
+        t.assert.deepEqual(queries, [{
           obj: {
             name: 'Max'
           },
@@ -590,8 +590,8 @@ test('loaders support custom context', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -621,7 +621,7 @@ test('loaders support custom context', async (t) => {
 test('subscriptions properly execute loaders', t => {
   const app = Fastify()
   const emitter = mq()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -683,7 +683,7 @@ test('subscriptions properly execute loaders', t => {
         const expectedDog = { ...dogs[0] }
         expectedDog.owner = owners[dogs[0].name]
 
-        t.same(data.payload.data.onPingDog, expectedDog)
+        t.assert.deepEqual(data.payload.data.onPingDog, expectedDog)
         client.end()
         t.end()
       } else {
@@ -791,22 +791,22 @@ test('Pass info to loader if cache is disabled', async (t) => {
     Dog: {
       owner: {
         async loader (queries, context) {
-          t.equal(context.app, app)
+          t.assert.strictEqual(context.app, app)
           return queries.map(({ obj, info }) => {
             // verify info properties
-            t.equal(info.operation.operation, 'query')
+            t.assert.strictEqual(info.operation.operation, 'query')
 
             const resolverOutputParams = info.operation.selectionSet.selections[0].selectionSet.selections
-            t.equal(resolverOutputParams.length, 3)
-            t.equal(resolverOutputParams[0].name.value, 'dogName')
-            t.equal(resolverOutputParams[1].name.value, 'age')
-            t.equal(resolverOutputParams[2].name.value, 'owner')
+            t.assert.strictEqual(resolverOutputParams.length, 3)
+            t.assert.strictEqual(resolverOutputParams[0].name.value, 'dogName')
+            t.assert.strictEqual(resolverOutputParams[1].name.value, 'age')
+            t.assert.strictEqual(resolverOutputParams[2].name.value, 'owner')
 
             const loaderOutputParams = resolverOutputParams[2].selectionSet.selections
 
-            t.equal(loaderOutputParams.length, 2)
-            t.equal(loaderOutputParams[0].name.value, 'nickName')
-            t.equal(loaderOutputParams[1].name.value, 'age')
+            t.assert.strictEqual(loaderOutputParams.length, 2)
+            t.assert.strictEqual(loaderOutputParams[0].name.value, 'nickName')
+            t.assert.strictEqual(loaderOutputParams[1].name.value, 'age')
 
             return { ...owners[obj.dogName] }
           })
@@ -819,20 +819,20 @@ test('Pass info to loader if cache is disabled', async (t) => {
     Cat: {
       owner: {
         async loader (queries, context) {
-          t.equal(context.app, app)
+          t.assert.strictEqual(context.app, app)
           return queries.map(({ obj, info }) => {
             // verify info properties
-            t.equal(info.operation.operation, 'query')
+            t.assert.strictEqual(info.operation.operation, 'query')
 
             const resolverOutputParams = info.operation.selectionSet.selections[1].selectionSet.selections
-            t.equal(resolverOutputParams.length, 2)
-            t.equal(resolverOutputParams[0].name.value, 'catName')
-            t.equal(resolverOutputParams[1].name.value, 'owner')
+            t.assert.strictEqual(resolverOutputParams.length, 2)
+            t.assert.strictEqual(resolverOutputParams[0].name.value, 'catName')
+            t.assert.strictEqual(resolverOutputParams[1].name.value, 'owner')
 
             const loaderOutputParams = resolverOutputParams[1].selectionSet.selections
 
-            t.equal(loaderOutputParams.length, 1)
-            t.equal(loaderOutputParams[0].name.value, 'age')
+            t.assert.strictEqual(loaderOutputParams.length, 1)
+            t.assert.strictEqual(loaderOutputParams[0].name.value, 'age')
 
             return { ...owners[obj.catName] }
           })
@@ -860,8 +860,8 @@ test('Pass info to loader if cache is disabled', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.strictSame(JSON.parse(res.body), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: {
       dogs: [
         {
@@ -935,7 +935,7 @@ test('should not pass info to loader if cache is enabled', async (t) => {
   const loaders = {
     Dog: {
       async owner (queries) {
-        t.equal(queries[0].info, undefined)
+        t.assert.strictEqual(queries[0].info, undefined)
         return queries.map(({ obj }) => {
           return { ...owners[obj.name] }
         })
@@ -962,7 +962,7 @@ test('should not pass info to loader if cache is enabled', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
@@ -999,7 +999,7 @@ test('loaders create batching resolvers', async (t) => {
         const found = queries.map((q) => {
           return { obj: q.obj, params: q.params }
         })
-        t.same(found, [{
+        t.assert.deepEqual(found, [{
           obj: {
             name: 'Max'
           },
@@ -1037,8 +1037,8 @@ test('loaders create batching resolvers', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       dogs: [{
         name: 'Max',
