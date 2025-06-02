@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const proxyquire = require('proxyquire')
 const GQL = require('..')
@@ -34,7 +34,7 @@ test('cache skipped when the GQL Schema has been changed', async t => {
   t.plan(4)
 
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   await app.register(GQL, {
     schema,
@@ -73,7 +73,7 @@ test('cache skipped when the GQL Schema has been changed', async t => {
       url: '/graphql',
       body: JSON.stringify({ query })
     })
-    t.same(res.json(), {
+    t.assert.deepStrictEqual(res.json(), {
       data: {
         read: [
           {
@@ -93,7 +93,7 @@ test('cache skipped when the GQL Schema has been changed', async t => {
       url: '/graphql',
       body: JSON.stringify({ query })
     })
-    t.same(res.json(), {
+    t.assert.deepStrictEqual(res.json(), {
       data: {
         read: [
           {
@@ -116,7 +116,7 @@ test('cache skipped when no jit response', async t => {
   t.plan(1)
 
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   await app.register(GQLMock, {
     schema,
@@ -138,7 +138,7 @@ test('cache skipped when no jit response', async t => {
       url: '/graphql',
       body: JSON.stringify({ query })
     })
-    t.same(res.json(), {
+    t.assert.deepStrictEqual(res.json(), {
       data: {
         read: [
           {
