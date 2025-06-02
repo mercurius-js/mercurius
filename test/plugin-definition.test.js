@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const fp = require('fastify-plugin')
 const Fastify = require('fastify')
 const GQL = require('..')
@@ -17,5 +17,10 @@ test('plugin name definition', async (t) => {
     dependencies: ['mercurius']
   }))
 
-  t.resolves(app.ready())
+  try {
+    await app.ready()
+    t.assert.ok('Fastify app is ready and plugins loaded successfully')
+  } catch (err) {
+    t.assert.fail(`App failed to be ready: ${err.message}`)
+  }
 })
