@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const GQL = require('..')
 
@@ -11,7 +11,7 @@ test('reply decorator', async (t) => {
       add(x: Int, y: Int): Int
     }
   `
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   const resolvers = {
     add: async ({ x, y }) => x + y
@@ -32,7 +32,7 @@ test('reply decorator', async (t) => {
     url: '/'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -41,7 +41,7 @@ test('reply decorator', async (t) => {
 
 test('reply decorator operationName', async (t) => {
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -78,7 +78,7 @@ test('reply decorator operationName', async (t) => {
     url: '/'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -89,7 +89,7 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
   t.plan(3)
 
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -107,7 +107,7 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
 
   app.setErrorHandler(async function (err, request, reply) {
     reply.code(err.statusCode)
-    t.equal(err.statusCode, 400)
+    t.assert.strictEqual(err.statusCode, 400)
     return { errors: err.errors }
   })
 
@@ -121,8 +121,8 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
     url: '/'
   })
 
-  t.equal(res.statusCode, 400)
-  t.same(res.json(), {
+  t.assert.strictEqual(res.statusCode, 400)
+  t.assert.deepStrictEqual(res.json(), {
     errors: [
       {
         message: 'Syntax Error: Expected Name, found <EOF>.',
@@ -140,7 +140,7 @@ test('reply decorator set status code to 400 with bad query', async (t) => {
 
 test('reply decorator supports encapsulation when loaders are defined in parent object', async (t) => {
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
   const schema = `
     type Query {
       add(x: Int, y: Int): Int
@@ -181,14 +181,14 @@ test('reply decorator supports encapsulation when loaders are defined in parent 
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: {
       multiply: 25
     }
   })
 
-  t.same(res.json(), {
+  t.assert.deepStrictEqual(res.json(), {
     data: {
       multiply: 25
     }
