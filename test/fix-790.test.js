@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const GQL = require('..')
 
@@ -37,10 +37,10 @@ test('Subscription type is not treated as a subscription when subscriptions disa
 
   const query = '{ subscription { id } }'
   const result = await app.graphql(query)
-  t.same(result, {
+  t.assert.deepEqual(result, {
     data: {
       subscription: {
-        id: '1'
+        id: 1
       }
     }
   })
@@ -78,7 +78,7 @@ test('Subscription type is not treated as a subscription by default', async (t) 
 
   const query = '{ subscription { id } }'
   const result = await app.graphql(query)
-  t.same(result, {
+  t.assert.deepEqual(result, {
     data: {
       subscription: {
         id: '1'
