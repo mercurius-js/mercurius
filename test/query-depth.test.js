@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const GQL = require('..')
 const { MER_ERR_GQL_VALIDATION, MER_ERR_GQL_QUERY_DEPTH } = require('../lib/errors')
@@ -152,7 +152,7 @@ test('queryDepth - test total depth is within queryDepth parameter', async (t) =
 
   const res = await app.graphql(query)
 
-  t.same(res, goodResponse)
+  t.assert.deepEqual(res, goodResponse)
 })
 
 test('queryDepth - test total depth is over queryDepth parameter', async (t) => {
@@ -171,7 +171,7 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   const queryDepthError = new MER_ERR_GQL_QUERY_DEPTH('unnamedQuery', 6, 5)
   err.errors = [queryDepthError]
 
-  await t.rejects(app.graphql(query), err)
+  await t.assert.rejects(app.graphql(query), err)
 })
 
 test('queryDepth - queryDepth is not number', async (t) => {
@@ -188,7 +188,7 @@ test('queryDepth - queryDepth is not number', async (t) => {
 
   const res = await app.graphql(query)
 
-  t.same(res, goodResponse)
+  t.assert.deepEqual(res, goodResponse)
 })
 
 test('queryDepth - definition.kind and definition.name change', async (t) => {
@@ -226,7 +226,7 @@ test('queryDepth - definition.kind and definition.name change', async (t) => {
 
   const res = await app.graphql(localQuery)
 
-  t.same(res, goodResponse)
+  t.assert.deepEqual(res, goodResponse)
 })
 
 test('queryDepth - ensure query depth is correctly calculated', async (t) => {
@@ -385,7 +385,7 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
   await app.ready()
 
   const res = await app.graphql(query)
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       flavors: [
         {
