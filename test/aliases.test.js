@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const GQL = require('..')
 
@@ -51,7 +51,7 @@ const resolvers = {
 
 function createTestServer (t, customResolvers = resolvers) {
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
   app.register(GQL, { schema, resolvers: customResolvers })
   return app
 }
@@ -90,7 +90,7 @@ test('should support aliases', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: {
       user: {
         id: 'u1',
