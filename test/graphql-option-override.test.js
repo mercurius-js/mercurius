@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const mercurius = require('..')
 
@@ -45,7 +45,7 @@ const query2 = `{
 
 test('do not override graphql function options', async t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   await app.register(mercurius, {
     schema,
@@ -65,12 +65,12 @@ test('do not override graphql function options', async t => {
     }
   }
 
-  t.same(res, expectedResult)
+  t.assert.deepEqual(res, expectedResult)
 })
 
 test('override graphql.parse options', async t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   await app.register(mercurius, {
     schema,
@@ -90,12 +90,12 @@ test('override graphql.parse options', async t => {
     }]
   }
 
-  await t.rejects(app.graphql(query), expectedErr)
+  await t.assert.rejects(app.graphql(query), expectedErr.errors[0].message)
 })
 
 test('do not override graphql.validate options', async t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   await app.register(mercurius, {
     schema,
@@ -112,12 +112,12 @@ test('do not override graphql.validate options', async t => {
     ]
   }
 
-  await t.rejects(app.graphql(query2), expectedErr)
+  await t.assert.rejects(app.graphql(query2), expectedErr.errors[0].message)
 })
 
 test('override graphql.validate options', async t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   await app.register(mercurius, {
     schema,
@@ -138,5 +138,5 @@ test('override graphql.validate options', async t => {
     ]
   }
 
-  await t.rejects(app.graphql(query2), expectedErr)
+  await t.assert.rejects(app.graphql(query2), expectedErr.errors[0].message)
 })
