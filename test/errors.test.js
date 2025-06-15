@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const mq = require('mqemitter')
 const WebSocket = require('ws')
@@ -10,10 +10,12 @@ const { kRequestContext } = require('../lib/symbols')
 const split = require('split2')
 const { GraphQLError } = require('graphql-jit/dist/error')
 const semver = require('semver')
+const Snap = require('@matteo.collina/snap')
+const snap = Snap(__filename)
 
 test('ErrorWithProps - support status code in the constructor', async (t) => {
-  const error = new ErrorWithProps('error', { }, 500)
-  t.equal(error.statusCode, 500)
+  const error = new ErrorWithProps('error', {}, 500)
+  t.assert.strictEqual(error.statusCode, 500)
 })
 
 test('errors - multiple extended errors', async (t) => {
@@ -27,7 +29,11 @@ test('errors - multiple extended errors', async (t) => {
   const resolvers = {
     Query: {
       error () {
-        throw new ErrorWithProps('Error', { code: 'ERROR', additional: 'information', other: 'data' })
+        throw new ErrorWithProps('Error', {
+          code: 'ERROR',
+          additional: 'information',
+          other: 'data'
+        })
       },
       successful () {
         return 'Runs OK'
@@ -49,8 +55,8 @@ test('errors - multiple extended errors', async (t) => {
     url: '/graphql?query={error,successful}'
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.payload), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.payload), {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -85,7 +91,12 @@ test('errors - extended errors with number extensions', async (t) => {
   const resolvers = {
     Query: {
       willThrow () {
-        throw new ErrorWithProps('Extended Error', { code: 'EXTENDED_ERROR', floating: 3.14, timestamp: 1324356, reason: 'some reason' })
+        throw new ErrorWithProps('Extended Error', {
+          code: 'EXTENDED_ERROR',
+          floating: 3.14,
+          timestamp: 1324356,
+          reason: 'some reason'
+        })
       }
     }
   }
@@ -104,8 +115,8 @@ test('errors - extended errors with number extensions', async (t) => {
     url: '/graphql?query={willThrow}'
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.payload), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.payload), {
     data: {
       willThrow: null
     },
@@ -146,7 +157,10 @@ test('errors - extended errors optional parameters', async (t) => {
         throw new ErrorWithProps('Extended Error')
       },
       two () {
-        throw new ErrorWithProps('Extended Error', { code: 'ERROR_TWO', reason: 'some reason' })
+        throw new ErrorWithProps('Extended Error', {
+          code: 'ERROR_TWO',
+          reason: 'some reason'
+        })
       }
     }
   }
@@ -165,8 +179,8 @@ test('errors - extended errors optional parameters', async (t) => {
     url: '/graphql?query={one,two}'
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.payload), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.payload), {
     data: {
       one: null,
       two: null
@@ -211,7 +225,11 @@ test('errors - errors with jit enabled', async (t) => {
   const resolvers = {
     Query: {
       error () {
-        throw new ErrorWithProps('Error', { code: 'ERROR', additional: 'information', other: 'data' })
+        throw new ErrorWithProps('Error', {
+          code: 'ERROR',
+          additional: 'information',
+          other: 'data'
+        })
       },
       successful () {
         return 'Runs OK'
@@ -239,8 +257,8 @@ test('errors - errors with jit enabled', async (t) => {
     url: '/graphql?query={error,successful}'
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.payload), {
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.payload), {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -276,7 +294,11 @@ test('errors - errors with jit enabled using the app decorator', async (t) => {
   const resolvers = {
     Query: {
       error () {
-        throw new ErrorWithProps('Error', { code: 'ERROR', additional: 'information', other: 'data' })
+        throw new ErrorWithProps('Error', {
+          code: 'ERROR',
+          additional: 'information',
+          other: 'data'
+        })
       },
       successful () {
         return 'Runs OK'
@@ -299,7 +321,7 @@ test('errors - errors with jit enabled using the app decorator', async (t) => {
 
   const payload = await app.graphql('{error,successful}')
 
-  t.same(payload, {
+  t.assert.deepStrictEqual(payload, {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -332,7 +354,9 @@ test('errors - custom error formatter that uses default error formatter', async 
     `
 
   const resolvers = {
-    bad: () => { throw new Error('Bad Resolver') }
+    bad: () => {
+      throw new Error('Bad Resolver')
+    }
   }
 
   const app = Fastify()
@@ -341,9 +365,9 @@ test('errors - custom error formatter that uses default error formatter', async 
     schema,
     resolvers,
     errorFormatter: (err, ctx) => {
-      t.ok(ctx)
-      t.equal(ctx.app, app)
-      t.ok(ctx.reply)
+      t.assert.ok(ctx)
+      t.assert.strictEqual(ctx.app, app)
+      t.assert.ok(ctx.reply)
       const response = GQL.defaultErrorFormatter(err, ctx)
       response.statusCode = 499
       return response
@@ -359,20 +383,21 @@ test('errors - custom error formatter that uses default error formatter', async 
   })
 
   const body = JSON.parse(res.body)
-  t.equal(res.statusCode, 499)
-  t.equal(body.errors[0].message, 'Bad Resolver')
+  t.assert.strictEqual(res.statusCode, 499)
+  t.assert.strictEqual(body.errors[0].message, 'Bad Resolver')
 })
 
-test('subscription server sends correct error if there\'s a graphql error', t => {
+test('subscription server sends correct error if there\'s a graphql error', (t) => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const sendTestQuery = () => {
-    app.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
+    app.inject(
+      {
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
           query {
             notifications {
               id
@@ -380,26 +405,31 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
             }
           }
         `
+        }
+      },
+      () => {
+        sendTestMutation()
       }
-    }, () => {
-      sendTestMutation()
-    })
+    )
   }
 
   const sendTestMutation = () => {
-    app.inject({
-      method: 'POST',
-      url: '/graphql',
-      body: {
-        query: `
+    app.inject(
+      {
+        method: 'POST',
+        url: '/graphql',
+        body: {
+          query: `
           mutation {
-            addNotification(message: "Hello World") {
+            addNotification(message: 'Hello World') {
               id
             }
           }
         `
-      }
-    }, () => {})
+        }
+      },
+      () => {}
+    )
   }
 
   const emitter = mq()
@@ -423,10 +453,12 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
   `
 
   let idCount = 1
-  const notifications = [{
-    id: idCount,
-    message: 'Notification message'
-  }]
+  const notifications = [
+    {
+      id: idCount,
+      message: 'Notification message'
+    }
+  ]
 
   const resolvers = {
     Query: {
@@ -481,23 +513,32 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
     }
   })
 
-  app.listen({ port: 0 }, err => {
+  app.listen({ port: 0 }, (err) => {
     t.error(err)
 
-    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
-    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    const ws = new WebSocket(
+      'ws://localhost:' + app.server.address().port + '/graphql',
+      'graphql-ws'
+    )
+    const client = WebSocket.createWebSocketStream(ws, {
+      encoding: 'utf8',
+      objectMode: true
+    })
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
+    client.write(
+      JSON.stringify({
+        type: 'connection_init'
+      })
+    )
 
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: `
+    client.write(
+      JSON.stringify({
+        id: 1,
+        type: 'start',
+        payload: {
+          query: `
           subscription {
             notificationAdded {
               id
@@ -505,14 +546,16 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
             }
           }
         `
-      }
-    }))
+        }
+      })
+    )
 
-    client.write(JSON.stringify({
-      id: 2,
-      type: 'start',
-      payload: {
-        query: `
+    client.write(
+      JSON.stringify({
+        id: 2,
+        type: 'start',
+        payload: {
+          query: `
           subscription {
             notificationAdded {
               id
@@ -520,33 +563,41 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
             }
           }
         `
-      }
-    }))
+        }
+      })
+    )
 
-    client.write(JSON.stringify({
-      id: 2,
-      type: 'stop'
-    }))
+    client.write(
+      JSON.stringify({
+        id: 2,
+        type: 'stop'
+      })
+    )
 
-    client.on('data', chunk => {
+    client.on('data', (chunk) => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
-          type: 'data',
-          id: 1,
-          payload: {
-            data: {
-              notificationAdded: {
-                id: '1',
-                message: null
-              }
-            },
-            errors: [{
-              message: 'Whoops! Something went wrong.'
-            }]
-          }
-        }))
+        t.assert.strictEqual(
+          chunk,
+          JSON.stringify({
+            type: 'data',
+            id: 1,
+            payload: {
+              data: {
+                notificationAdded: {
+                  id: '1',
+                  message: null
+                }
+              },
+              errors: [
+                {
+                  message: 'Whoops! Something went wrong.'
+                }
+              ]
+            }
+          })
+        )
 
         client.end()
         t.end()
@@ -567,7 +618,9 @@ test('POST query with a resolver which which throws and a custom error formatter
     `
 
   const resolvers = {
-    bad: () => { throw new Error('Bad Resolver') }
+    bad: () => {
+      throw new Error('Bad Resolver')
+    }
   }
 
   app.register(GQL, {
@@ -575,9 +628,9 @@ test('POST query with a resolver which which throws and a custom error formatter
     resolvers,
     allowBatchedQueries: true,
     errorFormatter: (errors, ctx) => {
-      t.ok(ctx)
-      t.equal(ctx.app, app)
-      t.ok(ctx.reply)
+      t.assert.ok(ctx)
+      t.assert.strictEqual(ctx.app, app)
+      t.assert.ok(ctx.reply)
       return {
         statusCode: 200,
         response: {
@@ -601,8 +654,11 @@ test('POST query with a resolver which which throws and a custom error formatter
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
+    data: null,
+    errors: [{ message: 'Internal Server Error' }]
+  })
 })
 
 test('POST query which throws, with custom error formatter and JIT enabled, twice', async (t) => {
@@ -615,7 +671,9 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
     `
 
   const resolvers = {
-    bad: () => { throw new Error('Bad Resolver') }
+    bad: () => {
+      throw new Error('Bad Resolver')
+    }
   }
 
   app.register(GQL, {
@@ -645,8 +703,11 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
+    data: null,
+    errors: [{ message: 'Internal Server Error' }]
+  })
 
   res = await app.inject({
     method: 'POST',
@@ -661,8 +722,11 @@ test('POST query which throws, with custom error formatter and JIT enabled, twic
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), { data: null, errors: [{ message: 'Internal Server Error' }] })
+  t.assert.strictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
+    data: null,
+    errors: [{ message: 'Internal Server Error' }]
+  })
 })
 
 test('POST query which throws, with JIT enabled, twice', async (t) => {
@@ -680,7 +744,9 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
     `
 
   const resolvers = {
-    bad: () => { throw new Error('Bad Resolver') }
+    bad: () => {
+      throw new Error('Bad Resolver')
+    }
   }
 
   app.register(GQL, {
@@ -702,8 +768,8 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+  t.assert.strictEqual(res.statusCode, 200)
+  await snap(JSON.stringify(JSON.parse(res.body), null, 2))
 
   res = await app.inject({
     method: 'POST',
@@ -718,28 +784,31 @@ test('POST query which throws, with JIT enabled, twice', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+  t.assert.strictEqual(res.statusCode, 200)
+  await snap(JSON.stringify(JSON.parse(res.body), null, 2))
 
   lines.end()
 
-  const errors = [{
-    msg: 'Bad Resolver',
-    errorType: 'GraphQLError'
-  }, {
-    msg: 'Int cannot represent non-integer value: [function bad]',
-    errorType: 'GraphQLError'
-  }]
+  const errors = [
+    {
+      msg: 'Bad Resolver',
+      errorType: 'GraphQLError'
+    },
+    {
+      msg: 'Int cannot represent non-integer value: [function bad]',
+      errorType: 'GraphQLError'
+    }
+  ]
 
   for await (const line of lines) {
     if (line.err) {
       const expected = errors.shift()
-      t.equal(line.msg, expected.msg)
-      t.equal(line.err.type, expected.errorType)
+      t.assert.strictEqual(line.msg, expected.msg)
+      t.assert.strictEqual(line.err.type, expected.errorType)
     }
   }
 
-  t.equal(errors.length, 0)
+  t.assert.strictEqual(errors.length, 0)
 })
 
 test('app.graphql which throws, with JIT enabled, twice', async (t) => {
@@ -757,7 +826,9 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
     `
 
   const resolvers = {
-    bad: () => { throw new Error('Bad Resolver') }
+    bad: () => {
+      throw new Error('Bad Resolver')
+    }
   }
 
   app.register(GQL, {
@@ -775,31 +846,34 @@ test('app.graphql which throws, with JIT enabled, twice', async (t) => {
 
   let res = await app.graphql(query, null, { x: 1 })
 
-  t.matchSnapshot(JSON.stringify(res, null, 2))
+  await snap(JSON.stringify(res, null, 2))
 
   res = await app.graphql(query, null, { x: 1 })
 
-  t.matchSnapshot(JSON.stringify(res, null, 2))
+  await snap(JSON.stringify(res, null, 2))
 
   lines.end()
 
-  const errors = [{
-    msg: 'Bad Resolver',
-    errorType: 'GraphQLError'
-  }, {
-    msg: 'Int cannot represent non-integer value: [function bad]',
-    errorType: 'GraphQLError'
-  }]
+  const errors = [
+    {
+      msg: 'Bad Resolver',
+      errorType: 'GraphQLError'
+    },
+    {
+      msg: 'Int cannot represent non-integer value: [function bad]',
+      errorType: 'GraphQLError'
+    }
+  ]
 
   for await (const line of lines) {
     if (line.err) {
       const expected = errors.shift()
-      t.equal(line.msg, expected.msg)
-      t.equal(line.err.type, expected.errorType)
+      t.assert.strictEqual(line.msg, expected.msg)
+      t.assert.strictEqual(line.err.type, expected.errorType)
     }
   }
 
-  t.equal(errors.length, 0)
+  t.assert.strictEqual(errors.length, 0)
 })
 
 test('errors - should default to HTTP Status Code `200 OK` if the data is present', async (t) => {
@@ -824,7 +898,7 @@ test('errors - should default to HTTP Status Code `200 OK` if the data is presen
   }
 
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -838,7 +912,7 @@ test('errors - should default to HTTP Status Code `200 OK` if the data is presen
     url: '/graphql?query={error,successful}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: {
       error: null,
       successful: 'Runs OK'
@@ -851,7 +925,7 @@ test('errors - should default to HTTP Status Code `200 OK` if the data is presen
       }
     ]
   })
-  t.equal(res.statusCode, 200)
+  t.assert.strictEqual(res.statusCode, 200)
 })
 
 test('bad json', async (t) => {
@@ -864,7 +938,7 @@ test('bad json', async (t) => {
   const resolvers = {
     Query: {
       successful () {
-        t.fail('Should not be called')
+        t.assert.fail('Should not be called')
         return 'Runs OK'
       }
     }
@@ -888,15 +962,22 @@ test('bad json', async (t) => {
     url: '/graphql'
   })
 
-  t.equal(res.statusCode, 400)
+  t.assert.strictEqual(res.statusCode, 400)
   if (semver.gte(process.version, '20.0.0')) {
-    t.same(res.json(),
-      { data: null, errors: [{ message: 'Unexpected token \'h\', "this is not a json" is not valid JSON' }] }
-    )
+    t.assert.deepStrictEqual(res.json(), {
+      data: null,
+      errors: [
+        {
+          message:
+            'Unexpected token \'h\', "this is not a json" is not valid JSON'
+        }
+      ]
+    })
   } else {
-    t.same(res.json(),
-      { data: null, errors: [{ message: 'Unexpected token h in JSON at position 1' }] }
-    )
+    t.assert.deepStrictEqual(res.json(), {
+      data: null,
+      errors: [{ message: 'Unexpected token h in JSON at position 1' }]
+    })
   }
 })
 
@@ -910,7 +991,7 @@ test('bad json with custom error formatter and custom context', async (t) => {
   const resolvers = {
     Query: {
       successful () {
-        t.fail('Should not be called')
+        t.assert.assert.fail('Should not be called')
         return 'Runs OK'
       }
     }
@@ -923,8 +1004,8 @@ test('bad json with custom error formatter and custom context', async (t) => {
     resolvers,
     context: (_request, _reply) => ({ customValue: true }),
     errorFormatter: (_execution, context) => {
-      t.equal(context.customValue, true)
-      t.pass('custom error formatter called')
+      t.assert.strictEqual(context.customValue, true)
+      t.assert.ok('custom error formatter called')
       return {
         statusCode: 400,
         response: { data: null, errors: [{ message: 'Unexpected token h' }] }
@@ -943,10 +1024,11 @@ test('bad json with custom error formatter and custom context', async (t) => {
     url: '/graphql'
   })
 
-  t.equal(res.statusCode, 400)
-  t.same(res.json(),
-    { data: null, errors: [{ message: 'Unexpected token h' }] }
-  )
+  t.assert.strictEqual(res.statusCode, 400)
+  t.assert.deepStrictEqual(res.json(), {
+    data: null,
+    errors: [{ message: 'Unexpected token h' }]
+  })
 })
 
 test('bad json with custom error handler', async (t) => {
@@ -960,7 +1042,7 @@ test('bad json with custom error handler', async (t) => {
   const resolvers = {
     Query: {
       successful () {
-        t.fail('Should not be called')
+        t.assert.fail('Should not be called')
         return 'Runs OK'
       }
     }
@@ -972,7 +1054,7 @@ test('bad json with custom error handler', async (t) => {
     schema,
     resolvers,
     errorHandler: (_, request, reply) => {
-      t.pass('custom error handler called')
+      t.assert.ok('custom error handler called')
       reply.code(400).send({
         is: 'error'
       })
@@ -990,8 +1072,8 @@ test('bad json with custom error handler', async (t) => {
     url: '/graphql'
   })
 
-  t.equal(res.statusCode, 400)
-  t.same(res.json(), {
+  t.assert.strictEqual(res.statusCode, 400)
+  t.assert.deepStrictEqual(res.json(), {
     is: 'error'
   })
 })
@@ -1006,7 +1088,7 @@ test('bad json with custom error handler, custom error formatter and custom cont
   const resolvers = {
     Query: {
       successful () {
-        t.fail('Should not be called')
+        t.assert.fail('Should not be called')
         return 'Runs OK'
       }
     }
@@ -1020,8 +1102,8 @@ test('bad json with custom error handler, custom error formatter and custom cont
     context: (_request, _reply) => ({ customValue: true }),
 
     errorHandler: (_, request, reply) => {
-      t.equal(request[kRequestContext].customValue, true)
-      t.pass('custom error handler called')
+      t.assert.strictEqual(request[kRequestContext].customValue, true)
+      t.assert.ok('custom error handler called')
       reply.code(400).send({
         is: 'error'
       })
@@ -1039,8 +1121,8 @@ test('bad json with custom error handler, custom error formatter and custom cont
     url: '/graphql'
   })
 
-  t.equal(res.statusCode, 400)
-  t.same(res.json(), {
+  t.assert.strictEqual(res.statusCode, 400)
+  t.assert.deepStrictEqual(res.json(), {
     is: 'error'
   })
 })
@@ -1063,7 +1145,7 @@ test('errors - should default to `statusCode` from error if present, when there 
   }
 
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -1077,7 +1159,7 @@ test('errors - should default to `statusCode` from error if present, when there 
     url: '/graphql?query={error}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -1087,7 +1169,7 @@ test('errors - should default to `statusCode` from error if present, when there 
       }
     ]
   })
-  t.equal(res.statusCode, 409)
+  t.assert.strictEqual(res.statusCode, 409)
 })
 
 test('errors - should default to HTTP Status Code `200 OK` if multiple errors are present and no data in the response', async (t) => {
@@ -1112,7 +1194,7 @@ test('errors - should default to HTTP Status Code `200 OK` if multiple errors ar
   }
 
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -1126,7 +1208,7 @@ test('errors - should default to HTTP Status Code `200 OK` if multiple errors ar
     url: '/graphql?query={errorOne errorTwo}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -1141,7 +1223,7 @@ test('errors - should default to HTTP Status Code `200 OK` if multiple errors ar
       }
     ]
   })
-  t.equal(res.statusCode, 200)
+  t.assert.strictEqual(res.statusCode, 200)
 })
 
 test('errors - should default to HTTP Status Code `400 Bad Request` if GraphQL validation fails', async (t) => {
@@ -1162,7 +1244,7 @@ test('errors - should default to HTTP Status Code `400 Bad Request` if GraphQL v
   }
 
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -1176,7 +1258,7 @@ test('errors - should default to HTTP Status Code `400 Bad Request` if GraphQL v
     url: '/graphql?query={wrong}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -1185,7 +1267,7 @@ test('errors - should default to HTTP Status Code `400 Bad Request` if GraphQL v
       }
     ]
   })
-  t.equal(res.statusCode, 400)
+  t.assert.strictEqual(res.statusCode, 400)
 })
 
 test('errors - should default to HTTP Status Code `200 OK` if single error present but no status code defined', async (t) => {
@@ -1206,7 +1288,7 @@ test('errors - should default to HTTP Status Code `200 OK` if single error prese
   }
 
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -1220,7 +1302,7 @@ test('errors - should default to HTTP Status Code `200 OK` if single error prese
     url: '/graphql?query={error}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -1231,13 +1313,11 @@ test('errors - should default to HTTP Status Code `200 OK` if single error prese
             column: 2
           }
         ],
-        path: [
-          'error'
-        ]
+        path: ['error']
       }
     ]
   })
-  t.equal(res.statusCode, 200)
+  t.assert.strictEqual(res.statusCode, 200)
 })
 
 test('errors - return GraphQLError when `error.originalError.errors` is of type array', async (t) => {
@@ -1250,7 +1330,7 @@ test('errors - return GraphQLError when `error.originalError.errors` is of type 
   `
 
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -1270,7 +1350,7 @@ test('errors - return GraphQLError when `error.originalError.errors` is of type 
     url: '/graphql?query={array}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -1279,7 +1359,7 @@ test('errors - return GraphQLError when `error.originalError.errors` is of type 
       }
     ]
   })
-  t.equal(res.statusCode, 400)
+  t.assert.strictEqual(res.statusCode, 400)
 })
 
 test('errors - return error when `error.originalError.errors` is not an array or not defined', async (t) => {
@@ -1291,7 +1371,7 @@ test('errors - return error when `error.originalError.errors` is not an array or
     }
   `
   const app = Fastify()
-  t.teardown(app.close.bind(app))
+  t.after(() => app.close())
 
   app.register(GQL, {
     schema,
@@ -1305,7 +1385,7 @@ test('errors - return error when `error.originalError.errors` is not an array or
     url: '/graphql?query={errorArray}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -1315,5 +1395,5 @@ test('errors - return error when `error.originalError.errors` is not an array or
       }
     ]
   })
-  t.equal(res.statusCode, 200)
+  t.assert.strictEqual(res.statusCode, 200)
 })
