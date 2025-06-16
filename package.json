@@ -33,7 +33,7 @@
     "@graphql-tools/utils": "^10.0.0",
     "@sinonjs/fake-timers": "^14.0.0",
     "@types/isomorphic-form-data": "^2.0.0",
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.0.3",
     "@types/ws": "^8.2.0",
     "autocannon": "^8.0.0",
     "concurrently": "^9.0.0",
