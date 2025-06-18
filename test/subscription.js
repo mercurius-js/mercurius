@@ -2159,7 +2159,7 @@ test('`withFilter` tool works with async filters', t => {
   })
 })
 
-test('subscription always call inner AsyncGeneragor .return method when using `withFilter` tool', t => {
+test('subscription always call inner AsyncGenerator .return method when using `withFilter` tool', t => {
   t.plan(2)
   const app = Fastify()
   t.teardown(() => app.close())
