@@ -76,3 +76,7 @@ pnpm-lock.yaml
 
 # tap
 .tap
+
+# Claude
+CLAUDE.md
+.claude/
