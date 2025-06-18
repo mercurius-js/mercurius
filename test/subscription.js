@@ -10,6 +10,7 @@ const { EventEmitter } = require('events')
 const fastifyWebsocket = require('@fastify/websocket')
 const GQL = require('..')
 const { once } = require('events')
+const { setTimeout: sleep } = require('node:timers/promises')
 
 const FakeTimers = require('@sinonjs/fake-timers')
 
@@ -2154,6 +2155,99 @@ test('`withFilter` tool works with async filters', t => {
           }
         }, () => { t.pass() })
       }
+    })
+  })
+})
+
+test('subscription always call inner AsyncGenerator .return method when using `withFilter` tool', t => {
+  t.plan(2)
+  const app = Fastify()
+  t.teardown(() => app.close())
+
+  const { withFilter } = GQL
+
+  const schema = `
+    type Notification {
+      id: ID!
+      message: String
+    }
+
+    type Query {
+      notifications: [Notification]
+    }
+
+    type Mutation {
+      addNotification(message: String!): Notification!
+    }
+
+    type Subscription {
+      notificationAdded(contains: String): Notification
+    }
+  `
+
+  let value = 0
+
+  const resolvers = {
+    Subscription: {
+      notificationAdded: {
+        subscribe: withFilter(
+          (_, __, { pubsub }) => {
+            return {
+              async next () {
+                await sleep(100)
+                return { value: value++, done: false }
+              },
+              async return () {
+                t.pass('AsyncGenerator return method called')
+                return { value: undefined, done: true }
+              },
+              [Symbol.asyncIterator] () {
+                return this
+              }
+            }
+          },
+          (payload) => {
+            return true
+          }
+        )
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+  app.listen({ port: 0 }, err => {
+    t.error(err)
+
+    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+    t.teardown(client.destroy.bind(client))
+    client.setEncoding('utf8')
+
+    client.write(JSON.stringify({
+      type: 'connection_init'
+    }))
+
+    client.write(JSON.stringify({
+      id: 1,
+      type: 'start',
+      payload: {
+        query: `
+            subscription {
+              notificationAdded(contains: "Hello") {
+                id
+                message
+              }
+            }
+          `
+      }
+    }))
+
+    client.on('data', chunk => {
+      client.end()
     })
   })
 })
