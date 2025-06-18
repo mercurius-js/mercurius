@@ -15,7 +15,8 @@ import mercurius, {
   IResolvers,
   MercuriusContext,
   MercuriusPlugin,
-  MercuriusLoaders
+  MercuriusLoaders,
+  CustomPubSub
 } from '../..'
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { mapSchema } from '@graphql-tools/utils'
@@ -413,7 +414,7 @@ app.graphql.transformSchema([(schema) => schema])
 
 app.graphql.transformSchema(schema => schema)
 
-class CustomPubSub {
+class CustomPubSubImpl implements CustomPubSub {
   emitter: EventEmitter
 
   constructor () {
@@ -421,16 +422,17 @@ class CustomPubSub {
   }
 
   // typed based on the PubSub implementation
-  async subscribe (topic: string, queue: Readable & { close: () => void }): Promise<void> {
+  async subscribe (topic: string | string[], queue: Readable & { close: () => void }, ...customArgs: any[]): Promise<void> {
+    const topicStr = Array.isArray(topic) ? topic[0] : topic
     const listener = (payload: any) => {
       queue.push(payload)
     }
 
     const close = () => {
-      this.emitter.removeListener(topic, listener)
+      this.emitter.removeListener(topicStr, listener)
     }
 
-    this.emitter.on(topic, listener)
+    this.emitter.on(topicStr, listener)
     queue.close = close
   }
 
@@ -444,7 +446,7 @@ app.register(mercurius, {
   schema,
   resolvers,
   subscription: {
-    pubsub: new CustomPubSub()
+    pubsub: new CustomPubSubImpl()
   }
 })
 

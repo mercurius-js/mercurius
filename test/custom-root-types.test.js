@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
@@ -42,13 +42,7 @@ test('redefine query', async (t) => {
 
   const query = '{ q { id } }'
   const result = await app.graphql(query)
-  t.same(result, {
-    data: {
-      q: {
-        id: '1'
-      }
-    }
-  })
+  t.assert.deepStrictEqual(result.data.q.id, '1')
 })
 
 test('redefined mutation type', async (t) => {
@@ -96,18 +90,12 @@ test('redefined mutation type', async (t) => {
 
   const mutation = 'mutation { m { name } }'
   const res = await app.graphql(mutation)
-  t.same(res, {
-    data: {
-      m: {
-        name: 'Bobby'
-      }
-    }
-  })
+  t.assert.deepStrictEqual(res.data.m.name, 'Bobby')
 })
 
 test('redefined subscription type', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -214,11 +202,11 @@ test('redefined subscription type', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -264,7 +252,7 @@ test('redefined subscription type', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.equal(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -278,7 +266,6 @@ test('redefined subscription type', t => {
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }

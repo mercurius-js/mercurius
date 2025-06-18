@@ -1,5 +1,5 @@
 'use strict'
-const { test } = require('tap')
+const { test } = require('node:test')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const WebSocket = require('ws')
@@ -12,7 +12,7 @@ const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protoc
 const { setImmediate: immediate } = require('timers/promises')
 const { EventEmitter } = require('events')
 
-test('socket is closed on unhandled promise rejection in handleMessage', t => {
+test('socket is closed on unhandled promise rejection in handleMessage', (t, done) => {
   t.plan(1)
   let handleConnectionCloseCalled = false
   class MockSubscriptionConnection extends SubscriptionConnection {
@@ -32,7 +32,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
   })
 
   const app = fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
   app.register(subscription, {
     getOptions: {
       url: '/graphql',
@@ -53,7 +53,7 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-transport-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.on('error', () => {})
     client.setEncoding('utf8')
@@ -61,7 +61,8 @@ test('socket is closed on unhandled promise rejection in handleMessage', t => {
       type: 'connection_init_error'
     }))
     ws.on('close', () => {
-      t.equal(handleConnectionCloseCalled, true)
+      t.assert.strictEqual(handleConnectionCloseCalled, true)
+      done()
     })
   })
 })
@@ -111,7 +112,7 @@ test('subscription connection sends error message when message is not json strin
   const sc = new SubscriptionConnection({
     on () {},
     send (message) {
-      t.equal(JSON.stringify({
+      t.assert.strictEqual(JSON.stringify({
         type: 'error',
         id: null,
         payload: [{ message: 'Message must be a JSON string' }]
@@ -127,7 +128,7 @@ test('subscription connection handles GQL_CONNECTION_TERMINATE message correctly
   t.plan(1)
   const sc = new SubscriptionConnection({
     on () {},
-    close () { t.pass() },
+    close () { t.assert.ok('close') },
     send (message) {},
     protocol: GRAPHQL_TRANSPORT_WS
   }, {})
@@ -150,7 +151,7 @@ test('subscription connection closes context on GQL_STOP message correctly (prot
   sc.subscriptionContexts = new Map()
   sc.subscriptionContexts.set(1, {
     close () {
-      t.pass()
+      t.assert.ok('close')
     }
   })
 
@@ -159,7 +160,7 @@ test('subscription connection closes context on GQL_STOP message correctly (prot
     type: 'stop'
   }))
 
-  t.equal(sc.subscriptionContexts.size, 0)
+  t.assert.strictEqual(sc.subscriptionContexts.size, 0)
 })
 
 test('subscription connection closes context on GQL_STOP message correctly (protocol: graphql-transport-ws)', async (t) => {
@@ -174,7 +175,7 @@ test('subscription connection closes context on GQL_STOP message correctly (prot
   sc.subscriptionContexts = new Map()
   sc.subscriptionContexts.set(1, {
     close () {
-      t.pass()
+      t.assert.ok('close')
     }
   })
 
@@ -183,7 +184,7 @@ test('subscription connection closes context on GQL_STOP message correctly (prot
     type: 'complete'
   }))
 
-  t.equal(sc.subscriptionContexts.size, 0)
+  t.assert.strictEqual(sc.subscriptionContexts.size, 0)
 })
 
 test('subscription connection completes resolver iterator on GQL_STOP message correctly (protocol: graphql-ws)', async (t) => {
@@ -198,7 +199,7 @@ test('subscription connection completes resolver iterator on GQL_STOP message co
   sc.subscriptionIters = new Map()
   sc.subscriptionIters.set(1, {
     return () {
-      t.pass()
+      t.assert.ok('close')
     }
   })
 
@@ -207,7 +208,7 @@ test('subscription connection completes resolver iterator on GQL_STOP message co
     type: 'stop'
   }))
 
-  t.equal(sc.subscriptionIters.size, 0)
+  t.assert.strictEqual(sc.subscriptionIters.size, 0)
 })
 
 test('subscription connection completes resolver iterator on GQL_STOP message correctly (protocol: graphql-transport-ws)', async (t) => {
@@ -222,7 +223,7 @@ test('subscription connection completes resolver iterator on GQL_STOP message co
   sc.subscriptionIters = new Map()
   sc.subscriptionIters.set(1, {
     return () {
-      t.pass()
+      t.assert.ok('close')
     }
   })
 
@@ -231,7 +232,7 @@ test('subscription connection completes resolver iterator on GQL_STOP message co
     type: 'complete'
   }))
 
-  t.equal(sc.subscriptionIters.size, 0)
+  t.assert.strictEqual(sc.subscriptionIters.size, 0)
 })
 
 test('handles error in send and closes connection', async t => {
@@ -243,7 +244,7 @@ test('handles error in send and closes connection', async t => {
         throw new Error('Socket closed')
       },
       close () {
-        t.pass()
+        t.assert.ok('close')
       },
       on () {},
       protocol: GRAPHQL_TRANSPORT_WS
@@ -267,7 +268,7 @@ test('subscription connection handles GQL_STOP message correctly, with no data (
     type: 'stop'
   }))
 
-  t.notOk(sc.subscriptionContexts.get(0))
+  t.assert.ok(!sc.subscriptionContexts.get(0))
 })
 
 test('subscription connection handles GQL_STOP message correctly, with no data (protocol: graphql-transport-ws)', async (t) => {
@@ -283,7 +284,7 @@ test('subscription connection handles GQL_STOP message correctly, with no data (
     type: 'complete'
   }))
 
-  t.notOk(sc.subscriptionContexts.get(0))
+  t.assert.ok(!sc.subscriptionContexts.get(0))
 })
 
 test('subscription connection send error message when GQL_START handler errs', async (t) => {
@@ -293,7 +294,7 @@ test('subscription connection send error message when GQL_START handler errs', a
     on () {},
     close () {},
     send (message) {
-      t.equal(JSON.stringify({
+      t.assert.strictEqual(JSON.stringify({
         type: 'error',
         id: 1,
         payload: [{ message: 'handleGQLStart error' }]
@@ -322,7 +323,7 @@ test('subscription connection send error message when client message type is inv
     on () {},
     close () {},
     send (message) {
-      t.equal(JSON.stringify({
+      t.assert.strictEqual(JSON.stringify({
         type: 'error',
         id: 1,
         payload: [{ message: 'Invalid payload type' }]
@@ -345,7 +346,7 @@ test('subscription connection handles GQL_START message correctly, when payload.
     on () {},
     close () {},
     send (message) {
-      t.equal(JSON.stringify(
+      t.assert.strictEqual(JSON.stringify(
         { type: 'error', id: 1, payload: [{ message: 'Must provide document.' }] }
       ), message)
     },
@@ -368,7 +369,7 @@ test('subscription connection handles when GQL_START is called before GQL_INIT',
     on () {},
     close () {},
     send (message, cb) {
-      t.equal(JSON.stringify(
+      t.assert.strictEqual(JSON.stringify(
         { type: 'connection_error', payload: { message: 'Connection has not been established yet.' } }
       ), message)
       cb()
@@ -391,7 +392,7 @@ test('subscription connection replies to GQL_CONNECTION_KEEP_ALIVE message with 
       on () {},
       close () {},
       send (message, cb) {
-        t.equal(
+        t.assert.strictEqual(
           JSON.stringify({
             type: 'pong',
             id: 1
@@ -422,7 +423,7 @@ test('subscription connection does not error if client sends GQL_CONNECTION_KEEP
       on () {},
       close () {},
       send (message, cb) {
-        t.fail()
+        t.assert.fail()
         cb()
       },
       protocol: GRAPHQL_TRANSPORT_WS
@@ -445,7 +446,7 @@ test('subscription connection does not error if client sends GQL_CONNECTION_KEEP
     })
   )
 
-  t.equal(sc.subscriptionContexts.size, 0)
+  t.assert.strictEqual(sc.subscriptionContexts.size, 0)
 })
 
 test('subscription connection extends context with onConnect return value', async (t) => {
@@ -459,7 +460,7 @@ test('subscription connection extends context with onConnect return value', asyn
     on () {},
     close () {},
     send (message, cb) {
-      t.equal(JSON.stringify({ type: 'connection_ack' }), message)
+      t.assert.strictEqual(JSON.stringify({ type: 'connection_ack' }), message)
       cb()
     },
     protocol: GRAPHQL_TRANSPORT_WS
@@ -471,8 +472,8 @@ test('subscription connection extends context with onConnect return value', asyn
   })
 
   await sc.handleConnectionInit({})
-  t.equal(sc.context.data, true)
-  t.equal(sc.context.a, 1)
+  t.assert.strictEqual(sc.context.data, true)
+  t.assert.strictEqual(sc.context.a, 1)
 })
 
 test('subscription connection send GQL_ERROR message if connectionInit extension is defined and onConnect returns a falsy value', async (t) => {
@@ -482,7 +483,7 @@ test('subscription connection send GQL_ERROR message if connectionInit extension
     on () { },
     close () { },
     send (message, cb) {
-      t.same(JSON.parse(message), {
+      t.assert.deepEqual(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: [{ message: 'Forbidden' }]
@@ -542,7 +543,7 @@ test('subscription connection does not create subscription if connectionInit ext
     ]
   }))
 
-  t.notOk(sc.subscriptionContexts.get(0))
+  t.assert.ok(!sc.subscriptionContexts.get(0))
 })
 
 test('subscription connection send GQL_ERROR on unknown extension', async (t) => {
@@ -552,7 +553,7 @@ test('subscription connection send GQL_ERROR on unknown extension', async (t) =>
     on () { },
     close () { },
     send (message, cb) {
-      t.same(JSON.parse(message), {
+      t.assert.deepEqual(JSON.parse(message), {
         id: 1,
         type: 'error',
         payload: [{ message: 'Unknown extension unknown' }]
@@ -575,7 +576,7 @@ test('subscription connection send GQL_ERROR on unknown extension', async (t) =>
     ]
   }))
 
-  t.notOk(sc.subscriptionContexts.get(0))
+  t.assert.ok(!sc.subscriptionContexts.get(0))
 })
 
 test('subscription connection handleConnectionInitExtension returns the onConnect return value', async (t) => {
@@ -601,7 +602,7 @@ test('subscription connection handleConnectionInitExtension returns the onConnec
   sc.isReady = true
   const res = await sc.handleConnectionInitExtension({ type: 'connectionInit' })
 
-  t.same(res, onConnectResult)
+  t.assert.deepEqual(res, onConnectResult)
 })
 
 test('subscription connection extends the context with the connection_init payload', async (t) => {
@@ -617,7 +618,7 @@ test('subscription connection extends the context with the connection_init paylo
 
   await sc.handleConnectionInit({ type: 'connection_init', payload: connectionInitPayload })
 
-  t.same(sc.context._connectionInit, connectionInitPayload)
+  t.assert.deepEqual(sc.context._connectionInit, connectionInitPayload)
 })
 
 test('subscription connection sends error when trying to execute invalid operations via WS', async (t) => {
@@ -627,7 +628,7 @@ test('subscription connection sends error when trying to execute invalid operati
     {
       on () {},
       send (message, cb) {
-        t.equal(
+        t.assert.strictEqual(
           JSON.stringify({
             type: 'error',
             id: 1,
@@ -781,8 +782,8 @@ test('subscription data is released right after it ends', async (t) => {
 
   sc.isReady = true
 
-  t.equal(sc.subscriptionIters.size, 0)
-  t.equal(sc.subscriptionContexts.size, 0)
+  t.assert.strictEqual(sc.subscriptionIters.size, 0)
+  t.assert.strictEqual(sc.subscriptionContexts.size, 0)
 
   await sc.handleMessage(JSON.stringify({
     id: 1,
@@ -794,12 +795,12 @@ test('subscription data is released right after it ends', async (t) => {
 
   await new Promise(resolve => {
     sc.sendMessage = (type, id, payload) => {
-      t.equal(id, 1)
-      t.equal(type, 'complete')
-      t.equal(payload, null)
+      t.assert.strictEqual(id, 1)
+      t.assert.strictEqual(type, 'complete')
+      t.assert.strictEqual(payload, null)
 
-      t.equal(sc.subscriptionIters.size, 1)
-      t.equal(sc.subscriptionContexts.size, 1)
+      t.assert.strictEqual(sc.subscriptionIters.size, 1)
+      t.assert.strictEqual(sc.subscriptionContexts.size, 1)
 
       resolve()
     }
@@ -807,6 +808,6 @@ test('subscription data is released right after it ends', async (t) => {
 
   await immediate()
 
-  t.equal(sc.subscriptionIters.size, 0)
-  t.equal(sc.subscriptionContexts.size, 0)
+  t.assert.strictEqual(sc.subscriptionIters.size, 0)
+  t.assert.strictEqual(sc.subscriptionContexts.size, 0)
 })

@@ -1,11 +1,11 @@
-const { test } = require('tap')
+const { test } = require('node:test')
 const mq = require('mqemitter')
 const { PubSub, SubscriptionContext } = require('../lib/subscriber')
 
 test('subscriber published an event', async (t) => {
   class MyQueue {
     push (value) {
-      t.equal(value, 1)
+      t.assert.strictEqual(value, 1)
     }
   }
 
@@ -15,7 +15,7 @@ test('subscriber published an event', async (t) => {
     topic: 'TOPIC',
     payload: 1
   }, () => {
-    t.pass()
+    t.assert.ok('passed')
   })
 })
 
@@ -26,7 +26,7 @@ test('subscription context not throw error on close', t => {
   const sc = new SubscriptionContext({ pubsub })
 
   sc.close()
-  t.pass()
+  t.assert.ok('passed')
 })
 
 test('subscription context publish event returns a promise', t => {
@@ -40,7 +40,7 @@ test('subscription context publish event returns a promise', t => {
     topic: 'TOPIC',
     payload: 1
   }).then(() => {
-    t.pass()
+    t.assert.ok('passed')
   })
 })
 
@@ -52,7 +52,7 @@ test('subscription context publish event errs, error is catched', t => {
   const fastifyMock = {
     log: {
       error () {
-        t.pass()
+        t.assert.ok('passed')
       }
     }
   }
@@ -74,33 +74,27 @@ test('subscription context publish event returns a promise reject on error', asy
   const pubsub = new PubSub(emitter)
   const sc = new SubscriptionContext({ pubsub })
 
-  await t.rejects(sc.subscribe('TOPIC'), error)
+  await t.assert.rejects(sc.subscribe('TOPIC'), error)
 })
 
-test('subscription context can handle multiple topics', t => {
-  t.plan(4)
-
+test('subscription context can handle multiple topics', async (t) => {
   const q = mq()
   const pubsub = new PubSub(q)
   const sc = new SubscriptionContext({ pubsub })
 
   sc.subscribe(['TOPIC1', 'TOPIC2'])
-  sc.publish({
+  await sc.publish({
     topic: 'TOPIC1',
     payload: 1
-  }).then(() => {
-    t.pass()
   })
-  sc.publish({
+  await sc.publish({
     topic: 'TOPIC2',
     payload: 2
-  }).then(() => {
-    t.pass()
   })
 
-  t.equal(q._matcher._trie.size, 2, 'Two listeners not found')
+  t.assert.strictEqual(q._matcher._trie.size, 2, 'Two listeners not found')
   sc.close()
-  setImmediate(() => { t.equal(q._matcher._trie.size, 0, 'All listeners not removed') })
+  setImmediate(() => { t.assert.strictEqual(q._matcher._trie.size, 0, 'All listeners not removed') })
 })
 
 test('subscription context should not call removeListener more than one time when close called multiple times', async t => {

@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const mercurius = require('..')
 const graphql = require('graphql')
@@ -34,7 +34,13 @@ test('should disallow instrospection with "__schema" when NoSchemaIntrospectionC
 
   // needed so that graphql is defined
   await app.ready()
-  await t.rejects(app.graphql(query), { errors: [{ message: 'GraphQL introspection has been disabled, but the requested query contained the field "__schema".' }] })
+  await t.assert.rejects(
+    app.graphql(query),
+    (err) => {
+      t.assert.strictEqual(err.errors[0].message, 'GraphQL introspection has been disabled, but the requested query contained the field "__schema".')
+      return true
+    }
+  )
 })
 
 test('should disallow instrospection with "__type" when NoSchemaIntrospectionCustomRule are applied to validationRules', async (t) => {
@@ -51,5 +57,11 @@ test('should disallow instrospection with "__type" when NoSchemaIntrospectionCus
 
   // needed so that graphql is defined
   await app.ready()
-  await t.rejects(app.graphql(query), { errors: [{ message: 'GraphQL introspection has been disabled, but the requested query contained the field "__type".' }] })
+  await t.assert.rejects(app.graphql(query), (err) => {
+    t.assert.strictEqual(
+      err.errors[0].message,
+      'GraphQL introspection has been disabled, but the requested query contained the field "__type".'
+    )
+    return true
+  })
 })

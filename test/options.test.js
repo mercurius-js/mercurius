@@ -2,7 +2,7 @@
 
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 
 const schema = `
@@ -31,7 +31,7 @@ const resolvers = {
 
 test('call compileQuery with correct options if compilerOptions specified', async t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const compileQueryStub = sinon.stub()
 
