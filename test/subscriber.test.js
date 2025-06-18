@@ -2,6 +2,22 @@ const { test } = require('node:test')
 const mq = require('mqemitter')
 const { PubSub, SubscriptionContext } = require('../lib/subscriber')
 
+// Custom capture implementation to replace node-tap's t.capture()
+function capture (obj, methodName) {
+  const original = obj[methodName]
+  const calls = []
+
+  obj[methodName] = function (...args) {
+    calls.push(args)
+    if (typeof original === 'function') {
+      return original.apply(this, args)
+    }
+  }
+
+  obj[methodName].calls = calls
+  return obj[methodName]
+}
+
 test('subscriber published an event', async (t) => {
   class MyQueue {
     push (value) {
@@ -99,11 +115,11 @@ test('subscription context can handle multiple topics', async (t) => {
 
 test('subscription context should not call removeListener more than one time when close called multiple times', async t => {
   const q = mq()
-  const removeListener = t.capture(q, 'removeListener', q.removeListener)
+  const removeListener = capture(q, 'removeListener')
   const pubsub = new PubSub(q)
   const sc = new SubscriptionContext({ pubsub })
   await sc.subscribe('foo')
   sc.close()
   sc.close()
-  t.equal(removeListener.calls.length, 1)
+  t.assert.strictEqual(removeListener.calls.length, 1)
 })

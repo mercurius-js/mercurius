@@ -12,6 +12,22 @@ const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protoc
 const { setImmediate: immediate } = require('timers/promises')
 const { EventEmitter } = require('events')
 
+// Custom capture implementation to replace node-tap's t.capture()
+function capture (obj, methodName) {
+  const original = obj[methodName]
+  const calls = []
+
+  obj[methodName] = function (...args) {
+    calls.push(args)
+    if (typeof original === 'function') {
+      return original.apply(this, args)
+    }
+  }
+
+  obj[methodName].calls = calls
+  return obj[methodName]
+}
+
 test('socket is closed on unhandled promise rejection in handleMessage', (t, done) => {
   t.plan(1)
   let handleConnectionCloseCalled = false
@@ -74,11 +90,11 @@ test('subscription connection handles connection close when socket emit close ev
   socket.close = () => {}
   class Mocked extends SubscriptionConnection {
   }
-  t.capture(Mocked.prototype, 'handleConnectionClose')
+  capture(Mocked.prototype, 'handleConnectionClose')
   // eslint-disable-next-line no-new
   new Mocked(socket, {})
   socket.emit('close')
-  t.equal(Mocked.prototype.handleConnectionClose.calls.length, 1)
+  t.assert.strictEqual(Mocked.prototype.handleConnectionClose.calls.length, 1)
 })
 
 test('subscription connection handles connection close when socket emit error event', async (t) => {
@@ -88,11 +104,11 @@ test('subscription connection handles connection close when socket emit error ev
   socket.close = () => {}
   class Mocked extends SubscriptionConnection {
   }
-  t.capture(Mocked.prototype, 'handleConnectionClose')
+  capture(Mocked.prototype, 'handleConnectionClose')
   // eslint-disable-next-line no-new
   new Mocked(socket, {})
   socket.emit('error')
-  t.equal(Mocked.prototype.handleConnectionClose.calls.length, 1)
+  t.assert.strictEqual(Mocked.prototype.handleConnectionClose.calls.length, 1)
 })
 
 test('subscription connection should close socket when close called', async (t) => {
@@ -100,10 +116,10 @@ test('subscription connection should close socket when close called', async (t) 
   socket.protocol = GRAPHQL_TRANSPORT_WS
   socket.send = () => {}
   socket.close = () => {}
-  t.capture(socket, 'close')
+  capture(socket, 'close')
   const sc = new SubscriptionConnection(socket, {})
   sc.close()
-  t.equal(socket.close.calls.length, 1)
+  t.assert.strictEqual(socket.close.calls.length, 1)
 })
 
 test('subscription connection sends error message when message is not json string', async (t) => {
