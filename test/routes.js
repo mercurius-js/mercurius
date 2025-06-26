@@ -2150,7 +2150,7 @@ test('if ide has plugin set, serve config.js with the correct endpoint', async (
   t.equal(res.statusCode, 200)
   t.equal(res.headers['content-type'], 'application/javascript')
   t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
-    'window.GRAPIHQL_PLUGIN_SAMPLEPLUGIN = ' +
+          'window.GRAPHIQL_PLUGIN_SAMPLEPLUGIN = ' +
     '{"name":"samplePlugin","props":{"foo":"bar"},"umdUrl":"/graphiql/explain.js","fetcherWrapper":"parsePlugin"};\n' +
     'window.GRAPHIQL_PLUGIN_LIST = ["samplePlugin"]')
 })
