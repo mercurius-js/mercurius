@@ -2,7 +2,7 @@
 // we test that __proto__ is actually ignored
 /* eslint-disable no-proto */
 
-const { test, t } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
@@ -14,22 +14,28 @@ const { setTimeout: sleep } = require('node:timers/promises')
 
 const FakeTimers = require('@sinonjs/fake-timers')
 
-t.beforeEach(({ context }) => {
-  context.clock = FakeTimers.install({
+test.beforeEach((t) => {
+  t.context = {}
+  t.context.clock = FakeTimers.install({
     shouldClearNativeTimers: true,
     shouldAdvanceTime: true,
     advanceTimeDelta: 40,
-    toFake: ['setTimeout', 'clearTimeout', 'setImmediate', 'clearImmediate', 'setInterval', 'clearInterval', 'Date', 'hrtime', 'performance']
+    toFake: [
+      'setTimeout', 'clearTimeout',
+      'setImmediate', 'clearImmediate',
+      'setInterval', 'clearInterval',
+      'Date', 'hrtime', 'performance'
+    ]
   })
 })
 
-t.afterEach(({ context }) => {
-  context.clock.uninstall()
+test.afterEach((t) => {
+  t.context.clock.uninstall()
 })
 
 test('subscription server replies with connection_ack', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -50,30 +56,29 @@ test('subscription server replies with connection_ack', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
       type: 'connection_init'
     }))
     client.on('data', chunk => {
-      t.equal(chunk, JSON.stringify({
+      t.assert.strictEqual(chunk, JSON.stringify({
         type: 'connection_ack'
       }))
       client.end()
-      t.end()
     })
   })
 })
 
 test('subscription server replies with keep alive when enabled', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -96,12 +101,12 @@ test('subscription server replies with keep alive when enabled', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -113,16 +118,15 @@ test('subscription server replies with keep alive when enabled', t => {
       // keep alive only comes after the ack
       if (payload.type === 'connection_ack') return
 
-      t.equal(payload.type, 'ka')
+      t.assert.strictEqual(payload.type, 'ka')
       client.end()
-      t.end()
     })
   })
 })
 
 test('subscription server sends update to subscriptions', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -225,11 +229,11 @@ test('subscription server sends update to subscriptions', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -275,7 +279,7 @@ test('subscription server sends update to subscriptions', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -289,7 +293,6 @@ test('subscription server sends update to subscriptions', t => {
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -323,7 +326,7 @@ test('subscription with custom pubsub', t => {
   }
 
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const pubsub = new CustomPubSub()
 
@@ -420,11 +423,11 @@ test('subscription with custom pubsub', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -470,7 +473,7 @@ test('subscription with custom pubsub', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -484,7 +487,6 @@ test('subscription with custom pubsub', t => {
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -520,7 +522,7 @@ test('subscription with custom pubsub with custom params on subscribe method', t
   }
 
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const pubsub = new CustomPubSub()
 
@@ -617,11 +619,11 @@ test('subscription with custom pubsub with custom params on subscribe method', t
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -667,7 +669,7 @@ test('subscription with custom pubsub with custom params on subscribe method', t
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -681,7 +683,6 @@ test('subscription with custom pubsub with custom params on subscribe method', t
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -691,7 +692,7 @@ test('subscription with custom pubsub with custom params on subscribe method', t
 
 test('subscription server sends update to subscriptions with custom context', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -793,11 +794,11 @@ test('subscription server sends update to subscriptions with custom context', t 
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -843,7 +844,7 @@ test('subscription server sends update to subscriptions with custom context', t 
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -857,7 +858,6 @@ test('subscription server sends update to subscriptions with custom context', t 
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -877,7 +877,7 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
     add: async ({ x, y }) => x + y
   }
 
-  t.teardown(app.close)
+  t.after(() => app.close())
   app.register(GQL, {
     schema,
     resolvers,
@@ -888,18 +888,17 @@ test('subscription socket protocol different than graphql-ws, protocol = foobar'
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'foobar')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
     ws.on('close', () => {
       client.end()
-      t.end()
     })
   })
 })
 
 test('subscription connection is closed if context function throws', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -924,30 +923,29 @@ test('subscription connection is closed if context function throws', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.write(JSON.stringify({
       type: 'connection_init'
     }))
 
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     ws.on('close', () => {
       client.end()
-      t.end()
     })
   })
 })
 
 test('subscription server sends update to subscriptions with custom async context', t => {
   const app = Fastify()
-  t.teardown(async () => {
+  t.after(async () => {
     await app.close()
   })
 
@@ -1054,11 +1052,11 @@ test('subscription server sends update to subscriptions with custom async contex
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1104,7 +1102,7 @@ test('subscription server sends update to subscriptions with custom async contex
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -1118,7 +1116,6 @@ test('subscription server sends update to subscriptions with custom async contex
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -1128,7 +1125,7 @@ test('subscription server sends update to subscriptions with custom async contex
 
 test('subscription connection is closed if async context function throws', t => {
   const app = Fastify()
-  t.teardown(async () => {
+  t.after(async () => {
     await app.close()
   })
 
@@ -1156,12 +1153,12 @@ test('subscription connection is closed if async context function throws', t => 
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
 
@@ -1171,14 +1168,13 @@ test('subscription connection is closed if async context function throws', t => 
 
     ws.on('close', () => {
       client.end()
-      t.end()
     })
   })
 })
 
 test('subscription server sends correct error if execution throws', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const emitter = mq()
   const schema = `
@@ -1215,11 +1211,11 @@ test('subscription server sends correct error if execution throws', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1245,7 +1241,7 @@ test('subscription server sends correct error if execution throws', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'error') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'error',
           id: 1,
           payload: [{
@@ -1256,7 +1252,6 @@ test('subscription server sends correct error if execution throws', t => {
         }))
 
         client.end()
-        t.end()
       }
     })
   })
@@ -1264,7 +1259,7 @@ test('subscription server sends correct error if execution throws', t => {
 
 test('subscription server sends correct error if there\'s a graphql error', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -1367,11 +1362,11 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1417,7 +1412,7 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -1436,7 +1431,6 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -1446,7 +1440,7 @@ test('subscription server sends correct error if there\'s a graphql error', t =>
 
 test('subscription server exposes pubsub', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
   type Notification {
@@ -1482,11 +1476,11 @@ test('subscription server exposes pubsub', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1521,7 +1515,7 @@ test('subscription server exposes pubsub', t => {
           }
         })
       } else {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -1534,7 +1528,6 @@ test('subscription server exposes pubsub', t => {
           }
         }))
         client.end()
-        t.end()
       }
     })
   })
@@ -1542,7 +1535,7 @@ test('subscription server exposes pubsub', t => {
 
 test('subscription context is extended with onConnect return value if connectionInit extension is defined in gql_start message', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Notification {
@@ -1566,8 +1559,7 @@ test('subscription context is extended with onConnect return value if connection
     Subscription: {
       notificationAdded: {
         subscribe: (root, args, { pubsub, topic, hello }) => {
-          t.equal(hello, 'world')
-          t.end()
+          t.assert.strictEqual(hello, 'world')
           pubsub.subscribe(topic)
         }
       }
@@ -1583,11 +1575,11 @@ test('subscription context is extended with onConnect return value if connection
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1624,7 +1616,7 @@ test('subscription context is extended with onConnect return value if connection
 
 test('subscription works properly if onConnect is not defined and connectionInit extension is defined in gql_start message', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Notification {
@@ -1648,7 +1640,6 @@ test('subscription works properly if onConnect is not defined and connectionInit
     Subscription: {
       notificationAdded: {
         subscribe: (root, args, { pubsub, topic, hello }) => {
-          t.end()
           pubsub.subscribe(topic)
         }
       }
@@ -1662,11 +1653,11 @@ test('subscription works properly if onConnect is not defined and connectionInit
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1701,10 +1692,9 @@ test('subscription works properly if onConnect is not defined and connectionInit
   })
 })
 
-test('subscription works with `withFilter` tool', t => {
-  t.plan(4)
+test('subscription works with `withFilter` tool', async t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const { withFilter } = GQL
 
@@ -1748,6 +1738,7 @@ test('subscription works with `withFilter` tool', t => {
             notificationAdded: notification
           }
         })
+        return notification
       }
     },
     Subscription: {
@@ -1763,100 +1754,95 @@ test('subscription works with `withFilter` tool', t => {
     }
   }
 
-  app.register(GQL, {
+  await app.register(GQL, {
     schema,
     resolvers,
     subscription: true
   })
-  app.listen({ port: 0 }, err => {
-    t.error(err)
 
-    const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
-    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
-    client.setEncoding('utf8')
+  await app.listen({ port: 0 })
+  const port = app.server.address().port
 
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
+  const ws = new WebSocket(`ws://localhost:${port}/graphql`, 'graphql-ws')
+  const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+  t.after(() => client.destroy())
 
-    client.write(JSON.stringify({
-      id: 1,
-      type: 'start',
-      payload: {
-        query: `
-            subscription {
-              notificationAdded(contains: "Hello") {
-                id
-                message
-              }
-            }
-          `
-      }
-    }))
+  client.setEncoding('utf8')
 
-    client.write(JSON.stringify({
-      id: 2,
-      type: 'start',
-      payload: {
-        query: `
-            subscription {
-              notificationAdded {
-                id
-                message
-              }
-            }
-          `
-      }
-    }))
+  const messages = []
 
-    client.write(JSON.stringify({
-      id: 2,
-      type: 'stop'
-    }))
-
-    client.on('data', chunk => {
-      const data = JSON.parse(chunk)
-
-      if (data.id === 1 && data.type === 'data') {
-        t.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
-        client.end()
-      } else if (data.id === 2 && data.type === 'complete') {
-        app.inject({
-          method: 'POST',
-          url: '/graphql',
-          body: {
-            query: `
-              mutation {
-                addNotification(message: "filtered should not pass") {
-                  id
-                }
-              }
-            `
-          }
-        }, () => { t.pass() })
-        app.inject({
-          method: 'POST',
-          url: '/graphql',
-          body: {
-            query: `
-              mutation {
-                addNotification(message: "Hello World") {
-                  id
-                }
-              }
-            `
-          }
-        }, () => { t.pass() })
-      }
+  const read = () =>
+    new Promise((resolve, reject) => {
+      client.once('data', chunk => {
+        try {
+          const data = JSON.parse(chunk)
+          messages.push(data)
+          resolve(data)
+        } catch (err) {
+          reject(err)
+        }
+      })
     })
+
+  client.write(JSON.stringify({ type: 'connection_init' }))
+  await read()
+
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: `
+        subscription {
+          notificationAdded(contains: "Hello") {
+            id
+            message
+          }
+        }
+      `
+    }
+  }))
+
+  await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: `
+        mutation {
+          addNotification(message: "filtered should not pass") {
+            id
+          }
+        }
+      `
+    }
   })
+  t.assert.ok('Sent filtered message')
+
+  await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      query: `
+        mutation {
+          addNotification(message: "Hello World") {
+            id
+          }
+        }
+      `
+    }
+  })
+  t.assert.ok('Sent Hello message')
+
+  const data = await read()
+  t.assert.ok(data.type === 'data', 'Got data from subscription')
+  t.assert.match(data.payload.data.notificationAdded.message, /Hello/, 'Message matched filter')
+
+  client.end()
 })
 
-test('subscription handles `withFilter` if filter throws', t => {
+test('subscription handles `withFilter` if filter throws', (t, done) => {
   t.plan(4)
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const { withFilter } = GQL
 
@@ -1923,11 +1909,11 @@ test('subscription handles `withFilter` if filter throws', t => {
     subscription: true
   })
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy())
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -1973,7 +1959,8 @@ test('subscription handles `withFilter` if filter throws', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
+        t.assert.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
+        done()
         client.end()
       } else if (data.id === 2 && data.type === 'complete') {
         app.inject({
@@ -1988,7 +1975,7 @@ test('subscription handles `withFilter` if filter throws', t => {
               }
             `
           }
-        }, () => { t.pass() })
+        }, () => { t.assert.ok('pass') })
         app.inject({
           method: 'POST',
           url: '/graphql',
@@ -2001,16 +1988,16 @@ test('subscription handles `withFilter` if filter throws', t => {
               }
             `
           }
-        }, () => { t.pass() })
+        }, () => { t.assert.ok('pass') })
       }
     })
   })
 })
 
-test('`withFilter` tool works with async filters', t => {
+test('`withFilter` tool works with async filters', (t, done) => {
   t.plan(4)
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const { withFilter } = GQL
 
@@ -2075,11 +2062,11 @@ test('`withFilter` tool works with async filters', t => {
     subscription: true
   })
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy())
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -2125,7 +2112,8 @@ test('`withFilter` tool works with async filters', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
+        t.assert.ok(!data.payload.data.notificationAdded.message.includes('filtered'))
+        done()
         client.end()
       } else if (data.id === 2 && data.type === 'complete') {
         app.inject({
@@ -2140,7 +2128,9 @@ test('`withFilter` tool works with async filters', t => {
               }
             `
           }
-        }, () => { t.pass() })
+        }, () => {
+          t.assert.ok('pass')
+        })
         app.inject({
           method: 'POST',
           url: '/graphql',
@@ -2153,16 +2143,18 @@ test('`withFilter` tool works with async filters', t => {
               }
             `
           }
-        }, () => { t.pass() })
+        }, () => {
+          t.assert.ok('pass')
+        })
       }
     })
   })
 })
 
-test('subscription always call inner AsyncGenerator .return method when using `withFilter` tool', t => {
+test('subscription always call inner AsyncGenerator .return method when using `withFilter` tool', (t, done) => {
   t.plan(2)
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const { withFilter } = GQL
 
@@ -2198,7 +2190,8 @@ test('subscription always call inner AsyncGenerator .return method when using `w
                 return { value: value++, done: false }
               },
               async return () {
-                t.pass('AsyncGenerator return method called')
+                t.assert.ok('AsyncGenerator return method called')
+                done()
                 return { value: undefined, done: true }
               },
               [Symbol.asyncIterator] () {
@@ -2220,11 +2213,11 @@ test('subscription always call inner AsyncGenerator .return method when using `w
     subscription: true
   })
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -2252,9 +2245,9 @@ test('subscription always call inner AsyncGenerator .return method when using `w
   })
 })
 
-test('subscription server works with fastify websocket', t => {
+test('subscription server works with fastify websocket', (t, done) => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
   t.plan(3)
 
   app.register(fastifyWebsocket, {
@@ -2351,20 +2344,20 @@ test('subscription server works with fastify websocket', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/fastify-websocket')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     const subscriptionWs = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const subscriptionClient = WebSocket.createWebSocketStream(subscriptionWs, { encoding: 'utf8', objectMode: true })
-    t.teardown(subscriptionClient.destroy.bind(subscriptionClient))
+    t.after(() => subscriptionClient.destroy.bind(subscriptionClient))
     subscriptionClient.setEncoding('utf8')
 
     client.on('data', chunk => {
-      t.equal(chunk, 'hi from server')
+      t.assert.strictEqual(chunk, 'hi from server')
       client.end()
     })
 
@@ -2372,7 +2365,7 @@ test('subscription server works with fastify websocket', t => {
       const data = JSON.parse(chunk)
 
       if (data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -2384,6 +2377,7 @@ test('subscription server works with fastify websocket', t => {
             }
           }
         }))
+        done()
         subscriptionClient.end()
       } else {
         sendTestMutation()
@@ -2415,7 +2409,7 @@ test('subscription server works with fastify websocket', t => {
 
 test('subscription passes context to its loaders', t => {
   const app = Fastify()
-  t.teardown(async () => {
+  t.after(async () => {
     await app.close()
   })
 
@@ -2514,11 +2508,11 @@ test('subscription passes context to its loaders', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -2564,7 +2558,7 @@ test('subscription passes context to its loaders', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -2578,7 +2572,6 @@ test('subscription passes context to its loaders', t => {
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestMutation()
       }
@@ -2588,7 +2581,7 @@ test('subscription passes context to its loaders', t => {
 
 test('request and reply objects in subscription context', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -2679,8 +2672,8 @@ test('request and reply objects in subscription context', t => {
       notificationAdded: {
         subscribe: (root, args, ctx) => {
           t.ok(ctx.__currentQuery.includes('notificationAdded {'))
-          t.equal(ctx.reply.request.foo(), 'bar')
-          t.equal(ctx.reply.request.headers.authorization, 'Bearer foobar')
+          t.assert.strictEqual(ctx.reply.request.foo(), 'bar')
+          t.assert.strictEqual(ctx.reply.request.headers.authorization, 'Bearer foobar')
           return ctx.pubsub.subscribe('NOTIFICATION_ADDED')
         }
       }
@@ -2696,11 +2689,11 @@ test('request and reply objects in subscription context', t => {
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -2751,7 +2744,7 @@ test('request and reply objects in subscription context', t => {
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -2765,7 +2758,6 @@ test('request and reply objects in subscription context', t => {
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -2775,7 +2767,7 @@ test('request and reply objects in subscription context', t => {
 
 test('request and reply objects in subscription context - no headers wrapper', t => {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const sendTestQuery = () => {
     app.inject({
@@ -2865,10 +2857,10 @@ test('request and reply objects in subscription context - no headers wrapper', t
     Subscription: {
       notificationAdded: {
         subscribe: (root, args, ctx) => {
-          t.equal(ctx.reply.request.foo(), 'bar')
-          t.equal(ctx.reply.request.headers.authorization, 'Bearer foobar')
-          t.equal(ctx.reply.request.headers.constructor, Object)
-          t.equal(ctx.reply.request.headers.__proto__, {}.__proto__)
+          t.assert.strictEqual(ctx.reply.request.foo(), 'bar')
+          t.assert.strictEqual(ctx.reply.request.headers.authorization, 'Bearer foobar')
+          t.assert.strictEqual(ctx.reply.request.headers.constructor, Object)
+          t.assert.strictEqual(ctx.reply.request.headers.__proto__, {}.__proto__)
           return ctx.pubsub.subscribe('NOTIFICATION_ADDED')
         }
       }
@@ -2884,11 +2876,11 @@ test('request and reply objects in subscription context - no headers wrapper', t
   })
 
   app.listen({ port: 0 }, err => {
-    t.error(err)
+    t.assert.ifError(err)
 
     const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
     client.setEncoding('utf8')
 
     client.write(JSON.stringify({
@@ -2939,7 +2931,7 @@ test('request and reply objects in subscription context - no headers wrapper', t
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'data') {
-        t.equal(chunk, JSON.stringify({
+        t.assert.strictEqual(chunk, JSON.stringify({
           type: 'data',
           id: 1,
           payload: {
@@ -2953,7 +2945,6 @@ test('request and reply objects in subscription context - no headers wrapper', t
         }))
 
         client.end()
-        t.end()
       } else if (data.id === 2 && data.type === 'complete') {
         sendTestQuery()
       }
@@ -2983,7 +2974,7 @@ test('wrong messages do not crash the server', async (t) => {
 
   await fastify.listen({ port: 0 })
 
-  t.teardown(fastify.close.bind(fastify))
+  t.after(() => fastify.close())
 
   const ws = new WebSocket(`ws://localhost:${fastify.server.address().port}/graphql`, 'graphql-ws')
 
