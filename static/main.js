@@ -130,19 +130,19 @@ function render () {
   }
 
   const availablePlugins = window.GRAPHIQL_PLUGIN_LIST
-    .map(plugin => window[`GRAPIHQL_PLUGIN_${plugin.toUpperCase()}`])
+    .map(plugin => window[`GRAPHIQL_PLUGIN_${plugin.toUpperCase()}`])
     .filter(pluginData => pluginData && pluginData.umdUrl)
 
   const fetcherWrapperPlugins = availablePlugins
     .filter(plugin => plugin.fetcherWrapper)
-    .map(pluginData => window[pluginData.name][window[`GRAPIHQL_PLUGIN_${pluginData.name.toUpperCase()}`].fetcherWrapper])
+    .map(pluginData => window[pluginData.name][window[`GRAPHIQL_PLUGIN_${pluginData.name.toUpperCase()}`].fetcherWrapper])
 
   const fetcher = fetcherWrapper(GraphiQL.createFetcher({
     url,
     subscriptionUrl
   }), fetcherWrapperPlugins)
 
-  const plugins = availablePlugins.map(pluginData => window[pluginData.name].umdPlugin(window[`GRAPIHQL_PLUGIN_${pluginData.name.toUpperCase()}`].props))
+  const plugins = availablePlugins.map(pluginData => window[pluginData.name].umdPlugin(window[`GRAPHIQL_PLUGIN_${pluginData.name.toUpperCase()}`].props))
 
   ReactDOM.render(
     React.createElement(GraphiQL, {
@@ -170,7 +170,7 @@ function importDependencies () {
     'https://unpkg.com/graphiql@3.8.3/graphiql.min.js'
   ]).then(function () {
     const pluginUrls = window.GRAPHIQL_PLUGIN_LIST
-      .map(plugin => window[`GRAPIHQL_PLUGIN_${plugin.toUpperCase()}`].umdUrl)
+      .map(plugin => window[`GRAPHIQL_PLUGIN_${plugin.toUpperCase()}`].umdUrl)
       .filter(url => !!url)
 
     if (pluginUrls.length) {
