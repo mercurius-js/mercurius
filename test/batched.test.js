@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const sinon = require('sinon')
 const GQL = require('..')
@@ -37,7 +37,7 @@ test('POST regular query', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), { data: { add: 3 } })
+  t.assert.deepEqual(JSON.parse(res.body), { data: { add: 3 } })
 })
 
 test('POST single batched query', async (t) => {
@@ -74,7 +74,7 @@ test('POST single batched query', async (t) => {
     ]
   })
 
-  t.same(JSON.parse(res.body), [{ data: { add: 3 } }])
+  t.assert.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }])
 })
 
 test('POST single bad batched query', async (t) => {
@@ -109,7 +109,7 @@ test('POST single bad batched query', async (t) => {
     ]
   })
 
-  t.same(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 2, column: 37 }] }] }])
+  t.assert.deepEqual(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 2, column: 37 }] }] }])
 })
 
 test('POST single bad batched query with cutom error formatter and custom async context', async (t) => {
@@ -135,7 +135,7 @@ test('POST single bad batched query with cutom error formatter and custom async 
       return { topic: 'NOTIFICATIONS_ADDED' }
     },
     errorFormatter: (_execution, context) => {
-      t.has(context, { topic: 'NOTIFICATIONS_ADDED' })
+      t.assert.strictEqual(context.topic, 'NOTIFICATIONS_ADDED')
       return {
         response: {
           data: null,
@@ -158,7 +158,16 @@ test('POST single bad batched query with cutom error formatter and custom async 
     ]
   })
 
-  t.same(JSON.parse(res.body), [{ data: null, errors: [{ message: 'Internal Server Error' }] }])
+  t.assert.deepEqual(JSON.parse(res.body), [
+    {
+      data: null,
+      errors: [
+        {
+          message: 'Internal Server Error'
+        }
+      ]
+    }
+  ])
 })
 
 test('POST batched query', async (t) => {
@@ -203,7 +212,7 @@ test('POST batched query', async (t) => {
     ]
   })
 
-  t.same(JSON.parse(res.body), [{ data: { add: 3 } }, { data: { add: 2 } }])
+  t.assert.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: { add: 2 } }])
 })
 
 test('POST good and bad batched query', async (t) => {
@@ -245,7 +254,7 @@ test('POST good and bad batched query', async (t) => {
     ]
   })
 
-  t.same(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 1, column: 20 }] }] }])
+  t.assert.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Syntax Error: Expected "$", found <EOF>.', locations: [{ line: 1, column: 20 }] }] }])
 })
 
 test('POST batched query with a resolver which succeeds and a resolver which throws', async (t) => {
@@ -292,7 +301,7 @@ test('POST batched query with a resolver which succeeds and a resolver which thr
     ]
   })
 
-  t.same(JSON.parse(res.body), [{ data: { add: 3 } }, { data: { bad: null }, errors: [{ message: 'Bad Resolver', locations: [{ line: 3, column: 17 }], path: ['bad'] }] }])
+  t.assert.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: { bad: null }, errors: [{ message: 'Bad Resolver', locations: [{ line: 3, column: 17 }], path: ['bad'] }] }])
 })
 
 test('POST batched query with a resolver which succeeds and a resolver which throws, with a custom error formatter', async (t) => {
@@ -345,7 +354,7 @@ test('POST batched query with a resolver which succeeds and a resolver which thr
     ]
   })
 
-  t.same(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Internal Server Error' }] }])
+  t.assert.deepEqual(JSON.parse(res.body), [{ data: { add: 3 } }, { data: null, errors: [{ message: 'Internal Server Error' }] }])
 })
 
 test('POST batched query has an individual context for each operation', async (t) => {
@@ -410,13 +419,13 @@ test('POST batched query respects custom class-based context', async (t) => {
 
   const resolvers = {
     test: async (args, ctx) => {
-      t.type(ctx, 'object')
-      t.type(ctx.reply, 'object')
-      t.type(ctx.app, 'object')
-      t.type(ctx.method, 'function')
-      t.equal(ctx.test, 'custom')
-      t.equal(ctx.method(), 'custom')
-      t.equal(ctx.constructor, CustomContext)
+      t.assert.equal(typeof ctx, 'object')
+      t.assert.equal(typeof ctx.reply, 'object')
+      t.assert.equal(typeof ctx.app, 'object')
+      t.assert.equal(typeof ctx.method, 'function')
+      t.assert.equal(ctx.test, 'custom')
+      t.assert.equal(ctx.method(), 'custom')
+      t.assert.equal(ctx.constructor, CustomContext)
       return ctx.method()
     }
   }
@@ -425,8 +434,8 @@ test('POST batched query respects custom class-based context', async (t) => {
     schema,
     resolvers,
     context: (request, reply) => {
-      t.type(request, 'object')
-      t.type(reply, 'object')
+      t.assert.equal(typeof request, 'object')
+      t.assert.equal(typeof reply, 'object')
       return new CustomContext()
     },
     allowBatchedQueries: true
@@ -447,7 +456,7 @@ test('POST batched query respects custom class-based context', async (t) => {
     ]
   })
 
-  t.same(JSON.parse(post.body), [
+  t.assert.deepEqual(JSON.parse(post.body), [
     {
       data: {
         test: 'custom'
