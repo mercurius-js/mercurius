@@ -969,7 +969,7 @@ test('bad json', async (t) => {
       errors: [
         {
           message:
-            'Unexpected token \'h\', "this is not a json" is not valid JSON'
+            "Body is not valid JSON but content-type is set to 'application/json'"
         }
       ]
     })
