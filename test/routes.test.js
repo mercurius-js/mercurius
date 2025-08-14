@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const split = require('split2')
 const querystring = require('querystring')
@@ -8,6 +8,8 @@ const WebSocket = require('ws')
 const { GraphQLError } = require('graphql')
 const semver = require('semver')
 const GQL = require('..')
+const Snap = require('@matteo.collina/snap')
+const snap = Snap(__filename)
 
 test('POST route', async (t) => {
   const app = Fastify()
@@ -36,8 +38,8 @@ test('POST route', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.equal(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -67,8 +69,8 @@ test('POST route, no query error', async (t) => {
     body: {}
   })
 
-  t.equal(res.statusCode, 400)
-  t.same(JSON.parse(res.body), {
+  t.assert.equal(res.statusCode, 400)
+  t.assert.deepEqual(JSON.parse(res.body), {
     errors: [{ message: 'Unknown query' }],
     data: null
   })
@@ -100,8 +102,8 @@ test('POST route application/graphql', async (t) => {
     body: query
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.equal(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -136,8 +138,8 @@ test('custom route', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.equal(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -166,7 +168,7 @@ test('GET route', async (t) => {
     url: '/graphql?query={add(x:2,y:2)}'
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -195,8 +197,8 @@ test('GET route, no query error', async (t) => {
     url: '/graphql'
   })
 
-  t.equal(res.statusCode, 400)
-  t.same(JSON.parse(res.body), {
+  t.assert.equal(res.statusCode, 400)
+  t.assert.deepEqual(JSON.parse(res.body), {
     errors: [{ message: 'Unknown query' }],
     data: null
   })
@@ -225,7 +227,7 @@ test('GET route with variables', async (t) => {
     url: `/graphql?query=${query}&variables=${JSON.stringify({ x: 2, y: 2 })}`
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -256,7 +258,7 @@ test('GET route with bad JSON variables', async (t) => {
     url: `/graphql?query=${query}&variables=notajson`
   })
 
-  t.equal(res.statusCode, 400)
+  t.assert.equal(res.statusCode, 400)
 })
 
 test('GET route with missing variables', async (t) => {
@@ -283,7 +285,7 @@ test('GET route with missing variables', async (t) => {
     url: `/graphql?query=${query}&variables=${JSON.stringify({ x: 5 })}`
   })
 
-  t.equal(res.statusCode, 400)
+  t.assert.equal(res.statusCode, 400)
 })
 
 test('GET route with mistyped variables', async (t) => {
@@ -310,7 +312,7 @@ test('GET route with mistyped variables', async (t) => {
     url: `/graphql?query=${query}&variables=${JSON.stringify({ x: 5, y: 'wrong data' })}`
   })
 
-  t.equal(res.statusCode, 400)
+  t.assert.equal(res.statusCode, 400)
 })
 
 test('GET route with extensions', async (t) => {
@@ -347,7 +349,7 @@ test('GET route with extensions', async (t) => {
     })}&variables=${JSON.stringify({ x: 2, y: 2 })}`
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -385,13 +387,13 @@ test('GET route with bad JSON extensions', async (t) => {
     url: '/graphql?extensions=notajson'
   })
 
-  t.equal(res.statusCode, 400)
+  t.assert.equal(res.statusCode, 400)
   if (semver.gte(process.version, '20.0.0')) {
-    t.same(res.json(),
+    t.assert.deepEqual(res.json(),
       { data: null, errors: [{ message: 'Unexpected token \'o\', "notajson" is not valid JSON' }] }
     )
   } else {
-    t.same(res.json(),
+    t.assert.deepEqual(res.json(),
       { data: null, errors: [{ message: 'Unexpected token o in JSON at position 1' }] }
     )
   }
@@ -428,7 +430,7 @@ test('POST route variables', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -475,7 +477,7 @@ test('POST route operationName', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -512,7 +514,7 @@ test('GET route variables', async (t) => {
     url: '/graphql?' + query
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -542,7 +544,7 @@ test('disable routes', async (t) => {
     url: '/graphql?query={add(x:2,y:2)}'
   })
 
-  t.same(res.statusCode, 404)
+  t.assert.deepEqual(res.statusCode, 404)
 })
 
 test('GET return 200 on resolver error', async (t) => {
@@ -567,8 +569,8 @@ test('GET return 200 on resolver error', async (t) => {
     url: '/graphql?query={add(x:2,y:2)}'
   })
 
-  t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+  t.assert.equal(res.statusCode, 200)
+  await snap(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
 test('POST return 200 on resolver error', async (t) => {
@@ -597,8 +599,8 @@ test('POST return 200 on resolver error', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+  t.assert.equal(res.statusCode, 200)
+  await snap(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
 test('POST return 400 on error', async (t) => {
@@ -628,11 +630,11 @@ test('POST return 400 on error', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 400) // Bad Request
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+  t.assert.equal(res.statusCode, 400) // Bad Request
+  await snap(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
-test('POST return 400 error handler provide custom context to custom async error formatter', async (t) => {
+test('POST return 500 error handler provide custom context to custom async error formatter', async (t) => {
   t.plan(2)
 
   const app = Fastify()
@@ -654,9 +656,9 @@ test('POST return 400 error handler provide custom context to custom async error
       return { topic: 'POINT_ADDED' }
     },
     errorFormatter: (_execution, context) => {
-      t.has(context, { topic: 'POINT_ADDED' })
+      t.assert.equal(context, { topic: 'POINT_ADDED' })
       return {
-        statusCode: 400,
+        statusCode: 500,
         response: {
           data: { add: null },
           errors: [{ message: 'Internal Server Error' }]
@@ -672,7 +674,7 @@ test('POST return 400 error handler provide custom context to custom async error
     body: { query: '{ add(x: 2, y: 2)' }
   })
 
-  t.equal(res.statusCode, 400)
+  t.assert.equal(res.statusCode, 500)
 })
 
 test('mutation with POST', async (t) => {
@@ -711,12 +713,12 @@ test('mutation with POST', async (t) => {
     }
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       setMessage: 'hello world'
     }
   })
-  t.equal(msg, 'hello world')
+  t.assert.equal(msg, 'hello world')
 })
 
 test('mutation with POST application/graphql', async (t) => {
@@ -754,12 +756,12 @@ test('mutation with POST application/graphql', async (t) => {
     body: query
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       setMessage: 'hello world'
     }
   })
-  t.equal(msg, 'hello world')
+  t.assert.equal(msg, 'hello world')
 })
 
 test('HTTP mutation with GET errors', async (t) => {
@@ -791,8 +793,8 @@ test('HTTP mutation with GET errors', async (t) => {
     url: '/graphql?' + query
   })
 
-  t.equal(res.statusCode, 405) // method not allowed
-  t.matchSnapshot(JSON.stringify(JSON.parse(res.body), null, 2))
+  t.assert.equal(res.statusCode, 405) // method not allowed
+  await snap(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
 test('websocket mutation with GET allowed', async (t) => {
@@ -842,12 +844,12 @@ test('websocket mutation with GET allowed', async (t) => {
     url: '/graphql?' + query
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       setMessage: 'hello world'
     }
   })
-  t.equal(msg, 'hello world')
+  t.assert.equal(msg, 'hello world')
 })
 
 test('POST should support null variables', async (t) => {
@@ -878,8 +880,8 @@ test('POST should support null variables', async (t) => {
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.equal(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -917,8 +919,8 @@ test('JIT', async (t) => {
       }
     })
 
-    t.equal(res.statusCode, 200)
-    t.same(JSON.parse(res.body), {
+    t.assert.equal(res.statusCode, 200)
+    t.assert.deepEqual(JSON.parse(res.body), {
       data: {
         add: 4
       }
@@ -934,8 +936,8 @@ test('JIT', async (t) => {
       }
     })
 
-    t.equal(res.statusCode, 200)
-    t.same(JSON.parse(res.body), {
+    t.assert.equal(res.statusCode, 200)
+    t.assert.deepEqual(JSON.parse(res.body), {
       data: {
         add: 4
       }
@@ -964,7 +966,7 @@ test('error if there are functions defined in the root object', async (t) => {
   try {
     await app.ready()
   } catch (err) {
-    t.equal(err.message, 'jit is not possible if there are root functions')
+    t.assert.equal(err.message, 'jit is not possible if there are root functions')
   }
 })
 
@@ -984,7 +986,7 @@ test('GET graphiql endpoint', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('GET graphiql endpoint with boolean', async (t) => {
@@ -1003,7 +1005,7 @@ test('GET graphiql endpoint with boolean', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('Disable ide endpoint', async (t) => {
@@ -1022,7 +1024,7 @@ test('Disable ide endpoint', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 404)
+  t.assert.equal(res.statusCode, 404)
 })
 
 test('Disable ide endpoint by leaving empty', async (t) => {
@@ -1038,7 +1040,7 @@ test('Disable ide endpoint by leaving empty', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 404)
+  t.assert.equal(res.statusCode, 404)
 })
 
 test('GET graphiql endpoint with prefix', async (t) => {
@@ -1059,7 +1061,7 @@ test('GET graphiql endpoint with prefix', async (t) => {
     url: '/test-prefix/graphiql'
   })
 
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('GET graphiql endpoint with prefixed wrapper', async (t) => {
@@ -1087,7 +1089,7 @@ test('GET graphiql endpoint with prefixed wrapper', async (t) => {
     url: '/test-wrapper-prefix/graphiql'
   })
 
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('GET graphql endpoint with prefix', async (t) => {
@@ -1112,7 +1114,7 @@ test('GET graphql endpoint with prefix', async (t) => {
     url: '/test-prefix/graphql?query={add(x:2,y:2)}'
   })
 
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('GET graphql endpoint with prefixed wrapper', async (t) => {
@@ -1140,7 +1142,7 @@ test('GET graphql endpoint with prefixed wrapper', async (t) => {
     url: '/test-wrapper-prefix/graphql?query={add(x:2,y:2)}'
   })
 
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('Custom error handler', async (t) => {
@@ -1173,7 +1175,7 @@ test('Custom error handler', async (t) => {
     url: '/graphql?query={add(x:"2",y:2)}'
   })
 
-  t.equal(res.statusCode, 403)
+  t.assert.equal(res.statusCode, 403)
 })
 
 test('server should return 200 on graphql errors (if field can be null)', async (t) => {
@@ -1205,8 +1207,8 @@ test('server should return 200 on graphql errors (if field can be null)', async 
     body: { query }
   })
 
-  t.equal(response.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
+  t.assert.equal(response.statusCode, 200)
+  await snap(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
 test('server should return 200 on graphql errors (if field can not be null)', async (t) => {
@@ -1238,8 +1240,8 @@ test('server should return 200 on graphql errors (if field can not be null)', as
     body: { query }
   })
 
-  t.equal(response.statusCode, 200)
-  t.matchSnapshot(JSON.stringify(JSON.parse(response.body), null, 2))
+  t.assert.equal(response.statusCode, 200)
+  await snap(JSON.stringify(JSON.parse(response.body), null, 2))
 })
 
 test('Error handler set to true should not change default behavior', async (t) => {
@@ -1277,8 +1279,8 @@ test('Error handler set to true should not change default behavior', async (t) =
     data: null
   }
 
-  t.equal(res.statusCode, 400)
-  t.strictSame(JSON.parse(res.body), expectedResult)
+  t.assert.equal(res.statusCode, 400)
+  t.assert.deepStrictEqual(JSON.parse(res.body), expectedResult)
 })
 
 test('Error handler set to false should pass error to higher handler', async (t) => {
@@ -1311,7 +1313,7 @@ test('Error handler set to false should pass error to higher handler', async (t)
     url: '/graphql?query={add(x:"2",y:2)}'
   })
 
-  t.equal(res.statusCode, 403)
+  t.assert.equal(res.statusCode, 403)
 })
 
 test('route validation is catched and parsed to graphql error', async (t) => {
@@ -1339,8 +1341,8 @@ test('route validation is catched and parsed to graphql error', async (t) => {
 
   const expectedResult = { errors: [{ message: 'body must be object' }], data: null }
 
-  t.equal(res.statusCode, 400)
-  t.strictSame(JSON.parse(res.body), expectedResult)
+  t.assert.equal(res.statusCode, 400)
+  t.assert.deepStrictEqual(JSON.parse(res.body), expectedResult)
 })
 
 test('routes with custom context', async (t) => {
@@ -1354,10 +1356,10 @@ test('routes with custom context', async (t) => {
 
   const resolvers = {
     test: async (args, ctx) => {
-      t.type(ctx, 'object')
-      t.type(ctx.reply, 'object')
-      t.type(ctx.app, 'object')
-      t.equal(ctx.test, 'custom')
+      t.assert.strictEqual(typeof ctx, 'object')
+      t.assert.strictEqual(typeof ctx.reply, 'object')
+      t.assert.strictEqual(typeof ctx.app, 'object')
+      t.assert.strictEqual(ctx.test, 'custom')
       return ctx.test
     }
   }
@@ -1366,8 +1368,8 @@ test('routes with custom context', async (t) => {
     schema,
     resolvers,
     context: (request, reply) => {
-      t.type(request, 'object')
-      t.type(reply, 'object')
+      t.assert.strictEqual(typeof request, 'object')
+      t.assert.strictEqual(typeof reply, 'object')
       return {
         test: 'custom'
       }
@@ -1379,7 +1381,7 @@ test('routes with custom context', async (t) => {
     url: '/graphql?query=query { test }'
   })
 
-  t.same(JSON.parse(get.body), {
+  t.assert.deepEqual(JSON.parse(get.body), {
     data: {
       test: 'custom'
     }
@@ -1393,7 +1395,7 @@ test('routes with custom context', async (t) => {
     }
   })
 
-  t.same(JSON.parse(post.body), {
+  t.assert.deepEqual(JSON.parse(post.body), {
     data: {
       test: 'custom'
     }
@@ -1421,13 +1423,13 @@ test('routes with custom class-based context', async (t) => {
 
   const resolvers = {
     test: async (args, ctx) => {
-      t.type(ctx, 'object')
-      t.type(ctx.reply, 'object')
-      t.type(ctx.app, 'object')
-      t.type(ctx.method, 'function')
-      t.equal(ctx.test, 'custom')
-      t.equal(ctx.method(), 'custom')
-      t.equal(ctx.constructor, CustomContext)
+      t.assert.strictEqual(typeof ctx, 'object')
+      t.assert.strictEqual(typeof ctx.reply, 'object')
+      t.assert.strictEqual(typeof ctx.app, 'object')
+      t.assert.strictEqual(typeof ctx.method, 'function')
+      t.assert.equal(ctx.test, 'custom')
+      t.assert.equal(ctx.method(), 'custom')
+      t.assert.equal(ctx.constructor, CustomContext)
       return ctx.method()
     }
   }
@@ -1436,8 +1438,8 @@ test('routes with custom class-based context', async (t) => {
     schema,
     resolvers,
     context: (request, reply) => {
-      t.type(request, 'object')
-      t.type(reply, 'object')
+      t.assert.strictEqual(typeof request, 'object')
+      t.assert.strictEqual(typeof reply, 'object')
       return new CustomContext()
     }
   })
@@ -1447,7 +1449,7 @@ test('routes with custom class-based context', async (t) => {
     url: '/graphql?query=query { test }'
   })
 
-  t.same(JSON.parse(get.body), {
+  t.assert.deepEqual(JSON.parse(get.body), {
     data: {
       test: 'custom'
     }
@@ -1461,17 +1463,17 @@ test('routes with custom class-based context', async (t) => {
     }
   })
 
-  t.same(JSON.parse(post.body), {
+  t.assert.deepEqual(JSON.parse(post.body), {
     data: {
       test: 'custom'
     }
   })
 })
 
-test('connection is not allowed when verifyClient callback called with `false`', t => {
+test('connection is not allowed when verifyClient callback called with `false`', (t, done) => {
   t.plan(2)
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -1505,39 +1507,40 @@ test('connection is not allowed when verifyClient callback called with `false`',
       headers: { 'x-custom-header': 'fastify is awesome !' }
     })
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.write(JSON.stringify({
       type: 'connection_init'
     }))
     client.on('data', chunk => {
-      t.equal(chunk, JSON.stringify({
+      t.assert.equal(chunk, JSON.stringify({
         type: 'connection_ack'
       }))
       client.end()
+      done()
     })
 
     const ws2 = new WebSocket(url, 'graphql-ws', {
       headers: { 'x-custom-header': 'other-value' }
     })
     const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
-    t.teardown(client2.destroy.bind(client2))
+    t.after(client2.destroy.bind(client2))
 
     client2.setEncoding('utf8')
     client2.write(JSON.stringify({
       type: 'connection_init'
     }))
     client2.on('error', (err) => {
-      t.equal('Unexpected server response: 401', err.message)
+      t.assert.equal('Unexpected server response: 401', err.message)
       client2.end()
     })
   })
 })
 
-test('connection is not allowed when onConnect callback called with `false`', t => {
+test('connection is not allowed when onConnect callback called with `false`', (t, done) => {
   t.plan(2)
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -1568,7 +1571,7 @@ test('connection is not allowed when onConnect callback called with `false`', t 
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -1578,7 +1581,7 @@ test('connection is not allowed when onConnect callback called with `false`', t 
       }
     }))
     client.on('data', chunk => {
-      t.equal(chunk, JSON.stringify({
+      t.assert.equal(chunk, JSON.stringify({
         type: 'connection_ack'
       }))
       client.end()
@@ -1586,28 +1589,29 @@ test('connection is not allowed when onConnect callback called with `false`', t 
 
     const ws2 = new WebSocket(url, 'graphql-ws')
     const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
-    t.teardown(client2.destroy.bind(client2))
+    t.after(() => client2.destroy.bind(client2))
 
     client2.setEncoding('utf8')
     client2.write(JSON.stringify({
       type: 'connection_init'
     }))
     client2.on('data', chunk => {
-      t.equal(chunk, JSON.stringify({
+      t.assert.equal(chunk, JSON.stringify({
         type: 'connection_error',
         payload: {
           message: 'Forbidden'
         }
       }))
       client2.end()
+      done()
     })
   })
 })
 
-test('connection is not allowed when onConnect callback throws', t => {
+test('connection is not allowed when onConnect callback throws', (t, done) => {
   t.plan(1)
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -1635,28 +1639,29 @@ test('connection is not allowed when onConnect callback throws', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
       type: 'connection_init'
     }))
     client.on('data', chunk => {
-      t.equal(chunk, JSON.stringify({
+      t.assert.equal(chunk, JSON.stringify({
         type: 'connection_error',
         payload: {
           message: 'Forbidden'
         }
       }))
       client.end()
+      done()
     })
   })
 })
 
-test('onDisconnect is called with connection context when connection gets disconnected', t => {
+test('onDisconnect is called with connection context when connection gets disconnected', (t, done) => {
   t.plan(1)
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -1680,7 +1685,8 @@ test('onDisconnect is called with connection context when connection gets discon
         }
       },
       onDisconnect (context) {
-        t.equal(context.test, 'custom')
+        t.assert.equal(context.test, 'custom')
+        done()
       }
     }
   })
@@ -1689,7 +1695,7 @@ test('onDisconnect is called with connection context when connection gets discon
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -1701,11 +1707,11 @@ test('onDisconnect is called with connection context when connection gets discon
   })
 })
 
-test('promise returned from onDisconnect resolves', t => {
+test('promise returned from onDisconnect resolves', (t, done) => {
   t.plan(1)
 
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -1729,7 +1735,8 @@ test('promise returned from onDisconnect resolves', t => {
         }
       },
       async onDisconnect (context) {
-        t.equal(context.test, 'custom')
+        t.assert.equal(context.test, 'custom')
+        done()
       }
     }
   })
@@ -1738,7 +1745,7 @@ test('promise returned from onDisconnect resolves', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -1750,7 +1757,7 @@ test('promise returned from onDisconnect resolves', t => {
   })
 })
 
-test('error thrown from onDisconnect is logged', t => {
+test('error thrown from onDisconnect is logged', (t, done) => {
   t.plan(1)
 
   const error = new Error('error')
@@ -1759,9 +1766,12 @@ test('error thrown from onDisconnect is logged', t => {
 
   // override `app.log` to avoid polluting other tests
   app.log = Object.create(app.log)
-  app.log.error = (e) => { t.same(error, e) }
+  app.log.error = (e) => {
+    t.assert.deepEqual(error, e)
+    done()
+  }
 
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -1789,7 +1799,7 @@ test('error thrown from onDisconnect is logged', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -1801,7 +1811,7 @@ test('error thrown from onDisconnect is logged', t => {
   })
 })
 
-test('promise rejection from onDisconnect is logged', t => {
+test('promise rejection from onDisconnect is logged', (t, done) => {
   t.plan(1)
 
   const error = new Error('error')
@@ -1810,8 +1820,11 @@ test('promise rejection from onDisconnect is logged', t => {
 
   // override `app.log` to avoid polluting other tests
   app.log = Object.create(app.log)
-  app.log.error = (e) => { t.same(error, e) }
-  t.teardown(() => app.close())
+  app.log.error = (e) => {
+    t.assert.deepEqual(error, e)
+    done()
+  }
+  t.after(() => app.close())
 
   const schema = `
     type Query {
@@ -1839,7 +1852,7 @@ test('promise rejection from onDisconnect is logged', t => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.teardown(client.destroy.bind(client))
+    t.after(() => client.destroy.bind(client))
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -1869,7 +1882,7 @@ test('cached errors', async (t) => {
     url: '/graphql?query=query { test }'
   })
 
-  t.same(JSON.parse(get.body), {
+  t.assert.deepEqual(JSON.parse(get.body), {
     errors: [
       {
         message: 'Cannot query field "test" on type "Query".',
@@ -1892,7 +1905,7 @@ test('cached errors', async (t) => {
     }
   })
 
-  t.same(JSON.parse(post.body), {
+  t.assert.deepEqual(JSON.parse(post.body), {
     errors: [
       {
         message: 'Cannot query field "test" on type "Query".',
@@ -1924,7 +1937,7 @@ test('disable GET graphiql if ide is not "graphiql"', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 404)
+  t.assert.equal(res.statusCode, 404)
 })
 
 test('render graphiql if graphiql: true', async (t) => {
@@ -1943,7 +1956,7 @@ test('render graphiql if graphiql: true', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('if ide is graphiql, always serve main.js and sw.js', async (t) => {
@@ -1962,13 +1975,13 @@ test('if ide is graphiql, always serve main.js and sw.js', async (t) => {
     method: 'GET',
     url: '/graphiql/main.js'
   })
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 
   const res2 = await app.inject({
     method: 'GET',
     url: '/graphiql/sw.js'
   })
-  t.equal(res2.statusCode, 200)
+  t.assert.equal(res2.statusCode, 200)
 })
 
 test('if ide is graphiql, serve config.js with the correct endpoint', async (t) => {
@@ -1988,9 +2001,9 @@ test('if ide is graphiql, serve config.js with the correct endpoint', async (t) 
     method: 'GET',
     url: '/graphiql/config.js'
   })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.matchSnapshot(res.body)
+  t.assert.equal(res.statusCode, 200)
+  t.assert.equal(res.headers['content-type'], 'application/javascript')
+  await snap(res.body)
 })
 
 test('if ide is graphiql with a prefix, serve config.js with the correct endpoint', async (t) => {
@@ -2011,9 +2024,9 @@ test('if ide is graphiql with a prefix, serve config.js with the correct endpoin
     method: 'GET',
     url: '/something/graphiql/config.js'
   })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
+  t.assert.equal(res.statusCode, 200)
+  t.assert.equal(res.headers['content-type'], 'application/javascript')
+  t.assert.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
 })
 
 test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js with the correct endpoint', async (t) => {
@@ -2036,9 +2049,9 @@ test('if ide is graphiql with a prefix from a wrapping plugin, serve config.js w
     method: 'GET',
     url: '/something/graphiql/config.js'
   })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
+  t.assert.equal(res.statusCode, 200)
+  t.assert.equal(res.headers['content-type'], 'application/javascript')
+  t.assert.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\nwindow.GRAPHIQL_PLUGIN_LIST = []')
 })
 
 test('if operationName is null, it should work fine', async (t) => {
@@ -2073,8 +2086,8 @@ test('if operationName is null, it should work fine', async (t) => {
     })
   })
 
-  t.equal(res.statusCode, 200)
-  t.same(JSON.parse(res.body), {
+  t.assert.equal(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 5
     }
@@ -2097,7 +2110,7 @@ test('GET graphiql endpoint with object and enabled', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('disable GET graphiql endpoint with object if note enabled', async (t) => {
@@ -2116,7 +2129,7 @@ test('disable GET graphiql endpoint with object if note enabled', async (t) => {
     method: 'GET',
     url: '/graphiql'
   })
-  t.equal(res.statusCode, 404)
+  t.assert.equal(res.statusCode, 404)
 })
 
 test('if ide has plugin set, serve config.js with the correct endpoint', async (t) => {
@@ -2147,9 +2160,9 @@ test('if ide has plugin set, serve config.js with the correct endpoint', async (
     method: 'GET',
     url: '/something/graphiql/config.js'
   })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
+  t.assert.equal(res.statusCode, 200)
+  t.assert.equal(res.headers['content-type'], 'application/javascript')
+  t.assert.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
           'window.GRAPHIQL_PLUGIN_SAMPLEPLUGIN = ' +
     '{"name":"samplePlugin","props":{"foo":"bar"},"umdUrl":"/graphiql/explain.js","fetcherWrapper":"parsePlugin"};\n' +
     'window.GRAPHIQL_PLUGIN_LIST = ["samplePlugin"]')
@@ -2182,9 +2195,9 @@ test('if ide has plugin set, serve config.js with the correct endpoint', async (
     method: 'GET',
     url: '/something/graphiql/config.js'
   })
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['content-type'], 'application/javascript')
-  t.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
+  t.assert.equal(res.statusCode, 200)
+  t.assert.equal(res.headers['content-type'], 'application/javascript')
+  t.assert.equal(res.body.toString(), 'window.GRAPHQL_ENDPOINT = \'/something/app/graphql\';\n' +
     'window.GRAPHIQL_PLUGIN_LIST = []')
 })
 
@@ -2212,7 +2225,7 @@ test('GET graphql endpoint with invalid additionalRouteProp constraint', async (
     }
   })
 
-  t.equal(res.statusCode, 404)
+  t.assert.equal(res.statusCode, 404)
 })
 
 test('GET graphql endpoint with valid additionalRouteProp constraint', async (t) => {
@@ -2245,7 +2258,7 @@ test('GET graphql endpoint with valid additionalRouteProp constraint', async (t)
     }
   })
 
-  t.equal(res.statusCode, 200)
+  t.assert.equal(res.statusCode, 200)
 })
 
 test('GET graphql endpoint, additionalRouteOptions should ignore custom handler', async (t) => {
@@ -2281,6 +2294,6 @@ test('GET graphql endpoint, additionalRouteOptions should ignore custom handler'
     }
   })
 
-  t.equal(res.statusCode, 200)
-  t.notOk(executed)
+  t.assert.equal(res.statusCode, 200)
+  t.assert.ok(!executed)
 })
