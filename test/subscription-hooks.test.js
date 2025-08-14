@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
@@ -33,7 +33,7 @@ const query = `subscription {
 
 function createTestServer (t) {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const emitter = mq()
 
@@ -94,7 +94,7 @@ function createTestServer (t) {
 function createWebSocketClient (t, app) {
   const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
   const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-  t.teardown(client.destroy.bind(client))
+  t.after(() => client.destroy.bind(client))
   client.setEncoding('utf8')
   return { client, ws }
 }
@@ -105,19 +105,19 @@ test('subscription - hooks basic', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('preSubscriptionParsing', async (schema, source, context) => {
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
-    t.ok('preSubscriptionParsing called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preSubscriptionParsing called')
   })
   app.graphql.addHook('preSubscriptionExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
-    t.ok('preSubscriptionExecution called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preSubscriptionExecution called')
   })
   app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
-    t.same(execution, {
+    t.assert.deepEqual(execution, {
       data: {
         notificationAdded: {
           id: '1',
@@ -125,8 +125,8 @@ test('subscription - hooks basic', async t => {
         }
       }
     })
-    t.type(context, 'object')
-    t.ok('onSubscriptionResolution called')
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('onSubscriptionResolution called')
   })
 
   await app.listen({ port: 0 })
@@ -147,7 +147,7 @@ test('subscription - hooks basic', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    t.assert.equal(data.type, 'connection_ack')
   }
 
   sendTestMutation(app)
@@ -155,7 +155,7 @@ test('subscription - hooks basic', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.same(data, {
+    t.assert.deepEqual(data, {
       id: 1,
       type: 'data',
       payload: {
@@ -181,13 +181,13 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
     throw new Error('a preSubscriptionParsing error occurred')
   })
   app.graphql.addHook('preSubscriptionParsing', async (schema, document, context) => {
-    t.fail('preSubscriptionParsing should not be called again')
+    t.assert.fail('preSubscriptionParsing should not be called again')
   })
   app.graphql.addHook('preSubscriptionExecution', async (schema, document, context) => {
-    t.fail('preSubscriptionExecution should not be called')
+    t.assert.fail('preSubscriptionExecution should not be called')
   })
   app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
-    t.fail('onSubscriptionResolution should not be called')
+    t.assert.fail('onSubscriptionResolution should not be called')
   })
 
   await app.listen({ port: 0 })
@@ -201,7 +201,7 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    t.assert.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -215,7 +215,7 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.same(data, {
+    t.assert.deepEqual(data, {
       id: 1,
       type: 'error',
       payload: [{ message: 'a preSubscriptionParsing error occurred' }]
@@ -234,10 +234,10 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
     throw new Error('a preSubscriptionExecution error occurred')
   })
   app.graphql.addHook('preSubscriptionExecution', async (execution, context) => {
-    t.fail('preSubscriptionExecution should not be called again')
+    t.assert.fail('preSubscriptionExecution should not be called again')
   })
   app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
-    t.fail('onSubscriptionResolution should not be called')
+    t.assert.fail('onSubscriptionResolution should not be called')
   })
 
   await app.listen({ port: 0 })
@@ -251,7 +251,7 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    t.assert.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -265,7 +265,7 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.same(data, {
+    t.assert.deepEqual(data, {
       id: 1,
       type: 'error',
       payload: [{ message: 'a preSubscriptionExecution error occurred' }]
@@ -285,7 +285,7 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
   })
 
   app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
-    t.fail('onSubscriptionResolution should not be called agin')
+    t.assert.fail('onSubscriptionResolution should not be called agin')
   })
 
   await app.listen({ port: 0 })
@@ -306,13 +306,13 @@ test('subscription - should handle onSubscriptionResolution hook errors', async 
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    t.assert.equal(data.type, 'connection_ack')
   }
 
   sendTestMutation(app)
 
   await once(client, 'end')
-  t.equal(ws.readyState, WebSocket.CLOSED)
+  t.assert.equal(ws.readyState, WebSocket.CLOSED)
 })
 
 // -----------------
@@ -323,9 +323,9 @@ test('subscription - should call onSubscriptionEnd when subscription ends', asyn
   const app = await createTestServer(t)
 
   app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
-    t.type(context, 'object')
-    t.equal(id, 1)
-    t.ok('onSubscriptionEnd called')
+    t.assert.equal(typeof context, 'object')
+    t.assert.equal(id, 1)
+    t.assert.ok('onSubscriptionEnd called')
   })
 
   await app.listen({ port: 0 })
@@ -346,7 +346,7 @@ test('subscription - should call onSubscriptionEnd when subscription ends', asyn
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    t.assert.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -357,7 +357,7 @@ test('subscription - should call onSubscriptionEnd when subscription ends', asyn
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.equal(data.type, 'complete')
+    t.assert.equal(data.type, 'complete')
   }
 })
 
@@ -387,7 +387,7 @@ test('subscription - should handle onSubscriptionEnd hook errors', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.equal(data.type, 'connection_ack')
+    t.assert.equal(data.type, 'connection_ack')
   }
 
   client.write(JSON.stringify({
@@ -396,5 +396,5 @@ test('subscription - should handle onSubscriptionEnd hook errors', async t => {
   }))
 
   await once(client, 'end')
-  t.equal(ws.readyState, WebSocket.CLOSED)
+  t.assert.equal(ws.readyState, WebSocket.CLOSED)
 })
