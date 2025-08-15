@@ -891,7 +891,7 @@ test('bad json', async (t) => {
   t.equal(res.statusCode, 400)
   if (semver.gte(process.version, '20.0.0')) {
     t.same(res.json(),
-      { data: null, errors: [{ message: 'Unexpected token \'h\', "this is not a json" is not valid JSON' }] }
+      { data: null, errors: [{ message: "Body is not valid JSON but content-type is set to 'application/json'" }] }
     )
   } else {
     t.same(res.json(),
