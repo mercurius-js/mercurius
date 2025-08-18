@@ -1,0 +1,1 @@
+"{\n  \"data\": null,\n  \"errors\": [\n    {\n      \"message\": \"Syntax Error: Expected Name, found <EOF>.\",\n      \"locations\": [\n        {\n          \"line\": 1,\n          \"column\": 18\n        }\n      ]\n    }\n  ]\n}"

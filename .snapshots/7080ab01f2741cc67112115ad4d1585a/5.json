@@ -1,0 +1,1 @@
+"{\n  \"data\": null,\n  \"errors\": [\n    {\n      \"message\": \"Simple error\",\n      \"locations\": [\n        {\n          \"line\": 3,\n          \"column\": 7\n        }\n      ],\n      \"path\": [\n        \"hello\"\n      ]\n    }\n  ]\n}"

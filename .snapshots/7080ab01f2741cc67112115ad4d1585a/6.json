@@ -1,0 +1,1 @@
+"window.GRAPHQL_ENDPOINT = '/app/graphql';\nwindow.GRAPHIQL_PLUGIN_LIST = []"
