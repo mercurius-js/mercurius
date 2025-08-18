@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const sinon = require('sinon')
 const Fastify = require('fastify')
 const proxyquire = require('proxyquire')
@@ -33,7 +33,7 @@ const query = '{ add(x: 2, y: 2) }'
 
 function createTestServer (t, customResolvers = resolvers, opts = {}) {
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   app.register(GQL, { schema, resolvers: customResolvers, ...opts })
 
@@ -49,33 +49,33 @@ test('hooks', async t => {
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
-    t.ok('preParsing called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preParsing called')
   })
 
   app.graphql.addHook('preValidation', async function (schema, document, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
-    t.ok('preValidation called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preValidation called')
   })
 
   app.graphql.addHook('preExecution', async function (schema, document, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
-    t.ok('preExecution called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preExecution called')
   })
 
   app.graphql.addHook('onResolution', async function (execution, context) {
     await immediate()
-    t.type(execution, 'object')
-    t.type(context, 'object')
-    t.ok('onResolution called')
+    t.assert.equal(typeof execution, 'object')
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('onResolution called')
   })
 
   const res = await app.inject({
@@ -85,7 +85,7 @@ test('hooks', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -98,18 +98,18 @@ test('hooks can be called multiple times', async t => {
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
-    t.ok('preParsing called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preParsing called')
   })
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
-    t.ok('preParsing called again')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preParsing called again')
   })
 
   const res = await app.inject({
@@ -119,7 +119,7 @@ test('hooks can be called multiple times', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -128,12 +128,12 @@ test('hooks can be called multiple times', async t => {
 
 test('hooks validation should handle invalid hook names', async t => {
   const app = await createTestServer(t)
-  t.rejects(async () => app.graphql.addHook('unsupportedHook', async () => {}), { message: 'unsupportedHook hook not supported!' })
+  t.assert.rejects(async () => app.graphql.addHook('unsupportedHook', async () => {}), { message: 'unsupportedHook hook not supported!' })
 })
 
 test('hooks validation should handle invalid hook name types', async t => {
   const app = await createTestServer(t)
-  t.rejects(async () => app.graphql.addHook(1, async () => {}), {
+  t.assert.rejects(async () => app.graphql.addHook(1, async () => {}), {
     code: 'MER_ERR_HOOK_INVALID_TYPE',
     message: 'The hook name must be a string'
   })
@@ -141,7 +141,7 @@ test('hooks validation should handle invalid hook name types', async t => {
 
 test('hooks validation should handle invalid hook handlers', async t => {
   const app = await createTestServer(t)
-  t.rejects(async () => app.graphql.addHook('preParsing', 'not a function'), {
+  t.assert.rejects(async () => app.graphql.addHook('preParsing', 'not a function'), {
     code: 'MER_ERR_HOOK_INVALID_HANDLER',
     message: 'The hook callback must be a function'
   })
@@ -153,34 +153,34 @@ test('hooks should trigger when JIT is enabled', async t => {
 
   app.graphql.addHook('preParsing', async function (schema, source, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
-    t.ok('preParsing called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preParsing called')
   })
 
   // preValidation is not triggered a second time
   app.graphql.addHook('preValidation', async function (schema, document, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
-    t.ok('preValidation called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preValidation called')
   })
 
   app.graphql.addHook('preExecution', async function (schema, document, context) {
     await immediate()
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
-    t.ok('preExecution called')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('preExecution called')
   })
 
   app.graphql.addHook('onResolution', async function (execution, context) {
     await immediate()
-    t.type(execution, 'object')
-    t.type(context, 'object')
-    t.ok('onResolution called')
+    t.assert.equal(typeof execution, 'object')
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok('onResolution called')
   })
 
   {
@@ -191,7 +191,7 @@ test('hooks should trigger when JIT is enabled', async t => {
       body: JSON.stringify({ query })
     })
 
-    t.same(JSON.parse(res.body), {
+    t.assert.deepEqual(JSON.parse(res.body), {
       data: {
         add: 4
       }
@@ -206,7 +206,7 @@ test('hooks should trigger when JIT is enabled', async t => {
       body: JSON.stringify({ query })
     })
 
-    t.same(JSON.parse(res.body), {
+    t.assert.deepEqual(JSON.parse(res.body), {
       data: {
         add: 4
       }
@@ -222,26 +222,26 @@ test('preParsing hooks should handle errors', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
     throw new Error('a preParsing error occured')
   })
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   const res = await app.inject({
@@ -251,7 +251,7 @@ test('preParsing hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -266,26 +266,26 @@ test('preParsing hooks should handle ErrorWithProps', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
     throw new ErrorWithProps('a preParsing error occured', { code: 'USER_ID_INVALID' })
   })
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   const res = await app.inject({
@@ -295,7 +295,7 @@ test('preParsing hooks should handle ErrorWithProps', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -313,17 +313,17 @@ test('preParsing hooks should be able to put values onto the context', async t =
   const app = await createTestServer(t)
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preParsing', async (schema, source, context) => {
-    t.type(schema, GraphQLSchema)
-    t.equal(source, query)
-    t.type(context, 'object')
-    t.equal(context.foo, 'bar')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.equal(source, query)
+    t.assert.equal(typeof context, 'object')
+    t.assert.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -333,7 +333,7 @@ test('preParsing hooks should be able to put values onto the context', async t =
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -348,22 +348,22 @@ test('preValidation hooks should handle errors', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     throw new Error('a preValidation error occured')
   })
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   const res = await app.inject({
@@ -373,7 +373,7 @@ test('preValidation hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -388,17 +388,17 @@ test('preValidation hooks should be able to put values onto the context', async 
   const app = await createTestServer(t)
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preValidation', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
-    t.equal(context.foo, 'bar')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
+    t.assert.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -408,7 +408,7 @@ test('preValidation hooks should be able to put values onto the context', async 
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -423,18 +423,18 @@ test('preExecution hooks should handle errors', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     throw new Error('a preExecution error occured')
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   const res = await app.inject({
@@ -444,7 +444,7 @@ test('preExecution hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -459,17 +459,17 @@ test('preExecution hooks should be able to put values onto the context', async t
   const app = await createTestServer(t)
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
-    t.equal(context.foo, 'bar')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
+    t.assert.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -479,7 +479,7 @@ test('preExecution hooks should be able to put values onto the context', async t
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -493,9 +493,9 @@ test('preExecution hooks should be able to modify the query document AST', async
   const query = '{ add(x: 2, y: 2) }'
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     const modifiedDocument = {
       kind: 'Document',
       definitions: [
@@ -547,7 +547,7 @@ test('preExecution hooks should be able to modify the query document AST', async
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 10
     }
@@ -568,9 +568,9 @@ test('preExecution hooks should be able to modify the schema document AST', asyn
   }`
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
 
     if (context.reply.request.headers.role === 'super-user') {
       const modifiedSchema = `
@@ -592,7 +592,7 @@ test('preExecution hooks should be able to modify the schema document AST', asyn
     url: '/graphql',
     body: JSON.stringify({ query })
   }).then(res => {
-    t.same(JSON.parse(res.body), {
+    t.assert.deepEqual(JSON.parse(res.body), {
       data: {
         __type: {
           name: 'Query',
@@ -611,7 +611,7 @@ test('preExecution hooks should be able to modify the schema document AST', asyn
     url: '/graphql',
     body: JSON.stringify({ query })
   }).then(res => {
-    t.same(JSON.parse(res.body), {
+    t.assert.deepEqual(JSON.parse(res.body), {
       data: {
         __type: {
           name: 'Query',
@@ -630,12 +630,12 @@ test('cache skipped when the GQL Schema has been changed', async t => {
   t.plan(4)
 
   const app = Fastify()
-  t.teardown(() => app.close())
+  t.after(() => app.close())
 
   const plugin = proxyquire('../index', {
     'graphql-jit': {
       compileQuery () {
-        t.pass('the jit is called once')
+        t.assert.ok('the jit is called once')
         return null
       }
     }
@@ -663,7 +663,7 @@ test('cache skipped when the GQL Schema has been changed', async t => {
       url: '/graphql',
       body: JSON.stringify({ query })
     })
-    t.same(res.json(), { data: { add: 3 } }, 'this call warm up the jit counter')
+    t.assert.deepEqual(res.json(), { data: { add: 3 } }, 'this call warm up the jit counter')
   }
 
   {
@@ -673,7 +673,7 @@ test('cache skipped when the GQL Schema has been changed', async t => {
       url: '/graphql',
       body: JSON.stringify({ query })
     })
-    t.same(res.json(), { data: { add: 3 } }, 'this call MUST not trigger the jit')
+    t.assert.deepEqual(res.json(), { data: { add: 3 } }, 'this call MUST not trigger the jit')
   }
 
   {
@@ -683,7 +683,7 @@ test('cache skipped when the GQL Schema has been changed', async t => {
       url: '/graphql',
       body: JSON.stringify({ query })
     })
-    t.same(res.json(), { data: { add: 3 } }, 'this call triggers the jit cache')
+    t.assert.deepEqual(res.json(), { data: { add: 3 } }, 'this call triggers the jit cache')
   }
 })
 
@@ -694,18 +694,18 @@ test('preExecution hooks should be able to add to the errors array', async t => 
   const query = '{ add(x: 2, y: 2) }'
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     return {
       errors: [new Error('foo')]
     }
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     return {
       errors: [new Error('bar')]
     }
@@ -718,7 +718,7 @@ test('preExecution hooks should be able to add to the errors array', async t => 
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     },
@@ -755,18 +755,18 @@ test('preExecution hooks should be able to add to the errors array that is alrea
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     return {
       errors: [new Error('foo')]
     }
   })
 
   app.graphql.addHook('preExecution', async (schema, document, context) => {
-    t.type(schema, GraphQLSchema)
-    t.same(document, parse(query))
-    t.type(context, 'object')
+    t.assert.ok(schema instanceof GraphQLSchema)
+    t.assert.deepEqual(document, parse(query))
+    t.assert.equal(typeof context, 'object')
     return {
       errors: [new Error('bar')]
     }
@@ -779,7 +779,7 @@ test('preExecution hooks should be able to add to the errors array that is alrea
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: null
     },
@@ -826,7 +826,7 @@ test('preExecution hooks should be able to modify variables', async t => {
     })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 6
     }
@@ -841,13 +841,13 @@ test('onResolution hooks should handle errors', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.type(execution, 'object')
-    t.type(context, 'object')
+    t.assert.equal(typeof execution, 'object')
+    t.assert.equal(typeof context, 'object')
     throw new Error('a onResolution error occured')
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.fail('this should not be called')
+    t.assert.fail('this should not be called')
   })
 
   const res = await app.inject({
@@ -857,7 +857,7 @@ test('onResolution hooks should handle errors', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [
       {
@@ -872,15 +872,15 @@ test('onResolution hooks should be able to put values onto the context', async t
   const app = await createTestServer(t)
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.type(execution, 'object')
-    t.type(context, 'object')
+    t.assert.equal(typeof execution, 'object')
+    t.assert.equal(typeof context, 'object')
     context.foo = 'bar'
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.type(execution, 'object')
-    t.type(context, 'object')
-    t.equal(context.foo, 'bar')
+    t.assert.equal(typeof execution, 'object')
+    t.assert.equal(typeof context, 'object')
+    t.assert.equal(context.foo, 'bar')
   })
 
   const res = await app.inject({
@@ -890,7 +890,7 @@ test('onResolution hooks should be able to put values onto the context', async t
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -903,7 +903,7 @@ test('onResolution hooks should be able to add extensions data', async t => {
   const app = await createTestServer(t)
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.type(execution, 'object')
+    t.assert.equal(typeof execution, 'object')
 
     execution.extensions = {
       extensionKey: 'extensionValue'
@@ -911,9 +911,9 @@ test('onResolution hooks should be able to add extensions data', async t => {
   })
 
   app.graphql.addHook('onResolution', async (execution, context) => {
-    t.type(execution, 'object')
-    t.type(execution.extensions, 'object')
-    t.equal(execution.extensions.extensionKey, 'extensionValue')
+    t.assert.equal(typeof execution, 'object')
+    t.assert.equal(typeof execution.extensions, 'object')
+    t.assert.equal(execution.extensions.extensionKey, 'extensionValue')
   })
 
   const res = await app.inject({
@@ -923,7 +923,7 @@ test('onResolution hooks should be able to add extensions data', async t => {
     body: JSON.stringify({ query })
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     },
@@ -939,7 +939,7 @@ test('onExtendSchema hooks should be triggered when extendSchema is called', asy
   const app = await createTestServer(t)
 
   app.graphql.addHook('onExtendSchema', async (schema, context) => {
-    t.pass('onExtendSchema called')
+    t.assert.ok('onExtendSchema called')
   })
 
   const extendedSchema = `
