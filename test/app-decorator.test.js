@@ -1,6 +1,6 @@
 'use strict'
 
-const { test } = require('tap')
+const { test } = require('node:test')
 const Fastify = require('fastify')
 const GQL = require('..')
 const { GraphQLError } = require('graphql')
@@ -35,7 +35,7 @@ test('basic GQL', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -52,7 +52,7 @@ test('support context in resolver', async (t) => {
 
   const resolvers = {
     ctx: async (_, ctx) => {
-      t.equal(ctx.app, app)
+      t.assert.equal(ctx.app, app)
       return ctx.num
     }
   }
@@ -68,7 +68,7 @@ test('support context in resolver', async (t) => {
   const query = '{ ctx }'
   const res = await app.graphql(query, { num: 42 })
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       ctx: 42
     }
@@ -101,7 +101,7 @@ test('variables', async (t) => {
     y: 2
   })
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -142,7 +142,7 @@ test('operationName', async (t) => {
     y: 1 // useless
   }, 'Double')
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -190,7 +190,7 @@ test('replaceSchema with makeSchemaExecutable', async (t) => {
   const query = '{ add(x: 2, y: 2, z: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 6
     }
@@ -225,7 +225,7 @@ test('replaceSchema (clearing cache)', async (t) => {
   query = '{ subtract(x: 4, y: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       subtract: 2
     }
@@ -248,7 +248,19 @@ test('replaceSchema (clearing cache)', async (t) => {
 
   query = '{ subtract(x: 4, y: 2) }'
 
-  await t.rejects(app.graphql(query), { errors: [{ message: 'Cannot query field "subtract" on type "Query".' }] })
+  await t.assert.rejects(
+    app.graphql(query),
+    (err) => {
+      t.assert.strictEqual(err.name, 'FastifyError')
+      t.assert.strictEqual(err.code, 'MER_ERR_GQL_VALIDATION')
+      t.assert.strictEqual(err.statusCode, 400)
+      t.assert.strictEqual(err.message, 'Graphql validation error')
+      t.assert.ok(Array.isArray(err.errors))
+      t.assert.strictEqual(err.errors.length, 1)
+      t.assert.match(err.errors[0].message, /Cannot query field "subtract" on type "Query"./)
+      return true
+    }
+  )
 })
 
 test('replaceSchema (without cache)', async (t) => {
@@ -280,7 +292,7 @@ test('replaceSchema (without cache)', async (t) => {
   query = '{ subtract(x: 4, y: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       subtract: 2
     }
@@ -303,7 +315,22 @@ test('replaceSchema (without cache)', async (t) => {
 
   query = '{ subtract(x: 4, y: 2) }'
 
-  await t.rejects(app.graphql(query), { errors: [{ message: 'Cannot query field "subtract" on type "Query".' }] })
+  await t.assert.rejects(
+    app.graphql(query),
+    (err) => {
+      t.assert.strictEqual(err.name, 'FastifyError')
+      t.assert.strictEqual(err.code, 'MER_ERR_GQL_VALIDATION')
+      t.assert.strictEqual(err.statusCode, 400)
+      t.assert.strictEqual(err.message, 'Graphql validation error')
+      t.assert.ok(Array.isArray(err.errors))
+      t.assert.strictEqual(err.errors.length, 1)
+      t.assert.match(
+        err.errors[0].message,
+        /Cannot query field "subtract" on type "Query"./
+      )
+      return true
+    }
+  )
 })
 
 test('replaceSchema with makeSchemaExecutable (schema should be provided)', async (t) => {
@@ -328,7 +355,14 @@ test('replaceSchema with makeSchemaExecutable (schema should be provided)', asyn
     app.graphql.replaceSchema()
   })
 
-  await t.rejects(app.ready(), 'Invalid options: Must provide valid Document AST')
+  await t.assert.rejects(
+    app.ready(),
+    (err) => {
+      t.assert.strictEqual(err.message, 'Invalid options: Must provide valid Document AST')
+      t.assert.strictEqual(err.name, 'FastifyError')
+      return true
+    }
+  )
 })
 
 test('extendSchema and defineResolvers for query', async (t) => {
@@ -361,7 +395,7 @@ test('extendSchema and defineResolvers for query', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -398,8 +432,7 @@ test('extendSchema changes reflected in schema access', async (t) => {
   // needed so that graphql is defined
   await app.ready()
 
-  t.not(beforeSchema, app.graphql.schema)
-  t.end()
+  t.assert.notEqual(beforeSchema, app.graphql.schema)
 })
 
 test('extendSchema and defineResolvers with mutation definition', async (t) => {
@@ -431,7 +464,7 @@ test('extendSchema and defineResolvers with mutation definition', async (t) => {
   const mutation = 'mutation { sub(x: 2, y: 2) }'
   const res = await app.graphql(mutation)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       sub: 0
     }
@@ -477,8 +510,7 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
   try {
     await app.graphql(mutation)
   } catch (e) {
-    t.equal(e instanceof GraphQLError, true)
-    t.end()
+    t.assert.equal(e instanceof GraphQLError, true)
   }
 })
 
@@ -506,7 +538,7 @@ test('basic GQL no cache', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -560,7 +592,7 @@ test('complex types', async (t) => {
   const query = '{ people { name, friends { name } } }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       people: [{
         name: 'matteo',
@@ -600,7 +632,7 @@ test('makeSchemaExecutable', async (t) => {
   await app.ready()
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -628,7 +660,7 @@ test('scalar should be supported', async (t) => {
         return value
       },
       serialize (value) {
-        t.equal(value, 4)
+        t.assert.equal(value, 4)
         return value
       },
       parseLiteral (ast) {
@@ -649,7 +681,7 @@ test('scalar should be supported', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -692,7 +724,7 @@ test('enum should be supported', async (t) => {
   const query = '{ add(x: 2, y: 2) }'
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 'YES'
     }
@@ -767,7 +799,7 @@ test('interfaces should be supported with isTypeOf', async (t) => {
   }`
   const resPoly = await app.graphql(queryPoly)
 
-  t.same(resPoly, {
+  t.assert.deepEqual(resPoly, {
     data: {
       getGeometryPolygon: {
         type: 'Polygon',
@@ -786,7 +818,7 @@ test('interfaces should be supported with isTypeOf', async (t) => {
   }`
   const resMultiPoly = await app.graphql(queryMultiPoly)
 
-  t.same(resMultiPoly, {
+  t.assert.deepEqual(resMultiPoly, {
     data: {
       getGeometryMultiPolygon: {
         type: 'MultiPolygon',
@@ -859,7 +891,7 @@ test('interfaces should be supported with resolveType', async (t) => {
   }`
   const resPoly = await app.graphql(queryPoly)
 
-  t.same(resPoly, {
+  t.assert.deepEqual(resPoly, {
     data: {
       getGeometryPolygon: {
         type: 'Polygon',
@@ -878,7 +910,7 @@ test('interfaces should be supported with resolveType', async (t) => {
   }`
   const resMultiPoly = await app.graphql(queryMultiPoly)
 
-  t.same(resMultiPoly, {
+  t.assert.deepEqual(resMultiPoly, {
     data: {
       getGeometryMultiPolygon: {
         type: 'MultiPolygon',
@@ -949,7 +981,7 @@ test('union should be supported with resolveType', async (t) => {
   }`
   const resPoly = await app.graphql(queryPoly)
 
-  t.same(resPoly, {
+  t.assert.deepEqual(resPoly, {
     data: {
       getGeometryPolygon: {
         type: 'Polygon',
@@ -968,7 +1000,7 @@ test('union should be supported with resolveType', async (t) => {
   }`
   const resMultiPoly = await app.graphql(queryMultiPoly)
 
-  t.same(resMultiPoly, {
+  t.assert.deepEqual(resMultiPoly, {
     data: {
       getGeometryMultiPolygon: {
         type: 'MultiPolygon',
@@ -994,7 +1026,7 @@ test('extended Schema is not string', async t => {
     app.graphql.extendSchema(schema2)
   })
 
-  await t.rejects(app.ready(), { message: 'Invalid options: Must provide valid Document AST' })
+  await t.assert.rejects(app.ready(), { message: 'Invalid options: Must provide valid Document AST' })
 })
 
 test('extended Schema is undefined', async t => {
@@ -1009,7 +1041,7 @@ test('extended Schema is undefined', async t => {
     app.graphql.extendSchema()
   })
 
-  await t.rejects(app.ready(), { message: 'Invalid options: Must provide valid Document AST' })
+  await t.assert.rejects(app.ready(), { message: 'Invalid options: Must provide valid Document AST' })
 })
 
 test('extended Schema is an object', async t => {
@@ -1076,7 +1108,7 @@ test('array of schemas contains a non-string schema', async t => {
     })]
   })
 
-  await t.rejects(app.ready(), {
+  await t.assert.rejects(app.ready(), {
     message: 'Invalid options: when providing an array to the "schema" option, only string schemas are allowed'
   })
 })
@@ -1105,7 +1137,7 @@ test('Error in schema', async (t) => {
     schema,
     resolvers
   })
-  await t.rejects(app.ready(), {
+  await t.assert.rejects(app.ready(), {
     message: 'Interface field Event.Id expected but CustomEvent does not provide it.',
     name: 'GraphQLError'
   })
@@ -1139,20 +1171,27 @@ test('Multiple errors in schema', async (t) => {
     schema,
     resolvers
   })
-  await t.rejects(app.ready(), {
-    message: 'Invalid schema: check out the .errors property on the Error',
-    name: 'FastifyError',
-    errors: [
-      {
-        message: 'Interface field Event.Id expected but CustomEvent does not provide it.',
-        name: 'GraphQLError'
-      },
-      {
-        message: 'Interface field Event.Id expected but AnotherEvent does not provide it.',
-        name: 'GraphQLError'
-      }
-    ]
-  })
+  await t.assert.rejects(
+    async () => {
+      await app.ready()
+    },
+    (err) => {
+      t.assert.strictEqual(err.message, 'Invalid schema: check out the .errors property on the Error')
+      t.assert.strictEqual(err.name, 'FastifyError')
+      t.assert.ok(Array.isArray(err.errors))
+      t.assert.strictEqual(err.errors.length, 2)
+      t.assert.match(
+        err.errors[0].message,
+        /Interface field Event\.Id expected but CustomEvent does not provide it/
+      )
+      t.assert.match(
+        err.errors[1].message,
+        /Interface field Event\.Id expected but AnotherEvent does not provide it/
+      )
+
+      return true
+    }
+  )
 })
 
 test('defineResolvers should throw if field is not defined in schema', async (t) => {
@@ -1173,9 +1212,16 @@ test('defineResolvers should throw if field is not defined in schema', async (t)
   app.register(GQL, { schema })
 
   app.register(async function (app) {
-    t.throws(function () {
-      app.graphql.defineResolvers(resolvers)
-    }, new Error('Cannot find field sub of type Query'))
+    t.assert.throws(
+      () => {
+        app.graphql.defineResolvers(resolvers)
+      },
+      (err) => {
+        t.assert.strictEqual(err.name, 'FastifyError')
+        t.assert.strictEqual(err.message, 'Invalid options: Cannot find field sub of type Query')
+        return true
+      }
+    )
   })
 
   // needed so that graphql is defined
@@ -1252,7 +1298,7 @@ test('support ast input', async (t) => {
   }`
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
@@ -1327,7 +1373,7 @@ test('throws on invalid ast input', async (t) => {
       }
     ]
   }`
-  await t.rejects(app.graphql(query), {
+  await t.assert.rejects(app.graphql(query), {
     message: 'Invalid AST Node: { definitions: [[Object]] }.',
     name: 'Error'
   })
@@ -1407,7 +1453,7 @@ test('support ast input on external requests', async (t) => {
     body: { query }
   })
 
-  t.same(JSON.parse(res.body), {
+  t.assert.deepEqual(JSON.parse(res.body), {
     data: {
       add: 4
     }
@@ -1434,7 +1480,7 @@ test('defineResolvers should support __resolveReference', async (t) => {
 
   app.register(async function (app) {
     app.graphql.defineResolvers(resolvers)
-    t.pass('No errors occurred')
+    t.assert.ok('No errors occurred')
   })
 
   // needed so that graphql is defined
@@ -1464,7 +1510,7 @@ test('graphql-tag', async (t) => {
   const query = gql`{ add(x: 2, y: 2) }`
   const res = await app.graphql(query)
 
-  t.same(res, {
+  t.assert.deepEqual(res, {
     data: {
       add: 4
     }
