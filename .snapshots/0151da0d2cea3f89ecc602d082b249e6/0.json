@@ -1,0 +1,1 @@
+"{\n  \"data\": {\n    \"bad\": null\n  },\n  \"errors\": [\n    {\n      \"message\": \"Bad Resolver\",\n      \"locations\": [\n        {\n          \"line\": 3,\n          \"column\": 15\n        }\n      ],\n      \"path\": [\n        \"bad\"\n      ]\n    }\n  ]\n}"

@@ -77,9 +77,6 @@ pnpm-lock.yaml
 # tap
 .tap
 
-# snapshots for test node:test
-.snapshots
-
 # Claude
 CLAUDE.md
 .claude/
