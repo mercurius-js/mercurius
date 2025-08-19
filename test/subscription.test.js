@@ -117,7 +117,9 @@ test('subscription server replies with keep alive when enabled', (t, done) => {
       const payload = JSON.parse(chunk)
 
       // keep alive only comes after the ack
-      if (payload.type === 'connection_ack') return
+      if (payload.type === 'connection_ack') {
+        return
+      }
 
       t.assert.strictEqual(payload.type, 'ka')
       client.end()
@@ -1761,7 +1763,9 @@ test('subscription works with `withFilter` tool', (t, done) => {
         subscribe: withFilter(
           (_, __, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED'),
           (payload, { contains }) => {
-            if (!contains) return true
+            if (!contains) {
+              return true
+            }
             return payload.notificationAdded.message.includes(contains)
           }
         )
@@ -2069,7 +2073,9 @@ test('`withFilter` tool works with async filters', (t, done) => {
         subscribe: withFilter(
           (_, __, { pubsub }) => pubsub.subscribe('NOTIFICATION_ADDED'),
           async (payload, { contains }) => {
-            if (!contains) return true
+            if (!contains) {
+              return true
+            }
             return payload.notificationAdded.message.includes(contains)
           }
         )
