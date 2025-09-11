@@ -6,9 +6,8 @@
   "types": "index.d.ts",
   "scripts": {
     "docs": "docsify serve",
-    "test:coverage": "c8 node --test && c8 report --reporter=html",
     "unit": "c8 --100 node --test test/*.js test/internals/*.js",
-    "cov": "c8 node --test && c8 report --reporter=html",
+    "cov": "c8 node --test && c8 report --reporter html",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "typescript": "tsd",
@@ -61,6 +60,7 @@
     "@fastify/error": "^4.0.0",
     "@fastify/static": "^8.0.0",
     "@fastify/websocket": "^11.0.0",
+    "borp": "^0.20.2",
     "fastify-plugin": "^5.0.0",
     "graphql-jit": "0.8.7",
     "mqemitter": "^7.0.0",
