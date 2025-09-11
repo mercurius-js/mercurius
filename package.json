@@ -6,7 +6,7 @@
   "types": "index.d.ts",
   "scripts": {
     "docs": "docsify serve",
-    "unit": "c8 --100 node --test test/*.js test/internals/*.js",
+    "unit": "c8 --100 node --test test/*.test.js test/internals/*.test.js",
     "cov": "c8 node --test && c8 report --reporter html",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
