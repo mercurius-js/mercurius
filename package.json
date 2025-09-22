@@ -32,7 +32,7 @@
     "@graphql-tools/schema": "^10.0.0",
     "@graphql-tools/utils": "^10.0.0",
     "@matteo.collina/snap": "^0.3.0",
-    "@sinonjs/fake-timers": "^14.0.0",
+    "@sinonjs/fake-timers": "^15.0.0",
     "@types/isomorphic-form-data": "^2.0.0",
     "@types/node": "^24.0.3",
     "@types/ws": "^8.2.0",
