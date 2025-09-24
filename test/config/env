@@ -1,0 +1,1 @@
+NODE_OPTIONS="--test-reporter=cleaner-spec-reporter"
