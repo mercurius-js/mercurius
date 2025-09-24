@@ -19,9 +19,9 @@ jobs:
       - name: Test
         run: |
           if [ "${{ matrix.node-version }}" = "20" ]; then
-            pnpm run test:v20
+            npm run test:v20
           else
-            pnpm run test
+            npm run test
           fi
   automerge:
     needs: test
