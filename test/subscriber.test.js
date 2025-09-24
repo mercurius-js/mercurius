@@ -2,7 +2,6 @@ const { test } = require('node:test')
 const mq = require('mqemitter')
 const { PubSub, SubscriptionContext } = require('../lib/subscriber')
 
-// Custom capture implementation to replace node-tap's t.capture()
 function capture (obj, methodName) {
   const original = obj[methodName]
   const calls = []

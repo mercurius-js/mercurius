@@ -12,7 +12,6 @@ const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protoc
 const { setImmediate: immediate } = require('timers/promises')
 const { EventEmitter } = require('events')
 
-// Custom capture implementation to replace node-tap's t.capture()
 function capture (obj, methodName) {
   const original = obj[methodName]
   const calls = []
