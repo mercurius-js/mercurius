@@ -16,13 +16,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install Dependencies
         run: npm install --ignore-scripts
-      - name: Test
-        run: |
-          if [ "${{ matrix.node-version }}" = "20" ]; then
-            npm run test:v20
-          else
-            npm run test
-          fi
+      - name: Test (Node v20)
+        if: matrix.node-version == '20'
+        run: npm run test:v20
+      - name: Test (Node v22, v24)
+        if: matrix.node-version != '20'
+        run: npm run test
   automerge:
     needs: test
     runs-on: ubuntu-latest
