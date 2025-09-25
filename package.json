@@ -56,6 +56,7 @@
     "wait-on": "^9.0.1"
   },
   "dependencies": {
+    "@fastify/cors": "^11.1.0",
     "@fastify/error": "^4.0.0",
     "@fastify/static": "^8.0.0",
     "@fastify/websocket": "^11.0.0",

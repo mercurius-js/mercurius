@@ -4,7 +4,7 @@ Mercurius includes built-in Cross-Site Request Forgery (CSRF) prevention to prot
 
 ## What is CSRF?
 
-Cross-Site Request Forgery (CSRF) attacks exploit the fact that browsers automatically include cookies and other credentials when making requests to websites. An attacker can create a malicious website that makes requests to your GraphQL server using the victim's credentials.
+[Cross-Site Request Forgery (CSRF)](https://owasp.org/www-community/attacks/csrf) attacks exploit the fact that browsers automatically include cookies and other credentials when making requests to websites. An attacker can create a malicious website that makes requests to your GraphQL server using the victim's credentials.
 
 CSRF attacks are particularly dangerous for "simple" requests that don't trigger a CORS preflight check. These attacks can:
 - Execute mutations using an authenticated user's credentials
