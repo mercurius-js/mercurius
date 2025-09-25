@@ -520,3 +520,215 @@ test('CSRF enabled - invalid JSON should be handled properly', async (t) => {
   const body = JSON.parse(res.body)
   t.assert.notEqual(body.errors[0].message, CSRF_ERROR_MESSAGE)
 })
+
+test('CSRF config - allowedContentTypes without multipart/form-data', async (t) => {
+  const app = Fastify()
+  const { schema, resolvers } = createTestSchema()
+
+  // Test configuration that doesn't include multipart/form-data
+  // This should cover the else branch in the map function (line 73)
+  app.register(GQL, {
+    schema,
+    resolvers,
+    csrfPrevention: {
+      allowedContentTypes: ['application/json', 'application/graphql', 'text/plain']
+    }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query: '{ hello }' })
+  })
+
+  t.assert.equal(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
+    data: { hello: 'Hello World' }
+  })
+})
+
+test('CSRF config - allowedContentTypes with lowercase conversion', async (t) => {
+  const app = Fastify()
+  const { schema, resolvers } = createTestSchema()
+
+  // Test configuration with content types that need lowercase conversion
+  // This should cover the else branch in the map function (line 73)
+  app.register(GQL, {
+    schema,
+    resolvers,
+    csrfPrevention: {
+      allowedContentTypes: ['APPLICATION/JSON', 'APPLICATION/GRAPHQL']
+    }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    headers: { 'content-type': 'application/json' }, // lowercase content-type header
+    body: JSON.stringify({ query: '{ hello }' })
+  })
+
+  t.assert.equal(res.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res.body), {
+    data: { hello: 'Hello World' }
+  })
+})
+
+test('CSRF - multipart without required header edge case', async (t) => {
+  const app = Fastify()
+  const { schema, resolvers } = createTestSchema()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    csrfPrevention: {
+      allowedContentTypes: ['multipart/form-data'],
+      requiredHeaders: ['x-required-header']
+    }
+  })
+
+  // Test multipart content type without required header - should throw CSRF error
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    headers: { 'content-type': 'multipart/form-data' },
+    body: 'some form data'
+  })
+
+  t.assert.equal(res.statusCode, 400)
+  const body = JSON.parse(res.body)
+  t.assert.equal(body.errors[0].message, CSRF_ERROR_MESSAGE)
+})
+
+test('CSRF config - default allowedContentTypes when not specified', async (t) => {
+  const app = Fastify()
+  const { schema, resolvers } = createTestSchema()
+
+  // Test configuration that only specifies requiredHeaders, not allowedContentTypes
+  // This should use the default allowedContentTypes (lines 81-82)
+  app.register(GQL, {
+    schema,
+    resolvers,
+    csrfPrevention: {
+      requiredHeaders: ['authorization']
+    }
+  })
+
+  // Should work with default content type
+  const res1 = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query: '{ hello }' })
+  })
+
+  t.assert.equal(res1.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res1.body), {
+    data: { hello: 'Hello World' }
+  })
+
+  // Should also work with other default content type
+  const res2 = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    headers: { 'content-type': 'application/graphql' },
+    body: '{ hello }'
+  })
+
+  t.assert.equal(res2.statusCode, 200)
+  t.assert.deepEqual(JSON.parse(res2.body), {
+    data: { hello: 'Hello World' }
+  })
+})
+
+test('CSRF - multipart config with explicit multipart flag', async (t) => {
+  const app = Fastify()
+  const { schema, resolvers } = createTestSchema()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    csrfPrevention: {
+      allowedContentTypes: ['application/json', 'multipart/form-data'],
+      requiredHeaders: ['x-required-header']
+    }
+  })
+
+  // Test multipart content type without required header - should hit lines 97-98
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    headers: { 'content-type': 'multipart/form-data' },
+    body: 'form data'
+  })
+
+  t.assert.equal(res.statusCode, 400)
+  const body = JSON.parse(res.body)
+  t.assert.equal(body.errors[0].message, CSRF_ERROR_MESSAGE)
+})
+
+test('CSRF config - invalid requiredHeaders type should throw error', async (t) => {
+  const app = Fastify()
+  const { schema, resolvers } = createTestSchema()
+
+  // Test configuration with invalid requiredHeaders (not an array) - should hit lines 63-64
+  await t.assert.rejects(async () => {
+    await app.register(GQL, {
+      schema,
+      resolvers,
+      csrfPrevention: {
+        requiredHeaders: 'not-an-array'
+      }
+    })
+    await app.ready()
+  }, {
+    message: 'csrfPrevention.requiredHeaders must be an array'
+  })
+})
+
+test('CSRF config - invalid allowedContentTypes type should throw error', async (t) => {
+  const app = Fastify()
+  const { schema, resolvers } = createTestSchema()
+
+  // Test configuration with invalid allowedContentTypes (not an array) - should hit lines 72-73
+  await t.assert.rejects(async () => {
+    await app.register(GQL, {
+      schema,
+      resolvers,
+      csrfPrevention: {
+        allowedContentTypes: 'not-an-array'
+      }
+    })
+    await app.ready()
+  }, {
+    message: 'csrfPrevention.allowedContentTypes must be an array'
+  })
+})
+
+test('CSRF - multipart content type without header triggers specific error path', async (t) => {
+  const { normalizeCSRFConfig, checkCSRFPrevention } = require('../lib/csrf')
+  const { MER_ERR_GQL_CSRF_PREVENTION } = require('../lib/errors')
+
+  // Test the multipart-specific error path directly (lines 97-98)
+  const config = normalizeCSRFConfig({
+    allowedContentTypes: ['multipart/form-data'],
+    requiredHeaders: ['x-csrf-token']
+  })
+
+  const request = {
+    headers: {
+      'content-type': 'multipart/form-data'
+      // Missing the required x-csrf-token header
+    }
+  }
+
+  // This should hit lines 97-98 specifically
+  try {
+    checkCSRFPrevention(request, config)
+    t.fail('Should have thrown CSRF error')
+  } catch (err) {
+    t.assert.equal(err.constructor, MER_ERR_GQL_CSRF_PREVENTION)
+    t.assert.equal(err.message, CSRF_ERROR_MESSAGE)
+  }
+})
