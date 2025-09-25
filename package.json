@@ -6,13 +6,12 @@
   "types": "index.d.ts",
   "scripts": {
     "docs": "docsify serve",
-    "unit": "tap test/*.js test/internals/*.js",
-    "cov": "tap  --coverage-report=html -J test/*.js test/internals/*.js",
+    "unit": "borp --no-typescript --timeout 300000 --reporter spec 'test/**/*.test.js'",
+    "cov": "borp --coverage --no-typescript --check-coverage --lines 100 --functions 100 --statements 100 --branches 100 --timeout 300000 --reporter spec 'test/**/*.test.js'",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "typescript": "tsd",
-    "test": "npm run lint && npm run test:unit && npm run typescript",
-    "test:unit": "npm run unit"
+    "test": "npm run lint && npm run unit && npm run typescript"
   },
   "repository": {
     "type": "git",
@@ -37,6 +36,7 @@
     "@types/node": "^24.0.3",
     "@types/ws": "^8.2.0",
     "autocannon": "^8.0.0",
+    "borp": "^0.20.2",
     "concurrently": "^9.0.0",
     "docsify-cli": "^4.4.3",
     "eslint": "^9.9.1",
@@ -50,7 +50,6 @@
     "semver": "^7.5.0",
     "sinon": "^21.0.0",
     "split2": "^4.0.0",
-    "tap": "^21.0.0",
     "tsd": "^0.32.0",
     "typescript": "~5.9.2",
     "undici": "^7.0.0",
