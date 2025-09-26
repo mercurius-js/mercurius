@@ -39,6 +39,7 @@ Features:
 - [GraphQL over WebSocket](/docs/graphql-over-websocket.md)
 - [Integrations](docs/integrations/)
 - [Related Plugins](docs/plugins.md)
+- [Security - CSRF Prevention](docs/security/csrf-prevention.md)
 - [Faq](/docs/faq.md)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)

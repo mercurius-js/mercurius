@@ -21,6 +21,8 @@
 - [TypeScript Usage](/docs/typescript)
 - [HTTP](/docs/http)
 - [GraphQL over WebSocket](/docs/graphql-over-websocket.md)
+- [Security](/docs/security)
+  - [CSRF Prevention](/docs/security/csrf-prevention.md)
 - [Integrations](/docs/integrations/)
   - [nexus](/docs/integrations/nexus)
   - [TypeGraphQL](/docs/integrations/type-graphql)

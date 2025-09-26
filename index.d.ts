@@ -526,6 +526,14 @@ declare namespace mercurius {
      * - Increase body size limit for larger queries
     */
     additionalRouteOptions?: Omit<RouteOptions, 'handler' | 'wsHandler' | 'method' | 'url'>
+
+    /**
+     * Enable CSRF prevention
+     */
+    csrfPrevention?: boolean | {
+      allowedContentTypes?: string[];
+      requiredHeaders?: string[];
+    };
   }
 
   export type MercuriusOptions = MercuriusCommonOptions & (MercuriusSchemaOptions)
