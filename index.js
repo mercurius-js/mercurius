@@ -44,6 +44,7 @@ const {
   onResolutionHandler,
   onExtendSchemaHandler
 } = require('./lib/handlers')
+const { normalizeCSRFConfig } = require('./lib/csrf')
 
 async function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -78,6 +79,9 @@ const mercurius = fp(async function (app, opts) {
   const minJit = opts.jit || 0
   const queryDepthLimit = opts.queryDepth
   const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
+
+  // Configure CSRF prevention
+  const csrfConfig = normalizeCSRFConfig(opts.csrfPrevention)
 
   opts.graphql = opts.graphql || {}
   const gqlParseOpts = opts.graphql.parseOptions || {}
@@ -212,7 +216,8 @@ const mercurius = fp(async function (app, opts) {
       subscriptionContextFn,
       keepAlive,
       fullWsTransport,
-      additionalRouteOptions: opts.additionalRouteOptions
+      additionalRouteOptions: opts.additionalRouteOptions,
+      csrfConfig
     })
   }
 

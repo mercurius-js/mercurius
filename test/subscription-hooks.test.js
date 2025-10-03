@@ -398,3 +398,44 @@ test('subscription - should handle onSubscriptionEnd hook errors', async t => {
   await once(client, 'end')
   t.assert.equal(ws.readyState, WebSocket.CLOSED)
 })
+
+test('subscription - should call onSubscriptionEnd with same hook context', async t => {
+  t.plan(1)
+  const app = await createTestServer(t)
+
+  let contextSpy
+  app.graphql.addHook('preSubscriptionParsing', async (schema, source, context) => {
+    contextSpy = context
+    context.hooks = ['preSubscriptionParsing']
+  })
+  app.graphql.addHook('preSubscriptionExecution', async (schema, document, context) => {
+    context.hooks.push('preSubscriptionExecution')
+  })
+  app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
+    context.hooks.push('onSubscriptionResolution')
+  })
+  app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
+    context.hooks.push('onSubscriptionEnd')
+  })
+
+  await app.listen({ port: 0 })
+
+  const { client } = createWebSocketClient(t, app)
+
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: { query }
+  }))
+
+  await once(client, 'data') // ack
+  sendTestMutation(app)
+  await once(client, 'data') // subscription data
+  client.write(JSON.stringify({ id: 1, type: 'stop' }))
+  await once(client, 'data') // complete
+
+  t.assert.deepEqual(contextSpy.hooks, ['preSubscriptionParsing', 'preSubscriptionExecution', 'onSubscriptionResolution', 'onSubscriptionEnd'])
+})
