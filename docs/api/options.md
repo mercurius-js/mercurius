@@ -75,6 +75,7 @@
   - `subscription.onDisconnect`: `Function` A function which is called with the subscription context of the connection after the connection gets disconnected.
   - `subscription.keepAlive`: `Integer` Optional interval in ms to send the `GQL_CONNECTION_KEEP_ALIVE` message.
   - `subscription.fullWsTransport`: `Boolean` Enable sending every operation via WS.
+  - `subscription.wsDefaultSubprotocol`: `String` Set the default subprotocol in case the client does not specify one. See [Supported subprotocols](../graphql-over-websocket.md#websocket-subprotocol)
 
 - `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash. Overrides `persistedQueryProvider`.
 - `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.

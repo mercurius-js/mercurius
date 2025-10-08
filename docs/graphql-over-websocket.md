@@ -14,7 +14,7 @@ The GraphQL over WebSocket Protocol (i.e. the WebSocket sub-protocol) used by de
 
 - [`graphql-transport-ws` Protocol SPEC](https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md)
 
-Mercurius supports `graphql-transport-ws` and `graphql-ws` subprotocols; when no subprotocol is specified, `graphql-transport-ws` will be adopted.
+Mercurius supports the `graphql-transport-ws` and `graphql-ws` subprotocols. If the client doesn't specify one, the connection will be closed by default. To allow a fallback, set a default using the `wsDefaultSubprotocol` option.
 
 > ⚠️ The subprotocol originally defined by Apollo's `subscriptions-transport-ws` library is also supported. However, that library is **UNMAINTAINED** so it's not recommended to be used: basically **deprecated**. More info [here](https://github.com/apollographql/subscriptions-transport-ws/).
 

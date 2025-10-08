@@ -1,5 +1,6 @@
 'use strict'
 const { test } = require('node:test')
+const assert = require('node:assert')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const WebSocket = require('ws')
@@ -10,7 +11,8 @@ const SubscriptionConnection = require('../lib/subscription-connection')
 const { PubSub } = require('../lib/subscriber')
 const { GRAPHQL_WS, GRAPHQL_TRANSPORT_WS } = require('../lib/subscription-protocol')
 const { setImmediate: immediate } = require('timers/promises')
-const { EventEmitter } = require('events')
+const { EventEmitter, once, on } = require('node:events')
+const mercurius = require('../index')
 
 function capture (obj, methodName) {
   const original = obj[methodName]
@@ -825,4 +827,69 @@ test('subscription data is released right after it ends', async (t) => {
 
   t.assert.strictEqual(sc.subscriptionIters.size, 0)
   t.assert.strictEqual(sc.subscriptionContexts.size, 0)
+})
+
+test('should use default protocol when client does not specify a subprotocol', async (t) => {
+  const app = fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    schema: `
+      type Query {
+        _placeholder: String
+      }
+
+      type Subscription {
+        onMessage: String!
+      }
+    `,
+    resolvers: {
+      Query: {},
+      Subscription: {
+        onMessage: {
+          async * subscribe () {
+            yield { onMessage: 'hello' }
+          }
+        }
+      }
+    },
+    subscription: {
+      wsDefaultSubprotocol: 'graphql-ws'
+    }
+  })
+
+  await app.listen({ port: 0 })
+  const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+
+  const ws = new WebSocket(url) // no subprotocol
+
+  ws.on('error', (error) => {
+    assert.fail('must not error ' + error)
+  })
+
+  await once(ws, 'open')
+  ws.send(JSON.stringify({ type: 'connection_init' }))
+  ws.send(JSON.stringify({
+    type: 'start',
+    payload: {
+      query: 'subscription { onMessage }'
+    }
+  }))
+
+  let receivedData
+  for await (const [message] of on(ws, 'message')) {
+    const data = JSON.parse(message.toString())
+    if (data.type === 'connection_ack') {
+      continue
+    }
+    if (data.type === 'data') {
+      receivedData = true
+      assert.equal(data.payload.data.onMessage, 'hello')
+      break
+    }
+  }
+
+  assert.equal(receivedData, true, 'must receive data message')
+
+  ws.close()
 })

@@ -45,6 +45,7 @@ const {
   onExtendSchemaHandler
 } = require('./lib/handlers')
 const { normalizeCSRFConfig } = require('./lib/csrf')
+const { isValidServerProtocol } = require('./lib/subscription-protocol')
 
 async function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -132,6 +133,7 @@ const mercurius = fp(async function (app, opts) {
   let onDisconnect
   let keepAlive
   let fullWsTransport
+  let wsDefaultSubprotocol
 
   if (typeof subscriptionOpts === 'object') {
     if (subscriptionOpts.pubsub) {
@@ -146,6 +148,7 @@ const mercurius = fp(async function (app, opts) {
     onDisconnect = subscriptionOpts.onDisconnect
     keepAlive = subscriptionOpts.keepAlive
     fullWsTransport = subscriptionOpts.fullWsTransport
+    wsDefaultSubprotocol = subscriptionOpts.wsDefaultSubprotocol
   } else if (subscriptionOpts === true) {
     emitter = mq()
     subscriber = new PubSub(emitter)
@@ -182,6 +185,12 @@ const mercurius = fp(async function (app, opts) {
     })
   }
 
+  if (wsDefaultSubprotocol) {
+    if (!isValidServerProtocol(wsDefaultSubprotocol)) {
+      throw new MER_ERR_INVALID_OPTS('wsDefaultSubprotocol must be either graphql-ws or graphql-transport-ws')
+    }
+  }
+
   fastifyGraphQl.schema = schema
 
   app.addHook('onReady', async function () {
@@ -216,6 +225,7 @@ const mercurius = fp(async function (app, opts) {
       subscriptionContextFn,
       keepAlive,
       fullWsTransport,
+      wsDefaultSubprotocol,
       additionalRouteOptions: opts.additionalRouteOptions,
       csrfConfig
     })

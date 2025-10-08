@@ -357,6 +357,14 @@ app.register(mercurius, {
 app.register(mercurius, {
   schema,
   resolvers,
+  subscription: {
+    wsDefaultSubprotocol: 'graphql-ws'
+  }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
   schemaTransforms: []
 })
 

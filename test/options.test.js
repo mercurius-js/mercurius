@@ -4,6 +4,7 @@ const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const { test } = require('node:test')
 const Fastify = require('fastify')
+const { mercurius } = require('../index')
 
 const schema = `
 type User {
@@ -81,4 +82,19 @@ test('call compileQuery with correct options if compilerOptions specified', asyn
   })
 
   sinon.assert.calledOnceWithExactly(compileQueryStub, sinon.match.any, sinon.match.any, sinon.match.any, { customJSONSerializer: true })
+})
+
+test('invalid wsDefaultSubprotocol', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      wsDefaultSubprotocol: 'invalid'
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: wsDefaultSubprotocol must be either graphql-ws or graphql-transport-ws'
+  })
 })
