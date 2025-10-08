@@ -494,6 +494,7 @@ declare namespace mercurius {
         onDisconnect?: (context: MercuriusContext) => void | Promise<void>;
         keepAlive?: number,
         fullWsTransport?: boolean,
+        wsDefaultSubprotocol?: string,
       };
     /**
      * Persisted queries, overrides persistedQueryProvider.
