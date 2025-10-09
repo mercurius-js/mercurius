@@ -16,6 +16,8 @@ By using hooks you can interact directly with the GraphQL lifecycle of Mercurius
   - [preSubscriptionExecution](#presubscriptionexecution)
   - [onSubscriptionResolution](#onsubscriptionresolution)
   - [onSubscriptionEnd](#onsubscriptionend)
+  - [onSubscriptionConnectionClose](#onsubscriptionconnectionclose)
+  - [onSubscriptionConnectionError](#onsubscriptionconnectionerror)
   - [Manage Errors from a subscription hook](#manage-errors-from-a-subscription-hook)
 
 
@@ -182,6 +184,26 @@ This hook will be triggered when a subscription ends.
 
 ```js
 fastify.graphql.addHook('onSubscriptionEnd', async (context, id) => {
+  await asyncMethod()
+})
+```
+
+### onSubscriptionConnectionClose
+
+This hook will be triggered when the subscription connection closes.
+
+```js
+fastify.graphql.addHook('onSubscriptionConnectionClose', async (context, code, reason) => {
+  await asyncMethod()
+})
+```
+
+### onSubscriptionConnectionError
+
+This hook will be triggered when a subscription connection errors.
+
+```js
+fastify.graphql.addHook('onSubscriptionConnectionError', async (context, error) => {
   await asyncMethod()
 })
 ```

@@ -89,13 +89,13 @@ declare namespace mercurius {
   export interface MercuriusLoaders<TContext extends Record<string, any> = MercuriusContext> {
     [root: string]: {
       [field: string]:
-        | Loader<any, any, TContext>
-        | {
-          loader: Loader<any, any, TContext>;
-          opts?: {
-            cache?: boolean;
-          };
+      | Loader<any, any, TContext>
+      | {
+        loader: Loader<any, any, TContext>;
+        opts?: {
+          cache?: boolean;
         };
+      };
     };
   }
 
@@ -192,13 +192,38 @@ declare namespace mercurius {
   }
 
   /**
-   * `onSubscriptionEnd` is the fifth and final hook to be executed in the GraphQL subscription lifecycle. The previous hook was `onSubscriptionResolution`.
+   * `onSubscriptionEnd` is the fifth hook to be executed in the GraphQL subscription lifecycle. The previous hook was `onSubscriptionResolution`.
    * This hook will only be triggered when subscriptions are enabled.
    */
   export interface onSubscriptionEndHookHandler<TContext = MercuriusContext> {
     (
       context: TContext,
       id: string | number,
+    ): Promise<void> | void;
+  }
+
+  /**
+   * `onSubscriptionConnectionClose` is the sixth and final hook to be executed in the GraphQL subscription lifecycle.
+   * This hook will be triggered when a subscription connection is closed. This hook is called regardless of whether the subscription is closed by the client or by the server.
+   * This hook will only be triggered when subscriptions are enabled.
+   */
+  export interface onSubscriptionConnectionCloseHookHandler<TContext = MercuriusContext> {
+    (
+      context: TContext,
+      code: number,
+      reason: string,
+    ): Promise<void> | void;
+  }
+
+  /**
+   * `onSubscriptionConnectionError` is the sixth hook to be executed in the GraphQL subscription lifecycle.
+   * This hook will be triggered when a subscription connection error occurs.
+   * This hook will only be triggered when subscriptions are enabled.
+   */
+  export interface onSubscriptionConnectionErrorHookHandler<TContext = MercuriusContext> {
+    (
+      context: TContext,
+      error: Error,
     ): Promise<void> | void;
   }
 
@@ -317,6 +342,20 @@ declare namespace mercurius {
      */
     addHook<TContext = MercuriusContext>(name: 'onSubscriptionEnd', hook: onSubscriptionEndHookHandler<TContext>): void;
 
+    /**
+     * `onSubscriptionConnectionClose` is the sixth and final hook to be executed in the GraphQL subscription lifecycle.
+     * This hook will be triggered when a subscription connection is closed. This hook is called regardless of whether the subscription is closed by the client or by the server.
+     * This hook will only be triggered when subscriptions are enabled.
+     */
+    addHook<TContext = MercuriusContext>(name: 'onSubscriptionConnectionClose', hook: onSubscriptionConnectionCloseHookHandler<TContext>): void;
+
+    /**
+     * `onSubscriptionConnectionError` is the sixth hook to be executed in the GraphQL subscription lifecycle.
+     * This hook will be triggered when a subscription connection error occurs.
+     * This hook will only be triggered when subscriptions are enabled.
+     */
+    addHook<TContext = MercuriusContext>(name: 'onSubscriptionConnectionError', hook: onSubscriptionConnectionErrorHookHandler<TContext>): void;
+
     // Application lifecycle addHooks
     addHook<TContext = MercuriusContext>(name: 'onExtendSchema', hook: onExtendSchemaHandler<TContext>): void;
   }
@@ -330,8 +369,8 @@ declare namespace mercurius {
 
   export interface WsConnectionParams {
     connectionInitPayload?:
-      | (() => Record<string, any> | Promise<Record<string, any>>)
-      | Record<string, any>;
+    | (() => Record<string, any> | Promise<Record<string, any>>)
+    | Record<string, any>;
     reconnect?: boolean;
     maxReconnectAttempts?: number;
     connectionCallback?: () => void;
@@ -437,8 +476,8 @@ declare namespace mercurius {
      * @default true
      */
     errorHandler?:
-      | boolean
-      | ((error: MercuriusError, request: FastifyRequest, reply: FastifyReply) => void | Promise<void>);
+    | boolean
+    | ((error: MercuriusError, request: FastifyRequest, reply: FastifyReply) => void | Promise<void>);
     /**
      * Change the default error formatter.
      */
@@ -541,20 +580,20 @@ declare namespace mercurius {
 
   export interface IResolvers<TSource = any, TContext = MercuriusContext> {
     [key: string]:
-      | (() => any)
-      | IResolverObject<TSource, TContext>
-      | IResolverOptions<TSource, TContext>
-      | GraphQLScalarType
-      | IEnumResolver
-      | undefined;
+    | (() => any)
+    | IResolverObject<TSource, TContext>
+    | IResolverOptions<TSource, TContext>
+    | GraphQLScalarType
+    | IEnumResolver
+    | undefined;
   }
 
   export type IResolverObject<TSource = any, TContext = MercuriusContext, TArgs = any> = {
     [key: string]:
-      | IFieldResolver<TSource, TContext, TArgs>
-      | IResolverOptions<TSource, TContext>
-      | IResolverObject<TSource, TContext>
-      | undefined;
+    | IFieldResolver<TSource, TContext, TArgs>
+    | IResolverOptions<TSource, TContext>
+    | IResolverObject<TSource, TContext>
+    | undefined;
   }
 
   export interface IResolverOptions<TSource = any, TContext = MercuriusContext, TArgs = any> {
@@ -694,7 +733,7 @@ declare namespace mercurius {
   /**
    * @deprecated Use `PersistedQueryProvider`
    */
-  export interface PeristedQueryProvider extends PersistedQueryProvider {}
+  export interface PeristedQueryProvider extends PersistedQueryProvider { }
 
   /**
    * Extended errors for adding additional information in error responses

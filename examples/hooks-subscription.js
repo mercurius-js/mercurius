@@ -74,6 +74,14 @@ async function start () {
     console.log('onSubscriptionEnd called')
   })
 
+  app.graphql.addHook('onSubscriptionConnectionClose', async function (context, code, reason) {
+    console.log('onSubscriptionConnectionClose called')
+  })
+
+  app.graphql.addHook('onSubscriptionConnectionError', async function (context, error) {
+    console.log('onSubscriptionConnectionError called')
+  })
+
   await app.listen({ port: 3000 })
 }
 
