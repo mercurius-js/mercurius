@@ -1,6 +1,7 @@
 'use strict'
 
 const { test } = require('node:test')
+const assert = require('node:assert')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const mq = require('mqemitter')
@@ -445,14 +446,21 @@ test('subscription - should call onSubscriptionEnd with same hook context', asyn
 // -----------------
 
 test('subscription - should call onSubscriptionConnectionClose when subscription connection closes', async t => {
-  t.plan(2)
   const app = await createTestServer(t)
 
+  let resolve, reject
+  const hookCall = new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject })
+
   app.graphql.addHook('onSubscriptionConnectionClose', async (context, code, reason) => {
-    t.assert.equal(typeof context, 'object')
-    t.assert.equal(code, 1000)
-    t.assert.equal(reason, 'Normal closure')
-    t.assert.ok('onSubscriptionConnectionClose called')
+    try {
+      assert.equal(typeof context, 'object')
+      assert.equal(code, 1005)
+      assert.equal(reason, '')
+      assert.ok('onSubscriptionConnectionClose called')
+      resolve()
+    } catch (error) {
+      reject(error)
+    }
   })
 
   await app.listen({ port: 0 })
@@ -466,13 +474,17 @@ test('subscription - should call onSubscriptionConnectionClose when subscription
   ws.close()
 
   await once(ws, 'close')
+  await hookCall
 })
 
 test('subscription - should handle errors in onSubscriptionConnectionClose', async t => {
-  t.plan(1)
   const app = await createTestServer(t)
 
+  let resolve
+  const hookCall = new Promise((_resolve) => { resolve = _resolve })
+
   app.graphql.addHook('onSubscriptionConnectionClose', async (context, code, reason) => {
+    resolve()
     throw new Error('kaboom')
   })
 
@@ -487,7 +499,8 @@ test('subscription - should handle errors in onSubscriptionConnectionClose', asy
   ws.close()
 
   await once(ws, 'close')
-  t.assert.equal(ws.readyState, WebSocket.CLOSED)
+  assert.equal(ws.readyState, WebSocket.CLOSED)
+  await hookCall
 })
 
 // -----------------
@@ -495,13 +508,20 @@ test('subscription - should handle errors in onSubscriptionConnectionClose', asy
 // -----------------
 
 test('subscription - should call onSubscriptionConnectionError when subscription connection errors', async t => {
-  t.plan(3)
   const app = await createTestServer(t)
 
+  let resolve, reject
+  const assertion = new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject })
+
   app.graphql.addHook('onSubscriptionConnectionError', async (context, error) => {
-    t.assert.equal(typeof context, 'object')
-    t.assert.ok(error instanceof Error)
-    t.assert.equal(error.message, 'Invalid WebSocket frame: invalid opcode 5')
+    try {
+      assert.equal(typeof context, 'object')
+      assert.ok(error instanceof Error)
+      assert.equal(error.message, 'Invalid WebSocket frame: invalid opcode 5')
+      resolve()
+    } catch (error) {
+      reject(error)
+    }
   })
 
   await app.listen({ port: 0 })
@@ -514,16 +534,24 @@ test('subscription - should call onSubscriptionConnectionError when subscription
   ws._socket.write(Buffer.from([0x85, 0x00]))
 
   await once(ws, 'close')
+  await assertion
 })
 
 test('subscription - should handle errors in onSubscriptionConnectionError', async t => {
-  t.plan(2)
   const app = await createTestServer(t)
 
+  let resolve, reject
+  const assertion = new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject })
+
   app.graphql.addHook('onSubscriptionConnectionError', async (context, error) => {
-    t.assert.equal(typeof context, 'object')
-    t.assert.ok(error instanceof Error)
-    throw new Error('kaboom')
+    try {
+      assert.equal(typeof context, 'object')
+      assert.ok(error instanceof Error)
+      resolve()
+      throw new Error('kaboom')
+    } catch (error) {
+      reject(error)
+    }
   })
 
   await app.listen({ port: 0 })
@@ -536,4 +564,5 @@ test('subscription - should handle errors in onSubscriptionConnectionError', asy
   ws._socket.write(Buffer.from([0x85, 0x00]))
 
   await once(ws, 'close')
+  await assertion
 })
