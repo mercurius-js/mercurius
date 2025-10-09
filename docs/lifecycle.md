@@ -55,4 +55,13 @@ Incoming GraphQL Websocket subscription data
                              subscription closed on error ◀─┴─▶ Subscription End (when subscription stop is received)
                                                                   │
                                                                   └─▶ onSubscriptionEnd Hook
+  │
+  └─▶ Connection Close
+      │
+      └─▶ onSubscriptionConnectionClose Hook
+  │
+  └─▶ Connection Error
+      │
+      └─▶ onSubscriptionConnectionError Hook
+
 ```

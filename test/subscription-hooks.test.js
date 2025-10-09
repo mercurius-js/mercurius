@@ -94,7 +94,7 @@ function createTestServer (t) {
 function createWebSocketClient (t, app) {
   const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
   const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-  t.after(() => client.destroy.bind(client))
+  t.after(() => client.end())
   client.setEncoding('utf8')
   return { client, ws }
 }
@@ -438,4 +438,102 @@ test('subscription - should call onSubscriptionEnd with same hook context', asyn
   await once(client, 'data') // complete
 
   t.assert.deepEqual(contextSpy.hooks, ['preSubscriptionParsing', 'preSubscriptionExecution', 'onSubscriptionResolution', 'onSubscriptionEnd'])
+})
+
+// -----------------
+// onSubscriptionConnectionClose
+// -----------------
+
+test('subscription - should call onSubscriptionConnectionClose when subscription connection closes', async t => {
+  t.plan(2)
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onSubscriptionConnectionClose', async (context, code, reason) => {
+    t.assert.equal(typeof context, 'object')
+    t.assert.equal(code, 1000)
+    t.assert.equal(reason, 'Normal closure')
+    t.assert.ok('onSubscriptionConnectionClose called')
+  })
+
+  await app.listen({ port: 0 })
+
+  const { client, ws } = createWebSocketClient(t, app)
+
+  client.write(JSON.stringify({ type: 'connection_init' }))
+  await once(client, 'data') // connection_ack
+
+  // Close the connection
+  ws.close()
+
+  await once(ws, 'close')
+})
+
+test('subscription - should handle errors in onSubscriptionConnectionClose', async t => {
+  t.plan(1)
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onSubscriptionConnectionClose', async (context, code, reason) => {
+    throw new Error('kaboom')
+  })
+
+  await app.listen({ port: 0 })
+
+  const { client, ws } = createWebSocketClient(t, app)
+
+  client.write(JSON.stringify({ type: 'connection_init' }))
+  await once(client, 'data') // connection_ack
+
+  // Close the connection
+  ws.close()
+
+  await once(ws, 'close')
+  t.assert.equal(ws.readyState, WebSocket.CLOSED)
+})
+
+// -----------------
+// onSubscriptionConnectionError
+// -----------------
+
+test('subscription - should call onSubscriptionConnectionError when subscription connection errors', async t => {
+  t.plan(3)
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onSubscriptionConnectionError', async (context, error) => {
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok(error instanceof Error)
+    t.assert.equal(error.message, 'Invalid WebSocket frame: invalid opcode 5')
+  })
+
+  await app.listen({ port: 0 })
+
+  const { client, ws } = createWebSocketClient(t, app)
+
+  client.write(JSON.stringify({ type: 'connection_init' }))
+  await once(client, 'data') // connection_ack
+
+  ws._socket.write(Buffer.from([0x85, 0x00]))
+
+  await once(ws, 'close')
+})
+
+test('subscription - should handle errors in onSubscriptionConnectionError', async t => {
+  t.plan(2)
+  const app = await createTestServer(t)
+
+  app.graphql.addHook('onSubscriptionConnectionError', async (context, error) => {
+    t.assert.equal(typeof context, 'object')
+    t.assert.ok(error instanceof Error)
+    throw new Error('kaboom')
+  })
+
+  await app.listen({ port: 0 })
+
+  const { client, ws } = createWebSocketClient(t, app)
+
+  client.write(JSON.stringify({ type: 'connection_init' }))
+  await once(client, 'data') // connection_ack
+
+  ws._socket.write(Buffer.from([0x85, 0x00]))
+
+  await once(ws, 'close')
 })
