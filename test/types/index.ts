@@ -530,38 +530,44 @@ app.graphql.addHook('onResolution', function (execution, context) {
   expectAssignable<MercuriusContext>(context)
 })
 
-app.graphql.addHook('preSubscriptionParsing', async function (schema, source, context) {
+app.graphql.addHook('preSubscriptionParsing', async function (schema, source, context, id) {
   expectAssignable<GraphQLSchema>(schema)
   expectAssignable<string>(source)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
-app.graphql.addHook('preSubscriptionParsing', function (schema, source, context) {
+app.graphql.addHook('preSubscriptionParsing', function (schema, source, context, id) {
   expectAssignable<GraphQLSchema>(schema)
   expectAssignable<string>(source)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
-app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context) {
+app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context, id) {
   expectAssignable<GraphQLSchema>(schema)
   expectAssignable<DocumentNode>(document)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
-app.graphql.addHook('preSubscriptionExecution', function (schema, document, context) {
+app.graphql.addHook('preSubscriptionExecution', function (schema, document, context, id) {
   expectAssignable<GraphQLSchema>(schema)
   expectAssignable<DocumentNode>(document)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
-app.graphql.addHook('onSubscriptionResolution', async function (execution, context) {
+app.graphql.addHook('onSubscriptionResolution', async function (execution, context, id) {
   expectAssignable<ExecutionResult>(execution)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
-app.graphql.addHook('onSubscriptionResolution', function (execution, context) {
+app.graphql.addHook('onSubscriptionResolution', function (execution, context, id) {
   expectAssignable<ExecutionResult>(execution)
   expectAssignable<MercuriusContext>(context)
+  expectAssignable<string | number>(id)
 })
 
 app.graphql.addHook('onSubscriptionEnd', async function (context, id) {
