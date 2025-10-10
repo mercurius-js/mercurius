@@ -152,28 +152,34 @@ await fastify.ready()
 
 If you are using the `preSubscriptionParsing` hook, you can access the GraphQL subscription query string before it is parsed. It receives the schema and context objects as other hooks.
 
+The `id` is the `message.id` sent by the client on the `start` message of the subscription.
+
 For instance, you can register some tracing events:
 
 ```js
-fastify.graphql.addHook('preSubscriptionParsing', async (schema, source, context) => {
+fastify.graphql.addHook('preSubscriptionParsing', async (schema, source, context, id) => {
   await registerTraceEvent()
 })
 ```
 
 ### preSubscriptionExecution
 
+The `id` is the `message.id` sent by the client on the `start` message of the subscription.
+
 By the time the `preSubscriptionExecution` hook triggers, the subscription query string has been parsed into a GraphQL Document AST.
 
 ```js
-fastify.graphql.addHook('preSubscriptionExecution', async (schema, document, context) => {
+fastify.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id) => {
   await asyncMethod()
 })
 ```
 
 ### onSubscriptionResolution
 
+The `id` is the `message.id` sent by the client on the `start` message of the subscription.
+
 ```js
-fastify.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
+fastify.graphql.addHook('onSubscriptionResolution', async (execution, context, id) => {
   await asyncMethod()
 })
 ```
@@ -181,6 +187,7 @@ fastify.graphql.addHook('onSubscriptionResolution', async (execution, context) =
 ### onSubscriptionEnd
 
 This hook will be triggered when a subscription ends.
+The `id` is the `message.id` sent by the client on the `stop` message.
 
 ```js
 fastify.graphql.addHook('onSubscriptionEnd', async (context, id) => {

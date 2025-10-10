@@ -101,34 +101,66 @@ function createWebSocketClient (t, app) {
 }
 
 test('subscription - hooks basic', async t => {
-  t.plan(13)
-
   const app = await createTestServer(t)
 
-  app.graphql.addHook('preSubscriptionParsing', async (schema, source, context) => {
-    t.assert.ok(schema instanceof GraphQLSchema)
-    t.assert.equal(source, query)
-    t.assert.equal(typeof context, 'object')
-    t.assert.ok('preSubscriptionParsing called')
-  })
-  app.graphql.addHook('preSubscriptionExecution', async (schema, document, context) => {
-    t.assert.ok(schema instanceof GraphQLSchema)
-    t.assert.deepEqual(document, parse(query))
-    t.assert.equal(typeof context, 'object')
-    t.assert.ok('preSubscriptionExecution called')
-  })
-  app.graphql.addHook('onSubscriptionResolution', async (execution, context) => {
-    t.assert.deepEqual(execution, {
-      data: {
-        notificationAdded: {
-          id: '1',
-          message: 'Hello World'
-        }
+  const hooksCalls = []
+
+  {
+    let resolve, reject
+    hooksCalls.push(new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject }))
+    app.graphql.addHook('preSubscriptionParsing', async (schema, source, context, id) => {
+      try {
+        assert.ok(schema instanceof GraphQLSchema)
+        assert.equal(source, query)
+        assert.equal(typeof context, 'object')
+        assert.equal(id, 'the-subscription-id')
+        assert.ok('preSubscriptionParsing called')
+        resolve()
+      } catch (error) {
+        reject(error)
       }
     })
-    t.assert.equal(typeof context, 'object')
-    t.assert.ok('onSubscriptionResolution called')
-  })
+  }
+
+  {
+    let resolve, reject
+    hooksCalls.push(new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject }))
+    app.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id) => {
+      try {
+        assert.ok(schema instanceof GraphQLSchema)
+        assert.deepEqual(document, parse(query))
+        assert.equal(typeof context, 'object')
+        assert.equal(id, 'the-subscription-id')
+        assert.ok('preSubscriptionExecution called')
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+
+  {
+    let resolve, reject
+    hooksCalls.push(new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject }))
+    app.graphql.addHook('onSubscriptionResolution', async (execution, context, id) => {
+      try {
+        assert.deepEqual(execution, {
+          data: {
+            notificationAdded: {
+              id: '1',
+              message: 'Hello World'
+            }
+          }
+        })
+        assert.equal(typeof context, 'object')
+        assert.equal(id, 'the-subscription-id')
+        assert.ok('onSubscriptionResolution called')
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
 
   await app.listen({ port: 0 })
 
@@ -138,7 +170,7 @@ test('subscription - hooks basic', async t => {
     type: 'connection_init'
   }))
   client.write(JSON.stringify({
-    id: 1,
+    id: 'the-subscription-id',
     type: 'start',
     payload: {
       query
@@ -148,7 +180,7 @@ test('subscription - hooks basic', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.assert.equal(data.type, 'connection_ack')
+    assert.equal(data.type, 'connection_ack')
   }
 
   sendTestMutation(app)
@@ -156,8 +188,8 @@ test('subscription - hooks basic', async t => {
   {
     const [chunk] = await once(client, 'data')
     const data = JSON.parse(chunk)
-    t.assert.deepEqual(data, {
-      id: 1,
+    assert.deepEqual(data, {
+      id: 'the-subscription-id',
       type: 'data',
       payload: {
         data: {
@@ -169,6 +201,8 @@ test('subscription - hooks basic', async t => {
       }
     })
   }
+
+  await Promise.all(hooksCalls)
 })
 
 // -----------------------
@@ -565,4 +599,49 @@ test('subscription - should handle errors in onSubscriptionConnectionError', asy
 
   await once(ws, 'close')
   await assertion
+})
+
+test('subscription - should call subscription hooks with same message id', async t => {
+  const app = await createTestServer(t)
+
+  let contextSpy
+  app.graphql.addHook('preSubscriptionParsing', async (schema, source, context, id) => {
+    contextSpy = context
+    context.ids = [{ preSubscriptionParsing: id }]
+  })
+  app.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id) => {
+    context.ids.push({ preSubscriptionExecution: id })
+  })
+  app.graphql.addHook('onSubscriptionResolution', async (execution, context, id) => {
+    context.ids.push({ onSubscriptionResolution: id })
+  })
+  app.graphql.addHook('onSubscriptionEnd', async (context, id) => {
+    context.ids.push({ onSubscriptionEnd: id })
+  })
+
+  await app.listen({ port: 0 })
+
+  const { client } = createWebSocketClient(t, app)
+
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+  client.write(JSON.stringify({
+    id: 'the-subscription-id',
+    type: 'start',
+    payload: { query }
+  }))
+
+  await once(client, 'data') // ack
+  sendTestMutation(app)
+  await once(client, 'data') // subscription data
+  client.write(JSON.stringify({ id: 'the-subscription-id', type: 'stop' }))
+  await once(client, 'data') // complete
+
+  assert.deepEqual(contextSpy.ids, [
+    { preSubscriptionParsing: 'the-subscription-id' },
+    { preSubscriptionExecution: 'the-subscription-id' },
+    { onSubscriptionResolution: 'the-subscription-id' },
+    { onSubscriptionEnd: 'the-subscription-id' }]
+  )
 })

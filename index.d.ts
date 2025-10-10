@@ -165,6 +165,7 @@ declare namespace mercurius {
       schema: GraphQLSchema,
       source: string,
       context: TContext,
+      id: string | number,
     ): Promise<void> | void;
   }
 
@@ -177,17 +178,19 @@ declare namespace mercurius {
       schema: GraphQLSchema,
       source: DocumentNode,
       context: TContext,
+      id: string | number,
     ): Promise<void> | void;
   }
 
   /**
-   * `onSubscriptionResolution` is the fourth hook to be executed in the GraphQL subscription lifecycle. The next hook will be `onSubscriptionEnd`.
+   * `onSubscriptionResolution` is the third hook to be executed in the GraphQL subscription lifecycle. The next hook will be `onSubscriptionEnd`.
    * This hook will only be triggered when subscriptions are enabled.
    */
   export interface onSubscriptionResolutionHookHandler<TData extends Record<string, any> = Record<string, any>, TContext = MercuriusContext> {
     (
       execution: ExecutionResult<TData>,
       context: TContext,
+      id: string | number,
     ): Promise<void> | void;
   }
 

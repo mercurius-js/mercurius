@@ -58,15 +58,15 @@ async function start () {
 
   await app.ready()
 
-  app.graphql.addHook('preSubscriptionParsing', async function (schema, source, context) {
+  app.graphql.addHook('preSubscriptionParsing', async function (schema, source, context, id) {
     console.log('preSubscriptionParsing called')
   })
 
-  app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context) {
+  app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context, id) {
     console.log('preSubscriptionExecution called')
   })
 
-  app.graphql.addHook('onSubscriptionResolution', async function (execution, context) {
+  app.graphql.addHook('onSubscriptionResolution', async function (execution, context, id) {
     console.log('onSubscriptionResolution called')
   })
 
