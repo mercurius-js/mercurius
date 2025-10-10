@@ -1,6 +1,7 @@
 'use strict'
 
 const { test } = require('node:test')
+const assert = require('node:assert')
 const Fastify = require('fastify')
 const split = require('split2')
 const querystring = require('querystring')
@@ -1470,8 +1471,7 @@ test('routes with custom class-based context', async (t) => {
   })
 })
 
-test('connection is not allowed when verifyClient callback called with `false`', (t, done) => {
-  t.plan(2)
+test('connection is not allowed when verifyClient callback called with `false`', async (t) => {
   const app = Fastify()
   t.after(() => app.close())
 
@@ -1483,7 +1483,7 @@ test('connection is not allowed when verifyClient callback called with `false`',
 
   const resolvers = {
     Query: {
-      add: (parent, { x, y }) => x + y
+      add: (_parent, { x, y }) => x + y
     }
   }
 
@@ -1501,40 +1501,58 @@ test('connection is not allowed when verifyClient callback called with `false`',
     }
   })
 
-  app.listen({ port: 0 }, () => {
-    const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
-    const ws = new WebSocket(url, 'graphql-ws', {
-      headers: { 'x-custom-header': 'fastify is awesome !' }
-    })
-    const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.after(() => client.destroy.bind(client))
-
-    client.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-    client.on('data', chunk => {
-      t.assert.equal(chunk, JSON.stringify({
-        type: 'connection_ack'
-      }))
-      client.end()
-      done()
-    })
-
-    const ws2 = new WebSocket(url, 'graphql-ws', {
-      headers: { 'x-custom-header': 'other-value' }
-    })
-    const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
-    t.after(client2.destroy.bind(client2))
-
-    client2.setEncoding('utf8')
-    client2.write(JSON.stringify({
-      type: 'connection_init'
-    }))
-    client2.on('error', (err) => {
-      t.assert.equal('Unexpected server response: 401', err.message)
-      client2.end()
-    })
+  await app.listen({ port: 0 })
+  const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
+  const ws = new WebSocket(url, 'graphql-ws', {
+    headers: { 'x-custom-header': 'fastify is awesome !' }
   })
+  const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+  t.after(() => {
+    client.end()
+  })
+
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+
+  const assertions = []
+  {
+    let resolve, reject
+    assertions.push(new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject }))
+    client.on('data', chunk => {
+      try {
+        assert.equal(chunk, JSON.stringify({ type: 'connection_ack' }))
+        resolve()
+      } catch (err) {
+        reject(err)
+      }
+    })
+  }
+
+  const ws2 = new WebSocket(url, 'graphql-ws', {
+    headers: { 'x-custom-header': 'other-value' }
+  })
+  const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
+  t.after(client2.destroy.bind(client2))
+
+  client2.setEncoding('utf8')
+  client2.write(JSON.stringify({ type: 'connection_init' }))
+
+  {
+    let resolve, reject
+    assertions.push(new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject }))
+    client2.on('error', (err) => {
+      try {
+        assert.equal('Unexpected server response: 401', err.message)
+        client2.end()
+        resolve()
+      } catch (err) {
+        reject(err)
+      }
+    })
+  }
+
+  await Promise.all(assertions)
 })
 
 test('connection is not allowed when onConnect callback called with `false`', (t, done) => {
