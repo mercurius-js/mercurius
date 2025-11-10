@@ -697,6 +697,70 @@ test('subscription with custom pubsub with custom params on subscribe method', (
   })
 })
 
+test('subscription queue has highWaterMark when queueHighWaterMark is provided', async (t) => {
+  const emitter = new EventEmitter()
+  class SpyPubSub {
+    async subscribe (_, queue) {
+      emitter.emit('onsubscription', queue)
+    }
+  }
+
+  const app = Fastify()
+  t.after(() => app.close())
+
+  const pubsub = new SpyPubSub()
+
+  const schema = `
+    type Query {
+      _placeholder: String
+    }
+
+    type Subscription {
+      onSubscription: String
+    }
+  `
+
+  const resolvers = {
+    Subscription: {
+      onSubscription: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('ON_SUBSCRIPTION')
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      pubsub,
+      queueHighWaterMark: 2
+    }
+  })
+
+  await app.listen({ port: 0 })
+
+  const ws = new WebSocket('ws://localhost:' + (app.server.address()).port + '/graphql', 'graphql-ws')
+  const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
+  t.after(() => client.destroy())
+  client.setEncoding('utf8')
+
+  client.write(JSON.stringify({ type: 'connection_init' }))
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: `
+        subscription {
+          onSubscription
+        }  
+      `
+    }
+  }))
+
+  const [queue] = await once(emitter, 'onsubscription')
+  t.assert.strictEqual(queue._readableState.highWaterMark, 2)
+})
+
 test('subscription server sends update to subscriptions with custom context', (t, done) => {
   const app = Fastify()
   t.after(() => app.close())

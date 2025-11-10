@@ -134,6 +134,7 @@ const mercurius = fp(async function (app, opts) {
   let keepAlive
   let fullWsTransport
   let wsDefaultSubprotocol
+  let queueHighWaterMark
 
   if (typeof subscriptionOpts === 'object') {
     if (subscriptionOpts.pubsub) {
@@ -149,6 +150,7 @@ const mercurius = fp(async function (app, opts) {
     keepAlive = subscriptionOpts.keepAlive
     fullWsTransport = subscriptionOpts.fullWsTransport
     wsDefaultSubprotocol = subscriptionOpts.wsDefaultSubprotocol
+    queueHighWaterMark = subscriptionOpts.queueHighWaterMark
   } else if (subscriptionOpts === true) {
     emitter = mq()
     subscriber = new PubSub(emitter)
@@ -190,6 +192,11 @@ const mercurius = fp(async function (app, opts) {
       throw new MER_ERR_INVALID_OPTS('wsDefaultSubprotocol must be either graphql-ws or graphql-transport-ws')
     }
   }
+  if (queueHighWaterMark) {
+    if (typeof queueHighWaterMark !== 'number' || queueHighWaterMark <= 0) {
+      throw new MER_ERR_INVALID_OPTS('queueHighWaterMark must be a positive number')
+    }
+  }
 
   fastifyGraphQl.schema = schema
 
@@ -226,6 +233,7 @@ const mercurius = fp(async function (app, opts) {
       keepAlive,
       fullWsTransport,
       wsDefaultSubprotocol,
+      queueHighWaterMark,
       additionalRouteOptions: opts.additionalRouteOptions,
       csrfConfig
     })

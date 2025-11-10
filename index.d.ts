@@ -537,6 +537,7 @@ declare namespace mercurius {
         keepAlive?: number,
         fullWsTransport?: boolean,
         wsDefaultSubprotocol?: string,
+        queueHighWaterMark?: number,
       };
     /**
      * Persisted queries, overrides persistedQueryProvider.
