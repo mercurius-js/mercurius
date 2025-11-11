@@ -98,3 +98,33 @@ test('invalid wsDefaultSubprotocol', async t => {
     message: 'Invalid options: wsDefaultSubprotocol must be either graphql-ws or graphql-transport-ws'
   })
 })
+
+test('invalid queueHighWaterMark', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      queueHighWaterMark: 'invalid'
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: queueHighWaterMark must be a positive number'
+  })
+})
+
+test('invalid queueHighWaterMark', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      queueHighWaterMark: -1
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: queueHighWaterMark must be a positive number'
+  })
+})

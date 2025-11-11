@@ -365,6 +365,14 @@ app.register(mercurius, {
 app.register(mercurius, {
   schema,
   resolvers,
+  subscription: {
+    queueHighWaterMark: 100
+  }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
   schemaTransforms: []
 })
 

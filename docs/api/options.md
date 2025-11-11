@@ -76,6 +76,7 @@
   - `subscription.keepAlive`: `Integer` Optional interval in ms to send the `GQL_CONNECTION_KEEP_ALIVE` message.
   - `subscription.fullWsTransport`: `Boolean` Enable sending every operation via WS.
   - `subscription.wsDefaultSubprotocol`: `String` Set the default subprotocol in case the client does not specify one. See [Supported subprotocols](../graphql-over-websocket.md#websocket-subprotocol)
+  - `subscription.queueHighWaterMark`: `Number` Set the high water mark for the internal readable stream queue used by each subscription connection. This controls the buffering behavior of subscription messages. When the queue reaches this limit, backpressure is applied to prevent memory issues. Defaults to Node.js stream default (16 for object mode). See [Node.js Stream Buffering](https://nodejs.org/api/stream.html#buffering) for more details.
 
 - `persistedQueries`: A hash/query map to resolve the full query text using it's unique hash. Overrides `persistedQueryProvider`.
 - `onlyPersisted`: Boolean. Flag to control whether to allow graphql queries other than persisted. When `true`, it'll make the server reject any queries that are not present in the `persistedQueries` option above. It will also disable any ide available (graphiql). Requires `persistedQueries` to be set, and overrides `persistedQueryProvider`.
