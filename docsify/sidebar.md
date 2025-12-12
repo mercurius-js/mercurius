@@ -26,6 +26,7 @@
 - [Integrations](/docs/integrations/)
   - [nexus](/docs/integrations/nexus)
   - [TypeGraphQL](/docs/integrations/type-graphql)
+  - [GQLoom](/docs/integrations/gqloom)
   - [Prisma](/docs/integrations/prisma)
   - [Testing](/docs/integrations/mercurius-integration-testing)
   - [Tracing - OpenTelemetry](/docs/integrations/open-telemetry)
