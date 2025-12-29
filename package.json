@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "@fastify/error": "^4.0.0",
-    "@fastify/static": "^8.0.0",
+    "@fastify/static": "^9.0.0",
     "@fastify/websocket": "^11.0.0",
     "borp": "^0.20.2",
     "fastify-plugin": "^5.0.0",
