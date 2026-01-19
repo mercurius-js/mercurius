@@ -775,7 +775,8 @@ test('subscription data is released right after it ends', async (t) => {
     on () {},
     close () {},
     send (msg, cb) { cb() },
-    protocol: GRAPHQL_TRANSPORT_WS
+    protocol: GRAPHQL_TRANSPORT_WS,
+    readyState: WebSocket.OPEN
   }, {
     context: { preSubscriptionParsing: null, preSubscriptionExecution: null },
     fastify: {
@@ -825,6 +826,55 @@ test('subscription data is released right after it ends', async (t) => {
 
   await immediate()
 
+  t.assert.strictEqual(sc.subscriptionIters.size, 0)
+  t.assert.strictEqual(sc.subscriptionContexts.size, 0)
+})
+
+test('subscription iter cleaned up even if closed', async (t) => {
+  let readyState = WebSocket.OPEN
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () { readyState = WebSocket.CLOSED },
+    send (msg, cb) { cb() },
+    protocol: GRAPHQL_TRANSPORT_WS,
+    get readyState () { return readyState }
+  }, {
+    context: { preSubscriptionParsing: null, preSubscriptionExecution: null },
+    fastify: {
+      graphql: {
+        schema: makeExecutableSchema({
+          typeDefs: ['type Query { blah: String! }', 'type Subscription { onMessage: String! }'],
+          resolvers: {
+            Query: {},
+            Subscription: {
+              onMessage: {
+                async * subscribe () {
+                  return new Promise()
+                }
+              }
+            }
+          }
+        })
+      }
+    }
+  })
+
+  sc.isReady = true
+
+  t.assert.strictEqual(sc.subscriptionIters.size, 0)
+  t.assert.strictEqual(sc.subscriptionContexts.size, 0)
+
+  await sc.handleMessage(JSON.stringify({
+    id: 1,
+    type: 'subscribe',
+    payload: {
+      query: 'subscription { onMessage } '
+    }
+  }))
+
+  sc.close()
+
+  await immediate()
   t.assert.strictEqual(sc.subscriptionIters.size, 0)
   t.assert.strictEqual(sc.subscriptionContexts.size, 0)
 })
