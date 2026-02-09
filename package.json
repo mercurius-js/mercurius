@@ -36,7 +36,7 @@
     "@types/node": "^25.0.2",
     "@types/ws": "^8.2.0",
     "autocannon": "^8.0.0",
-    "borp": "^0.21.0",
+    "borp": "^1.0.0",
     "concurrently": "^9.0.0",
     "docsify-cli": "^4.4.3",
     "eslint": "^9.9.1",
