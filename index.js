@@ -234,6 +234,7 @@ const mercurius = fp(async function (app, opts) {
       fullWsTransport,
       wsDefaultSubprotocol,
       queueHighWaterMark,
+      queryDepthLimit,
       additionalRouteOptions: opts.additionalRouteOptions,
       csrfConfig
     })

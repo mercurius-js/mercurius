@@ -2,6 +2,8 @@
 
 const { test } = require('node:test')
 const Fastify = require('fastify')
+const WebSocket = require('ws')
+const { once } = require('events')
 const GQL = require('..')
 const { MER_ERR_GQL_VALIDATION, MER_ERR_GQL_QUERY_DEPTH } = require('../lib/errors')
 
@@ -427,4 +429,92 @@ test('queryDepth - ensure query depth is correctly calculated', async (t) => {
       ]
     }
   })
+})
+
+test('queryDepth - enforce depth limit for subscriptions over websocket', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  const schema = `
+    type Human {
+      name: String!
+      pet: Dog
+    }
+
+    type Dog {
+      name: String!
+      owner: Human
+    }
+
+    type Query {
+      ping: String
+    }
+
+    type Subscription {
+      dogUpdated: Dog
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      ping: () => 'pong'
+    },
+    Subscription: {
+      dogUpdated: {
+        subscribe: async (root, args, ctx) => ctx.pubsub.subscribe('DOG_UPDATED')
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true,
+    queryDepth: 5
+  })
+
+  await app.listen({ port: 0 })
+
+  const ws = new WebSocket(`ws://localhost:${app.server.address().port}/graphql`, 'graphql-ws')
+  t.after(() => ws.close())
+
+  await once(ws, 'open')
+
+  const waitForMessageType = async (expectedType) => {
+    while (true) {
+      const [data] = await once(ws, 'message')
+      const message = JSON.parse(data.toString())
+      if (message.type === expectedType) {
+        return message
+      }
+    }
+  }
+
+  ws.send(JSON.stringify({ type: 'connection_init' }))
+  await waitForMessageType('connection_ack')
+
+  ws.send(JSON.stringify({
+    id: '1',
+    type: 'start',
+    payload: {
+      query: `subscription {
+        dogUpdated {
+          owner {
+            pet {
+              owner {
+                pet {
+                  name
+                }
+              }
+            }
+          }
+        }
+      }`
+    }
+  }))
+
+  const errorMessage = await waitForMessageType('error')
+
+  t.assert.strictEqual(errorMessage.id, '1')
+  t.assert.match(errorMessage.payload[0].message, /Graphql validation error/)
 })
