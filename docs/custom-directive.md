@@ -130,7 +130,9 @@ We have a runnable example on "example/custom-directive.js"
 
 ## Federation and Custom Directives
 
-Because schemas involved in GraphQL federation may use special syntax (e.g. `extends`) and custom directives (e.g. `@key`) that are not available in non-federated schemas, there are some extra steps that need to be run to generate the executable schema, involving the use of `buildFederationSchema` from the `@mercuriusjs/federation` library and `printSchemaWithDirectives` from the `@graphql-tools/utils` library.
+Because schemas involved in GraphQL federation may use special syntax (e.g. `extends`) and custom directives (e.g. `@key`) that are not available in non-federated schemas, there are some extra steps that need to be run to generate the executable schema using the `@mercuriusjs/federation` library.
+
+When mercurius applies `schemaTransforms`, the internal `mapSchema` recreates every `GraphQLObjectType`. Since `resolveReference` is a non-standard runtime property set by federation, it gets lost in this process. The `@mercuriusjs/federation` library provides the `federationSchemaTransformer` utility to preserve `resolveReference` functions during schema transformations.
 
 To see how this works, we will go through another example where we create a custom directive to uppercase the value of a field in a federated environment.
 
@@ -147,7 +149,7 @@ const schema = `
   }
 
   type User @key(fields: "id") {
-    id: ID! 
+    id: ID!
     name: String @upper
     username: String
   }`;
@@ -159,62 +161,70 @@ The transformer follows the same approach used in the previous example. We decla
 
 ```js
 const { mapSchema, getDirective, MapperKind } = require("@graphql-tools/utils");
+const { defaultFieldResolver } = require("graphql");
 
-const uppercaseTransformer = schema =>
-  mapSchema(schema, {
-    [MapperKind.FIELD]: fieldConfig => {
+function upperDirectiveTransformer(schema) {
+  return mapSchema(schema, {
+    [MapperKind.FIELD]: (fieldConfig) => {
       const upperDirective = getDirective(schema, fieldConfig, "upper")?.[0];
       if (upperDirective) {
-        fieldConfig.resolve = async (obj, _args, _ctx, info) => {
-          const value = obj[info.fieldName];
-          return typeof value === "string" ? value.toUpperCase() : value;
+        const { resolve = defaultFieldResolver } = fieldConfig;
+        fieldConfig.resolve = async function (obj, args, ctx, info) {
+          const result = await resolve(obj, args, ctx, info);
+          return typeof result === "string" ? result.toUpperCase() : result;
         };
+        return fieldConfig;
       }
     },
   });
+}
 ```
 
-### Generate executable schema
+### Register the schema
 
-This section starts to be different. First, we need to create the federation schema using the `buildFederationSchema` function from the `@mercuriusjs/federation` library; then, we can use the `makeExecutableSchema` function from the `@graphql-tools/schema` library to create the executable schema.
-Using the `printSchemaWithDirectives`, we can get the schema with all the custom directives applied, and using the `mergeResolvers` function from the `@graphql-tools/merge` library, we can merge the resolvers from the federation schema and the ones we defined.
+There are two ways to use custom directives with federation.
 
-Following these steps, we can create our executable schema.
+#### Option 1: Using mercuriusFederationPlugin (recommended)
+
+The simplest approach is to use `mercuriusFederationPlugin` from `@mercuriusjs/federation`. The plugin automatically wraps transformers with `federationSchemaTransformer`, so `resolveReference` functions are preserved without any extra steps.
 
 ```js
-const { buildFederationSchema } = require("@mercuriusjs/federation");
+const { mercuriusFederationPlugin } = require("@mercuriusjs/federation");
+
+app.register(mercuriusFederationPlugin, {
+  schema,
+  resolvers,
+  schemaTransforms: [upperDirectiveTransformer],
+});
+```
+
+#### Option 2: Using buildFederationSchema with mercurius
+
+If you need more control over the schema building process, you can use `buildFederationSchema` together with mercurius directly. In this case, you **must** wrap your transformers with `federationSchemaTransformer` to preserve `resolveReference` functions.
+
+```js
+const mercurius = require("mercurius");
 const {
-  printSchemaWithDirectives,
-  getResolversFromSchema,
-} = require("@graphql-tools/utils");
-const { mergeResolvers } = require("@graphql-tools/merge");
-const { makeExecutableSchema } = require("@graphql-tools/schema");
+  buildFederationSchema,
+  federationSchemaTransformer,
+} = require("@mercuriusjs/federation");
 
-const federationSchema = buildFederationSchema(schema);
-
-const executableSchema = makeExecutableSchema({
-  typeDefs: printSchemaWithDirectives(federationSchema),
-  resolvers: mergeResolvers([
-    getResolversFromSchema(federationSchema),
-    resolvers,
-  ]),
-});
-```
-
-### Apply transformations to the executable schema
-
-To apply the transformation, we have to use the mercurius plugin and pass the options:
-
-- **schema**: with the executableSchema already generated
-- **schemaTransforms**: with the transformer functions
-
-```js
 app.register(mercurius, {
-  schema: executableSchema,
-  schemaTransforms: [uppercaseTransformer],
-  graphiql: true,
+  schema: buildFederationSchema(schema),
+  resolvers,
+  schemaTransforms: federationSchemaTransformer([upperDirectiveTransformer]),
 });
 ```
+
+> **Warning:** Without `federationSchemaTransformer`, `resolveReference` is lost during schema transformation and `_entities` queries will return `null` for entity fields:
+> ```js
+> // ⚠️ This will NOT work correctly — resolveReference is lost!
+> app.register(mercurius, {
+>   schema: buildFederationSchema(schema),
+>   resolvers,
+>   schemaTransforms: [upperDirectiveTransformer],
+> });
+> ```
 
 ### Example
 
