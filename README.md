@@ -41,6 +41,7 @@ Features:
 - [Related Plugins](docs/plugins.md)
 - [Security - CSRF Prevention](docs/security/csrf-prevention.md)
 - [Faq](/docs/faq.md)
+- [Contributing](#contributing)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
@@ -93,6 +94,14 @@ app.listen({ port: 3000 })
 
 Check [GitHub repo](https://github.com/mercurius-js/mercurius/tree/master/examples) for more examples.
 
+## Contributing
+
+Mercurius is an **OPEN Open Source Project**. This means that:
+
+> Individuals making significant and valuable contributions are given commit-access to the project to contribute as they see fit. This project is more like an open wiki than a standard guarded open source project.
+
+See the [CONTRIBUTING.md](https://github.com/mercurius-js/mercurius/blob/master/CONTRIBUTING.md) file for more details.
+
 ## Acknowledgements
 
 The project is kindly sponsored by:
@@ -101,8 +110,8 @@ The project is kindly sponsored by:
 - [Platformatic](https://platformatic.dev)
 
 The Mercurius name was gracefully donated by [Marco Castelluccio](https://github.com/marco-c).
-The usage of that library was described in https://hacks.mozilla.org/2015/12/web-push-notifications-from-irssi/, and
-you can find that codebase in https://github.com/marco-c/mercurius.
+The usage of that library was described in <https://hacks.mozilla.org/2015/12/web-push-notifications-from-irssi/>, and
+you can find that codebase in <https://github.com/marco-c/mercurius>.
 
 ## License
 
