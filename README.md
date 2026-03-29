@@ -110,8 +110,8 @@ The project is kindly sponsored by:
 - [Platformatic](https://platformatic.dev)
 
 The Mercurius name was gracefully donated by [Marco Castelluccio](https://github.com/marco-c).
-The usage of that library was described in <https://hacks.mozilla.org/2015/12/web-push-notifications-from-irssi/>, and
-you can find that codebase in <https://github.com/marco-c/mercurius>.
+The usage of that library was described in https://hacks.mozilla.org/2015/12/web-push-notifications-from-irssi/, and
+you can find that codebase in https://github.com/marco-c/mercurius.
 
 ## License
 
