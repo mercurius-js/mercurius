@@ -313,11 +313,11 @@ const mercurius = fp(async function (app, opts) {
     })
     : null
 
-  app.addHook('onClose', async function () {
-    if (adaptiveJit) {
+  if (adaptiveJit) {
+    app.addHook('onClose', async function () {
       adaptiveJit.clear()
-    }
-  })
+    })
+  }
 
   fastifyGraphQl.replaceSchema = function (s) {
     if (!s || typeof s !== 'object') {
