@@ -438,6 +438,31 @@ declare namespace mercurius {
     validateOptions?: GrapQLValidateOptions
   }
 
+  export interface MercuriusAdaptiveJitOptions {
+    /**
+     * Minimum hit count before a cached query becomes a background compilation candidate.
+     * @default 3
+     */
+    minCount?: number;
+    /**
+     * Compile only when event loop utilization is below this threshold.
+     * Must be between 0 and 1.
+     * @default 0.8
+     */
+    eluThreshold?: number;
+    /**
+     * Maximum number of queries to compile in a single tick.
+     * @default 1
+     */
+    maxCompilePerTick?: number;
+    /**
+     * Maximum number of queued compilation candidates.
+     * Least-popular entries are dropped first.
+     * @default 100
+     */
+    maxQueueSize?: number;
+  }
+
   export interface MercuriusCommonOptions {
     /**
      * Serve GraphiQL on /graphiql if true or 'graphiql' and if routes is true
@@ -445,10 +470,14 @@ declare namespace mercurius {
     graphiql?: boolean | 'graphiql' | MercuriusGraphiQLOptions;
     ide?: boolean | 'graphiql' | MercuriusGraphiQLOptions;
     /**
-     * The minimum number of execution a query needs to be executed before being jit'ed.
+     * Configure GraphQL JIT compilation.
+     *
+     * - `number`: compile synchronously after the query has been seen N times.
+     * - `object`: enqueue compilation in the background once `minCount` is reached.
+     *
      * @default 0 - disabled
      */
-    jit?: number;
+    jit?: number | MercuriusAdaptiveJitOptions;
     /**
      * A graphql endpoint is exposed at /graphql when true
      * @default true
