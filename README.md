@@ -41,6 +41,7 @@ Features:
 - [Related Plugins](docs/plugins.md)
 - [Security - CSRF Prevention](docs/security/csrf-prevention.md)
 - [Faq](/docs/faq.md)
+- [Contributing](#contributing)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
@@ -92,6 +93,14 @@ app.listen({ port: 3000 })
 ## Examples
 
 Check [GitHub repo](https://github.com/mercurius-js/mercurius/tree/master/examples) for more examples.
+
+## Contributing
+
+Mercurius is an **OPEN Open Source Project**. This means that:
+
+> Individuals making significant and valuable contributions are given commit-access to the project to contribute as they see fit. This project is more like an open wiki than a standard guarded open source project.
+
+See the [CONTRIBUTING.md](https://github.com/mercurius-js/mercurius/blob/master/CONTRIBUTING.md) file for more details.
 
 ## Acknowledgements
 
