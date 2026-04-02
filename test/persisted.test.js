@@ -497,6 +497,57 @@ test('avoid persisting query if hashes mismatch', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'provided sha does not match query' }] })
 })
 
+test('does not execute retried mutation if hashes mismatch', async (t) => {
+  const app = Fastify()
+  let mutationExecutions = 0
+
+  const schema = `
+      type Query {
+        noop: Int
+      }
+
+      type Mutation {
+        incrementCounter: Int
+      }
+    `
+
+  const resolvers = {
+    Query: {
+      noop: async () => 0
+    },
+    Mutation: {
+      incrementCounter: async () => ++mutationExecutions
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'IncrementCounter',
+      query: `
+        mutation IncrementCounter {
+          incrementCounter
+        }`,
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: 'foobar'
+        }
+      }
+    }
+  })
+
+  t.assert.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'provided sha does not match query' }] })
+  t.assert.equal(mutationExecutions, 0)
+})
+
 // persistedQueryProvider
 
 test('GET route with query, variables & persisted', async (t) => {
