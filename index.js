@@ -25,6 +25,7 @@ const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
+const createAdaptiveJit = require('./lib/adaptive-jit')
 const stringify = require('safe-stable-stringify')
 const {
   ErrorWithProps,
@@ -69,6 +70,54 @@ async function buildCache (opts) {
   return new QuickLRU({ maxSize: 1024 })
 }
 
+function parseJitOptions (jit) {
+  if (typeof jit === 'undefined') {
+    return {
+      minJit: 0,
+      adaptiveJitOptions: null
+    }
+  }
+
+  if (typeof jit === 'number') {
+    return {
+      minJit: jit,
+      adaptiveJitOptions: null
+    }
+  }
+
+  if (!jit || typeof jit !== 'object' || Array.isArray(jit)) {
+    throw new MER_ERR_INVALID_OPTS('the jit option must be a number')
+  }
+
+  const adaptiveJitOptions = {
+    minCount: jit.minCount ?? 3,
+    eluThreshold: jit.eluThreshold ?? 0.8,
+    maxCompilePerTick: jit.maxCompilePerTick ?? 1,
+    maxQueueSize: jit.maxQueueSize ?? 100
+  }
+
+  if (!Number.isInteger(adaptiveJitOptions.minCount) || adaptiveJitOptions.minCount < 0) {
+    throw new MER_ERR_INVALID_OPTS('jit.minCount must be a non-negative integer')
+  }
+
+  if (typeof adaptiveJitOptions.eluThreshold !== 'number' || Number.isNaN(adaptiveJitOptions.eluThreshold) || adaptiveJitOptions.eluThreshold < 0 || adaptiveJitOptions.eluThreshold > 1) {
+    throw new MER_ERR_INVALID_OPTS('jit.eluThreshold must be a number between 0 and 1')
+  }
+
+  if (!Number.isInteger(adaptiveJitOptions.maxCompilePerTick) || adaptiveJitOptions.maxCompilePerTick <= 0) {
+    throw new MER_ERR_INVALID_OPTS('jit.maxCompilePerTick must be a positive integer')
+  }
+
+  if (!Number.isInteger(adaptiveJitOptions.maxQueueSize) || adaptiveJitOptions.maxQueueSize <= 0) {
+    throw new MER_ERR_INVALID_OPTS('jit.maxQueueSize must be a positive integer')
+  }
+
+  return {
+    minJit: 0,
+    adaptiveJitOptions
+  }
+}
+
 const mercurius = fp(async function (app, opts) {
   const lru = await buildCache(opts)
   const lruErrors = await buildCache(opts)
@@ -77,7 +126,7 @@ const mercurius = fp(async function (app, opts) {
     throw new MER_ERR_INVALID_OPTS('Using a function for the validationRules is incompatible with query caching')
   }
 
-  const minJit = opts.jit || 0
+  const { minJit, adaptiveJitOptions } = parseJitOptions(opts.jit)
   const queryDepthLimit = opts.queryDepth
   const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
 
@@ -116,10 +165,6 @@ const mercurius = fp(async function (app, opts) {
         throw new MER_ERR_INVALID_OPTS('persistedQueryProvider: saveQuery is required when getHashForQuery is provided')
       }
     }
-  }
-
-  if (typeof minJit !== 'number') {
-    throw new MER_ERR_INVALID_OPTS('the jit option must be a number')
   }
 
   const root = {}
@@ -259,6 +304,21 @@ const mercurius = fp(async function (app, opts) {
 
   app.decorate('graphql', fastifyGraphQl)
 
+  const adaptiveJit = adaptiveJitOptions !== null
+    ? createAdaptiveJit({
+      getSchema: () => fastifyGraphQl.schema,
+      compileQuery,
+      compilerOptions: opts.compilerOptions,
+      ...adaptiveJitOptions
+    })
+    : null
+
+  if (adaptiveJit) {
+    app.addHook('onClose', async function () {
+      adaptiveJit.clear()
+    })
+  }
+
   fastifyGraphQl.replaceSchema = function (s) {
     if (!s || typeof s !== 'object') {
       throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
@@ -271,6 +331,9 @@ const mercurius = fp(async function (app, opts) {
     }
     if (lruErrors) {
       lruErrors.clear()
+    }
+    if (adaptiveJit) {
+      adaptiveJit.clear()
     }
   }
 
@@ -529,7 +592,11 @@ const mercurius = fp(async function (app, opts) {
       }
     }
 
-    const shouldCompileJit = cached && cached.count++ === minJit
+    if (cached && adaptiveJit) {
+      cached.count++
+    }
+
+    const shouldCompileJit = !adaptiveJit && cached && cached.count++ === minJit
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
       const executionContext = buildExecutionContext({
@@ -569,6 +636,10 @@ const mercurius = fp(async function (app, opts) {
         // the counter must decrease to ignore the query
         cached && cached.count--
       }
+    }
+
+    if (adaptiveJit && !modifiedSchema && !modifiedDocument) {
+      adaptiveJit.maybeEnqueue(cached, document, operationName)
     }
 
     if (cached && cached.jit !== null && !modifiedSchema && !modifiedDocument && isCompiledQuery(cached.jit)) {

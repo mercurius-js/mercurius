@@ -84,6 +84,36 @@ test('call compileQuery with correct options if compilerOptions specified', asyn
   sinon.assert.calledOnceWithExactly(compileQueryStub, sinon.match.any, sinon.match.any, sinon.match.any, { customJSONSerializer: true })
 })
 
+test('adaptive jit validates minCount', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    jit: {
+      minCount: '1'
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: jit.minCount must be a non-negative integer'
+  })
+})
+
+test('adaptive jit validates eluThreshold', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    jit: {
+      eluThreshold: 2
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: jit.eluThreshold must be a number between 0 and 1'
+  })
+})
+
 test('invalid wsDefaultSubprotocol', async t => {
   const app = Fastify()
   t.after(() => app.close())

@@ -53,8 +53,13 @@
 
   **Note**: If `routes` is false, this option does not have effects.
 
-- `jit`: Integer. The minimum number of execution a query needs to be
-  executed before being jit'ed.
+- `jit`: Integer | Object. Configure GraphQL JIT compilation.
+  - `number`: The minimum number of executions a query needs before being jit'ed synchronously on the triggering request.
+  - `object`: Enable adaptive background compilation. Supported keys:
+    - `minCount`: Minimum hit count before a cached query is queued for background compilation. Default: `3`.
+    - `eluThreshold`: Compile only when Node.js event loop utilization is below this threshold (`0`-`1`). Default: `0.8`.
+    - `maxCompilePerTick`: Maximum number of queued queries to compile in one tick. Default: `1`.
+    - `maxQueueSize`: Maximum queued compilation candidates. Least-popular entries are dropped first when full. Default: `100`.
   - Default: `0`, jit is disabled.
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.

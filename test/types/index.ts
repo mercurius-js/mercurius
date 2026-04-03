@@ -125,6 +125,17 @@ app.register(mercurius, {
 
 app.register(mercurius, {
   schema,
+  resolvers,
+  jit: {
+    minCount: 3,
+    eluThreshold: 0.8,
+    maxCompilePerTick: 1,
+    maxQueueSize: 100
+  }
+})
+
+app.register(mercurius, {
+  schema,
   errorFormatter: mercurius.defaultErrorFormatter,
   schemaTransforms: [(schema) => schema],
   resolvers: {
