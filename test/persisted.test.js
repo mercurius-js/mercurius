@@ -497,6 +497,59 @@ test('avoid persisting query if hashes mismatch', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'provided sha does not match query' }] })
 })
 
+test('avoid executing mutations if hashes mismatch in automatic mode', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+      type Query {
+        add(x: Int, y: Int): Int
+      }
+      type Mutation {
+        setFlag(value: Boolean): Boolean
+      }
+    `
+
+  const sideEffects = []
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y,
+    Mutation: {
+      setFlag: async (_, { value }) => {
+        sideEffects.push(value)
+        return value
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    persistedQueryProvider: GQL.persistedQueryDefaults.automatic()
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: {
+      operationName: 'SetFlagMutation',
+      variables: { value: true },
+      query: `
+        mutation SetFlagMutation ($value: Boolean!) {
+            setFlag(value: $value)
+        }`,
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: 'foobar'
+        }
+      }
+    }
+  })
+
+  t.assert.deepEqual(JSON.parse(res.body), { data: null, errors: [{ message: 'provided sha does not match query' }] })
+  t.assert.strictEqual(sideEffects.length, 0, 'Mutation should not execute when hash mismatches')
+})
+
 // persistedQueryProvider
 
 test('GET route with query, variables & persisted', async (t) => {
