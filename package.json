@@ -68,7 +68,7 @@
     "safe-stable-stringify": "^2.3.0",
     "secure-json-parse": "^4.1.0",
     "single-user-cache": "^2.0.0",
-    "tiny-lru": "^11.0.0",
+    "tiny-lru": "^13.0.0",
     "ws": "^8.2.2"
   },
   "tsd": {
