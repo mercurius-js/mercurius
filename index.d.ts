@@ -54,6 +54,43 @@ declare namespace mercurius {
     ): void;
   }
 
+  export interface SubscriptionContext {
+    /**
+     * The underlying pubsub implementation (either default PubSub or custom implementation)
+     */
+    pubsub: PubSub | CustomPubSub;
+    /**
+     * Fastify application instance
+     */
+    fastify: FastifyInstance;
+    /**
+     * Readable stream for subscription data
+     */
+    queue: Readable;
+    /**
+     * Whether the subscription context is closed
+     */
+    closed: boolean;
+    /**
+     * Subscribe to a topic or topics
+     * @param topics - A single topic or array of topics to subscribe to
+     * @param customArgs - Additional arguments passed to custom pubsub implementations
+     * @returns A readable stream that emits subscription data
+     */
+    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<Readable & AsyncIterableIterator<T>>;
+    /**
+     * Publish an event to the pubsub
+     * @param event - The event to publish with topic and payload
+     * @returns Promise that resolves when the event is published
+     */
+    publish(event: { topic: string; payload: any }): Promise<void>;
+    /**
+     * Close the subscription context and cleanup resources
+     * @returns true if closed successfully, false if already closed
+     */
+    close(): boolean;
+  }
+
   export interface MercuriusContext {
     app: FastifyInstance;
     reply: FastifyReply;
@@ -63,7 +100,7 @@ declare namespace mercurius {
     /**
      * __Caution__: Only available if `subscriptions` are enabled
      */
-    pubsub: PubSub;
+    pubsub: SubscriptionContext;
   }
 
   export interface MercuriusError<TError extends Error = Error> extends FastifyError {
@@ -544,7 +581,11 @@ declare namespace mercurius {
       | boolean
       | {
         emitter?: object;
-        pubsub?: any; // FIXME: Technically this should be the PubSub type. But PubSub is now typed as SubscriptionContext.
+        /**
+         * A custom pubsub implementation. When provided, this will be used instead of the default PubSub.
+         * The custom implementation must follow the CustomPubSub interface.
+         */
+        pubsub?: CustomPubSub;
         verifyClient?: (
           info: { origin: string; secure: boolean; req: IncomingMessage },
           next: (
