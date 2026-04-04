@@ -16,7 +16,9 @@ import mercurius, {
   MercuriusContext,
   MercuriusPlugin,
   MercuriusLoaders,
-  CustomPubSub
+  CustomPubSub,
+  SubscriptionContext,
+  PubSub
 } from '../..'
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
 import { mapSchema } from '@graphql-tools/utils'
@@ -728,3 +730,234 @@ expectError(app.register(mercurius, {
     },
   }
 }))
+
+// Issue #350: PubSub, SubscriptionContext and types
+// https://github.com/mercurius-js/mercurius/issues/350
+
+// Test that app.graphql.pubsub is typed as PubSub
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: true
+})
+
+app.graphql.pubsub.publish({
+  topic: 'topic',
+  payload: 'payload'
+})
+
+app.graphql.pubsub.subscribe('topic')
+  .then((sub) => {
+    sub.on('data', (chunk) => {
+      console.log(chunk)
+    })
+  })
+
+// Test that subscription.pubsub option accepts CustomPubSub
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
+    pubsub: new CustomPubSubImpl()
+  }
+})
+
+// Test that context.pubsub in subscription resolvers is typed as SubscriptionContext
+// and has the correct methods (subscribe, publish, close)
+app.register(mercurius, {
+  schema: `
+    type Subscription {
+      newDogs: Dog
+    }
+    type Dog {
+      name: String
+    }
+  `,
+  resolvers: {
+    Subscription: {
+      newDogs: {
+        subscribe: async (_root, _args, context) => {
+          // context.pubsub should be SubscriptionContext in subscription resolvers
+          const sub = await context.pubsub.subscribe('new_dog')
+          sub.on('data', (chunk) => {
+            console.log(chunk)
+          })
+          return sub
+        }
+      }
+    }
+  },
+  subscription: true
+})
+
+// Test that withFilter receives SubscriptionContext in subscription resolvers
+app.register(mercurius, {
+  schema: `
+    type Subscription {
+      newDogs: Dog
+    }
+    type Dog {
+      name: String
+      breed: String
+    }
+  `,
+  resolvers: {
+    Subscription: {
+      newDogs: {
+        subscribe: withFilter(
+          async (_root, _args, context) => {
+            // context.pubsub should be SubscriptionContext
+            return context.pubsub.subscribe('new_dog')
+          },
+          (payload, _args, context) => {
+            // context should have pubsub
+            context.pubsub
+            return true
+          }
+        )
+      }
+    }
+  },
+  subscription: true
+})
+
+// Test that onDisconnect hook receives MercuriusContext with SubscriptionContext pubsub
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
+    onDisconnect: (context) => {
+      // context.pubsub should be SubscriptionContext
+      context.pubsub
+    }
+  }
+})
+
+// Test that subscription context pubsub has different signature than app.graphql.pubsub
+app.register(mercurius, {
+  schema: `
+    type Subscription {
+      test: String
+    }
+  `,
+  resolvers: {
+    Subscription: {
+      test: {
+        subscribe: async (_root, _args, context) => {
+          // In subscription resolvers, context.pubsub should have:
+          // - subscribe(topics): Promise<Readable>
+          // - publish(event): Promise<void>
+          // - close(): boolean
+          const sub = await context.pubsub.subscribe('test')
+          return sub
+        }
+      }
+    }
+  },
+  subscription: true
+})
+
+// Test that app.graphql.pubsub has:
+// - subscribe(topics): Promise<Readable & AsyncIterableIterator>
+// - publish(event, callback?): void
+app.graphql.pubsub.publish({
+  topic: 'test',
+  payload: 'test'
+})
+app.graphql.pubsub.publish({
+  topic: 'test',
+  payload: 'test'
+}, () => {
+  console.log('published')
+})
+
+// Issue #350: context.pubsub in subscription resolvers has a nested pubsub property
+// that contains the actual pubsub implementation
+app.register(mercurius, {
+  schema: `
+    type Subscription {
+      test: String
+    }
+  `,
+  resolvers: {
+    Subscription: {
+      test: {
+        subscribe: async (_root, _args, context) => {
+          // context.pubsub is SubscriptionContext
+          // context.pubsub.pubsub is the underlying PubSub or CustomPubSub
+          context.pubsub.pubsub
+          context.pubsub.fastify
+          context.pubsub.queue
+          context.pubsub.close()
+          return await context.pubsub.subscribe('test')
+        }
+      }
+    }
+  },
+  subscription: true
+})
+
+// Test that SubscriptionContext can be imported and used
+function testSubscriptionContextType (_ctx: SubscriptionContext) {
+  _ctx.pubsub
+  _ctx.fastify
+  _ctx.queue
+  _ctx.closed
+  _ctx.subscribe('test')
+  _ctx.publish({ topic: 'test', payload: 'test' })
+  _ctx.close()
+}
+
+testSubscriptionContextType({} as SubscriptionContext)
+
+// Test the full scenario from issue #350:
+// When using a custom pubsub implementation:
+// - app.graphql.pubsub is the custom pubsub (CustomPubSub)
+// - context.pubsub in subscription resolvers is SubscriptionContext
+// - context.pubsub.pubsub is the custom pubsub (CustomPubSub)
+
+class MyCustomPubSub implements CustomPubSub {
+  emitter: EventEmitter
+  constructor () {
+    this.emitter = new EventEmitter()
+  }
+
+  async subscribe (topic: string | string[], queue: Readable & { close: () => void }): Promise<void> {
+    // custom implementation
+  }
+
+  publish (event: { topic: string, payload: any }, callback: () => void): void {
+    // custom implementation
+  }
+}
+
+const customPubSub = new MyCustomPubSub()
+
+app.register(mercurius, {
+  schema: `
+    type Subscription {
+      test: String
+    }
+  `,
+  resolvers: {
+    Subscription: {
+      test: {
+        subscribe: async (_root, _args, context) => {
+          // context.pubsub is SubscriptionContext
+          expectType<SubscriptionContext>(context.pubsub)
+
+          // context.pubsub.pubsub is the custom pubsub
+          expectType<PubSub | CustomPubSub>(context.pubsub.pubsub)
+
+          return await context.pubsub.subscribe('test')
+        }
+      }
+    }
+  },
+  subscription: {
+    pubsub: customPubSub
+  }
+})
+
+// app.graphql.pubsub should be the custom pubsub
+app.graphql.pubsub.publish({ topic: 'test', payload: 'test' })
