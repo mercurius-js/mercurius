@@ -18,7 +18,7 @@ There are a few basic ground-rules for contributors:
 4. All pull-requests for new features **must** target the `main` branch. PRs to fix bugs in LTS releases are also allowed.
 5. Contributors should attempt to adhere to the prevailing code-style.
 6. 100% code coverage
-7. Pure-AI contributions with no human in the loop are not welcome.
+7. Pure-AI contributions with no human in the loop are not welcome. Pull requests ***MUST*** be opened by a human. Pull requests opened by bots not managed by the Mercurius organization will result in the bot being banned from the organization.
 
 ## Releases
 
