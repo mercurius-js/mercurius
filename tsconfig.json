@@ -7,7 +7,5 @@
     "esModuleInterop": true
   },
   "exclude": ["node_modules"],
-  "files": [
-    "./test/types/index.ts"
-  ]
+  "files": ["test/types/index.tst.ts"]
 }

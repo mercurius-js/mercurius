@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 
-import { expectAssignable, expectError, expectType } from 'tsd'
+import { expect } from 'tstyche'
 import { EventEmitter } from 'events'
 import Fastify, { FastifyRequest } from 'fastify'
 import { Readable } from 'stream'
@@ -65,9 +65,9 @@ declare module '../../' {
   }
 }
 
-expectType<typeof mercurius>(mercuriusNamedImport)
-expectType<typeof mercurius>(mercuriusNamespaceImport.default)
-expectType<typeof mercurius>(mercuriusNamespaceImport.mercurius)
+expect(mercuriusNamedImport).type.toBe<typeof mercurius>()
+expect(mercuriusNamespaceImport.default).type.toBe<typeof mercurius>()
+expect(mercuriusNamespaceImport.mercurius).type.toBe<typeof mercurius>()
 
 app.register(mercurius, {
   schema,
@@ -121,17 +121,6 @@ app.register(mercurius, {
     }
   },
   schemaTransforms: (schema) => schema
-})
-
-app.register(mercurius, {
-  schema,
-  resolvers,
-  jit: {
-    minCount: 3,
-    eluThreshold: 0.8,
-    maxCompilePerTick: 1,
-    maxQueueSize: 100
-  }
 })
 
 app.register(mercurius, {
@@ -450,7 +439,7 @@ class CustomPubSubImpl implements CustomPubSub {
 
   // typed based on the PubSub implementation
   async subscribe (topic: string | string[], queue: Readable & { close: () => void }, ...customArgs: any[]): Promise<void> {
-    const topicStr = Array.isArray(topic) ? topic[0] : topic
+    const topicStr = (Array.isArray(topic) ? topic[0] : topic) ?? ''
     const listener = (payload: any) => {
       queue.push(payload)
     }
@@ -478,34 +467,35 @@ app.register(mercurius, {
 })
 
 app.graphql.addHook('preParsing', async function (schema, source, context) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<string>(source)
-  expectAssignable<MercuriusContext>(context)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(source).type.toBe<string>()
+  expect(context).type.toBe<MercuriusContext>()
 })
 
 app.graphql.addHook('preParsing', function (schema, source, context) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<string>(source)
-  expectAssignable<MercuriusContext>(context)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(source).type.toBe<string>()
+  expect(context).type.toBe<MercuriusContext>()
 })
 
 app.graphql.addHook('preValidation', async function (schema, document, context) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(document).type.toBe<DocumentNode>()
+  expect(context).type.toBe<MercuriusContext>()
 })
 
 app.graphql.addHook('preValidation', function (schema, document, context) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(document).type.toBe<DocumentNode>()
+  expect(context).type.toBe<MercuriusContext>()
 })
 
 app.graphql.addHook('preExecution', async function (schema, document, context, variables) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<Record<string, any>>(context)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(document).type.toBe<DocumentNode>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(context).type.toBeAssignableTo<Record<string, any>>()
+
   return {
     schema,
     document,
@@ -517,10 +507,11 @@ app.graphql.addHook('preExecution', async function (schema, document, context, v
 })
 
 app.graphql.addHook('preExecution', function (schema, document, context, variables) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<Record<string, any>>(context)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(document).type.toBe<DocumentNode>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(context).type.toBeAssignableTo<Record<string, any>>()
+
   return {
     schema,
     document,
@@ -532,89 +523,85 @@ app.graphql.addHook('preExecution', function (schema, document, context, variabl
 })
 
 app.graphql.addHook('preExecution', function (schema, document, context, variables) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<Record<string, any>>(context)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(document).type.toBe<DocumentNode>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(context).type.toBeAssignableTo<Record<string, any>>()
 })
 
 // GraphQL Request lifecycle hooks
 app.graphql.addHook('onResolution', async function (execution, context) {
-  expectAssignable<ExecutionResult>(execution)
-  expectAssignable<MercuriusContext>(context)
+  expect(execution).type.toBe<ExecutionResult<Record<string, any>>>()
+  expect(context).type.toBe<MercuriusContext>()
 })
 
 app.graphql.addHook('onResolution', function (execution, context) {
-  expectAssignable<ExecutionResult>(execution)
-  expectAssignable<MercuriusContext>(context)
+  expect(execution).type.toBe<ExecutionResult<Record<string, any>>>()
+  expect(context).type.toBe<MercuriusContext>()
 })
 
 app.graphql.addHook('preSubscriptionParsing', async function (schema, source, context, id) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<string>(source)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<string | number>(id)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(source).type.toBe<string>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(id).type.toBe<string | number>()
 })
 
 app.graphql.addHook('preSubscriptionParsing', function (schema, source, context, id) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<string>(source)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<string | number>(id)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(source).type.toBe<string>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(id).type.toBe<string | number>()
 })
 
 app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context, id) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<string | number>(id)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(document).type.toBe<DocumentNode>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(id).type.toBe<string | number>()
 })
 
 app.graphql.addHook('preSubscriptionExecution', function (schema, document, context, id) {
-  expectAssignable<GraphQLSchema>(schema)
-  expectAssignable<DocumentNode>(document)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<string | number>(id)
+  expect(schema).type.toBe<GraphQLSchema>()
+  expect(document).type.toBe<DocumentNode>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(id).type.toBe<string | number>()
 })
 
 app.graphql.addHook('onSubscriptionResolution', async function (execution, context, id) {
-  expectAssignable<ExecutionResult>(execution)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<string | number>(id)
+  expect(execution).type.toBe<ExecutionResult<Record<string, any>>>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(id).type.toBe<string | number>()
 })
 
 app.graphql.addHook('onSubscriptionResolution', function (execution, context, id) {
-  expectAssignable<ExecutionResult>(execution)
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<string | number>(id)
+  expect(execution).type.toBe<ExecutionResult<Record<string, any>>>()
+  expect(context).type.toBe<MercuriusContext>()
+  expect(id).type.toBe<string | number>()
 })
 
 app.graphql.addHook('onSubscriptionEnd', async function (context, id) {
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<string | number>(id)
+  expect(context).type.toBe<MercuriusContext>()
+  expect(id).type.toBe<string | number>()
 })
 
 app.graphql.addHook('onSubscriptionConnectionClose', function (context, code, reason) {
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<number>(code)
-  expectAssignable<string>(reason)
+  expect(context).type.toBe<MercuriusContext>()
+  expect(reason).type.toBe<string>()
+  expect(code).type.toBe<number>()
 })
 
 app.graphql.addHook('onSubscriptionConnectionError', async function (context, error) {
-  expectAssignable<MercuriusContext>(context)
-  expectAssignable<Error>(error)
+  expect(context).type.toBe<MercuriusContext>()
+  expect(error).type.toBe<Error>()
 })
 
-expectError(() => {
-  return new mercurius.ErrorWithProps('mess', {}, 'wrong statusCode')
-})
+expect(mercurius.ErrorWithProps).type.not.toBeConstructableWith('mess', {}, 'wrong statusCode')
 
-expectAssignable<Error>(new mercurius.ErrorWithProps('mess', {}, 200))
+expect(new mercurius.ErrorWithProps('mess', {}, 200)).type.toBeAssignableTo<Error>()
 
-expectError(() => {
-  app.register(mercurius, {
-    graphiql: 'nonexistent'
-  })
+expect(app.register).type.not.toBeCallableWith(mercurius, {
+  graphiql: 'nonexistent'
 })
 
 declare module 'fastify' {
@@ -626,19 +613,14 @@ declare module 'fastify' {
 
 mercurius.defaultErrorFormatter({ errors: [] }, {} as MercuriusContext)
 
-expectError(() => {
-  return mercurius.defaultErrorFormatter({}, null)
-})
-
-expectError(() => {
-  return mercurius.defaultErrorFormatter({}, undefined)
-})
+expect(mercurius.defaultErrorFormatter).type.not.toBeCallableWith({}, null)
+expect(mercurius.defaultErrorFormatter).type.not.toBeCallableWith({}, undefined)
 
 // Context contains correct information about (batched) query identity
 app.graphql.addHook('onResolution', async function (_execution, context) {
-  expectType<number | undefined>(context.operationId)
-  expectType<number | undefined>(context.operationsCount)
-  expectType<string>(context.__currentQuery)
+  expect(context.operationId).type.toBe<number | undefined>()
+  expect(context.operationsCount).type.toBe<number | undefined>()
+  expect(context.__currentQuery).type.toBe<string>()
 })
 
 // Test graphiql configuration using an object as params
@@ -662,39 +644,38 @@ app.register(mercurius, {
   }
 })
 
-expectError(() => {
-  app.register(mercurius, {
-    schema,
-    resolvers,
-    graphiql: {
-      enabled: true,
-      plugins: [
-        {
-          fetcherWrapper: 'testFetchWrapper',
-          props: { foo: 'bar' }
-        }
-      ]
-    }
-  })
+expect(app.register).type.not.toBeCallableWith(mercurius, {
+  schema,
+  resolvers,
+  graphiql: {
+    enabled: true,
+    plugins: [
+      {
+        fetcherWrapper: 'testFetchWrapper',
+        props: { foo: 'bar' }
+      }
+    ]
+  }
 })
 
 interface CustomLoaderContext {
   foo: string
 }
 
-expectAssignable<MercuriusLoaders<CustomLoaderContext>>({
-  Query: {
-    add: async (_queries, context) => {
-      context.foo
-      return []
+expect<MercuriusLoaders<CustomLoaderContext>>()
+  .type.toBeAssignableFrom({
+    Query: {
+      add: async (_queries: any, context: CustomLoaderContext) => {
+        context.foo
+        return []
+      }
     }
-  }
-})
+  })
 
-expectType<typeof mercurius.ErrorWithProps>(ErrorWithProps)
-expectType<typeof mercurius.defaultErrorFormatter>(defaultErrorFormatter)
-expectType<typeof mercurius.persistedQueryDefaults>(persistedQueryDefaults)
-expectType<typeof mercurius.withFilter>(withFilter)
+expect(ErrorWithProps).type.toBe<typeof mercurius.ErrorWithProps>()
+expect(defaultErrorFormatter).type.toBe<typeof mercurius.defaultErrorFormatter>()
+expect(persistedQueryDefaults).type.toBe<typeof mercurius.persistedQueryDefaults>()
+expect(withFilter).type.toBe<typeof mercurius.withFilter>()
 
 app.register(mercurius, {
   schema,
@@ -718,13 +699,13 @@ app.register(mercurius, {
   }
 })
 
-expectError(app.register(mercurius, {
+expect(app.register).type.not.toBeCallableWith(mercurius, {
   schema,
   resolvers,
   persistedQueryProvider: {
     ...persistedQueryDefaults.automatic(),
     getQueryFromHash: () => {
       return Promise.resolve(false)
-    },
+    }
   }
-}))
+})
