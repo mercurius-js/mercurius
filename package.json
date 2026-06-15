@@ -59,7 +59,7 @@
     "@fastify/error": "^4.0.0",
     "@fastify/static": "^9.0.0",
     "@fastify/websocket": "^11.0.0",
-    "fastify-plugin": "^5.0.0",
+    "fastify-plugin": "^6.0.0",
     "graphql-jit": "0.8.8",
     "mqemitter": "^7.0.0",
     "p-map": "^4.0.0",
