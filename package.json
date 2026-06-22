@@ -33,7 +33,7 @@
     "@matteo.collina/snap": "^1.0.0",
     "@sinonjs/fake-timers": "^15.0.0",
     "@types/isomorphic-form-data": "^2.0.0",
-    "@types/node": "^25.0.2",
+    "@types/node": "^26.0.0",
     "@types/ws": "^8.2.0",
     "autocannon": "^8.0.0",
     "borp": "^1.0.0",
