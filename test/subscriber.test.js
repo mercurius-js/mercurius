@@ -112,6 +112,79 @@ test('subscription context can handle multiple topics', async (t) => {
   setImmediate(() => { t.assert.strictEqual(q._matcher._trie.size, 0, 'All listeners not removed') })
 })
 
+test('in-flight message delivered after close does not crash the process', async t => {
+  t.plan(1)
+  // Models an emitter with asynchronous delivery (e.g. mqemitter-redis): a
+  // message already read from the network is still delivered to listeners
+  // that were matched before removeListener ran.
+  const listeners = new Map()
+  const emitter = {
+    on (topic, listener, done) {
+      listeners.set(listener, topic)
+      done()
+    },
+    removeListener (topic, listener) {
+      listeners.delete(listener)
+    },
+    emit (event, cb) {
+      const matched = [...listeners.keys()]
+      setImmediate(() => {
+        for (const listener of matched) {
+          listener(event, () => {})
+        }
+        cb()
+      })
+    }
+  }
+
+  const pubsub = new PubSub(emitter)
+  const sc = new SubscriptionContext({ pubsub })
+
+  await sc.subscribe('TOPIC')
+
+  // The message is in flight before the client goes away...
+  const delivered = new Promise(resolve => {
+    emitter.emit({ topic: 'TOPIC', payload: 1 }, resolve)
+  })
+
+  // ...and the subscription closes (queue ends) before it is delivered.
+  sc.close()
+
+  await delivered
+  t.assert.ok('in-flight message after close did not throw')
+})
+
+test('message delivered to a destroyed queue is dropped', async t => {
+  t.plan(1)
+  const pubsub = new PubSub(mq())
+  const sc = new SubscriptionContext({ pubsub })
+
+  await sc.subscribe('TOPIC')
+  sc.queue.destroy()
+
+  await sc.publish({
+    topic: 'TOPIC',
+    payload: 1
+  })
+  t.assert.ok('message to destroyed queue did not throw')
+})
+
+test('subscription queue error is logged, not fatal', t => {
+  t.plan(1)
+  const pubsub = new PubSub(mq())
+
+  const fastifyMock = {
+    log: {
+      error () {
+        t.assert.ok('error was logged')
+      }
+    }
+  }
+  const sc = new SubscriptionContext({ pubsub, fastify: fastifyMock })
+
+  sc.queue.emit('error', new Error('Dummy error'))
+})
+
 test('subscription context should not call removeListener more than one time when close called multiple times', async t => {
   const q = mq()
   const removeListener = capture(q, 'removeListener')
