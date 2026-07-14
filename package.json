@@ -51,7 +51,7 @@
     "sinon": "^22.0.0",
     "split2": "^4.0.0",
     "tstyche": "^7.0.0",
-    "typescript": "~6.0.2",
+    "typescript": "~7.0.2",
     "undici": "^7.0.0",
     "wait-on": "^9.0.1"
   },
