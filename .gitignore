@@ -80,3 +80,5 @@ pnpm-lock.yaml
 # Claude
 CLAUDE.md
 .claude/
+.pi
+AGENTS.md
