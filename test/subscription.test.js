@@ -1317,14 +1317,15 @@ test('subscription server sends correct error if execution throws', (t, done) =>
       const data = JSON.parse(chunk)
 
       if (data.id === 1 && data.type === 'error') {
+        // graphql-ws (subscriptions-transport-ws) expects a single error object, not an array
         t.assert.strictEqual(chunk, JSON.stringify({
           type: 'error',
           id: 1,
-          payload: [{
+          payload: {
             message: 'custom execution error',
             locations: [{ line: 3, column: 13 }],
             path: ['notificationAdded']
-          }]
+          }
         }))
 
         client.end()

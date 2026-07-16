@@ -943,3 +943,37 @@ test('should use default protocol when client does not specify a subprotocol', a
 
   ws.close()
 })
+
+test('sendError sends a plain object for graphql-ws protocol', async (t) => {
+  t.plan(2)
+  const messages = []
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (msg, cb) { messages.push(JSON.parse(msg)); cb() },
+    protocol: GRAPHQL_WS
+  }, {})
+
+  await sc.sendError(new Error('boom'), 1)
+
+  t.assert.strictEqual(messages.length, 1)
+  // legacy graphql-ws expects the payload to be a single error object, not an array
+  t.assert.ok(!Array.isArray(messages[0].payload), 'payload must not be an array for graphql-ws')
+})
+
+test('sendError wraps error in array for graphql-transport-ws protocol', async (t) => {
+  t.plan(2)
+  const messages = []
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (msg, cb) { messages.push(JSON.parse(msg)); cb() },
+    protocol: GRAPHQL_TRANSPORT_WS
+  }, {})
+
+  await sc.sendError(new Error('boom'), 1)
+
+  t.assert.strictEqual(messages.length, 1)
+  // graphql-transport-ws spec requires errors wrapped in an array
+  t.assert.ok(Array.isArray(messages[0].payload), 'payload must be an array for graphql-transport-ws')
+})
