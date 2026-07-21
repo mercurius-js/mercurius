@@ -977,3 +977,52 @@ test('sendError wraps error in array for graphql-transport-ws protocol', async (
   // graphql-transport-ws spec requires errors wrapped in an array
   t.assert.ok(Array.isArray(messages[0].payload), 'payload must be an array for graphql-transport-ws')
 })
+
+test('sendError uses the resolved subprotocol, not the raw socket.protocol header', async (t) => {
+  // A client that omits the subprotocol header (socket.protocol === '') is
+  // resolved to wsDefaultSubprotocol. sendError must use that resolved protocol
+  // to decide the payload shape — not the raw empty socket.protocol string.
+  const app = fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    schema: `
+      type Query { _placeholder: String }
+      type Subscription { onMessage: String! }
+    `,
+    resolvers: {
+      Query: {},
+      Subscription: {
+        onMessage: { async * subscribe () { yield { onMessage: 'hello' } } }
+      }
+    },
+    subscription: { wsDefaultSubprotocol: GRAPHQL_WS }
+  })
+
+  await app.listen({ port: 0 })
+  const port = app.server.address().port
+  const url = `ws://localhost:${port}/graphql`
+
+  async function errorPayload (subprotocol) {
+    const ws = subprotocol ? new WebSocket(url, subprotocol) : new WebSocket(url)
+    await once(ws, 'open')
+    ws.send(JSON.stringify({ type: 'connection_init' }))
+    ws.send(JSON.stringify({ type: 'not-a-real-message-type', id: 1 }))
+    for await (const [message] of on(ws, 'message')) {
+      const data = JSON.parse(message.toString())
+      if (data.type === 'error') {
+        ws.close()
+        return data.payload
+      }
+    }
+  }
+
+  const negotiated = await errorPayload(GRAPHQL_WS)
+  const defaulted = await errorPayload()
+
+  t.assert.strictEqual(
+    Array.isArray(negotiated),
+    Array.isArray(defaulted),
+    'a client that omits the subprotocol must receive the same error payload shape as one that negotiates it explicitly'
+  )
+})
