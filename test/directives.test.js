@@ -310,7 +310,7 @@ test('directives with extendSchema', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: 'Expected value of type "StringWithLengthAtMost3", but encountered error "expected length 8 to be at most 3"; found: "too-long".',
       locations: [{ line: 1, column: 35 }],
       extensions: { foo: 'bar' }
     }]
@@ -369,7 +369,7 @@ test('directives with transformSchema', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: 'Expected value of type "StringWithLengthAtMost3", but encountered error "expected length 8 to be at most 3"; found: "too-long".',
       locations: [{ line: 1, column: 35 }],
       extensions: { foo: 'bar' }
     }]
@@ -475,7 +475,7 @@ test('max length directive validation works', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: 'Expected value of type "StringWithLengthAtMost3", but encountered error "expected length 8 to be at most 3"; found: "too-long".',
       locations: [{ line: 1, column: 46 }],
       extensions: { foo: 'bar' }
     }]
@@ -536,7 +536,7 @@ test('directives with array of typeDefs in schema option', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: 'Expected value of type "StringWithLengthAtMost3", but encountered error "expected length 8 to be at most 3"; found: "too-long".',
       locations: [{ line: 1, column: 35 }],
       extensions: { foo: 'bar' }
     }]

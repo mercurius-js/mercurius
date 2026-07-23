@@ -20,7 +20,20 @@ const {
   specifiedRules,
   execute
 } = require('graphql')
-const { buildExecutionContext } = require('graphql/execution/execute')
+const { validateExecutionArgs } = require('graphql/execution/execute')
+
+// graphql@17 tags AST `loc.source` (Source) instances with a non-cloneable
+// Symbol, so `structuredClone` throws on documents built with e.g. `graphql-tag`.
+// Location info is not required for execution, so on failure we strip `loc`
+// and retry via a plain JSON clone instead of failing the whole request.
+function cloneDocument (source) {
+  try {
+    return structuredClone(source)
+  } catch (err) {
+    return JSON.parse(JSON.stringify(source, (key, value) => key === 'loc' ? undefined : value))
+  }
+}
+
 const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
@@ -523,7 +536,7 @@ const mercurius = fp(async function (app, opts) {
       try {
         document = typeof source === 'string'
           ? parse(source, gqlParseOpts)
-          : structuredClone(source)
+          : cloneDocument(source)
       } catch (syntaxError) {
         try {
           // Do not try to JSON.parse maxToken exceeded validation errors
@@ -599,7 +612,7 @@ const mercurius = fp(async function (app, opts) {
     const shouldCompileJit = !adaptiveJit && cached && cached.count++ === minJit
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
-      const executionContext = buildExecutionContext({
+      const executionContext = validateExecutionArgs({
         schema: fastifyGraphQl.schema,
         document,
         rootValue: root,
