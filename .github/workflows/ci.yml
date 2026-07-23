@@ -2,12 +2,14 @@ name: CI workflow
 on: [push, pull_request]
 jobs:
   test:
+    name: test (node ${{ matrix.node-version }}, ${{ matrix.os }}, graphql ${{ matrix.graphql-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [20, 22, 24, 26]
         os: [ubuntu-latest, windows-latest, macOS-latest]
+        graphql-version: [16, 17]
     steps:
       - uses: actions/checkout@v7
       - name: Use Node.js ${{ matrix.node-version }}
@@ -16,6 +18,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install Dependencies
         run: npm install --ignore-scripts
+      - name: Install graphql@${{ matrix.graphql-version }}
+        run: npm install graphql@${{ matrix.graphql-version }} --ignore-scripts --no-save
       - name: Test
         run: npm run test
   automerge:

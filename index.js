@@ -20,7 +20,22 @@ const {
   specifiedRules,
   execute
 } = require('graphql')
-const { buildExecutionContext } = require('graphql/execution/execute')
+// `validateExecutionArgs` (graphql@17) replaces `buildExecutionContext`
+// (graphql@16, removed in @17). Same params, same return shape (an array of
+// `GraphQLError` on invalid variables), so this is a safe drop-in swap to
+// support both major versions at once.
+const {
+  validateExecutionArgs,
+  buildExecutionContext
+} = require('graphql/execution/execute')
+const validateArgs = validateExecutionArgs || buildExecutionContext
+// graphql@17 tags AST `loc.source` (Source) instances with a Symbol that
+// `structuredClone` can't handle, so it throws on pre-parsed documents.
+// `rfdc` clones via plain property enumeration, so it skips the Symbol-keyed
+// brand. `circles` is required because the tokens referenced by `loc`
+// (`startToken`/`endToken`) form a doubly linked list.
+const cloneDocument = require('rfdc')({ circles: true })
+
 const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
@@ -523,7 +538,7 @@ const mercurius = fp(async function (app, opts) {
       try {
         document = typeof source === 'string'
           ? parse(source, gqlParseOpts)
-          : structuredClone(source)
+          : cloneDocument(source)
       } catch (syntaxError) {
         try {
           // Do not try to JSON.parse maxToken exceeded validation errors
@@ -599,7 +614,7 @@ const mercurius = fp(async function (app, opts) {
     const shouldCompileJit = !adaptiveJit && cached && cached.count++ === minJit
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
-      const executionContext = buildExecutionContext({
+      const executionContext = validateArgs({
         schema: fastifyGraphQl.schema,
         document,
         rootValue: root,
