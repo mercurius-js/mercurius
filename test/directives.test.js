@@ -3,13 +3,28 @@
 const { test } = require('node:test')
 const Fastify = require('fastify')
 const mercurius = require('..')
-const { defaultFieldResolver, GraphQLScalarType, isNonNullType, isScalarType } = require('graphql')
+const {
+  defaultFieldResolver,
+  GraphQLScalarType,
+  isNonNullType,
+  isScalarType
+} = require('graphql')
 const { makeExecutableSchema } = require('@graphql-tools/schema')
 const {
   MapperKind,
   mapSchema,
   getDirectives
 } = require('@graphql-tools/utils')
+
+// graphql-js changed the wording of the coercion error thrown by custom
+// scalars between v16 and v17 (mercurius supports both as peer deps).
+// NOTE: `require('graphql/package.json')` doesn't work on graphql@17, its
+// "exports" map no longer allows access to arbitrary subpaths - use the
+// `version` export from the package's public API instead.
+const { version: graphqlVersion } = require('graphql')
+const scalarLengthErrorMessage = graphqlVersion.startsWith('16.')
+  ? 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3'
+  : 'Expected value of type "StringWithLengthAtMost3", but encountered error "expected length 8 to be at most 3"; found: "too-long".'
 
 class ValidationError extends Error {
   constructor (message, extensions) {
@@ -26,21 +41,30 @@ class LimitedLengthType extends GraphQLScalarType {
       serialize (value) {
         const newValue = type.serialize(value)
         if (newValue.length > maxLength) {
-          throw new ValidationError(`expected length ${newValue.length} to be at most ${maxLength}`, { foo: 'bar' })
+          throw new ValidationError(
+            `expected length ${newValue.length} to be at most ${maxLength}`,
+            { foo: 'bar' }
+          )
         }
         return newValue
       },
       parseValue (value) {
         const newValue = type.parseValue(value)
         if (newValue.length > maxLength) {
-          throw new ValidationError(`expected length ${newValue.length} to be at most ${maxLength}`, { foo: 'bar' })
+          throw new ValidationError(
+            `expected length ${newValue.length} to be at most ${maxLength}`,
+            { foo: 'bar' }
+          )
         }
         return newValue
       },
       parseLiteral (ast) {
         const newValue = type.parseLiteral(ast, {})
         if (newValue.length > maxLength) {
-          throw new ValidationError(`expected length ${newValue.length} to be at most ${maxLength}`, { foo: 'bar' })
+          throw new ValidationError(
+            `expected length ${newValue.length} to be at most ${maxLength}`,
+            { foo: 'bar' }
+          )
         }
         return newValue
       }
@@ -67,16 +91,26 @@ function getLimitedLengthType (type, maxLength) {
 }
 
 function wrapType (fieldConfig, directiveArgumentMap) {
-  if (isNonNullType(fieldConfig.type) && isScalarType(fieldConfig.type.ofType)) {
-    fieldConfig.type = getLimitedLengthType(fieldConfig.type.ofType, directiveArgumentMap.max)
+  if (
+    isNonNullType(fieldConfig.type) &&
+    isScalarType(fieldConfig.type.ofType)
+  ) {
+    fieldConfig.type = getLimitedLengthType(
+      fieldConfig.type.ofType,
+      directiveArgumentMap.max
+    )
   } else if (isScalarType(fieldConfig.type)) {
-    fieldConfig.type = getLimitedLengthType(fieldConfig.type, directiveArgumentMap.max)
+    fieldConfig.type = getLimitedLengthType(
+      fieldConfig.type,
+      directiveArgumentMap.max
+    )
   } else {
     throw new Error(`Not a scalar type: ${fieldConfig.type.toString()}`)
   }
 }
 
-const lengthDirectiveTypeDefs = 'directive @length(max: Int) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION'
+const lengthDirectiveTypeDefs =
+  'directive @length(max: Int) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION'
 function lengthDirectiveTransformer (schema) {
   return mapSchema(schema, {
     [MapperKind.FIELD]: (fieldConfig) => {
@@ -152,12 +186,18 @@ test('custom directives should work', async (t) => {
   await app.ready()
 
   let query = 'query { foo }'
-  let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
+  let res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
   t.assert.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.assert.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.assert.deepEqual(JSON.parse(res.body), {
+    data: { user: { id: '1', name: 'NAME' } }
+  })
 })
 
 test('custom directives should work with single transform function', async (t) => {
@@ -199,12 +239,18 @@ test('custom directives should work with single transform function', async (t) =
   await app.ready()
 
   let query = 'query { foo }'
-  let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
+  let res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
   t.assert.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.assert.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.assert.deepEqual(JSON.parse(res.body), {
+    data: { user: { id: '1', name: 'NAME' } }
+  })
 })
 
 test('custom directives should work with executable schema', async (t) => {
@@ -250,12 +296,18 @@ test('custom directives should work with executable schema', async (t) => {
   await app.ready()
 
   let query = 'query { foo }'
-  let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
+  let res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
   t.assert.deepEqual(JSON.parse(res.body), { data: { foo: 'BAR' } })
 
   query = 'query { user { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.assert.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'NAME' } } })
+  t.assert.deepEqual(JSON.parse(res.body), {
+    data: { user: { id: '1', name: 'NAME' } }
+  })
 })
 
 test('directives with extendSchema', async (t) => {
@@ -309,11 +361,13 @@ test('directives with extendSchema', async (t) => {
   t.assert.strictEqual(res.statusCode, 400)
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
-    errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
-      locations: [{ line: 1, column: 35 }],
-      extensions: { foo: 'bar' }
-    }]
+    errors: [
+      {
+        message: scalarLengthErrorMessage,
+        locations: [{ line: 1, column: 35 }],
+        extensions: { foo: 'bar' }
+      }
+    ]
   })
 })
 
@@ -368,11 +422,13 @@ test('directives with transformSchema', async (t) => {
   t.assert.strictEqual(res.statusCode, 400)
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
-    errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
-      locations: [{ line: 1, column: 35 }],
-      extensions: { foo: 'bar' }
-    }]
+    errors: [
+      {
+        message: scalarLengthErrorMessage,
+        locations: [{ line: 1, column: 35 }],
+        extensions: { foo: 'bar' }
+      }
+    ]
   })
 })
 
@@ -408,7 +464,7 @@ test('max length directive validation works', async (t) => {
   const resolvers = {
     Query: {
       foo: (root, { value }) => value,
-      user: (root, { id }) => users.find(user => user.id === id)
+      user: (root, { id }) => users.find((user) => user.id === id)
     },
     Mutation: {
       createUser: (root, args) => {
@@ -420,7 +476,10 @@ test('max length directive validation works', async (t) => {
 
   const loaders = {
     User: {
-      name: async (queries) => queries.map((query) => users.find(user => user.id === query.obj.id).name)
+      name: async (queries) =>
+        queries.map(
+          (query) => users.find((user) => user.id === query.obj.id).name
+        )
     }
   }
 
@@ -434,51 +493,66 @@ test('max length directive validation works', async (t) => {
   await app.ready()
 
   let query = 'query { foo(value: "bar") }'
-  let res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
+  let res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query }
+  })
   t.assert.deepEqual(JSON.parse(res.body), { data: { foo: 'bar' } })
 
   query = 'query { foo(value: "bar-too-long") }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
   t.assert.deepEqual(JSON.parse(res.body), {
     data: { foo: null },
-    errors: [{
-      message: 'expected length 12 to be at most 5',
-      locations: [{ line: 1, column: 9 }],
-      path: ['foo'],
-      extensions: { foo: 'bar' }
-    }]
+    errors: [
+      {
+        message: 'expected length 12 to be at most 5',
+        locations: [{ line: 1, column: 9 }],
+        path: ['foo'],
+        extensions: { foo: 'bar' }
+      }
+    ]
   })
 
   query = 'query { user(id: "1") { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.assert.deepEqual(JSON.parse(res.body), { data: { user: { id: '1', name: 'foo' } } })
+  t.assert.deepEqual(JSON.parse(res.body), {
+    data: { user: { id: '1', name: 'foo' } }
+  })
 
   query = 'query { user(id: "2") { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
   t.assert.deepEqual(JSON.parse(res.body), {
     data: { user: { id: 2, name: null } },
-    errors: [{
-      message: 'expected length 8 to be at most 5',
-      locations: [{ line: 1, column: 28 }],
-      path: ['user', 'name'],
-      extensions: { foo: 'bar' }
-    }]
+    errors: [
+      {
+        message: 'expected length 8 to be at most 5',
+        locations: [{ line: 1, column: 28 }],
+        path: ['user', 'name'],
+        extensions: { foo: 'bar' }
+      }
+    ]
   })
 
   query = 'mutation { createUser(input: {id: "3", name: "bar"}) { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
-  t.assert.deepEqual(JSON.parse(res.body), { data: { createUser: { id: '3', name: 'bar' } } })
-  t.assert.ok(users.find(user => user.id === '3'))
+  t.assert.deepEqual(JSON.parse(res.body), {
+    data: { createUser: { id: '3', name: 'bar' } }
+  })
+  t.assert.ok(users.find((user) => user.id === '3'))
 
-  query = 'mutation { createUser(input: {id: "4", name: "too-long"}) { id name } }'
+  query =
+    'mutation { createUser(input: {id: "4", name: "too-long"}) { id name } }'
   res = await app.inject({ method: 'POST', url: '/graphql', body: { query } })
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
-    errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
-      locations: [{ line: 1, column: 46 }],
-      extensions: { foo: 'bar' }
-    }]
+    errors: [
+      {
+        message: scalarLengthErrorMessage,
+        locations: [{ line: 1, column: 46 }],
+        extensions: { foo: 'bar' }
+      }
+    ]
   })
   const user = users.find((user) => user.id === '4')
   t.assert.strictEqual(user, undefined)
@@ -535,15 +609,17 @@ test('directives with array of typeDefs in schema option', async (t) => {
   t.assert.strictEqual(res.statusCode, 400)
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
-    errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
-      locations: [{ line: 1, column: 35 }],
-      extensions: { foo: 'bar' }
-    }]
+    errors: [
+      {
+        message: scalarLengthErrorMessage,
+        locations: [{ line: 1, column: 35 }],
+        extensions: { foo: 'bar' }
+      }
+    ]
   })
 })
 
-test('should support truthy skip directive', async t => {
+test('should support truthy skip directive', async (t) => {
   t.plan(1)
 
   const schema = `
@@ -623,7 +699,7 @@ type User {
   })
 })
 
-test('should support falsy skip directive', async t => {
+test('should support falsy skip directive', async (t) => {
   t.plan(1)
 
   const schema = `
@@ -706,7 +782,7 @@ type User {
   })
 })
 
-test('should support truthy include directive', async t => {
+test('should support truthy include directive', async (t) => {
   t.plan(1)
 
   const schema = `
@@ -789,7 +865,7 @@ type User {
   })
 })
 
-test('should support falsy include directive', async t => {
+test('should support falsy include directive', async (t) => {
   t.plan(1)
 
   const schema = `

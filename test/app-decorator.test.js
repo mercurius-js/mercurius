@@ -510,7 +510,7 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
   try {
     await app.graphql(mutation)
   } catch (e) {
-    t.assert.equal(e instanceof GraphQLError, true)
+    t.assert.equal(e.errors[0] instanceof GraphQLError, true)
   }
 })
 
