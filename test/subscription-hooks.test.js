@@ -253,7 +253,8 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
     t.assert.deepEqual(data, {
       id: 1,
       type: 'error',
-      payload: [{ message: 'a preSubscriptionParsing error occurred' }]
+      // graphql-ws (subscriptions-transport-ws) expects a single error object, not an array
+      payload: { message: 'a preSubscriptionParsing error occurred' }
     })
   }
 })
@@ -303,7 +304,8 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
     t.assert.deepEqual(data, {
       id: 1,
       type: 'error',
-      payload: [{ message: 'a preSubscriptionExecution error occurred' }]
+      // graphql-ws (subscriptions-transport-ws) expects a single error object, not an array
+      payload: { message: 'a preSubscriptionExecution error occurred' }
     })
   }
 })
