@@ -73,11 +73,11 @@ app.register(mercurius, {
 
 This default is compatible with `apollo-client`, and requires no additional tooling to set up at the cost of some performance. In order for this mode to be effective, you must have long lived server instances (i.e _not_ cloud functions). This mode is also appropriate for public APIs where queries are not known ahead of time.
 
-When an unrecognised hash is recieved by the server instance, an error is thrown informing the client that the persisted query has not been seen before. The client then re-sends the full query string. When a full query string is recieved, the server caches the hash of the query string and returns the response. _Note that sticky sessions should be used to ensure optimal performance here by making sure the follow up request is sent to the same server instance._
+When an unrecognised hash is received by the server instance, an error is thrown informing the client that the persisted query has not been seen before. The client then re-sends the full query string. When a full query string is received, the server caches the hash of the query string and returns the response. _Note that sticky sessions should be used to ensure optimal performance here by making sure the follow up request is sent to the same server instance._
 
 The next request for that query (from the same or a different client) will already have been cached and will then be looked up accordingly.
 
-When the server initially starts, no queries will be cached and additional latency will be added to the first requests recieved (due to the client re-sending the full query). However, the most common queries will rapidly be cached by the server. After a warmup (length dependent on the number of queries clients might send and how frequent they are) performance will match that of the `prepared` query option.
+When the server initially starts, no queries will be cached and additional latency will be added to the first requests received (due to the client re-sending the full query). However, the most common queries will rapidly be cached by the server. After a warmup (length dependent on the number of queries clients might send and how frequent they are) performance will match that of the `prepared` query option.
 
 Additional documentation on Apollo's automatic persisted queries implementation can be found [here](https://www.apollographql.com/docs/apollo-server/performance/apq/).
 
