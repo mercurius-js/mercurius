@@ -1320,11 +1320,11 @@ test('subscription server sends correct error if execution throws', (t, done) =>
         t.assert.strictEqual(chunk, JSON.stringify({
           type: 'error',
           id: 1,
-          payload: [{
+          payload: {
             message: 'custom execution error',
             locations: [{ line: 3, column: 13 }],
             path: ['notificationAdded']
-          }]
+          }
         }))
 
         client.end()

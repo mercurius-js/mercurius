@@ -253,7 +253,7 @@ test('subscription - should handle preSubscriptionParsing hook errors', async t 
     t.assert.deepEqual(data, {
       id: 1,
       type: 'error',
-      payload: [{ message: 'a preSubscriptionParsing error occurred' }]
+      payload: { message: 'a preSubscriptionParsing error occurred' }
     })
   }
 })
@@ -303,7 +303,7 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
     t.assert.deepEqual(data, {
       id: 1,
       type: 'error',
-      payload: [{ message: 'a preSubscriptionExecution error occurred' }]
+      payload: { message: 'a preSubscriptionExecution error occurred' }
     })
   }
 })

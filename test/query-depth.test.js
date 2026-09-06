@@ -516,5 +516,5 @@ test('queryDepth - enforce depth limit for subscriptions over websocket', async 
   const errorMessage = await waitForMessageType('error')
 
   t.assert.strictEqual(errorMessage.id, '1')
-  t.assert.match(errorMessage.payload[0].message, /Graphql validation error/)
+  t.assert.match(errorMessage.payload.message, /Graphql validation error/)
 })

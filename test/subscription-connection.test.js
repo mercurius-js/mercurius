@@ -141,6 +141,33 @@ test('subscription connection sends error message when message is not json strin
   await sc.handleMessage('invalid json string')
 })
 
+test('subscription connection sends a single error object with the legacy graphql-ws protocol', async (t) => {
+  let sent
+
+  const sc = new SubscriptionConnection({
+    on () {},
+    close () {},
+    send (message, cb) {
+      sent = message
+      cb()
+    },
+    protocol: GRAPHQL_WS
+  }, {})
+
+  await sc.handleMessage('invalid json string')
+  // sendMessage is fire-and-forget internally; let it settle before asserting
+  await new Promise(resolve => setImmediate(resolve))
+
+  t.assert.strictEqual(
+    sent,
+    JSON.stringify({
+      type: 'error',
+      id: null,
+      payload: { message: 'Message must be a JSON string' }
+    })
+  )
+})
+
 test('subscription connection handles GQL_CONNECTION_TERMINATE message correctly', async (t) => {
   t.plan(1)
   const sc = new SubscriptionConnection({
