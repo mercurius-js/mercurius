@@ -4,7 +4,9 @@ const { test } = require('node:test')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const { once } = require('events')
+const { parse } = require('graphql')
 const GQL = require('..')
+const calculateQueryDepth = require('../lib/queryDepth')
 const { MER_ERR_GQL_VALIDATION, MER_ERR_GQL_QUERY_DEPTH } = require('../lib/errors')
 
 const dogs = [{
@@ -176,6 +178,39 @@ test('queryDepth - test total depth is over queryDepth parameter', async (t) => 
   await t.assert.rejects(app.graphql(query), err)
 })
 
+test('queryDepth - reject named fragment over queryDepth parameter', async (t) => {
+  const app = Fastify()
+  app.register(GQL, {
+    schema,
+    resolvers,
+    queryDepth: 5
+  })
+
+  await app.ready()
+
+  const fragmentQuery = `query QueryName {
+    dogs {
+      ...DeepDog
+    }
+  }
+
+  fragment DeepDog on Dog {
+    owner {
+      pet {
+        owner {
+          pet {
+            name
+          }
+        }
+      }
+    }
+  }`
+  const err = new MER_ERR_GQL_VALIDATION()
+  err.errors = [new MER_ERR_GQL_QUERY_DEPTH('QueryName', 6, 5)]
+
+  await t.assert.rejects(app.graphql(fragmentQuery), err)
+})
+
 test('queryDepth - queryDepth is not number', async (t) => {
   const app = Fastify()
 
@@ -229,6 +264,90 @@ test('queryDepth - definition.kind and definition.name change', async (t) => {
   const res = await app.graphql(localQuery)
 
   t.assert.deepEqual(res, goodResponse)
+})
+
+test('queryDepth - named fragment spreads have the same depth as inline selections', (t) => {
+  const inlineDocument = parse(`
+    query QueryName {
+      dogs {
+        owner {
+          pet {
+            owner {
+              pet {
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  `)
+  const fragmentDocument = parse(`
+    query QueryName {
+      dogs {
+        ...DeepDog
+      }
+    }
+
+    fragment DeepDog on Dog {
+      owner {
+        pet {
+          owner {
+            pet {
+              name
+            }
+          }
+        }
+      }
+    }
+  `)
+
+  const inlineErrors = calculateQueryDepth(inlineDocument.definitions, 5)
+  const fragmentErrors = calculateQueryDepth(fragmentDocument.definitions, 5)
+
+  t.assert.deepEqual(fragmentErrors.map(error => error.message), inlineErrors.map(error => error.message))
+  t.assert.deepEqual(calculateQueryDepth(fragmentDocument.definitions, 6), [])
+})
+
+test('queryDepth - handles unknown and cyclic fragment spreads', (t) => {
+  const unknownFragment = parse('query QueryName { dogs { ...Unknown } }')
+  t.assert.deepEqual(calculateQueryDepth(unknownFragment.definitions, 1), [])
+
+  const cyclicFragments = parse(`
+    query QueryName {
+      dogs {
+        ...DogFields
+      }
+    }
+
+    fragment DogFields on Dog {
+      owner {
+        ...OwnerFields
+      }
+    }
+
+    fragment OwnerFields on Human {
+      pet {
+        ...DogFields
+      }
+    }
+  `)
+  t.assert.strictEqual(calculateQueryDepth(cyclicFragments.definitions, 100).length, 1)
+})
+
+test('queryDepth - handles long fragment chains without recursive traversal', (t) => {
+  const fragments = []
+  for (let i = 0; i < 5000; i++) {
+    const selection = i === 4999 ? 'name' : `...Fragment${i + 1} ...Fragment${i + 1}`
+    fragments.push(`fragment Fragment${i} on Dog { ${selection} }`)
+  }
+
+  const document = parse(`query QueryName { dogs { ...Fragment0 } } ${fragments.join('\n')}`)
+  t.assert.deepEqual(calculateQueryDepth(document.definitions, 2), [])
+
+  fragments[4999] = 'fragment Fragment4999 on Dog { ...Fragment0 }'
+  const cyclicDocument = parse(`query QueryName { dogs { ...Fragment0 } } ${fragments.join('\n')}`)
+  t.assert.strictEqual(calculateQueryDepth(cyclicDocument.definitions, 100).length, 1)
 })
 
 test('queryDepth - ensure query depth is correctly calculated', async (t) => {
@@ -517,4 +636,33 @@ test('queryDepth - enforce depth limit for subscriptions over websocket', async 
 
   t.assert.strictEqual(errorMessage.id, '1')
   t.assert.match(errorMessage.payload[0].message, /Graphql validation error/)
+
+  ws.send(JSON.stringify({
+    id: '2',
+    type: 'start',
+    payload: {
+      query: `subscription {
+        dogUpdated {
+          ...DeepDog
+        }
+      }
+
+      fragment DeepDog on Dog {
+        owner {
+          pet {
+            owner {
+              pet {
+                name
+              }
+            }
+          }
+        }
+      }`
+    }
+  }))
+
+  const fragmentErrorMessage = await waitForMessageType('error')
+
+  t.assert.strictEqual(fragmentErrorMessage.id, '2')
+  t.assert.match(fragmentErrorMessage.payload[0].message, /Graphql validation error/)
 })
