@@ -565,7 +565,7 @@ const mercurius = fp(async function (app, opts) {
         throw err
       }
 
-      if (queryDepthLimit) {
+      if (typeof queryDepthLimit === 'number') {
         const queryDepthErrors = queryDepth(document.definitions, queryDepthLimit)
 
         if (queryDepthErrors.length > 0) {

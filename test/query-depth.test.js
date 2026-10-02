@@ -666,3 +666,22 @@ test('queryDepth - enforce depth limit for subscriptions over websocket', async 
   t.assert.strictEqual(fragmentErrorMessage.id, '2')
   t.assert.match(fragmentErrorMessage.payload[0].message, /Graphql validation error/)
 })
+
+test('queryDepth - a limit of 0 is enforced, not treated as disabled', async (t) => {
+  const app = Fastify()
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    queryDepth: 0
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  const err = new MER_ERR_GQL_VALIDATION()
+  const queryDepthError = new MER_ERR_GQL_QUERY_DEPTH('unnamedQuery', 6, 0)
+  err.errors = [queryDepthError]
+
+  await t.assert.rejects(app.graphql(query), err)
+})
