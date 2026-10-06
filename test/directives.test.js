@@ -3,13 +3,18 @@
 const { test } = require('node:test')
 const Fastify = require('fastify')
 const mercurius = require('..')
-const { defaultFieldResolver, GraphQLScalarType, isNonNullType, isScalarType } = require('graphql')
+const { defaultFieldResolver, GraphQLScalarType, isNonNullType, isScalarType, versionInfo } = require('graphql')
 const { makeExecutableSchema } = require('@graphql-tools/schema')
 const {
   MapperKind,
   mapSchema,
   getDirectives
 } = require('@graphql-tools/utils')
+
+// GraphQL 17 changed the wording of the custom scalar coercion error
+const lengthErrorMessage = versionInfo.major >= 17
+  ? 'Expected value of type "StringWithLengthAtMost3", but encountered error "expected length 8 to be at most 3"; found: "too-long".'
+  : 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3'
 
 class ValidationError extends Error {
   constructor (message, extensions) {
@@ -310,7 +315,7 @@ test('directives with extendSchema', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: lengthErrorMessage,
       locations: [{ line: 1, column: 35 }],
       extensions: { foo: 'bar' }
     }]
@@ -369,7 +374,7 @@ test('directives with transformSchema', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: lengthErrorMessage,
       locations: [{ line: 1, column: 35 }],
       extensions: { foo: 'bar' }
     }]
@@ -475,7 +480,7 @@ test('max length directive validation works', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: lengthErrorMessage,
       locations: [{ line: 1, column: 46 }],
       extensions: { foo: 'bar' }
     }]
@@ -536,7 +541,7 @@ test('directives with array of typeDefs in schema option', async (t) => {
   t.assert.deepEqual(JSON.parse(res.body), {
     data: null,
     errors: [{
-      message: 'Expected value of type "StringWithLengthAtMost3", found "too-long"; expected length 8 to be at most 3',
+      message: lengthErrorMessage,
       locations: [{ line: 1, column: 35 }],
       extensions: { foo: 'bar' }
     }]
