@@ -3,7 +3,7 @@
 const { test } = require('node:test')
 const Fastify = require('fastify')
 const GQL = require('..')
-const { GraphQLError, parse } = require('graphql')
+const { GraphQLError, parse, versionInfo } = require('graphql')
 const gql = require('graphql-tag')
 
 const {
@@ -514,6 +514,45 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
   }
 })
 
+test('keeps the schema extendable after defining subscription resolvers', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+
+    type Subscription {
+      onAdd: Int
+    }
+  `
+
+  const resolvers = {
+    Subscription: {
+      onAdd: {
+        subscribe: async (_, __, { pubsub }) => pubsub.subscribe('ADD')
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  // subscription fields must keep the `GraphQLField` prototype (see `defineResolvers`)
+  t.assert.doesNotThrow(() => app.graphql.extendSchema(`
+    extend type Query {
+      subtract(x: Int, y: Int): Int
+    }
+  `))
+})
+
 test('basic GQL no cache', async (t) => {
   const app = Fastify()
   const schema = `
@@ -686,6 +725,83 @@ test('scalar should be supported', async (t) => {
       add: 4
     }
   })
+})
+
+test('supports legacy scalar methods with GraphQL 17', async (t) => {
+  const app = Fastify()
+  const schema = `
+    scalar Tagged
+
+    type Query {
+      echo(value: Tagged): Tagged
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      echo: async (_, { value }) => value
+    },
+    Tagged: {
+      serialize: (value) => `serialize(${value})`,
+      parseValue: (value) => `parseValue(${value})`
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  t.assert.deepEqual(await app.graphql('query ($value: Tagged) { echo(value: $value) }', {}, { value: 'a' }), {
+    data: {
+      echo: 'serialize(parseValue(a))'
+    }
+  })
+})
+
+test('supports GraphQL 17 scalar methods with JIT', async (t) => {
+  const app = Fastify()
+  const schema = `
+    scalar Tagged
+
+    type Query {
+      echo(value: Tagged): Tagged
+    }
+  `
+
+  const resolvers = {
+    Query: {
+      echo: async (_, { value }) => value
+    },
+    Tagged: {
+      coerceOutputValue: (value) => `coerceOutputValue(${value})`,
+      coerceInputValue: (value) => `coerceInputValue(${value})`
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    jit: 1
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  // GraphQL 16 does not know the GraphQL 17 coercion methods
+  const echo = versionInfo.major >= 17 ? 'coerceOutputValue(coerceInputValue(a))' : 'a'
+
+  // the second request compiles the query with graphql-jit
+  for (let i = 0; i < 3; i++) {
+    t.assert.deepEqual(await app.graphql('query ($value: Tagged) { echo(value: $value) }', {}, { value: 'a' }), {
+      data: {
+        echo
+      }
+    })
+  }
 })
 
 test('enum should be supported', async (t) => {
@@ -1545,5 +1661,37 @@ test('graphql-tag', async (t) => {
     data: {
       add: 4
     }
+  })
+})
+
+test('cloneDocument copies pre-parsed documents while preserving locations', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, { schema, resolvers })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  // unlike graphql-tag, parse keeps the tokens in the locations
+  const document = parse('{ add(x: 2, y: 2) }')
+  t.assert.deepEqual(await app.graphql(document), { data: { add: 4 } })
+
+  // the cached copy is not affected by later changes to the document
+  document.definitions[0].selectionSet.selections[0].name.value = 'unknown'
+  t.assert.deepEqual(await app.graphql(document), { data: { add: 4 } })
+
+  // the copy keeps the locations
+  await t.assert.rejects(app.graphql(parse('{\n  add(x: 2, y: 2)\n  unknown\n}')), (err) => {
+    t.assert.deepStrictEqual(err.errors[0].locations, [{ line: 3, column: 3 }])
+    return true
   })
 })
