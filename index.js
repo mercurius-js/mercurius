@@ -18,9 +18,10 @@ const {
   validate,
   validateSchema,
   specifiedRules,
-  execute
+  execute,
+  validateExecutionArgs,
+  versionInfo
 } = require('graphql')
-const { buildExecutionContext } = require('graphql/execution/execute')
 const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
@@ -47,6 +48,27 @@ const {
 } = require('./lib/handlers')
 const { normalizeCSRFConfig } = require('./lib/csrf')
 const { isValidServerProtocol } = require('./lib/subscription-protocol')
+
+// Use `validateExecutionArgs` on GraphQL 17, falling back to `buildExecutionContext` for GraphQL 16
+const validateExecution = validateExecutionArgs || require('graphql/execution/execute').buildExecutionContext
+
+// Clones a GraphQL AST while keeping the read-only `loc` by reference
+function cloneDocumentNodes (node) {
+  if (typeof node !== 'object' || node === null) {
+    return node
+  }
+  if (Array.isArray(node)) {
+    return node.map(cloneDocumentNodes)
+  }
+  const copy = {}
+  for (const key of Object.keys(node)) {
+    copy[key] = key === 'loc' ? node.loc : cloneDocumentNodes(node[key])
+  }
+  return copy
+}
+
+// GraphQL 17 `Source` objects in `loc` metadata are not structured-cloneable
+const cloneDocument = versionInfo.major >= 17 ? cloneDocumentNodes : structuredClone
 
 async function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -371,10 +393,11 @@ const mercurius = fp(async function (app, opts) {
         }
         for (const prop of Object.keys(resolver)) {
           if (subscriptionsActive && name === subscriptionTypeName) {
-            fields[prop] = {
+            // With GraphQL 17, `toConfig()` used by `extendSchema()` is part of the `GraphQLField` prototype
+            fields[prop] = Object.setPrototypeOf({
               ...fields[prop],
               ...resolver[prop]
-            }
+            }, Object.getPrototypeOf(fields[prop]))
           } else if (prop === '__resolveReference') {
             // TODO Investigate a way to remove this requirement
             // Required to integrate the gateway
@@ -386,7 +409,18 @@ const mercurius = fp(async function (app, opts) {
           }
         }
       } else if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
-        const resolver = resolvers[name]
+        let resolver = resolvers[name]
+        // GraphQL 17 creates aliases between legacy and new scalar coercion methods only
+        // during construction, so fill any missing alias before applying the resolver
+        if (versionInfo.major >= 17 && type instanceof GraphQLScalarType) {
+          resolver = {
+            ...resolver,
+            serialize: resolver.serialize ?? resolver.coerceOutputValue ?? type.serialize,
+            parseValue: resolver.parseValue ?? resolver.coerceInputValue ?? type.parseValue,
+            coerceOutputValue: resolver.coerceOutputValue ?? resolver.serialize ?? type.coerceOutputValue,
+            coerceInputValue: resolver.coerceInputValue ?? resolver.parseValue ?? type.coerceInputValue
+          }
+        }
         for (const prop of Object.keys(resolver)) {
           type[prop] = resolver[prop]
         }
@@ -523,11 +557,15 @@ const mercurius = fp(async function (app, opts) {
       try {
         document = typeof source === 'string'
           ? parse(source, gqlParseOpts)
-          : structuredClone(source)
+          : cloneDocument(source)
       } catch (syntaxError) {
         try {
           // Do not try to JSON.parse maxToken exceeded validation errors
-          if (gqlParseOpts.maxTokens && syntaxError.message === `Syntax Error: Document contains more that ${gqlParseOpts.maxTokens} tokens. Parsing aborted.`) {
+          // Match GraphQL 16 (`more that`) and GraphQL 17 (`more than`) maxTokens messages
+          if (gqlParseOpts.maxTokens && (
+            syntaxError.message === `Syntax Error: Document contains more that ${gqlParseOpts.maxTokens} tokens. Parsing aborted.` ||
+            syntaxError.message === `Syntax Error: Document contains more than ${gqlParseOpts.maxTokens} tokens. Parsing aborted.`
+          )) {
             throw syntaxError
           }
 
@@ -599,7 +637,7 @@ const mercurius = fp(async function (app, opts) {
     const shouldCompileJit = !adaptiveJit && cached && cached.count++ === minJit
     // Validate variables
     if (variables !== undefined && !shouldCompileJit) {
-      const executionContext = buildExecutionContext({
+      const executionContext = validateExecution({
         schema: fastifyGraphQl.schema,
         document,
         rootValue: root,

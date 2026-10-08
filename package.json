@@ -24,7 +24,7 @@
   },
   "homepage": "https://mercurius.dev",
   "peerDependencies": {
-    "graphql": "^16.0.0"
+    "graphql": "^16.0.0 || ^17.0.0"
   },
   "devDependencies": {
     "@graphql-tools/merge": "^9.0.0",
