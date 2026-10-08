@@ -3,7 +3,7 @@
 const { test } = require('node:test')
 const Fastify = require('fastify')
 const GQL = require('..')
-const { GraphQLError } = require('graphql')
+const { GraphQLError, parse } = require('graphql')
 const gql = require('graphql-tag')
 
 const {
@@ -510,7 +510,7 @@ test('extendSchema and defineResolvers throws without mutation definition', asyn
   try {
     await app.graphql(mutation)
   } catch (e) {
-    t.assert.equal(e instanceof GraphQLError, true)
+    t.assert.equal(e.errors[0] instanceof GraphQLError, true)
   }
 })
 
@@ -1297,6 +1297,37 @@ test('support ast input', async (t) => {
     ]
   }`
   const res = await app.graphql(query)
+
+  t.assert.deepEqual(res, {
+    data: {
+      add: 4
+    }
+  })
+})
+
+test('support ast input from graphql parse()', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  // needed so that graphql is defined
+  await app.ready()
+
+  // documents returned by parse() reference the lexer tokens in `loc`,
+  // which are circular (doubly linked list)
+  const res = await app.graphql(parse('{ add(x: 2, y: 2) }'))
 
   t.assert.deepEqual(res, {
     data: {
