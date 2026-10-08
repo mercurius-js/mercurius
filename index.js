@@ -49,7 +49,9 @@ const {
   MER_ERR_GQL_INVALID_SCHEMA,
   MER_ERR_GQL_VALIDATION,
   MER_ERR_INVALID_OPTS,
-  MER_ERR_METHOD_NOT_ALLOWED
+  MER_ERR_METHOD_NOT_ALLOWED,
+  MER_ERR_INVALID_MULTIPART_ACCEPT_HEADER,
+  MER_ERR_DEFER_NOT_SUPPORTED
 } = require('./lib/errors')
 const { Hooks, assignLifeCycleHooksToContext, assignApplicationHooksToContext } = require('./lib/hooks')
 const { kLoaders, kFactory, kSubscriptionFactory, kHooks } = require('./lib/symbols')
@@ -62,6 +64,14 @@ const {
 } = require('./lib/handlers')
 const { normalizeCSRFConfig } = require('./lib/csrf')
 const { isValidServerProtocol } = require('./lib/subscription-protocol')
+const {
+  MULTIPART_CONTENT_TYPE,
+  isDeferSupported,
+  addDeferDirective,
+  acceptsDeferMultipart,
+  createMultipartStream,
+  executeIncrementally
+} = require('./lib/defer')
 
 async function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -142,6 +152,16 @@ const mercurius = fp(async function (app, opts) {
   }
 
   const { minJit, adaptiveJitOptions } = parseJitOptions(opts.jit)
+  const defer = opts.defer === true
+
+  if (defer) {
+    if (minJit > 0 || adaptiveJitOptions !== null) {
+      throw new MER_ERR_INVALID_OPTS('the defer and jit options cannot be used together')
+    }
+    if (!isDeferSupported()) {
+      throw new MER_ERR_INVALID_OPTS('the defer option requires graphql@17')
+    }
+  }
   const queryDepthLimit = opts.queryDepth
   const errorFormatter = typeof opts.errorFormatter === 'function' ? opts.errorFormatter : defaultErrorFormatter
 
@@ -258,7 +278,7 @@ const mercurius = fp(async function (app, opts) {
     }
   }
 
-  fastifyGraphQl.schema = schema
+  fastifyGraphQl.schema = defer ? addDeferDirective(schema) : schema
 
   app.addHook('onReady', async function () {
     const schemaValidationErrors = validateSchema(fastifyGraphQl.schema)
@@ -339,7 +359,7 @@ const mercurius = fp(async function (app, opts) {
       throw new MER_ERR_INVALID_OPTS('Must provide valid Document AST')
     }
 
-    fastifyGraphQl.schema = s
+    fastifyGraphQl.schema = defer ? addDeferDirective(s) : s
 
     if (lru) {
       lru.clear()
@@ -662,7 +682,9 @@ const mercurius = fp(async function (app, opts) {
       return maybeFormatErrors(execution, context)
     }
 
-    const execution = await execute({
+    // graphql@17 refuses to run `execute` on a schema that contains @defer,
+    // so every operation goes through the incremental executor when enabled.
+    const execution = await (defer ? executeIncrementally : execute)({
       schema: modifiedSchema || fastifyGraphQl.schema,
       document: modifiedDocument || document,
       rootValue: root,
@@ -671,7 +693,36 @@ const mercurius = fp(async function (app, opts) {
       operationName
     })
 
+    if (execution.initialResult) {
+      return sendIncrementalResult(execution, context)
+    }
+
     return maybeFormatErrors(execution, context)
+  }
+
+  function sendIncrementalResult (execution, context) {
+    const { reply } = context
+
+    // Called through app.graphql() without an HTTP reply: hand back the
+    // incremental results to the caller as-is.
+    if (!reply) {
+      return execution
+    }
+
+    if (context.operationsCount !== undefined) {
+      throw new MER_ERR_DEFER_NOT_SUPPORTED('in batched queries')
+    }
+
+    if (reply.request.ws) {
+      throw new MER_ERR_DEFER_NOT_SUPPORTED('over WebSocket')
+    }
+
+    if (!acceptsDeferMultipart(reply.request.headers.accept)) {
+      throw new MER_ERR_INVALID_MULTIPART_ACCEPT_HEADER()
+    }
+
+    reply.header('content-type', MULTIPART_CONTENT_TYPE)
+    return createMultipartStream(execution)
   }
 
   async function maybeFormatErrors (execution, context) {

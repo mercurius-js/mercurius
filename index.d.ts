@@ -516,6 +516,12 @@ declare namespace mercurius {
      */
     jit?: number | MercuriusAdaptiveJitOptions;
     /**
+     * Enable support for the `@defer` directive (incremental delivery).
+     * Requires graphql@17 and can't be used together with `jit`.
+     * @default false
+     */
+    defer?: boolean;
+    /**
      * A graphql endpoint is exposed at /graphql when true
      * @default true
      */
