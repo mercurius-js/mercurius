@@ -8,6 +8,11 @@ jobs:
       matrix:
         node-version: [20, 22, 24]
         os: [ubuntu-latest, windows-latest, macOS-latest]
+        graphql-version: [16, 17]
+        exclude:
+          # GraphQL 17 does not support Node.js 20
+          - node-version: 20
+            graphql-version: 17
     steps:
       - uses: actions/checkout@v7
       - name: Use Node.js ${{ matrix.node-version }}
@@ -16,31 +21,13 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install Dependencies
         run: npm install --ignore-scripts
-      - name: Test
-        run: npm run test
-  test-graphql-17:
-    name: test (node ${{ matrix.node-version }}, ${{ matrix.os }}, graphql@17)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # GraphQL 17 does not support Node.js 20
-        node-version: [22, 24]
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-    steps:
-      - uses: actions/checkout@v7
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v7.0.0
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: Install Dependencies
-        run: npm install --ignore-scripts
-      - name: Install graphql@17
-        run: npm install graphql@17 --no-save --ignore-scripts
+      - name: Install graphql@${{ matrix.graphql-version }}
+        if: matrix.graphql-version != 16
+        run: npm install graphql@${{ matrix.graphql-version }} --no-save --ignore-scripts
       - name: Test
         run: npm run test
   automerge:
-    needs: [test, test-graphql-17]
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
