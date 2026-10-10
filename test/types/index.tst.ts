@@ -942,3 +942,24 @@ app.register(mercurius, {
 
 // app.graphql.pubsub should be the custom pubsub
 app.graphql.pubsub.publish({ topic: 'test', payload: 'test' })
+
+// Test that a CustomPubSub implementation does not require an `emitter` property:
+// the `emitter` option is only used to construct the default PubSub and is
+// ignored when `pubsub` is provided
+class CustomPubSubNoEmitter implements CustomPubSub {
+  async subscribe (topic: string | string[], queue: Readable & { close: () => void }): Promise<void> {
+    // custom implementation
+  }
+
+  publish (event: { topic: string, payload: any }, callback: () => void): void {
+    // custom implementation
+  }
+}
+
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
+    pubsub: new CustomPubSubNoEmitter()
+  }
+})
