@@ -61,6 +61,12 @@
     - `maxCompilePerTick`: Maximum number of queued queries to compile in one tick. Default: `1`.
     - `maxQueueSize`: Maximum queued compilation candidates. Least-popular entries are dropped first when full. Default: `100`.
   - Default: `0`, jit is disabled.
+  - _jit can't be used together with `defer: true`_
+- `defer`: boolean. Enable support for the `@defer` directive (incremental delivery). Default: `false`.
+  - Requires `graphql@17`. The `@defer` directive is added to the schema automatically.
+  - Clients must send the `Accept: multipart/mixed; deferSpec=20220824` header to receive a deferred response as a `multipart/mixed` stream, otherwise a `406` error is returned. Operations that do not use `@defer` are answered with regular JSON.
+  - Not supported for batched queries nor over WebSocket.
+  - _defer can't be used together with `jit`_
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
 - `path`: string. Change default graphql `/graphql` route to another one.

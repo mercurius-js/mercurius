@@ -100,6 +100,18 @@ app.register(mercurius, {
 app.register(mercurius, {
   schema,
   resolvers,
+  defer: true
+})
+
+expect(app.register).type.not.toBeCallableWith(mercurius, {
+  schema,
+  resolvers,
+  defer: 'yes'
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
   loaders: {},
   ide: false,
   jit: 1,
