@@ -1397,3 +1397,45 @@ test('errors - return error when `error.originalError.errors` is not an array or
   })
   t.assert.strictEqual(res.statusCode, 200)
 })
+
+test('errors - list indices in path are serialized as integers', async (t) => {
+  t.plan(1)
+
+  const schema = `
+    type Query {
+      list: [String]
+    }
+  `
+
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(GQL, {
+    schema,
+    resolvers: {
+      Query: {
+        list () {
+          return ['ok', new Error('Error')]
+        }
+      }
+    }
+  })
+
+  await app.ready()
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={list}'
+  })
+
+  t.assert.deepStrictEqual(JSON.parse(res.body), {
+    data: { list: ['ok', null] },
+    errors: [
+      {
+        message: 'Error',
+        locations: [{ line: 1, column: 2 }],
+        path: ['list', 1]
+      }
+    ]
+  })
+})
