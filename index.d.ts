@@ -42,7 +42,7 @@ declare namespace mercurius {
   }
 
   export interface CustomPubSub {
-    emitter: EventEmitter;
+    emitter?: EventEmitter;
     subscribe(
       topic: string | string[],
       queue: Readable & { close: () => void },
