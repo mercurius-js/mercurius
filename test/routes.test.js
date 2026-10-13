@@ -1585,11 +1585,20 @@ test('connection is not allowed when onConnect callback called with `false`', (t
     }
   })
 
+  // Both clients must receive their reply before the test ends, regardless
+  // of the order in which the server answers them.
+  let pending = 2
+  function finish () {
+    if (--pending === 0) {
+      done()
+    }
+  }
+
   app.listen({ port: 0 }, () => {
     const url = 'ws://localhost:' + (app.server.address()).port + '/graphql'
     const ws = new WebSocket(url, 'graphql-ws')
     const client = WebSocket.createWebSocketStream(ws, { encoding: 'utf8', objectMode: true })
-    t.after(() => client.destroy.bind(client))
+    t.after(() => client.destroy())
 
     client.setEncoding('utf8')
     client.write(JSON.stringify({
@@ -1603,11 +1612,12 @@ test('connection is not allowed when onConnect callback called with `false`', (t
         type: 'connection_ack'
       }))
       client.end()
+      finish()
     })
 
     const ws2 = new WebSocket(url, 'graphql-ws')
     const client2 = WebSocket.createWebSocketStream(ws2, { encoding: 'utf8', objectMode: true })
-    t.after(() => client2.destroy.bind(client2))
+    t.after(() => client2.destroy())
 
     client2.setEncoding('utf8')
     client2.write(JSON.stringify({
@@ -1621,7 +1631,7 @@ test('connection is not allowed when onConnect callback called with `false`', (t
         }
       }))
       client2.end()
-      done()
+      finish()
     })
   })
 })
