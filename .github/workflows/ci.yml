@@ -10,6 +10,10 @@ jobs:
         node-version: [20, 22, 24, 26]
         os: [ubuntu-latest, windows-latest, macOS-latest]
         graphql-version: [16, 17]
+        exclude:
+          # GraphQL 17 does not support Node.js 20
+          - node-version: 20
+            graphql-version: 17
     steps:
       - uses: actions/checkout@v7
       - name: Use Node.js ${{ matrix.node-version }}

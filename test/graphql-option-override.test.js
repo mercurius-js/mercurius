@@ -2,6 +2,7 @@
 
 const { test } = require('node:test')
 const Fastify = require('fastify')
+const { parse } = require('graphql')
 const mercurius = require('..')
 
 const schema = `
@@ -91,6 +92,29 @@ test('override graphql.parse options', async t => {
   }
 
   await t.assert.rejects(app.graphql(query), expectedErr.errors[0].message)
+})
+
+test('does not fall back to JSON for GraphQL 16 and 17 maxTokens errors', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  await app.register(mercurius, {
+    schema,
+    resolvers,
+    graphql: {
+      parseOptions: {
+        maxTokens: 1
+      }
+    }
+  })
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/graphql',
+    body: { query: JSON.stringify(parse(query, { noLocation: true })) }
+  })
+
+  t.assert.strictEqual(res.statusCode, 400)
 })
 
 test('do not override graphql.validate options', async t => {

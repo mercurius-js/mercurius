@@ -18,7 +18,8 @@ const {
   validate,
   validateSchema,
   specifiedRules,
-  execute
+  execute,
+  versionInfo
 } = require('graphql')
 // `validateExecutionArgs` (graphql@17) replaces `buildExecutionContext`
 // (graphql@16, removed in @17). Same params, same return shape (an array of
@@ -29,12 +30,6 @@ const {
   buildExecutionContext
 } = require('graphql/execution/execute')
 const validateArgs = validateExecutionArgs || buildExecutionContext
-// graphql@17 tags AST `loc.source` (Source) instances with a Symbol that
-// `structuredClone` can't handle, so it throws on pre-parsed documents.
-// `rfdc` clones via plain property enumeration, so it skips the Symbol-keyed
-// brand. `circles` is required because the tokens referenced by `loc`
-// (`startToken`/`endToken`) form a doubly linked list.
-const cloneDocument = require('rfdc')({ circles: true })
 
 const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
@@ -72,6 +67,21 @@ const {
   createMultipartStream,
   executeIncrementally
 } = require('./lib/defer')
+
+// Clones a GraphQL AST while keeping the read-only `loc` by reference
+function cloneDocument (node) {
+  if (typeof node !== 'object' || node === null) {
+    return node
+  }
+  if (Array.isArray(node)) {
+    return node.map(cloneDocument)
+  }
+  const copy = {}
+  for (const key of Object.keys(node)) {
+    copy[key] = key === 'loc' ? node.loc : cloneDocument(node[key])
+  }
+  return copy
+}
 
 async function buildCache (opts) {
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
@@ -406,10 +416,11 @@ const mercurius = fp(async function (app, opts) {
         }
         for (const prop of Object.keys(resolver)) {
           if (subscriptionsActive && name === subscriptionTypeName) {
-            fields[prop] = {
+            // With GraphQL 17, `toConfig()` used by `extendSchema()` is part of the `GraphQLField` prototype
+            fields[prop] = Object.setPrototypeOf({
               ...fields[prop],
               ...resolver[prop]
-            }
+            }, Object.getPrototypeOf(fields[prop]))
           } else if (prop === '__resolveReference') {
             // TODO Investigate a way to remove this requirement
             // Required to integrate the gateway
@@ -421,7 +432,18 @@ const mercurius = fp(async function (app, opts) {
           }
         }
       } else if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
-        const resolver = resolvers[name]
+        let resolver = resolvers[name]
+        // GraphQL 17 creates aliases between legacy and new scalar coercion methods only
+        // during construction, so fill any missing alias before applying the resolver
+        if (versionInfo.major >= 17 && type instanceof GraphQLScalarType) {
+          resolver = {
+            ...resolver,
+            serialize: resolver.serialize ?? resolver.coerceOutputValue ?? type.serialize,
+            parseValue: resolver.parseValue ?? resolver.coerceInputValue ?? type.parseValue,
+            coerceOutputValue: resolver.coerceOutputValue ?? resolver.serialize ?? type.coerceOutputValue,
+            coerceInputValue: resolver.coerceInputValue ?? resolver.parseValue ?? type.coerceInputValue
+          }
+        }
         for (const prop of Object.keys(resolver)) {
           type[prop] = resolver[prop]
         }
@@ -562,7 +584,11 @@ const mercurius = fp(async function (app, opts) {
       } catch (syntaxError) {
         try {
           // Do not try to JSON.parse maxToken exceeded validation errors
-          if (gqlParseOpts.maxTokens && syntaxError.message === `Syntax Error: Document contains more that ${gqlParseOpts.maxTokens} tokens. Parsing aborted.`) {
+          // Match GraphQL 16 (`more that`) and GraphQL 17 (`more than`) maxTokens messages
+          if (gqlParseOpts.maxTokens && (
+            syntaxError.message === `Syntax Error: Document contains more that ${gqlParseOpts.maxTokens} tokens. Parsing aborted.` ||
+            syntaxError.message === `Syntax Error: Document contains more than ${gqlParseOpts.maxTokens} tokens. Parsing aborted.`
+          )) {
             throw syntaxError
           }
 
