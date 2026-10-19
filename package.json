@@ -64,7 +64,7 @@
     "mqemitter": "^7.0.0",
     "quick-lru": "^7.0.0",
     "readable-stream": "^4.0.0",
-    "safe-stable-stringify": "^2.3.0",
+    "safe-stable-stringify": "^3.0.0",
     "secure-json-parse": "^4.1.0",
     "single-user-cache": "^2.0.0",
     "tiny-lru": "^13.1.0",
