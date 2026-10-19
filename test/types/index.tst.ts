@@ -568,18 +568,20 @@ app.graphql.addHook('preSubscriptionParsing', function (schema, source, context,
   expect(id).type.toBe<string | number>()
 })
 
-app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context, id) {
+app.graphql.addHook('preSubscriptionExecution', async function (schema, document, context, id, variables) {
   expect(schema).type.toBe<GraphQLSchema>()
   expect(document).type.toBe<DocumentNode>()
   expect(context).type.toBe<MercuriusContext>()
   expect(id).type.toBe<string | number>()
+  expect(variables).type.toBe<Record<string, any> | undefined>()
 })
 
-app.graphql.addHook('preSubscriptionExecution', function (schema, document, context, id) {
+app.graphql.addHook('preSubscriptionExecution', function (schema, document, context, id, variables) {
   expect(schema).type.toBe<GraphQLSchema>()
   expect(document).type.toBe<DocumentNode>()
   expect(context).type.toBe<MercuriusContext>()
   expect(id).type.toBe<string | number>()
+  expect(variables).type.toBe<Record<string, any> | undefined>()
 })
 
 app.graphql.addHook('onSubscriptionResolution', async function (execution, context, id) {
