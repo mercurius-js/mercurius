@@ -31,6 +31,13 @@ const {
 } = require('graphql/execution/execute')
 const validateArgs = validateExecutionArgs || buildExecutionContext
 
+const graphql17LeafMethods = new Set([
+  'coerceOutputValue',
+  'coerceInputValue',
+  'coerceInputLiteral',
+  'valueToLiteral'
+])
+
 const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
@@ -445,6 +452,10 @@ const mercurius = fp(async function (app, opts) {
           }
         }
         for (const prop of Object.keys(resolver)) {
+          // GraphQL <17 ignores these properties, so do not expose them to graphql-jit either.
+          if (versionInfo.major < 17 && graphql17LeafMethods.has(prop)) {
+            continue
+          }
           type[prop] = resolver[prop]
         }
       } else if (type instanceof GraphQLInterfaceType || type instanceof GraphQLUnionType) {
