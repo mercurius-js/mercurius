@@ -19,7 +19,8 @@ const {
   validateSchema,
   specifiedRules,
   execute,
-  versionInfo
+  versionInfo,
+  GraphQLError
 } = require('graphql')
 // `validateExecutionArgs` (graphql@17) replaces `buildExecutionContext`
 // (graphql@16, removed in @17). Same params, same return shape (an array of
@@ -36,6 +37,7 @@ const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 const createAdaptiveJit = require('./lib/adaptive-jit')
+const QueryCache = require('./lib/query-cache')
 const stringify = require('safe-stable-stringify')
 const {
   ErrorWithProps,
@@ -83,7 +85,14 @@ function cloneDocument (node) {
   return copy
 }
 
-async function buildCache (opts) {
+// Default bound on the total length of the query strings held by each
+// query cache. Parsed documents can be several hundred times larger than
+// their source text, so the caches must be bounded by size as well as by
+// number of entries.
+const DEFAULT_CACHE_MAX_SIZE = 1024 * 1024
+
+function buildCache (opts) {
+  let maxEntries = 1024
   if (Object.prototype.hasOwnProperty.call(opts, 'cache')) {
     const isBoolean = typeof opts.cache === 'boolean'
     const isNumber = typeof opts.cache === 'number'
@@ -92,17 +101,43 @@ async function buildCache (opts) {
       // no cache
       return null
     } else if (isNumber) {
-      const QuickLRU = (await import('quick-lru')).default
+      if (!(opts.cache > 0)) {
+        throw new MER_ERR_INVALID_OPTS('the cache option must be a number greater than 0')
+      }
       // cache size as specified
-      return new QuickLRU({ maxSize: opts.cache })
-    } else if (!isBoolean && !isNumber) {
+      maxEntries = opts.cache
+    } else if (!isBoolean) {
       throw new MER_ERR_INVALID_OPTS('Cache type is not supported')
     }
   }
 
-  const QuickLRU = (await import('quick-lru')).default
-  // default cache, 1024 entries
-  return new QuickLRU({ maxSize: 1024 })
+  let maxSize = DEFAULT_CACHE_MAX_SIZE
+  if (opts.cacheMaxSize !== undefined) {
+    if (typeof opts.cacheMaxSize !== 'number' || !(opts.cacheMaxSize > 0)) {
+      throw new MER_ERR_INVALID_OPTS('the cacheMaxSize option must be a number greater than 0')
+    }
+    maxSize = opts.cacheMaxSize
+  }
+
+  return new QueryCache({ maxEntries, maxSize })
+}
+
+// Validation errors reference AST nodes, and through their locations the
+// whole token list of the document; until `stack` is read they also retain
+// the validation context. Copy only what is needed to report them, so that
+// caching the errors does not retain the parsed document.
+function detachValidationErrors (errors) {
+  const detached = new Array(errors.length)
+  for (let i = 0; i < errors.length; i++) {
+    const error = errors[i]
+    const copy = versionInfo.major >= 17
+      ? new GraphQLError(error.message, { path: error.path, extensions: error.extensions })
+      : new GraphQLError(error.message, undefined, undefined, undefined, error.path, undefined, error.extensions)
+    copy.locations = error.locations
+    copy.stack = error.stack
+    detached[i] = copy
+  }
+  return detached
 }
 
 function parseJitOptions (jit) {
@@ -154,8 +189,8 @@ function parseJitOptions (jit) {
 }
 
 const mercurius = fp(async function (app, opts) {
-  const lru = await buildCache(opts)
-  const lruErrors = await buildCache(opts)
+  const lru = buildCache(opts)
+  const lruErrors = buildCache(opts)
 
   if (lru && opts.validationRules && typeof opts.validationRules === 'function') {
     throw new MER_ERR_INVALID_OPTS('Using a function for the validationRules is incompatible with query caching')
@@ -619,7 +654,7 @@ const mercurius = fp(async function (app, opts) {
 
       if (validationErrors.length > 0) {
         if (lruErrors) {
-          lruErrors.set(source, { document, validationErrors })
+          lruErrors.set(source, { validationErrors: detachValidationErrors(validationErrors) })
         }
         const err = new MER_ERR_GQL_VALIDATION()
         err.errors = validationErrors
