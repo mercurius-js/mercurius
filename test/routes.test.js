@@ -798,6 +798,107 @@ test('HTTP mutation with GET errors', async (t) => {
   await snap(JSON.stringify(JSON.parse(res.body), null, 2))
 })
 
+test('HTTP mutation with HEAD errors', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Mutation {
+      setMessage(message: String): String
+    }
+    type Query {
+      getMessage: String
+    }
+  `
+
+  let called = false
+  const resolvers = {
+    setMessage: async ({ message }) => { called = true }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const query = querystring.stringify({
+    query: 'mutation { setMessage(message: "hello world") }'
+  })
+
+  const res = await app.inject({
+    method: 'HEAD',
+    url: '/graphql?' + query
+  })
+
+  t.assert.equal(res.statusCode, 405) // method not allowed
+  t.assert.equal(called, false)
+})
+
+test('HTTP mutation with HEAD errors when subscriptions are enabled', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Mutation {
+      setMessage(message: String): String
+    }
+    type Query {
+      getMessage: String
+    }
+    type Subscription {
+      onMessage: String
+    }
+  `
+
+  let called = false
+  const resolvers = {
+    Mutation: {
+      setMessage: async () => { called = true }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+  t.after(() => app.close())
+
+  const query = querystring.stringify({
+    query: 'mutation { setMessage(message: "hello world") }'
+  })
+
+  const res = await app.inject({
+    method: 'HEAD',
+    url: '/graphql?' + query
+  })
+
+  t.assert.equal(res.statusCode, 405) // method not allowed
+  t.assert.equal(called, false)
+})
+
+test('HTTP query with HEAD is allowed', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+
+  const resolvers = {
+    add: async ({ x, y }) => x + y
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers
+  })
+
+  const res = await app.inject({
+    method: 'HEAD',
+    url: '/graphql?query={add(x:2,y:2)}'
+  })
+
+  t.assert.equal(res.statusCode, 200)
+  t.assert.equal(res.body, '')
+})
+
 test('websocket mutation with GET allowed', async (t) => {
   const app = Fastify()
 

@@ -643,7 +643,10 @@ const mercurius = fp(async function (app, opts) {
       document = cached.document
     }
 
-    if (reply && reply.request.raw.method === 'GET' && !reply.request.ws) {
+    // HEAD is included because Fastify exposes a HEAD route for every GET route
+    // by default, sharing the same handler
+    const method = reply && reply.request.raw.method
+    if ((method === 'GET' || method === 'HEAD') && !reply.request.ws) {
       // let's validate we cannot do mutations here
       const operationAST = getOperationAST(document, operationName)
       if (operationAST.operation !== 'query') {
