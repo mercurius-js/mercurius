@@ -168,8 +168,10 @@ The `id` is the `message.id` sent by the client on the `start` message of the su
 
 By the time the `preSubscriptionExecution` hook triggers, the subscription query string has been parsed into a GraphQL Document AST.
 
+The `variables` are the variables sent by the client with the subscription, or `undefined` if none were sent.
+
 ```js
-fastify.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id) => {
+fastify.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id, variables) => {
   await asyncMethod()
 })
 ```
