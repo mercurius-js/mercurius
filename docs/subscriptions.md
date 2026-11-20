@@ -389,3 +389,21 @@ app.get('/', { websocket: true }, (connection, req) => {
   })
 })
 ```
+
+### Limiting active operations per connection
+
+By default mercurius does not limit the number of operations (subscriptions, and queries or mutations when `fullWsTransport` is enabled) a single WebSocket connection may keep active. To bound the memory a single client can make the server hold, set the `maxOperationsPerConnection` option. It defaults to no limit; set it to a positive integer to cap the number of concurrently active operations on each connection, or to `null` to explicitly disable the limit.
+
+When the limit is reached, mercurius answers the operation that exceeds it with a GraphQL error and keeps the connection and its other operations open. A slot is released when an operation completes or is stopped, so the count only reflects operations that are currently active.
+
+```js
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
+    maxOperationsPerConnection: 100
+  }
+})
+```
+
+This is a hardening feature rather than a security boundary: a per-connection limit only helps together with the usual limits on the number of connections a client may open.

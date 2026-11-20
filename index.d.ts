@@ -621,6 +621,11 @@ declare namespace mercurius {
         fullWsTransport?: boolean,
         wsDefaultSubprotocol?: string,
         queueHighWaterMark?: number,
+        /**
+         * Maximum active WebSocket operations (subscriptions and, when fullWsTransport is on, queries/mutations) per connection.
+         * Defaults to no limit. Set to a positive integer to cap concurrent operations, or `null` to explicitly disable the limit.
+         */
+        maxOperationsPerConnection?: number | null,
       };
     /**
      * Persisted queries, overrides persistedQueryProvider.

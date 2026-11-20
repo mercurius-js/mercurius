@@ -3071,3 +3071,142 @@ test('wrong messages do not crash the server', async (t) => {
   ws._socket.write(Buffer.from([0xa2, 0x00]))
   await once(ws, 'close')
 })
+
+test('rejects operations beyond maxOperationsPerConnection, keeping the connection open', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  const schema = `
+    type Query {
+      _placeholder: String
+    }
+    type Subscription {
+      onSubscription: String
+    }
+  `
+
+  const resolvers = {
+    Subscription: {
+      onSubscription: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('ON_SUBSCRIPTION')
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      maxOperationsPerConnection: 2
+    }
+  })
+
+  await app.listen({ port: 0 })
+
+  const ws = new WebSocket('ws://localhost:' + app.server.address().port + '/graphql', 'graphql-ws')
+  t.after(() => ws.close())
+  await new Promise((resolve) => ws.once('open', resolve))
+
+  const queue = []
+  const waiters = []
+  ws.on('message', (data) => {
+    const msg = JSON.parse(data.toString())
+    const waiter = waiters.shift()
+    if (waiter) waiter.resolve(msg)
+    else queue.push(msg)
+  })
+  const nextMessage = () => {
+    if (queue.length > 0) return Promise.resolve(queue.shift())
+    return new Promise((resolve) => waiters.push({ resolve }))
+  }
+  const send = (msg) => ws.send(JSON.stringify(msg))
+  const start = (id) => send({ id, type: 'start', payload: { query: 'subscription { onSubscription }' } })
+
+  send({ type: 'connection_init' })
+  const ack = await nextMessage()
+  t.assert.strictEqual(ack.type, 'connection_ack')
+
+  start(1)
+  start(2)
+  start(3)
+
+  const err = await nextMessage()
+  t.assert.strictEqual(err.id, 3)
+  t.assert.strictEqual(err.type, 'error')
+  t.assert.match(err.payload[0].message, /Maximum active operations per connection is 2/)
+})
+
+test('frees an operation slot when it stops, so the limit is reusable', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  const schema = `
+    type Query {
+      _placeholder: String
+    }
+    type Subscription {
+      onSubscription: String
+    }
+  `
+
+  const resolvers = {
+    Subscription: {
+      onSubscription: {
+        subscribe: (root, args, { pubsub }) => pubsub.subscribe('ON_SUBSCRIPTION')
+      }
+    }
+  }
+
+  app.register(GQL, {
+    schema,
+    resolvers,
+    subscription: {
+      maxOperationsPerConnection: 1
+    }
+  })
+
+  await app.listen({ port: 0 })
+
+  const ws = new WebSocket('ws://localhost:' + app.server.address().port + '/graphql', 'graphql-ws')
+  t.after(() => ws.close())
+  await new Promise((resolve) => ws.once('open', resolve))
+
+  const queue = []
+  const waiters = []
+  ws.on('message', (data) => {
+    const msg = JSON.parse(data.toString())
+    const waiter = waiters.shift()
+    if (waiter) waiter.resolve(msg)
+    else queue.push(msg)
+  })
+  const nextMessage = () => {
+    if (queue.length > 0) return Promise.resolve(queue.shift())
+    return new Promise((resolve) => waiters.push({ resolve }))
+  }
+  const send = (msg) => ws.send(JSON.stringify(msg))
+  const start = (id) => send({ id, type: 'start', payload: { query: 'subscription { onSubscription }' } })
+
+  send({ type: 'connection_init' })
+  const ack = await nextMessage()
+  t.assert.strictEqual(ack.type, 'connection_ack')
+
+  start(1)
+  start(2)
+
+  let err = await nextMessage()
+  t.assert.strictEqual(err.id, 2)
+  t.assert.strictEqual(err.type, 'error')
+
+  // Stopping op1 frees its slot for a new operation.
+  send({ type: 'stop', id: 1 })
+  const complete = await nextMessage()
+  t.assert.strictEqual(complete.id, 1)
+  t.assert.strictEqual(complete.type, 'complete')
+
+  start(3)
+  start(4)
+
+  err = await nextMessage()
+  t.assert.strictEqual(err.id, 4)
+  t.assert.strictEqual(err.type, 'error')
+})
