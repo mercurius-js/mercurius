@@ -89,6 +89,7 @@ app.register(mercurius, {
   },
   queryDepth: 8,
   cache: true,
+  cacheMaxSize: 1024 * 1024,
   context: (request) => {
     return {
       request

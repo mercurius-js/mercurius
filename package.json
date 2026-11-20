@@ -1,6 +1,6 @@
 {
   "name": "mercurius",
-  "version": "16.12.1",
+  "version": "16.12.2",
   "description": "Fastify GraphQL adapter with subscription support",
   "main": "index.js",
   "types": "index.d.ts",
@@ -27,8 +27,8 @@
     "graphql": "^16.0.0 || ^17.0.0"
   },
   "devDependencies": {
-    "@graphql-tools/merge": "^9.0.0",
-    "@graphql-tools/schema": "^10.0.0",
+    "@graphql-tools/merge": "^10.0.6",
+    "@graphql-tools/schema": "^11.0.6",
     "@graphql-tools/utils": "^12.0.0",
     "@matteo.collina/snap": "^1.0.0",
     "@sinonjs/fake-timers": "^15.0.0",
@@ -41,7 +41,7 @@
     "docsify-cli": "^5.0.0",
     "eslint": "^9.9.1",
     "fastify": "^5.12.1",
-    "graphql": "^16.8.0",
+    "graphql": "^17.1.0",
     "graphql-tag": "^2.12.6",
     "graphql-ws": "^6.0.1",
     "neostandard": "^0.12.0",
@@ -60,9 +60,8 @@
     "@fastify/static": "^10.1.0",
     "@fastify/websocket": "^11.0.0",
     "fastify-plugin": "^6.0.0",
-    "graphql-jit": "0.9.3",
+    "graphql-jit": "^0.9.5",
     "mqemitter": "^7.0.0",
-    "quick-lru": "^7.0.0",
     "readable-stream": "^4.0.0",
     "safe-stable-stringify": "^3.0.0",
     "secure-json-parse": "^4.1.0",

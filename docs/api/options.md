@@ -67,6 +67,8 @@
   - Clients must send the `Accept: multipart/mixed; deferSpec=20220824` header to receive a deferred response as a `multipart/mixed` stream, otherwise a `406` error is returned. Operations that do not use `@defer` are answered with regular JSON.
   - Not supported for batched queries nor over WebSocket.
   - _defer can't be used together with `jit`_
+- `cache`: boolean | number. Cache the parsed and validated documents of incoming queries, keyed by query string. Queries that fail validation are cached separately with their errors. A number sets the maximum number of queries in each cache, `false` disables caching. Default: `1024`.
+- `cacheMaxSize`: number. Maximum total length, in characters, of the query strings held by each query cache. The least recently used queries are evicted when the limit is reached, and queries longer than the limit are never cached. A parsed document can be several hundred times larger than its source, so raise this with care. Default: `1048576` (1 MiB).
 - `routes`: boolean. Serves the Default: `true`. A graphql endpoint is
   exposed at `/graphql`.
 - `path`: string. Change default graphql `/graphql` route to another one.

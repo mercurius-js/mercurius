@@ -17,81 +17,28 @@ const importer = {
   }
 }
 
-// The functions above are required to wrap the fetcher and access/enrich the data returned by the GQL query
-// Except `fetcherWrapper`, they are copy/pasted directly from the `graphiql` codebase.
-
-function observableToPromise (observable) {
-  return new Promise((resolve, reject) => {
-    const subscription = observable.subscribe({
-      next: v => {
-        resolve(v)
-        subscription.unsubscribe()
-      },
-      error: reject,
-      complete: () => {
-        reject(new Error('no value resolved'))
-      }
-    })
-  })
+function isAsyncIterable (value) {
+  return typeof value === 'object' && value !== null && Symbol.asyncIterator in value
 }
 
-function isObservable (value) {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'subscribe' in value &&
-    typeof value.subscribe === 'function'
-  )
+async function * mapAsyncIterable (iterable, map) {
+  for await (const value of iterable) {
+    yield map(value)
+  }
 }
 
-function isAsyncIterable (input) {
-  return (
-    typeof input === 'object' &&
-    input !== null &&
-    ((input)[Symbol.toStringTag] === 'AsyncGenerator' ||
-      Symbol.asyncIterator in input)
-  )
-}
+// Passes every result, each event of a subscription too, through the
+// fetcherWrapper functions of the GraphiQL plugins.
+function fetcherWrapper (fetcher, wrappers = []) {
+  if (wrappers.length === 0) {
+    return fetcher
+  }
 
-function asyncIterableToPromise (
-  input
-) {
-  return new Promise((resolve, reject) => {
-    const iteratorReturn = (
-      'return' in input ? input : input[Symbol.asyncIterator]()
-    ).return?.bind(input)
-    const iteratorNext = (
-      'next' in input ? input : input[Symbol.asyncIterator]()
-    ).next.bind(input)
+  const wrap = result => wrappers.reduce((acc, wrapper) => wrapper(acc), result)
 
-    iteratorNext()
-      .then(result => {
-        resolve(result.value)
-        // ensure cleanup
-        iteratorReturn?.()
-      })
-      .catch(err => {
-        reject(err)
-      })
-  })
-}
-
-function fetcherReturnToPromise (fetcherResult) {
-  return Promise.resolve(fetcherResult).then(result => {
-    if (isAsyncIterable(result)) {
-      return asyncIterableToPromise(result)
-    } else if (isObservable(result)) {
-      return observableToPromise(result)
-    }
-    return result
-  })
-}
-
-function fetcherWrapper (fetcher, cbs = []) {
-  return async (gqlp, fetchOpt) => {
-    const fetchResponse = await fetcher(gqlp, fetchOpt)
-    const result = await fetcherReturnToPromise(fetchResponse)
-    return cbs.reduce((acc, cb) => cb(acc), result)
+  return async (params, options) => {
+    const result = await fetcher(params, options)
+    return isAsyncIterable(result) ? mapAsyncIterable(result, wrap) : wrap(result)
   }
 }
 

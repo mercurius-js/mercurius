@@ -527,10 +527,17 @@ declare namespace mercurius {
      */
     routes?: boolean;
     /**
-     * Define if the plugin can cache the responses.
-     * @default true
+     * Cache parsed and validated queries. A number sets the maximum number
+     * of cached queries, `false` disables the cache.
+     * @default 1024
      */
     cache?: boolean | number;
+    /**
+     * Maximum total length, in characters, of the query strings held by
+     * each query cache. Queries longer than this are never cached.
+     * @default 1048576
+     */
+    cacheMaxSize?: number;
     /**
      * An endpoint for graphql if routes is true
      * @default '/graphql'
