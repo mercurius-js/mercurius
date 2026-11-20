@@ -260,6 +260,7 @@ const mercurius = fp(async function (app, opts) {
   let fullWsTransport
   let wsDefaultSubprotocol
   let queueHighWaterMark
+  let maxOperationsPerConnection
 
   if (typeof subscriptionOpts === 'object') {
     if (subscriptionOpts.pubsub) {
@@ -276,6 +277,7 @@ const mercurius = fp(async function (app, opts) {
     fullWsTransport = subscriptionOpts.fullWsTransport
     wsDefaultSubprotocol = subscriptionOpts.wsDefaultSubprotocol
     queueHighWaterMark = subscriptionOpts.queueHighWaterMark
+    maxOperationsPerConnection = subscriptionOpts.maxOperationsPerConnection
   } else if (subscriptionOpts === true) {
     emitter = mq()
     subscriber = new PubSub(emitter)
@@ -322,6 +324,11 @@ const mercurius = fp(async function (app, opts) {
       throw new MER_ERR_INVALID_OPTS('queueHighWaterMark must be a positive number')
     }
   }
+  if (maxOperationsPerConnection !== undefined && maxOperationsPerConnection !== null) {
+    if (!Number.isInteger(maxOperationsPerConnection) || maxOperationsPerConnection <= 0) {
+      throw new MER_ERR_INVALID_OPTS('maxOperationsPerConnection must be a positive integer or null')
+    }
+  }
 
   fastifyGraphQl.schema = defer ? addDeferDirective(schema) : schema
 
@@ -359,6 +366,7 @@ const mercurius = fp(async function (app, opts) {
       fullWsTransport,
       wsDefaultSubprotocol,
       queueHighWaterMark,
+      maxOperationsPerConnection,
       queryDepthLimit,
       additionalRouteOptions: opts.additionalRouteOptions,
       csrfConfig
