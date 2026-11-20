@@ -123,7 +123,7 @@ test('subscription connection should close socket when close called', async (t) 
   t.assert.strictEqual(socket.close.calls.length, 1)
 })
 
-test('subscription connection sends error message when message is not json string', async (t) => {
+test('subscription connection sends error message when message is not json string (protocol: graphql-ws)', async (t) => {
   t.plan(1)
 
   const sc = new SubscriptionConnection({
@@ -135,7 +135,7 @@ test('subscription connection sends error message when message is not json strin
         payload: [{ message: 'Message must be a JSON string' }]
       }), message)
     },
-    protocol: GRAPHQL_TRANSPORT_WS
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage('invalid json string')
@@ -333,7 +333,7 @@ test('subscription connection send error message when GQL_START handler errs', a
   }))
 })
 
-test('subscription connection send error message when client message type is invalid', async (t) => {
+test('subscription connection send error message when client message type is invalid (protocol: graphql-ws)', async (t) => {
   t.plan(1)
 
   const sc = new SubscriptionConnection({
@@ -346,7 +346,7 @@ test('subscription connection send error message when client message type is inv
         payload: [{ message: 'Invalid payload type' }]
       }), message)
     },
-    protocol: GRAPHQL_TRANSPORT_WS
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage(JSON.stringify({
@@ -379,7 +379,7 @@ test('subscription connection handles GQL_START message correctly, when payload.
   }))
 })
 
-test('subscription connection handles when GQL_START is called before GQL_INIT', async (t) => {
+test('subscription connection handles when GQL_START is called before GQL_INIT (protocol: graphql-ws)', async (t) => {
   t.plan(1)
 
   const sc = new SubscriptionConnection({
@@ -391,14 +391,99 @@ test('subscription connection handles when GQL_START is called before GQL_INIT',
       ), message)
       cb()
     },
-    protocol: GRAPHQL_TRANSPORT_WS
+    protocol: GRAPHQL_WS
   }, {})
 
   await sc.handleMessage(JSON.stringify({
     id: 1,
-    type: 'subscribe',
+    type: 'start',
     payload: { }
   }))
+})
+
+function transportWsSocket () {
+  const socket = {
+    on () {},
+    send (message, cb) {
+      socket.sent.push(JSON.parse(message))
+      cb && cb()
+    },
+    close (code, reason) {
+      socket.closed.push([code, reason])
+    },
+    sent: [],
+    closed: [],
+    protocol: GRAPHQL_TRANSPORT_WS
+  }
+  return socket
+}
+
+test('subscription connection closes with 4400 when message is not json string (protocol: graphql-transport-ws)', async (t) => {
+  const socket = transportWsSocket()
+  const sc = new SubscriptionConnection(socket, {})
+
+  await sc.handleMessage('invalid json string')
+
+  t.assert.deepStrictEqual(socket.sent, [])
+  t.assert.deepStrictEqual(socket.closed, [[4400, 'Message must be a JSON string']])
+})
+
+test('subscription connection closes with 4400 when client message type is invalid (protocol: graphql-transport-ws)', async (t) => {
+  const socket = transportWsSocket()
+  const sc = new SubscriptionConnection(socket, {})
+
+  await sc.handleMessage(JSON.stringify({ id: 1, type: 'invalid-type', payload: {} }))
+
+  t.assert.deepStrictEqual(socket.sent, [])
+  t.assert.deepStrictEqual(socket.closed, [[4400, 'Invalid payload type']])
+})
+
+test('subscription connection closes with 4401 when subscribe is sent before connection_init (protocol: graphql-transport-ws)', async (t) => {
+  const socket = transportWsSocket()
+  const sc = new SubscriptionConnection(socket, {})
+
+  await sc.handleMessage(JSON.stringify({ id: 1, type: 'subscribe', payload: {} }))
+
+  t.assert.deepStrictEqual(socket.sent, [])
+  t.assert.deepStrictEqual(socket.closed, [[4401, 'Unauthorized']])
+})
+
+test('subscription connection closes with 4429 on a second connection_init (protocol: graphql-transport-ws)', async (t) => {
+  const socket = transportWsSocket()
+  const sc = new SubscriptionConnection(socket, {})
+
+  await sc.handleMessage(JSON.stringify({ type: 'connection_init' }))
+  await sc.handleMessage(JSON.stringify({ type: 'connection_init' }))
+
+  t.assert.deepStrictEqual(socket.sent, [{ type: 'connection_ack' }])
+  t.assert.deepStrictEqual(socket.closed, [[4429, 'Too many initialisation requests']])
+})
+
+test('subscription connection closes with 4429 on a second connection_init sent while onConnect is pending (protocol: graphql-transport-ws)', async (t) => {
+  const socket = transportWsSocket()
+  let authorize
+  const sc = new SubscriptionConnection(socket, {
+    onConnect: () => new Promise((resolve) => { authorize = resolve })
+  })
+
+  const first = sc.handleMessage(JSON.stringify({ type: 'connection_init' }))
+  await sc.handleMessage(JSON.stringify({ type: 'connection_init' }))
+  authorize(true)
+  await first
+
+  t.assert.deepStrictEqual(socket.closed[0], [4429, 'Too many initialisation requests'])
+})
+
+test('subscription connection acks every connection_init (protocol: graphql-ws)', async (t) => {
+  const socket = transportWsSocket()
+  socket.protocol = GRAPHQL_WS
+  const sc = new SubscriptionConnection(socket, {})
+
+  await sc.handleMessage(JSON.stringify({ type: 'connection_init' }))
+  await sc.handleMessage(JSON.stringify({ type: 'connection_init' }))
+
+  t.assert.deepStrictEqual(socket.sent, [{ type: 'connection_ack' }, { type: 'connection_ack' }])
+  t.assert.deepStrictEqual(socket.closed, [])
 })
 
 test('subscription connection replies to GQL_CONNECTION_KEEP_ALIVE message with GQL_CONNECTION_KEEP_ALIVE_ACK', async (t) => {
