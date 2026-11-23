@@ -10,6 +10,7 @@
   - [Subscription support (with redis)](#subscription-support-with-redis)
   - [Subscriptions with custom PubSub](#subscriptions-with-custom-pubsub)
   - [Subscriptions with @fastify/websocket](#subscriptions-with-fastify-websocket)
+  - [Flow control for slow clients](#flow-control-for-slow-clients)
 
 ### Subscription support (simple)
 
@@ -389,3 +390,34 @@ app.get('/', { websocket: true }, (connection, req) => {
   })
 })
 ```
+
+### Flow control for slow clients
+
+When a client reads slower than its subscriptions produce, the messages written to its WebSocket pile up. Anything written after them waits behind them, including the pongs that answer the pings of the client, or of a load balancer or proxy checking the connection. When a pong arrives too late, the peer closes a connection that is still working.
+
+The messages pile up in two places:
+
+- **In Node.** Each subscription waits until the kernel has accepted its previous message, so a connection holds up to one message per subscription. `subscription.wsHighWaterMark` limits it to that many bytes per connection: past it, messages wait in a queue, the subscriptions are not read, and keep-alive messages and pongs go ahead of them.
+- **In the kernel.** The kernel accepts data as long as its socket buffers have room. Linux grows a socket's send buffer up to the maximum of `net.ipv4.tcp_wmem` (4 MiB by default), depending on its congestion window, so on a slow link a pong can wait behind megabytes. Node cannot set the socket options that limit it, but the `net.ipv4.tcp_notsent_lowat` sysctl does: the kernel then holds about that many unsent bytes per socket, and takes more only as the network carries them.
+
+```js
+app.register(mercurius, {
+  schema,
+  resolvers,
+  subscription: {
+    wsHighWaterMark: 64 * 1024
+  }
+})
+```
+
+```sh
+sysctl -w net.ipv4.tcp_notsent_lowat=16384
+# or, for a container
+docker run --sysctl net.ipv4.tcp_notsent_lowat=16384 ...
+```
+
+- `net.ipv4.tcp_notsent_lowat` applies to every TCP socket of the host, or of the network namespace of a container.
+- Neither limits the data already sent and not yet acknowledged by the client: on a slow link, it can sit in the queues of the network.
+- A message larger than `wsHighWaterMark` is still sent, on its own.
+- While its messages wait, a subscription is not read: the events published to it meanwhile are kept in its queue.
+- Keep-alive messages skip the queue: the `keepAlive` messages, and the `pong` answering a `graphql-transport-ws` `ping`.

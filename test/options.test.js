@@ -158,3 +158,20 @@ test('invalid queueHighWaterMark', async t => {
     message: 'Invalid options: queueHighWaterMark must be a positive number'
   })
 })
+
+for (const wsHighWaterMark of ['invalid', -1, 0, NaN]) {
+  test(`invalid wsHighWaterMark: ${wsHighWaterMark}`, async t => {
+    const app = Fastify()
+    t.after(() => app.close())
+
+    app.register(mercurius, {
+      subscription: {
+        wsHighWaterMark
+      }
+    })
+
+    await t.assert.rejects(app.ready(), {
+      message: 'Invalid options: wsHighWaterMark must be a positive number'
+    })
+  })
+}

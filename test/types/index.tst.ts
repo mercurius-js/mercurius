@@ -388,6 +388,14 @@ app.register(mercurius, {
 app.register(mercurius, {
   schema,
   resolvers,
+  subscription: {
+    wsHighWaterMark: 1024 * 1024
+  }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
   schemaTransforms: []
 })
 

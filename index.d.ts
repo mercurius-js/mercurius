@@ -621,6 +621,14 @@ declare namespace mercurius {
         fullWsTransport?: boolean,
         wsDefaultSubprotocol?: string,
         queueHighWaterMark?: number,
+        /**
+         * The most bytes of messages that each WebSocket connection hands to the
+         * socket before the kernel accepts them. Past this limit, messages wait
+         * in a queue and the subscriptions are not read, so keep-alive messages
+         * and pongs do not wait behind them in Node. It does not limit the kernel
+         * socket buffers. Disabled by default.
+         */
+        wsHighWaterMark?: number,
       };
     /**
      * Persisted queries, overrides persistedQueryProvider.
