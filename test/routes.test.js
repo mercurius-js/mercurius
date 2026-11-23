@@ -2113,6 +2113,50 @@ test('if ide is graphiql, always serve main.js and sw.js', async (t) => {
   t.assert.equal(res2.statusCode, 200)
 })
 
+test('if ide is graphiql, serve the front-end assets locally', async (t) => {
+  const app = Fastify()
+  const schema = `
+    type Query {
+      add(x: Int, y: Int): Int
+    }
+  `
+  app.register(GQL, {
+    ide: 'graphiql',
+    schema
+  })
+
+  const assets = [
+    ['/graphiql/react.production.min.js', 'application/javascript; charset=utf-8'],
+    ['/graphiql/react-dom.production.min.js', 'application/javascript; charset=utf-8'],
+    ['/graphiql/graphiql.min.js', 'application/javascript; charset=utf-8'],
+    ['/graphiql/graphiql.min.css', 'text/css; charset=utf-8']
+  ]
+
+  for (const [url, contentType] of assets) {
+    const res = await app.inject({
+      method: 'GET',
+      url
+    })
+    t.assert.equal(res.statusCode, 200)
+    t.assert.equal(res.headers['content-type'], contentType)
+    t.assert.ok(res.payload.length > 1000)
+  }
+
+  const main = await app.inject({
+    method: 'GET',
+    url: '/graphiql/main.js'
+  })
+  t.assert.equal(main.statusCode, 200)
+  t.assert.ok(!main.payload.includes('unpkg.com'))
+
+  const sw = await app.inject({
+    method: 'GET',
+    url: '/graphiql/sw.js'
+  })
+  t.assert.equal(sw.statusCode, 200)
+  t.assert.ok(!sw.payload.includes('unpkg.com'))
+})
+
 test('if ide is graphiql, serve config.js with the correct endpoint', async (t) => {
   const app = Fastify()
   const schema = `
