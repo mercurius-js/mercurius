@@ -1,12 +1,11 @@
 const { test } = require('node:test')
-const { once } = require('node:events')
-const { Readable } = require('node:stream')
+const { EventEmitter, once } = require('node:events')
 const { setImmediate: immediate, setTimeout: sleep } = require('node:timers/promises')
 const mq = require('mqemitter')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
 const GQL = require('..')
-const { PubSub, SubscriptionContext } = require('../lib/subscriber')
+const { PubSub, SubscriptionContext, SubscriptionQueue } = require('../lib/subscriber')
 
 function capture (obj, methodName) {
   const original = obj[methodName]
@@ -25,8 +24,11 @@ function capture (obj, methodName) {
 
 test('subscriber published an event', async (t) => {
   class MyQueue {
-    push (value) {
+    close = []
+
+    add (value, cb) {
       t.assert.strictEqual(value, 1)
+      cb()
     }
   }
 
@@ -175,22 +177,6 @@ test('message delivered to a destroyed queue is dropped', async t => {
   t.assert.ok('message to destroyed queue did not throw')
 })
 
-test('subscription queue error is logged, not fatal', t => {
-  t.plan(1)
-  const pubsub = new PubSub(mq())
-
-  const fastifyMock = {
-    log: {
-      error () {
-        t.assert.ok('error was logged')
-      }
-    }
-  }
-  const sc = new SubscriptionContext({ pubsub, fastify: fastifyMock })
-
-  sc.queue.emit('error', new Error('Dummy error'))
-})
-
 test('subscription context should not call removeListener more than one time when close called multiple times', async t => {
   const q = mq()
   const removeListener = capture(q, 'removeListener')
@@ -200,6 +186,93 @@ test('subscription context should not call removeListener more than one time whe
   sc.close()
   sc.close()
   t.assert.strictEqual(removeListener.calls.length, 1)
+})
+
+test('SubscriptionQueue hands an event to the read waiting for it', async (t) => {
+  const queue = new SubscriptionQueue()
+  t.assert.strictEqual(queue[Symbol.asyncIterator](), queue)
+  t.assert.strictEqual(queue.highWaterMark, 16)
+
+  const read = queue.next()
+  queue.add('a', () => {})
+  t.assert.strictEqual(queue.length, 0)
+  t.assert.deepStrictEqual(await read, { value: 'a', done: false })
+})
+
+test('SubscriptionQueue push() returns false once it holds highWaterMark events', (t) => {
+  const queue = new SubscriptionQueue({ highWaterMark: 2 })
+  t.assert.strictEqual(queue.push('a'), true)
+  t.assert.strictEqual(queue.push('b'), false)
+  t.assert.strictEqual(queue.push('c'), false)
+  t.assert.strictEqual(queue.length, 3)
+})
+
+test('SubscriptionQueue keeps its order while a long backlog is read', async (t) => {
+  const queue = new SubscriptionQueue()
+  for (let i = 0; i < 3000; i++) {
+    queue.push(i)
+  }
+  for (let i = 0; i < 2000; i++) {
+    t.assert.strictEqual((await queue.next()).value, i)
+  }
+  for (let i = 3000; i < 4000; i++) {
+    queue.push(i)
+  }
+  for (let i = 2000; i < 4000; i++) {
+    t.assert.strictEqual((await queue.next()).value, i)
+  }
+  t.assert.strictEqual(queue.length, 0)
+})
+
+test('SubscriptionQueue end() lets the events left be read, then is done', async (t) => {
+  const queue = new SubscriptionQueue()
+  queue.push('a')
+  queue.end()
+  queue.end()
+  let called = false
+  queue.add('b', () => { called = true })
+  t.assert.strictEqual(called, true)
+
+  t.assert.deepStrictEqual(await queue.next(), { value: 'a', done: false })
+  t.assert.deepStrictEqual(await queue.next(), { value: undefined, done: true })
+
+  const waiting = new SubscriptionQueue()
+  const read = waiting.next()
+  waiting.end()
+  t.assert.deepStrictEqual(await read, { value: undefined, done: true })
+})
+
+test('SubscriptionQueue return() drops the events and is done', async (t) => {
+  const queue = new SubscriptionQueue()
+  queue.push('a')
+  t.assert.deepStrictEqual(await queue.return(), { value: undefined, done: true })
+  t.assert.deepStrictEqual(await queue.next(), { value: undefined, done: true })
+  queue.destroy()
+  t.assert.strictEqual(queue.length, 0)
+})
+
+test('SubscriptionQueue destroy() with an error rejects the next read once', async (t) => {
+  const error = new Error('kaboom')
+
+  const queue = new SubscriptionQueue()
+  queue.push('a')
+  queue.destroy(error)
+  await t.assert.rejects(queue.next(), error)
+  t.assert.deepStrictEqual(await queue.next(), { value: undefined, done: true })
+
+  const waiting = new SubscriptionQueue()
+  const first = waiting.next()
+  const second = waiting.next()
+  waiting.destroy(error)
+  await t.assert.rejects(first, error)
+  t.assert.deepStrictEqual(await second, { value: undefined, done: true })
+})
+
+test('SubscriptionQueue with overflow \'close\' and no logger ends with an error', async (t) => {
+  const queue = new SubscriptionQueue({ highWaterMark: 1, overflow: 'close' })
+  queue.push('a')
+  queue.push('b')
+  await t.assert.rejects(queue.next(), { code: 'MER_ERR_GQL_SUBSCRIPTION_QUEUE_FULL' })
 })
 
 function publishAll (sc, count) {
@@ -213,55 +286,53 @@ function publishAll (sc, count) {
 test('by default, a full subscription queue keeps the events and publishing does not wait', async (t) => {
   const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 2 })
   const queue = await sc.subscribe('TOPIC')
-  const events = queue[Symbol.asyncIterator]()
 
   const published = publishAll(sc, 4)
   await immediate()
   t.assert.deepStrictEqual(published, [0, 1, 2, 3])
-  // the events past the highWaterMark wait in the writable buffer
-  t.assert.strictEqual(queue.readableLength, 2)
+  t.assert.strictEqual(queue.length, 4)
   for (let i = 0; i < 4; i++) {
-    t.assert.deepStrictEqual(await events.next(), { value: i, done: false })
+    t.assert.deepStrictEqual(await queue.next(), { value: i, done: false })
   }
 })
 
 test('with queueOverflow \'wait\', publishing to a full subscription queue waits until the subscription reads from it', async (t) => {
   const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 2, queueOverflow: 'wait' })
   const queue = await sc.subscribe('TOPIC')
-  const events = queue[Symbol.asyncIterator]()
+
+  const published = publishAll(sc, 4)
+  await immediate()
+  // the queue holds two events: the publishers of the next ones wait
+  t.assert.deepStrictEqual(published, [0, 1])
+
+  // each event read lets one more publisher go on
+  t.assert.deepStrictEqual(await queue.next(), { value: 0, done: false })
+  await immediate()
+  t.assert.deepStrictEqual(published, [0, 1, 2])
+
+  t.assert.deepStrictEqual(await queue.next(), { value: 1, done: false })
+  await immediate()
+  t.assert.deepStrictEqual(published, [0, 1, 2, 3])
+  t.assert.deepStrictEqual(await queue.next(), { value: 2, done: false })
+  t.assert.deepStrictEqual(await queue.next(), { value: 3, done: false })
+})
+
+test('closing a subscription lets the publishers waiting for its queue go on', async (t) => {
+  const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 1, queueOverflow: 'wait' })
+  const queue = await sc.subscribe('TOPIC')
 
   const published = publishAll(sc, 3)
   await immediate()
-  // the second event fills the queue
   t.assert.deepStrictEqual(published, [0])
 
-  // each event read lets one more publisher go on
-  t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
-  await immediate()
-  t.assert.deepStrictEqual(published, [0, 1])
-
-  t.assert.deepStrictEqual(await events.next(), { value: 1, done: false })
+  sc.close()
   await immediate()
   t.assert.deepStrictEqual(published, [0, 1, 2])
-  t.assert.deepStrictEqual(await events.next(), { value: 2, done: false })
-})
-
-test('ending a subscription as its connection does lets the publishers waiting for its queue go on', async (t) => {
-  const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 1, queueOverflow: 'wait' })
-  const queue = await sc.subscribe('TOPIC')
-  const events = queue[Symbol.asyncIterator]()
-
-  const published = publishAll(sc, 4)
-  t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
-  await immediate()
-  t.assert.deepStrictEqual(published, [0])
-
-  // what handleGQLComplete() does
-  sc.close()
-  await events.return()
-  await immediate()
-  t.assert.deepStrictEqual(published, [0, 1, 2, 3])
-  t.assert.strictEqual(queue.destroyed, true)
+  // the events left are still read
+  t.assert.deepStrictEqual(await queue.next(), { value: 0, done: false })
+  t.assert.deepStrictEqual(await queue.next(), { value: 1, done: false })
+  t.assert.deepStrictEqual(await queue.next(), { value: 2, done: false })
+  t.assert.deepStrictEqual(await queue.next(), { value: undefined, done: true })
 })
 
 test('destroying a subscription queue lets the publishers waiting for it go on', async (t) => {
@@ -270,11 +341,13 @@ test('destroying a subscription queue lets the publishers waiting for it go on',
 
   const published = publishAll(sc, 3)
   await immediate()
-  t.assert.deepStrictEqual(published, [])
+  t.assert.deepStrictEqual(published, [0])
 
+  // what the iterator return() of a stopped subscription does
   queue.destroy()
   await immediate()
   t.assert.deepStrictEqual(published, [0, 1, 2])
+  t.assert.deepStrictEqual(await queue.next(), { value: undefined, done: true })
 })
 
 test('with queueOverflow \'drop\', a full subscription queue discards the new events', async (t) => {
@@ -285,7 +358,7 @@ test('with queueOverflow \'drop\', a full subscription queue discards the new ev
   const published = publishAll(sc, 4)
   await immediate()
   t.assert.deepStrictEqual(published, [0, 1, 2, 3])
-  t.assert.strictEqual(queue.readableLength, 2)
+  t.assert.strictEqual(queue.length, 2)
 
   t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
   t.assert.deepStrictEqual(await events.next(), { value: 1, done: false })
@@ -309,32 +382,41 @@ test('with queueOverflow \'close\', a full subscription queue ends the subscript
   t.assert.deepStrictEqual(warnings, ['subscription closed: its client does not read its events fast enough'])
 })
 
-test('publishing to a full queue that is not a subscription queue does not wait', async (t) => {
-  const pubsub = new PubSub(mq())
-  const queue = new Readable({ objectMode: true, highWaterMark: 1, read () {} })
-  await pubsub.subscribe('TOPIC', queue)
-
-  const published = []
-  for (let i = 0; i < 3; i++) {
-    pubsub.publish({ topic: 'TOPIC', payload: i }, () => published.push(i))
+test('a custom pubsub can push to the queue and set its close function', async (t) => {
+  const emitter = new EventEmitter()
+  class CustomPubSub {
+    async subscribe (topic, queue) {
+      const listener = (payload) => t.assert.strictEqual(queue.push(payload), queue.length < queue.highWaterMark)
+      emitter.on(topic, listener)
+      queue.close = () => emitter.removeListener(topic, listener)
+    }
   }
-  t.assert.deepStrictEqual(published, [0, 1, 2])
-  t.assert.strictEqual(queue.readableLength, 3)
+  const sc = new SubscriptionContext({ pubsub: new CustomPubSub(), queueHighWaterMark: 2 })
+  const queue = await sc.subscribe('TOPIC')
+
+  emitter.emit('TOPIC', 0)
+  emitter.emit('TOPIC', 1)
+  emitter.emit('TOPIC', 2)
+  t.assert.strictEqual(queue.length, 3)
+
+  sc.close()
+  t.assert.strictEqual(emitter.listenerCount('TOPIC'), 0)
 })
 
 test('publish without a callback resolves once the event is delivered', async (t) => {
   const pubsub = new PubSub(mq())
   const sc = new SubscriptionContext({ pubsub, queueHighWaterMark: 1, queueOverflow: 'wait' })
   const queue = await sc.subscribe('TOPIC')
-  const events = queue[Symbol.asyncIterator]()
+
+  await pubsub.publish({ topic: 'TOPIC', payload: 0 })
 
   let delivered = false
-  pubsub.publish({ topic: 'TOPIC', payload: 0 }).then(() => { delivered = true })
+  pubsub.publish({ topic: 'TOPIC', payload: 1 }).then(() => { delivered = true })
   await immediate()
-  // the event fills the queue
+  // the queue is full
   t.assert.strictEqual(delivered, false)
 
-  t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
+  t.assert.deepStrictEqual(await queue.next(), { value: 0, done: false })
   await immediate()
   t.assert.strictEqual(delivered, true)
 })
@@ -481,13 +563,18 @@ test('with queueOverflow \'close\', a subscription whose queue overflows gets an
 
   ws.send(JSON.stringify({ id: '1', type: 'subscribe', payload: { query: 'subscription { onTick }' } }))
   await sleep(100)
-  // published faster than the subscription can send them
-  for (let i = 0; i < 3; i++) {
+  // published faster than the subscription can send them: the first one goes
+  // to the subscription waiting for it, the next two fill the queue
+  for (let i = 0; i < 4; i++) {
     app.graphql.pubsub.publish({ topic: 'TICK', payload: { onTick: i } })
   }
   await sleep(100)
 
   t.assert.deepStrictEqual(messages, [{
+    type: 'next',
+    id: '1',
+    payload: { data: { onTick: 0 } }
+  }, {
     type: 'error',
     id: '1',
     payload: [{ message: 'Subscription closed: its queue is full' }]
@@ -498,5 +585,5 @@ test('with queueOverflow \'close\', a subscription whose queue overflows gets an
   await sleep(100)
   await app.graphql.pubsub.publish({ topic: 'TICK', payload: { onTick: 3 } })
   await sleep(100)
-  t.assert.deepStrictEqual(messages.slice(1), [{ type: 'next', id: '2', payload: { data: { onTick: 3 } } }])
+  t.assert.deepStrictEqual(messages.slice(2), [{ type: 'next', id: '2', payload: { data: { onTick: 3 } } }])
 })

@@ -18,7 +18,6 @@ import {
 } from 'graphql'
 import type { WebSocket } from 'ws'
 import { IncomingMessage, OutgoingHttpHeaders } from 'http'
-import { Readable } from 'stream'
 import { EventEmitter } from 'events'
 
 type Mercurius = typeof mercurius
@@ -28,10 +27,34 @@ declare namespace mercurius {
     [topic: string]: any;
   }
 
+  /**
+   * The events of one subscription, waiting to be sent to its client: the
+   * pubsub adds them, and the subscription reads them as an async iterator.
+   */
+  export interface SubscriptionQueue<T = any> extends AsyncIterableIterator<T> {
+    /** The number of events the queue holds before `queueOverflow` applies. */
+    readonly highWaterMark: number;
+    /** The number of events not read yet. */
+    readonly length: number;
+    /** Adds an event, and returns false once the queue holds `highWaterMark` events. */
+    push(event: T): boolean;
+    /**
+     * Adds an event, and calls `callback` once the publisher can go on: with
+     * `queueOverflow: 'wait'`, once the subscription has read enough of the queue.
+     */
+    add(event: T, callback: () => void): void;
+    /** No event is added anymore: the subscription reads the ones left, then is done. */
+    end(): void;
+    /** Ends the subscription now, dropping its events. With an error, its next read rejects with it. */
+    destroy(error?: Error): void;
+    /** The functions that unsubscribe the pubsub from the queue, called when the subscription closes. */
+    close: Array<() => void> | (() => void);
+  }
+
   export interface PubSub<TPubSubTopics extends PubSubTopics = PubSubTopics> {
     subscribe<TTopic extends Extract<keyof TPubSubTopics, string>>(
       topics: TTopic | TTopic[],
-    ): Promise<Readable & AsyncIterableIterator<TPubSubTopics[TTopic]>>;
+    ): Promise<SubscriptionQueue<TPubSubTopics[TTopic]>>;
     publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
       event: {
         topic: TTopic;
@@ -57,7 +80,7 @@ declare namespace mercurius {
     emitter?: EventEmitter;
     subscribe(
       topic: string | string[],
-      queue: Readable & { close: () => void },
+      queue: SubscriptionQueue,
       ...customArgs: any[]
     ): Promise<void>;
     publish(
@@ -76,9 +99,9 @@ declare namespace mercurius {
      */
     fastify: FastifyInstance;
     /**
-     * Readable stream for subscription data
+     * The events of the subscription, waiting to be sent to its client
      */
-    queue: Readable;
+    queue: SubscriptionQueue;
     /**
      * Whether the subscription context is closed
      */
@@ -87,9 +110,9 @@ declare namespace mercurius {
      * Subscribe to a topic or topics
      * @param topics - A single topic or array of topics to subscribe to
      * @param customArgs - Additional arguments passed to custom pubsub implementations
-     * @returns A readable stream that emits subscription data
+     * @returns The queue of the subscription, an async iterator of its events
      */
-    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<Readable & AsyncIterableIterator<T>>;
+    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<SubscriptionQueue<T>>;
     /**
      * Publish an event to the pubsub
      * @param event - The event to publish with topic and payload
