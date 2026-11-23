@@ -104,7 +104,7 @@ function render () {
 
 function importDependencies () {
   const link = document.createElement('link')
-  link.href = 'https://unpkg.com/graphiql@3.8.3/graphiql.min.css'
+  link.href = './graphiql.min.css'
   link.type = 'text/css'
   link.rel = 'stylesheet'
   link.media = 'screen,print'
@@ -112,9 +112,9 @@ function importDependencies () {
   document.getElementsByTagName('head')[0].appendChild(link)
 
   return importer.urls([
-    'https://unpkg.com/react@18.3.1/umd/react.production.min.js',
-    'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js',
-    'https://unpkg.com/graphiql@3.8.3/graphiql.min.js'
+    './react.production.min.js',
+    './react-dom.production.min.js',
+    './graphiql.min.js'
   ]).then(function () {
     const pluginUrls = window.GRAPHIQL_PLUGIN_LIST
       .map(plugin => window[`GRAPHIQL_PLUGIN_${plugin.toUpperCase()}`].umdUrl)
