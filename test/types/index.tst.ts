@@ -853,17 +853,18 @@ app.register(mercurius, {
 
 // Test that app.graphql.pubsub has:
 // - subscribe(topics): Promise<Readable & AsyncIterableIterator>
-// - publish(event, callback?): void
-app.graphql.pubsub.publish({
+// - publish(event): Promise<void>
+// - publish(event, callback): void
+expect(app.graphql.pubsub.publish({
   topic: 'test',
   payload: 'test'
-})
-app.graphql.pubsub.publish({
+})).type.toBe<Promise<void>>()
+expect(app.graphql.pubsub.publish({
   topic: 'test',
   payload: 'test'
 }, () => {
   console.log('published')
-})
+})).type.toBe<void>()
 
 // Issue #350: context.pubsub in subscription resolvers has a nested pubsub property
 // that contains the actual pubsub implementation

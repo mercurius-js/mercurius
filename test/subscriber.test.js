@@ -270,7 +270,37 @@ test('publishing to a full queue that is not a subscription queue does not wait'
   t.assert.strictEqual(queue.readableLength, 3)
 })
 
-test('publishing to a subscription whose client does not read waits for it', async (t) => {
+test('publish without a callback resolves once the event is delivered', async (t) => {
+  const pubsub = new PubSub(mq())
+  const sc = new SubscriptionContext({ pubsub, queueHighWaterMark: 1 })
+  const queue = await sc.subscribe('TOPIC')
+  const events = queue[Symbol.asyncIterator]()
+
+  let delivered = false
+  pubsub.publish({ topic: 'TOPIC', payload: 0 }).then(() => { delivered = true })
+  await immediate()
+  // the event fills the queue
+  t.assert.strictEqual(delivered, false)
+
+  t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
+  await immediate()
+  t.assert.strictEqual(delivered, true)
+})
+
+test('publish without a callback does not reject when the emitter fails', async (t) => {
+  const emitter = mq()
+  await new Promise((resolve) => emitter.close(resolve))
+  const pubsub = new PubSub(emitter)
+
+  t.assert.strictEqual(await pubsub.publish({ topic: 'TOPIC', payload: 1 }), undefined)
+
+  // the callback gets the error
+  let error
+  t.assert.strictEqual(pubsub.publish({ topic: 'TOPIC', payload: 1 }, (err) => { error = err }), undefined)
+  t.assert.strictEqual(error.message, 'mqemitter is closed')
+})
+
+test('a mutation publishing to a subscription whose client does not read waits for it', async (t) => {
   const PAYLOAD = 'a'.repeat(128 * 1024)
   const app = Fastify()
   app.register(GQL, {
@@ -278,11 +308,20 @@ test('publishing to a subscription whose client does not read waits for it', asy
       type Query {
         _placeholder: String
       }
+      type Mutation {
+        tick(n: Int): Boolean
+      }
       type Subscription {
         onTick: String
       }
     `,
     resolvers: {
+      Mutation: {
+        tick: async (_, { n }, { pubsub }) => {
+          await pubsub.publish({ topic: 'TICK', payload: { onTick: `${n}:${PAYLOAD}` } })
+          return true
+        }
+      },
       Subscription: {
         onTick: {
           subscribe: (root, args, { pubsub }) => pubsub.subscribe('TICK')
@@ -305,28 +344,31 @@ test('publishing to a subscription whose client does not read waits for it', asy
   await sleep(100)
   ws.pause()
 
-  // the kernel socket buffers and the subscription queue fill up, then the
-  // callback of a publish waits
+  // the kernel socket buffers and the subscription queue fill up, then a
+  // mutation waits
   let pending = null
   let published = 0
   while (published < 500) {
-    const event = { topic: 'TICK', payload: { onTick: `${published}:${PAYLOAD}` } }
-    const publish = new Promise((resolve) => app.graphql.pubsub.publish(event, resolve))
-    const waited = await Promise.race([publish.then(() => false), sleep(100, true)])
+    const mutation = app.inject({
+      method: 'POST',
+      url: '/graphql',
+      body: { query: `mutation { tick(n: ${published}) }` }
+    })
+    const waited = await Promise.race([mutation.then(() => false), sleep(100, true)])
     if (waited) {
-      pending = publish
+      pending = mutation
       break
     }
     published++
   }
-  t.assert.ok(pending, `${published} events were published without waiting`)
+  t.assert.ok(pending, `${published} mutations published without waiting`)
 
   const received = []
   ws.on('message', (data) => {
     received.push(Number(JSON.parse(data).payload.data.onTick.split(':')[0]))
   })
   ws.resume()
-  await pending
+  t.assert.deepStrictEqual((await pending).json(), { data: { tick: true } })
 
   for (let i = 0; i < 50 && received.length <= published; i++) {
     await sleep(20)

@@ -37,8 +37,19 @@ declare namespace mercurius {
         topic: TTopic;
         payload: TPubSubTopics[TTopic];
       },
-      callback?: () => void,
+      callback: () => void,
     ): void;
+    /**
+     * Resolves once the event is delivered to the subscriptions, which waits
+     * for the subscriptions whose queue is full to read from it. Never rejects:
+     * an error of the emitter is ignored. Pass a callback to get it.
+     */
+    publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
+      event: {
+        topic: TTopic;
+        payload: TPubSubTopics[TTopic];
+      },
+    ): Promise<void>;
   }
 
   export interface CustomPubSub {
