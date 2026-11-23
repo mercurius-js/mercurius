@@ -213,11 +213,16 @@ function publishAll (sc, count) {
 test('by default, a full subscription queue keeps the events and publishing does not wait', async (t) => {
   const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 2 })
   const queue = await sc.subscribe('TOPIC')
+  const events = queue[Symbol.asyncIterator]()
 
   const published = publishAll(sc, 4)
   await immediate()
   t.assert.deepStrictEqual(published, [0, 1, 2, 3])
-  t.assert.strictEqual(queue.readableLength, 4)
+  // the events past the highWaterMark wait in the writable buffer
+  t.assert.strictEqual(queue.readableLength, 2)
+  for (let i = 0; i < 4; i++) {
+    t.assert.deepStrictEqual(await events.next(), { value: i, done: false })
+  }
 })
 
 test('with queueOverflow \'wait\', publishing to a full subscription queue waits until the subscription reads from it', async (t) => {
@@ -230,10 +235,10 @@ test('with queueOverflow \'wait\', publishing to a full subscription queue waits
   // the second event fills the queue
   t.assert.deepStrictEqual(published, [0])
 
-  // the queue is still full
+  // each event read lets one more publisher go on
   t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
   await immediate()
-  t.assert.deepStrictEqual(published, [0])
+  t.assert.deepStrictEqual(published, [0, 1])
 
   t.assert.deepStrictEqual(await events.next(), { value: 1, done: false })
   await immediate()
@@ -241,30 +246,35 @@ test('with queueOverflow \'wait\', publishing to a full subscription queue waits
   t.assert.deepStrictEqual(await events.next(), { value: 2, done: false })
 })
 
-test('closing a subscription lets the publishers waiting for its queue go on', async (t) => {
+test('ending a subscription as its connection does lets the publishers waiting for its queue go on', async (t) => {
   const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 1, queueOverflow: 'wait' })
-  await sc.subscribe('TOPIC')
+  const queue = await sc.subscribe('TOPIC')
+  const events = queue[Symbol.asyncIterator]()
 
-  const published = publishAll(sc, 3)
+  const published = publishAll(sc, 4)
+  t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
   await immediate()
-  t.assert.deepStrictEqual(published, [])
+  t.assert.deepStrictEqual(published, [0])
 
+  // what handleGQLComplete() does
   sc.close()
+  await events.return()
   await immediate()
-  t.assert.deepStrictEqual(published, [0, 1, 2])
+  t.assert.deepStrictEqual(published, [0, 1, 2, 3])
+  t.assert.strictEqual(queue.destroyed, true)
 })
 
 test('destroying a subscription queue lets the publishers waiting for it go on', async (t) => {
   const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 1, queueOverflow: 'wait' })
   const queue = await sc.subscribe('TOPIC')
 
-  const published = publishAll(sc, 2)
+  const published = publishAll(sc, 3)
   await immediate()
   t.assert.deepStrictEqual(published, [])
 
   queue.destroy()
   await immediate()
-  t.assert.deepStrictEqual(published, [0, 1])
+  t.assert.deepStrictEqual(published, [0, 1, 2])
 })
 
 test('with queueOverflow \'drop\', a full subscription queue discards the new events', async (t) => {
@@ -342,7 +352,9 @@ test('publish without a callback does not reject when the emitter fails', async 
   t.assert.strictEqual(error.message, 'mqemitter is closed')
 })
 
-test('with queueOverflow \'wait\', a mutation publishing to a subscription whose client does not read waits for it', async (t) => {
+// A subscription with queueOverflow 'wait' whose client has stopped reading,
+// and a mutation publishing to it that waits.
+async function setupWaitingMutation (t) {
   const PAYLOAD = 'a'.repeat(128 * 1024)
   const app = Fastify()
   app.register(GQL, {
@@ -405,6 +417,12 @@ test('with queueOverflow \'wait\', a mutation publishing to a subscription whose
   }
   t.assert.ok(pending, `${published} mutations published without waiting`)
 
+  return { ws, pending, published }
+}
+
+test('with queueOverflow \'wait\', a mutation publishing to a subscription whose client does not read waits for it', async (t) => {
+  const { ws, pending, published } = await setupWaitingMutation(t)
+
   const received = []
   ws.on('message', (data) => {
     received.push(Number(JSON.parse(data).payload.data.onTick.split(':')[0]))
@@ -416,6 +434,14 @@ test('with queueOverflow \'wait\', a mutation publishing to a subscription whose
     await sleep(20)
   }
   t.assert.deepStrictEqual(received, Array.from({ length: published + 1 }, (_, i) => i))
+})
+
+test('with queueOverflow \'wait\', a mutation waiting for a subscription goes on when its client stops it', async (t) => {
+  const { ws, pending } = await setupWaitingMutation(t)
+
+  // the client still writes while it does not read
+  ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+  t.assert.deepStrictEqual((await pending).json(), { data: { tick: true } })
 })
 
 test('with queueOverflow \'close\', a subscription whose queue overflows gets an error and can be subscribed again', async (t) => {
