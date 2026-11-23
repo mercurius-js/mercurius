@@ -158,3 +158,18 @@ test('invalid queueHighWaterMark', async t => {
     message: 'Invalid options: queueHighWaterMark must be a positive number'
   })
 })
+
+test('invalid queueOverflow', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      queueOverflow: 'block'
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: "Invalid options: queueOverflow must be one of 'buffer', 'wait', 'drop', 'close'"
+  })
+})

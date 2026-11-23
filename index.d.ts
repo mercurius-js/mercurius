@@ -40,9 +40,10 @@ declare namespace mercurius {
       callback: () => void,
     ): void;
     /**
-     * Resolves once the event is delivered to the subscriptions, which waits
-     * for the subscriptions whose queue is full to read from it. Never rejects:
-     * an error of the emitter is ignored. Pass a callback to get it.
+     * Resolves once the event is delivered to the subscriptions. With
+     * `queueOverflow: 'wait'`, that waits for the subscriptions whose queue is
+     * full to read from it. Never rejects: an error of the emitter is ignored.
+     * Pass a callback to get it.
      */
     publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
       event: {
@@ -632,6 +633,17 @@ declare namespace mercurius {
         fullWsTransport?: boolean,
         wsDefaultSubprotocol?: string,
         queueHighWaterMark?: number,
+        /**
+         * What happens to an event published to a subscription whose queue holds
+         * `queueHighWaterMark` events:
+         * - `'buffer'` (default): it is added anyway, the queue has no limit;
+         * - `'wait'`: it is added, and the emitter is called back only once the
+         *   subscription reads from its queue, so publishers that wait for
+         *   `publish()` wait for the slowest subscriber;
+         * - `'drop'`: it is discarded;
+         * - `'close'`: the subscription ends with an error.
+         */
+        queueOverflow?: 'buffer' | 'wait' | 'drop' | 'close',
       };
     /**
      * Persisted queries, overrides persistedQueryProvider.

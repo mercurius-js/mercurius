@@ -385,6 +385,25 @@ app.register(mercurius, {
   }
 })
 
+for (const queueOverflow of ['buffer', 'wait', 'drop', 'close'] as const) {
+  app.register(mercurius, {
+    schema,
+    resolvers,
+    subscription: {
+      queueHighWaterMark: 100,
+      queueOverflow
+    }
+  })
+}
+
+expect(mercurius).type.not.toBeCallableWith(app, {
+  schema,
+  resolvers,
+  subscription: {
+    queueOverflow: 'block'
+  }
+})
+
 app.register(mercurius, {
   schema,
   resolvers,
