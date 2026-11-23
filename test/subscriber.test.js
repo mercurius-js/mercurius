@@ -1,5 +1,11 @@
 const { test } = require('node:test')
+const { once } = require('node:events')
+const { Readable } = require('node:stream')
+const { setImmediate: immediate, setTimeout: sleep } = require('node:timers/promises')
 const mq = require('mqemitter')
+const Fastify = require('fastify')
+const WebSocket = require('ws')
+const GQL = require('..')
 const { PubSub, SubscriptionContext } = require('../lib/subscriber')
 
 function capture (obj, methodName) {
@@ -194,4 +200,136 @@ test('subscription context should not call removeListener more than one time whe
   sc.close()
   sc.close()
   t.assert.strictEqual(removeListener.calls.length, 1)
+})
+
+function publishAll (sc, count) {
+  const published = []
+  for (let i = 0; i < count; i++) {
+    sc.publish({ topic: 'TOPIC', payload: i }).then(() => published.push(i))
+  }
+  return published
+}
+
+test('publishing to a full subscription queue waits until the subscription reads from it', async (t) => {
+  const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 2 })
+  const queue = await sc.subscribe('TOPIC')
+  const events = queue[Symbol.asyncIterator]()
+
+  const published = publishAll(sc, 3)
+  await immediate()
+  // the second event fills the queue
+  t.assert.deepStrictEqual(published, [0])
+
+  // the queue is still full
+  t.assert.deepStrictEqual(await events.next(), { value: 0, done: false })
+  await immediate()
+  t.assert.deepStrictEqual(published, [0])
+
+  t.assert.deepStrictEqual(await events.next(), { value: 1, done: false })
+  await immediate()
+  t.assert.deepStrictEqual(published, [0, 1, 2])
+  t.assert.deepStrictEqual(await events.next(), { value: 2, done: false })
+})
+
+test('closing a subscription lets the publishers waiting for its queue go on', async (t) => {
+  const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 1 })
+  await sc.subscribe('TOPIC')
+
+  const published = publishAll(sc, 3)
+  await immediate()
+  t.assert.deepStrictEqual(published, [])
+
+  sc.close()
+  await immediate()
+  t.assert.deepStrictEqual(published, [0, 1, 2])
+})
+
+test('destroying a subscription queue lets the publishers waiting for it go on', async (t) => {
+  const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 1 })
+  const queue = await sc.subscribe('TOPIC')
+
+  const published = publishAll(sc, 2)
+  await immediate()
+  t.assert.deepStrictEqual(published, [])
+
+  queue.destroy()
+  await immediate()
+  t.assert.deepStrictEqual(published, [0, 1])
+})
+
+test('publishing to a full queue that is not a subscription queue does not wait', async (t) => {
+  const pubsub = new PubSub(mq())
+  const queue = new Readable({ objectMode: true, highWaterMark: 1, read () {} })
+  await pubsub.subscribe('TOPIC', queue)
+
+  const published = []
+  for (let i = 0; i < 3; i++) {
+    pubsub.publish({ topic: 'TOPIC', payload: i }, () => published.push(i))
+  }
+  t.assert.deepStrictEqual(published, [0, 1, 2])
+  t.assert.strictEqual(queue.readableLength, 3)
+})
+
+test('publishing to a subscription whose client does not read waits for it', async (t) => {
+  const PAYLOAD = 'a'.repeat(128 * 1024)
+  const app = Fastify()
+  app.register(GQL, {
+    schema: `
+      type Query {
+        _placeholder: String
+      }
+      type Subscription {
+        onTick: String
+      }
+    `,
+    resolvers: {
+      Subscription: {
+        onTick: {
+          subscribe: (root, args, { pubsub }) => pubsub.subscribe('TICK')
+        }
+      }
+    },
+    subscription: true
+  })
+  await app.listen({ port: 0, host: '127.0.0.1' })
+
+  const ws = new WebSocket(`ws://127.0.0.1:${app.server.address().port}/graphql`, 'graphql-transport-ws')
+  t.after(async () => {
+    ws.terminate()
+    await app.close()
+  })
+  await once(ws, 'open')
+  ws.send(JSON.stringify({ type: 'connection_init' }))
+  await once(ws, 'message')
+  ws.send(JSON.stringify({ id: '1', type: 'subscribe', payload: { query: 'subscription { onTick }' } }))
+  await sleep(100)
+  ws.pause()
+
+  // the kernel socket buffers and the subscription queue fill up, then the
+  // callback of a publish waits
+  let pending = null
+  let published = 0
+  while (published < 500) {
+    const event = { topic: 'TICK', payload: { onTick: `${published}:${PAYLOAD}` } }
+    const publish = new Promise((resolve) => app.graphql.pubsub.publish(event, resolve))
+    const waited = await Promise.race([publish.then(() => false), sleep(100, true)])
+    if (waited) {
+      pending = publish
+      break
+    }
+    published++
+  }
+  t.assert.ok(pending, `${published} events were published without waiting`)
+
+  const received = []
+  ws.on('message', (data) => {
+    received.push(Number(JSON.parse(data).payload.data.onTick.split(':')[0]))
+  })
+  ws.resume()
+  await pending
+
+  for (let i = 0; i < 50 && received.length <= published; i++) {
+    await sleep(20)
+  }
+  t.assert.deepStrictEqual(received, Array.from({ length: published + 1 }, (_, i) => i))
 })
