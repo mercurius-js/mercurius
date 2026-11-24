@@ -269,7 +269,8 @@ test('SubscriptionQueue push() returns false once the queue is closed', (t) => {
   const closing = new SubscriptionQueue({ highWaterMark: 1, overflow: 'close' })
   t.assert.strictEqual(closing.push('a'), false)
   t.assert.strictEqual(closing.push('b'), false)
-  t.assert.strictEqual(closing.destroyed, true)
+  // its events are dropped
+  t.assert.strictEqual(closing.length, 0)
   t.assert.strictEqual(closing.push('c'), false)
 })
 
@@ -442,7 +443,8 @@ test('with queueOverflow \'close\', a full subscription queue ends the subscript
   const published = publishAll(sc, 4)
   await immediate()
   t.assert.deepStrictEqual(published, [0, 1, 2, 3])
-  t.assert.strictEqual(queue.destroyed, true)
+  // its events are dropped
+  t.assert.strictEqual(queue.length, 0)
 
   await t.assert.rejects(events.next(), { code: 'MER_ERR_GQL_SUBSCRIPTION_QUEUE_FULL' })
   t.assert.deepStrictEqual(warnings, ['subscription closed: its client does not read its events fast enough'])
