@@ -35,6 +35,7 @@ const validateArgs = validateExecutionArgs || buildExecutionContext
 const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
 const { PubSub, withFilter } = require('./lib/subscriber')
+const { QUEUE_OVERFLOW } = require('./lib/subscription-queue')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 const createAdaptiveJit = require('./lib/adaptive-jit')
 const QueryCache = require('./lib/query-cache')
@@ -260,6 +261,7 @@ const mercurius = fp(async function (app, opts) {
   let fullWsTransport
   let wsDefaultSubprotocol
   let queueHighWaterMark
+  let queueOverflow
 
   if (typeof subscriptionOpts === 'object') {
     if (subscriptionOpts.pubsub) {
@@ -276,6 +278,7 @@ const mercurius = fp(async function (app, opts) {
     fullWsTransport = subscriptionOpts.fullWsTransport
     wsDefaultSubprotocol = subscriptionOpts.wsDefaultSubprotocol
     queueHighWaterMark = subscriptionOpts.queueHighWaterMark
+    queueOverflow = subscriptionOpts.queueOverflow
   } else if (subscriptionOpts === true) {
     emitter = mq()
     subscriber = new PubSub(emitter)
@@ -322,6 +325,9 @@ const mercurius = fp(async function (app, opts) {
       throw new MER_ERR_INVALID_OPTS('queueHighWaterMark must be a positive number')
     }
   }
+  if (queueOverflow !== undefined && !QUEUE_OVERFLOW.includes(queueOverflow)) {
+    throw new MER_ERR_INVALID_OPTS(`queueOverflow must be one of '${QUEUE_OVERFLOW.join("', '")}'`)
+  }
 
   fastifyGraphQl.schema = defer ? addDeferDirective(schema) : schema
 
@@ -359,6 +365,7 @@ const mercurius = fp(async function (app, opts) {
       fullWsTransport,
       wsDefaultSubprotocol,
       queueHighWaterMark,
+      queueOverflow,
       queryDepthLimit,
       additionalRouteOptions: opts.additionalRouteOptions,
       csrfConfig

@@ -18,7 +18,6 @@ import {
 } from 'graphql'
 import type { WebSocket } from 'ws'
 import { IncomingMessage, OutgoingHttpHeaders } from 'http'
-import { Readable } from 'stream'
 import { EventEmitter } from 'events'
 
 type Mercurius = typeof mercurius
@@ -28,24 +27,66 @@ declare namespace mercurius {
     [topic: string]: any;
   }
 
+  /**
+   * The events of one subscription, waiting to be sent to its client: the
+   * pubsub pushes them, and the subscription reads them as an async iterator.
+   */
+  export interface SubscriptionQueue<T = any> extends AsyncIterableIterator<T> {
+    /** The number of events the queue holds before `queueOverflow` applies. */
+    readonly highWaterMark: number;
+    /** What happens to an event pushed to a full queue: see `queueOverflow`. */
+    readonly overflow: 'buffer' | 'wait' | 'drop' | 'close';
+    /** The number of events not read yet. */
+    readonly length: number;
+    /**
+     * Adds an event without waiting. Returns false once the queue holds
+     * `highWaterMark` events, or has closed: wait for `waitForRoom()` before
+     * pushing again. With `overflow` `'buffer'` or `'wait'`, events pushed to
+     * a full queue are kept.
+     */
+    push(event: T): boolean;
+    /** Resolves once the queue holds fewer than `highWaterMark` events, or has closed. */
+    waitForRoom(): Promise<void>;
+    /** Calls `callback` once the queue holds fewer than `highWaterMark` events, or has closed. */
+    waitForRoom(callback: () => void): void;
+    /** No event is pushed anymore: the subscription reads the ones left, then is done. */
+    end(): void;
+    /** Ends the subscription now, dropping its events. With an error, its next read rejects with it. */
+    destroy(error?: Error): void;
+    /** The functions that unsubscribe the pubsub from the queue, called when the subscription closes. */
+    close: Array<() => void> | (() => void);
+  }
+
   export interface PubSub<TPubSubTopics extends PubSubTopics = PubSubTopics> {
     subscribe<TTopic extends Extract<keyof TPubSubTopics, string>>(
       topics: TTopic | TTopic[],
-    ): Promise<Readable & AsyncIterableIterator<TPubSubTopics[TTopic]>>;
+    ): Promise<SubscriptionQueue<TPubSubTopics[TTopic]>>;
     publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
       event: {
         topic: TTopic;
         payload: TPubSubTopics[TTopic];
       },
-      callback?: () => void,
+      callback: () => void,
     ): void;
+    /**
+     * Resolves once the event is delivered to the subscriptions. With
+     * `queueOverflow: 'wait'`, that waits for the queues that are full to have
+     * room again. Never rejects: an error of the emitter is ignored.
+     * Pass a callback to get it.
+     */
+    publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
+      event: {
+        topic: TTopic;
+        payload: TPubSubTopics[TTopic];
+      },
+    ): Promise<void>;
   }
 
   export interface CustomPubSub {
     emitter?: EventEmitter;
     subscribe(
       topic: string | string[],
-      queue: Readable & { close: () => void },
+      queue: SubscriptionQueue,
       ...customArgs: any[]
     ): Promise<void>;
     publish(
@@ -64,9 +105,9 @@ declare namespace mercurius {
      */
     fastify: FastifyInstance;
     /**
-     * Readable stream for subscription data
+     * The events of the subscription, waiting to be sent to its client
      */
-    queue: Readable;
+    queue: SubscriptionQueue;
     /**
      * Whether the subscription context is closed
      */
@@ -75,9 +116,9 @@ declare namespace mercurius {
      * Subscribe to a topic or topics
      * @param topics - A single topic or array of topics to subscribe to
      * @param customArgs - Additional arguments passed to custom pubsub implementations
-     * @returns A readable stream that emits subscription data
+     * @returns The queue of the subscription, an async iterator of its events
      */
-    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<Readable & AsyncIterableIterator<T>>;
+    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<SubscriptionQueue<T>>;
     /**
      * Publish an event to the pubsub
      * @param event - The event to publish with topic and payload
@@ -621,6 +662,17 @@ declare namespace mercurius {
         fullWsTransport?: boolean,
         wsDefaultSubprotocol?: string,
         queueHighWaterMark?: number,
+        /**
+         * What happens to an event published to a subscription whose queue holds
+         * `queueHighWaterMark` events:
+         * - `'buffer'` (default): it is added anyway, the queue has no limit;
+         * - `'wait'`: it is added, and the emitter is called back only once the
+         *   queue has room again, so publishers that wait for `publish()` wait
+         *   for the slowest subscriber;
+         * - `'drop'`: it is discarded;
+         * - `'close'`: the subscription ends with an error.
+         */
+        queueOverflow?: 'buffer' | 'wait' | 'drop' | 'close',
       };
     /**
      * Persisted queries, overrides persistedQueryProvider.
