@@ -207,6 +207,39 @@ test('SubscriptionQueue push() returns false once it holds highWaterMark events'
   t.assert.strictEqual(queue.length, 3)
 })
 
+test('SubscriptionQueue push() does not wait with overflow \'wait\'', async (t) => {
+  const queue = new SubscriptionQueue({ highWaterMark: 1, overflow: 'wait' })
+  t.assert.strictEqual(queue.push('a'), false)
+  t.assert.strictEqual(queue.push('b'), false)
+  t.assert.strictEqual(queue.length, 2)
+
+  // a publisher calling add() waits until both events are read
+  let added = false
+  queue.add('c', () => { added = true })
+  await queue.next()
+  t.assert.strictEqual(added, false)
+  await queue.next()
+  t.assert.strictEqual(added, true)
+})
+
+test('SubscriptionQueue push() returns false once the queue is closed', (t) => {
+  const ended = new SubscriptionQueue()
+  ended.end()
+  t.assert.strictEqual(ended.push('a'), false)
+  t.assert.strictEqual(ended.length, 0)
+
+  const destroyed = new SubscriptionQueue()
+  destroyed.destroy()
+  t.assert.strictEqual(destroyed.push('a'), false)
+
+  // the push that overflows a queue with overflow 'close' closes it
+  const closing = new SubscriptionQueue({ highWaterMark: 1, overflow: 'close' })
+  t.assert.strictEqual(closing.push('a'), false)
+  t.assert.strictEqual(closing.push('b'), false)
+  t.assert.strictEqual(closing.destroyed, true)
+  t.assert.strictEqual(closing.push('c'), false)
+})
+
 test('SubscriptionQueue keeps its order while a long backlog is read', async (t) => {
   const queue = new SubscriptionQueue()
   for (let i = 0; i < 3000; i++) {

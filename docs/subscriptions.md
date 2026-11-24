@@ -306,7 +306,7 @@ To create a custom PubSub implementation, you need to implement a class with at 
 
 - **subscribe(topic, queue, ...customArgs)**: 
   - `topic`: String identifier for the subscription topic
-  - `queue`: The queue of the subscription. Add each event with `queue.push(payload)`, which returns `false` once the queue holds `queueHighWaterMark` events, or with `queue.add(payload, callback)`, which calls `callback` once the publisher can go on and so applies `queueOverflow: 'wait'`. Add the function that unsubscribes to `queue.close` (an array), or set `queue.close` to it: it is called when the subscription ends.
+  - `queue`: The queue of the subscription. Add each event with `queue.add(payload, callback)`, which calls `callback` once the publisher can go on: with `queueOverflow: 'wait'`, once the subscription has read enough of its queue. `queue.push(payload)` adds an event without waiting, so with `'wait'` the queue grows past `queueHighWaterMark`. It returns `false` once the queue is full or closed, but nothing signals when it has room again: to wait for the subscription, use `queue.add()`. Add the function that unsubscribes to `queue.close` (an array), or set `queue.close` to it: it is called when the subscription ends.
   - `...customArgs`: Optional additional parameters that can be passed from the subscription resolver
   - Returns: A Promise that resolves when the subscription is set up
 

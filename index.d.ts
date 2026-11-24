@@ -36,7 +36,11 @@ declare namespace mercurius {
     readonly highWaterMark: number;
     /** The number of events not read yet. */
     readonly length: number;
-    /** Adds an event, and returns false once the queue holds `highWaterMark` events. */
+    /**
+     * Adds an event without waiting: with `queueOverflow: 'wait'`, the queue
+     * grows past `highWaterMark`. Returns false once the queue is full or
+     * closed. Nothing signals when it has room again: use `add()` to wait.
+     */
     push(event: T): boolean;
     /**
      * Adds an event, and calls `callback` once the publisher can go on: with
