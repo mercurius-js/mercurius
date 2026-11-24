@@ -452,6 +452,8 @@ async () => {
   const subscription = await app.graphql.pubsub.subscribe('topic')
   expect(subscription).type.toBe<SubscriptionQueue<any>>()
   expect(subscription.length).type.toBe<number>()
+  expect(subscription.waitForRoom()).type.toBe<Promise<void>>()
+  expect(subscription.waitForRoom(() => {})).type.toBe<void>()
 
   for await (const data of subscription) {
     console.log(data.newNotification)

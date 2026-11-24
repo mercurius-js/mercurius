@@ -222,6 +222,39 @@ test('SubscriptionQueue push() does not wait with overflow \'wait\'', async (t) 
   t.assert.strictEqual(added, true)
 })
 
+test('SubscriptionQueue waitForRoom() calls back once the queue holds fewer than highWaterMark events', async (t) => {
+  const queue = new SubscriptionQueue({ highWaterMark: 2 })
+  t.assert.strictEqual(queue.push(0), true)
+  t.assert.strictEqual(queue.push(1), false)
+  t.assert.strictEqual(queue.push(2), false)
+
+  let room = 0
+  queue.waitForRoom(() => room++)
+  const promise = queue.waitForRoom()
+  await queue.next()
+  t.assert.strictEqual(room, 0)
+  await queue.next()
+  t.assert.strictEqual(room, 1)
+  await promise
+
+  // with room, it calls back at once
+  queue.waitForRoom(() => room++)
+  t.assert.strictEqual(room, 2)
+  await queue.waitForRoom()
+})
+
+test('SubscriptionQueue waitForRoom() calls back once the queue is closed', async (t) => {
+  for (const close of ['end', 'destroy', 'return']) {
+    const queue = new SubscriptionQueue({ highWaterMark: 1 })
+    queue.push('a')
+    let room = false
+    queue.waitForRoom(() => { room = true })
+    queue[close]()
+    t.assert.strictEqual(room, true, close)
+    await queue.waitForRoom()
+  }
+})
+
 test('SubscriptionQueue push() returns false once the queue is closed', (t) => {
   const ended = new SubscriptionQueue()
   ended.end()
@@ -413,6 +446,37 @@ test('with queueOverflow \'close\', a full subscription queue ends the subscript
 
   await t.assert.rejects(events.next(), { code: 'MER_ERR_GQL_SUBSCRIPTION_QUEUE_FULL' })
   t.assert.deepStrictEqual(warnings, ['subscription closed: its client does not read its events fast enough'])
+})
+
+test('a custom pubsub can push bursts of events, and wait for room once the queue is full', async (t) => {
+  let produced = 0
+  class CustomPubSub {
+    async subscribe (topic, queue) {
+      const produce = async () => {
+        for (let i = 0; i < 10; i++) {
+          produced++
+          if (!queue.push(i)) {
+            await queue.waitForRoom()
+          }
+        }
+      }
+      produce()
+    }
+  }
+  const sc = new SubscriptionContext({ pubsub: new CustomPubSub(), queueHighWaterMark: 4 })
+  const queue = await sc.subscribe('TOPIC')
+
+  await immediate()
+  // the burst stops once the queue is full
+  t.assert.strictEqual(produced, 4)
+  t.assert.strictEqual(queue.length, 4)
+
+  for (let i = 0; i < 10; i++) {
+    t.assert.deepStrictEqual(await queue.next(), { value: i, done: false })
+    t.assert.ok(queue.length <= 4)
+  }
+  t.assert.strictEqual(produced, 10)
+  sc.close()
 })
 
 test('a custom pubsub can push to the queue and set its close function', async (t) => {

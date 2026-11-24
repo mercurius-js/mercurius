@@ -37,11 +37,15 @@ declare namespace mercurius {
     /** The number of events not read yet. */
     readonly length: number;
     /**
-     * Adds an event without waiting: with `queueOverflow: 'wait'`, the queue
-     * grows past `highWaterMark`. Returns false once the queue is full or
-     * closed. Nothing signals when it has room again: use `add()` to wait.
+     * Adds an event without waiting. Returns false once the queue is full or
+     * closed: wait for `waitForRoom()` before pushing again. With
+     * `queueOverflow: 'wait'`, events pushed anyway are kept past `highWaterMark`.
      */
     push(event: T): boolean;
+    /** Resolves once the queue holds fewer than `highWaterMark` events, or has closed. */
+    waitForRoom(): Promise<void>;
+    /** Calls `callback` once the queue holds fewer than `highWaterMark` events, or has closed. */
+    waitForRoom(callback: () => void): void;
     /**
      * Adds an event, and calls `callback` once the publisher can go on: with
      * `queueOverflow: 'wait'`, once the subscription has read enough of the queue.
