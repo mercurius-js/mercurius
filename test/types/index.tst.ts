@@ -452,6 +452,8 @@ async () => {
   const subscription = await app.graphql.pubsub.subscribe('topic')
   expect(subscription).type.toBe<SubscriptionQueue<any>>()
   expect(subscription.length).type.toBe<number>()
+  expect(subscription.overflow).type.toBe<'buffer' | 'wait' | 'drop' | 'close'>()
+  expect(subscription).type.not.toHaveProperty('add')
   expect(subscription.waitForRoom()).type.toBe<Promise<void>>()
   expect(subscription.waitForRoom(() => {})).type.toBe<void>()
 

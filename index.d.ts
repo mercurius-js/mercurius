@@ -29,29 +29,27 @@ declare namespace mercurius {
 
   /**
    * The events of one subscription, waiting to be sent to its client: the
-   * pubsub adds them, and the subscription reads them as an async iterator.
+   * pubsub pushes them, and the subscription reads them as an async iterator.
    */
   export interface SubscriptionQueue<T = any> extends AsyncIterableIterator<T> {
     /** The number of events the queue holds before `queueOverflow` applies. */
     readonly highWaterMark: number;
+    /** What happens to an event pushed to a full queue: see `queueOverflow`. */
+    readonly overflow: 'buffer' | 'wait' | 'drop' | 'close';
     /** The number of events not read yet. */
     readonly length: number;
     /**
-     * Adds an event without waiting. Returns false once the queue is full or
-     * closed: wait for `waitForRoom()` before pushing again. With
-     * `queueOverflow: 'wait'`, events pushed anyway are kept past `highWaterMark`.
+     * Adds an event without waiting. Returns false once the queue holds
+     * `highWaterMark` events, or has closed: wait for `waitForRoom()` before
+     * pushing again. With `overflow` `'buffer'` or `'wait'`, events pushed to
+     * a full queue are kept.
      */
     push(event: T): boolean;
     /** Resolves once the queue holds fewer than `highWaterMark` events, or has closed. */
     waitForRoom(): Promise<void>;
     /** Calls `callback` once the queue holds fewer than `highWaterMark` events, or has closed. */
     waitForRoom(callback: () => void): void;
-    /**
-     * Adds an event, and calls `callback` once the publisher can go on: with
-     * `queueOverflow: 'wait'`, once the subscription has read enough of the queue.
-     */
-    add(event: T, callback: () => void): void;
-    /** No event is added anymore: the subscription reads the ones left, then is done. */
+    /** No event is pushed anymore: the subscription reads the ones left, then is done. */
     end(): void;
     /** Ends the subscription now, dropping its events. With an error, its next read rejects with it. */
     destroy(error?: Error): void;
@@ -72,8 +70,8 @@ declare namespace mercurius {
     ): void;
     /**
      * Resolves once the event is delivered to the subscriptions. With
-     * `queueOverflow: 'wait'`, that waits for the subscriptions whose queue is
-     * full to read from it. Never rejects: an error of the emitter is ignored.
+     * `queueOverflow: 'wait'`, that waits for the queues that are full to have
+     * room again. Never rejects: an error of the emitter is ignored.
      * Pass a callback to get it.
      */
     publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
@@ -669,8 +667,8 @@ declare namespace mercurius {
          * `queueHighWaterMark` events:
          * - `'buffer'` (default): it is added anyway, the queue has no limit;
          * - `'wait'`: it is added, and the emitter is called back only once the
-         *   subscription reads from its queue, so publishers that wait for
-         *   `publish()` wait for the slowest subscriber;
+         *   queue has room again, so publishers that wait for `publish()` wait
+         *   for the slowest subscriber;
          * - `'drop'`: it is discarded;
          * - `'close'`: the subscription ends with an error.
          */

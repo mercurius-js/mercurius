@@ -34,7 +34,8 @@ const validateArgs = validateExecutionArgs || buildExecutionContext
 
 const queryDepth = require('./lib/queryDepth')
 const mq = require('mqemitter')
-const { PubSub, withFilter, QUEUE_OVERFLOW } = require('./lib/subscriber')
+const { PubSub, withFilter } = require('./lib/subscriber')
+const { QUEUE_OVERFLOW } = require('./lib/subscription-queue')
 const persistedQueryDefaults = require('./lib/persistedQueryDefaults')
 const createAdaptiveJit = require('./lib/adaptive-jit')
 const QueryCache = require('./lib/query-cache')
