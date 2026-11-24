@@ -41,11 +41,21 @@ declare namespace mercurius {
     ): void;
   }
 
+  /** The Readable event queue supplied by Mercurius to a subscription. */
+  export interface SubscriptionQueue extends Readable {
+    /**
+     * Resolves true once readableLength is below readableHighWaterMark, or false
+     * if the queue ends or is destroyed. Readiness is not a reservation.
+     * Aborting rejects with signal.reason and removes this waiter only.
+     */
+    waitForCapacity(options?: { signal?: AbortSignal }): Promise<boolean>;
+  }
+
   export interface CustomPubSub {
     emitter?: EventEmitter;
     subscribe(
       topic: string | string[],
-      queue: Readable & { close: () => void },
+      queue: SubscriptionQueue & { close: () => void },
       ...customArgs: any[]
     ): Promise<void>;
     publish(
@@ -66,7 +76,7 @@ declare namespace mercurius {
     /**
      * Readable stream for subscription data
      */
-    queue: Readable;
+    queue: SubscriptionQueue;
     /**
      * Whether the subscription context is closed
      */
@@ -77,7 +87,7 @@ declare namespace mercurius {
      * @param customArgs - Additional arguments passed to custom pubsub implementations
      * @returns A readable stream that emits subscription data
      */
-    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<Readable & AsyncIterableIterator<T>>;
+    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<SubscriptionQueue & AsyncIterableIterator<T>>;
     /**
      * Publish an event to the pubsub
      * @param event - The event to publish with topic and payload
