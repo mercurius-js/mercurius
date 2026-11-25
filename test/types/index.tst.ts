@@ -3,7 +3,7 @@
 import { expect } from 'tstyche'
 import { EventEmitter } from 'events'
 import Fastify, { FastifyRequest } from 'fastify'
-import { Readable } from 'stream'
+import { Readable } from 'node:stream'
 import * as mercuriusNamespaceImport from '../..'
 import mercurius, {
   mercurius as mercuriusNamedImport,

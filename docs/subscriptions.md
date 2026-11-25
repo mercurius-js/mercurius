@@ -317,7 +317,7 @@ To create a custom PubSub implementation, you need to implement a class with at 
 
 #### Waiting for queue capacity
 
-The queue remains a `Readable` stream. Custom pubsubs can opt into backpressure
+The queue is a `Readable` from `node:stream`. Custom pubsubs can opt into backpressure
 using `queue.waitForCapacity({ signal })` after `queue.push(event)` returns `false`.
 On an open queue, that event was accepted: do not retry it.
 

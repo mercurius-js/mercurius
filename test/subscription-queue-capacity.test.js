@@ -3,7 +3,7 @@
 const { test } = require('node:test')
 const { getEventListeners, once } = require('node:events')
 const { setImmediate: immediate } = require('node:timers/promises')
-const { Readable, Writable } = require('readable-stream')
+const { Readable, Writable } = require('node:stream')
 const mq = require('mqemitter')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
@@ -33,6 +33,25 @@ test('capacity waiting is additive to the Readable queue', async t => {
   t.assert.strictEqual(queue.read(), 2)
   queue.push(null)
   t.assert.strictEqual(await queue.waitForCapacity(), false)
+})
+
+test('capacity waiting does not become a data consumer when a readable listener is removed', async t => {
+  const queue = new SubscriptionQueue(2)
+  for (let i = 1; i <= 3; i++) queue.push(i)
+  let ready = false
+  const capacity = queue.waitForCapacity().then(common.mustCall(t, value => { ready = value }))
+  queue.once('readable', common.mustCall(t, () => {
+    t.assert.strictEqual(queue.read(), 1)
+  }))
+  await immediate()
+  t.assert.strictEqual(queue.readableLength, 2, 'unrequested events stay buffered')
+  t.assert.strictEqual(queue.readableFlowing, null)
+  t.assert.strictEqual(ready, false)
+  t.assert.strictEqual(queue.read(), 2)
+  await capacity
+  t.assert.strictEqual(ready, true)
+  t.assert.strictEqual(queue.read(), 3)
+  queue.destroy()
 })
 
 test('the default high water mark and Readable validation are preserved', t => {

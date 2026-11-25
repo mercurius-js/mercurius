@@ -18,7 +18,7 @@ import {
 } from 'graphql'
 import type { WebSocket } from 'ws'
 import { IncomingMessage, OutgoingHttpHeaders } from 'http'
-import { Readable } from 'stream'
+import { Readable } from 'node:stream'
 import { EventEmitter } from 'events'
 
 type Mercurius = typeof mercurius
