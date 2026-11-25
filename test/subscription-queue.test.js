@@ -7,6 +7,7 @@ test('SubscriptionQueue hands an event to the read waiting for it', async (t) =>
   const queue = new SubscriptionQueue()
   t.assert.strictEqual(queue[Symbol.asyncIterator](), queue)
   t.assert.strictEqual(queue.highWaterMark, 16)
+  t.assert.strictEqual(queue.overflow, 'buffer')
 
   const read = queue.next()
   t.assert.strictEqual(queue.push('a'), true)
@@ -23,6 +24,58 @@ test('SubscriptionQueue push() keeps the event, and returns false once the queue
   for (const value of ['a', 'b', 'c']) {
     t.assert.deepStrictEqual(await queue.next(), { value, done: false })
   }
+})
+
+test('SubscriptionQueue with overflow \'wait\' keeps the events pushed to a full queue', async (t) => {
+  const queue = new SubscriptionQueue({ highWaterMark: 1, overflow: 'wait' })
+  t.assert.strictEqual(queue.overflow, 'wait')
+  t.assert.strictEqual(queue.push('a'), false)
+  t.assert.strictEqual(queue.push('b'), false)
+  t.assert.strictEqual(queue.length, 2)
+
+  let ready
+  queue.waitForCapacity().then((value) => { ready = value })
+  t.assert.deepStrictEqual(await queue.next(), { value: 'a', done: false })
+  t.assert.strictEqual(ready, undefined)
+  t.assert.deepStrictEqual(await queue.next(), { value: 'b', done: false })
+  t.assert.strictEqual(ready, true)
+})
+
+test('SubscriptionQueue with overflow \'drop\' discards the events pushed to a full queue', async (t) => {
+  const queue = new SubscriptionQueue({ highWaterMark: 2, overflow: 'drop' })
+  t.assert.strictEqual(queue.push('a'), true)
+  t.assert.strictEqual(queue.push('b'), false)
+  t.assert.strictEqual(queue.push('c'), false)
+  t.assert.strictEqual(queue.length, 2)
+  t.assert.deepStrictEqual(await queue.next(), { value: 'a', done: false })
+  t.assert.strictEqual(queue.push('d'), false)
+  t.assert.deepStrictEqual(await queue.next(), { value: 'b', done: false })
+  t.assert.deepStrictEqual(await queue.next(), { value: 'd', done: false })
+})
+
+test('SubscriptionQueue with overflow \'close\' ends with an error once an event is pushed to a full queue', async (t) => {
+  const warnings = []
+  const queue = new SubscriptionQueue({ highWaterMark: 1, overflow: 'close', log: { warn: (msg) => warnings.push(msg) } })
+  t.assert.strictEqual(queue.push('a'), false)
+  t.assert.deepStrictEqual(warnings, [])
+  let ready
+  queue.waitForCapacity().then((value) => { ready = value })
+
+  t.assert.strictEqual(queue.push('b'), false)
+  // its events are dropped, and the producers waiting for it go on
+  t.assert.strictEqual(queue.length, 0)
+  t.assert.strictEqual(queue.push('c'), false)
+  t.assert.deepStrictEqual(warnings, ['subscription closed: its client does not read its events fast enough'])
+  await t.assert.rejects(queue.next(), { code: 'MER_ERR_GQL_SUBSCRIPTION_QUEUE_FULL' })
+  t.assert.deepStrictEqual(await queue.next(), { value: undefined, done: true })
+  t.assert.strictEqual(ready, false)
+})
+
+test('SubscriptionQueue with overflow \'close\' and no logger ends with an error', async (t) => {
+  const queue = new SubscriptionQueue({ highWaterMark: 1, overflow: 'close' })
+  queue.push('a')
+  queue.push('b')
+  await t.assert.rejects(queue.next(), { code: 'MER_ERR_GQL_SUBSCRIPTION_QUEUE_FULL' })
 })
 
 test('SubscriptionQueue push() returns false and drops the event once the queue is closed', (t) => {

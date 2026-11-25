@@ -385,6 +385,25 @@ app.register(mercurius, {
   }
 })
 
+for (const queueOverflow of ['buffer', 'wait', 'drop', 'close'] as const) {
+  app.register(mercurius, {
+    schema,
+    resolvers,
+    subscription: {
+      queueHighWaterMark: 100,
+      queueOverflow
+    }
+  })
+}
+
+expect(mercurius).type.not.toBeCallableWith(app, {
+  schema,
+  resolvers,
+  subscription: {
+    queueOverflow: 'block'
+  }
+})
+
 app.register(mercurius, {
   schema,
   resolvers,
@@ -434,6 +453,7 @@ async () => {
   expect(subscription).type.toBe<SubscriptionQueue<any>>()
   expect(subscription.length).type.toBe<number>()
   expect(subscription.highWaterMark).type.toBe<number>()
+  expect(subscription.overflow).type.toBe<'buffer' | 'wait' | 'drop' | 'close'>()
   expect(subscription.push('event')).type.toBe<boolean>()
   expect(subscription.push(null)).type.toBe<boolean>()
   expect(subscription).type.not.toHaveProperty('on')
@@ -852,17 +872,21 @@ app.register(mercurius, {
 
 // Test that app.graphql.pubsub has:
 // - subscribe(topics): Promise<SubscriptionQueue>
-// - publish(event, callback?): void
-app.graphql.pubsub.publish({
+// - publish(event): Promise<void>
+// - publish(event, callback): void
+expect(app.graphql.pubsub.publish({
   topic: 'test',
   payload: 'test'
-})
-app.graphql.pubsub.publish({
+})).type.toBe<Promise<void>>()
+expect(app.graphql.pubsub.publish({
   topic: 'test',
   payload: 'test'
 }, () => {
   console.log('published')
-})
+})).type.toBe<void>()
+// a callback that may be undefined still type checks, as before
+const maybeCallback = undefined as (() => void) | undefined
+expect(app.graphql.pubsub.publish({ topic: 'test', payload: 'test' }, maybeCallback)).type.toBe<void>()
 
 // Issue #350: context.pubsub in subscription resolvers has a nested pubsub property
 // that contains the actual pubsub implementation

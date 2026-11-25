@@ -248,7 +248,7 @@ for (const protocol of ['graphql-ws', 'graphql-transport-ws']) {
   })
 }
 
-test('the built-in PubSub retains nonblocking publish and unlimited buffering', async t => {
+test('by default, the built-in PubSub retains nonblocking publish and unlimited buffering', async t => {
   const pubsub = new PubSub(mq())
   const sc = new SubscriptionContext({ pubsub, queueHighWaterMark: 1 })
   await sc.subscribe('topic')
@@ -259,6 +259,8 @@ test('the built-in PubSub retains nonblocking publish and unlimited buffering', 
     })
   }
   t.assert.strictEqual(sc.queue.length, 3)
-  t.assert.strictEqual(pubsub.publish({ topic: 'topic', payload: 3 }), undefined)
+  // without a callback, publish() returns a promise, resolved at once
+  await pubsub.publish({ topic: 'topic', payload: 3 })
+  t.assert.strictEqual(sc.queue.length, 4)
   sc.close()
 })
