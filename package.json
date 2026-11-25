@@ -35,7 +35,7 @@
     "@types/isomorphic-form-data": "^2.0.0",
     "@types/node": "^26.0.0",
     "@types/ws": "^8.2.0",
-    "autocannon": "^8.0.0",
+    "autocannon": "^9.0.0",
     "borp": "^1.0.0",
     "concurrently": "^10.0.4",
     "docsify-cli": "^5.0.0",
