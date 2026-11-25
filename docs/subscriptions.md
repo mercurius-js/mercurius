@@ -315,6 +315,48 @@ To create a custom PubSub implementation, you need to implement a class with at 
   - `callback`: Function to be called when the publish operation completes
   - Expected behavior: Emit the payload to subscribers of the topic
 
+#### Waiting for queue capacity
+
+The queue is a `Readable` from `node:stream`. Custom pubsubs can opt into backpressure
+using `queue.waitForCapacity({ signal })` after `queue.push(event)` returns `false`.
+On an open queue, that event was accepted: do not retry it.
+
+`waitForCapacity()` returns a promise that resolves:
+
+- `true` when `readableLength` is below `readableHighWaterMark`;
+- `false` when the queue has received `push(null)` or has been destroyed, even
+  if buffered events have not been read yet.
+
+The optional `AbortSignal` cancels only that wait. The promise rejects with
+`signal.reason`, and its waiter is removed without closing the queue. An already
+aborted signal rejects immediately. All waiters are notified when capacity
+returns; this is a notification, not a reservation, so multiple producers must
+coordinate their pushes.
+
+For example, an independent producer loop for one subscription can use:
+
+```js
+async function deliver (source, queue, signal) {
+  for await (const event of source) {
+    if (signal.aborted || queue.destroyed) return
+    if (!queue.push(event) && !await queue.waitForCapacity({ signal })) return
+  }
+}
+```
+
+Start the producer independently and handle its rejection; do not await its
+completion inside `subscribe()`. Subscription setup must finish before GraphQL
+can read the queue. Use the subscription's unsubscribe cleanup to stop the
+source and abort pending work.
+
+The built-in pubsub still calls back publishers without waiting for queue
+capacity. Neither `publish()` nor its return value changes, and pushes past the
+high water mark still buffer events. A custom pubsub must honor the pressure
+signal to limit buffering. Waiting in a shared dispatcher can block healthy
+subscribers behind a slow one; per-subscription replay or another application
+policy may be more appropriate. This API does not bound serialized WebSocket
+bytes or work already executing in a resolver.
+
 #### Custom Arguments in subscribe method
 
 The `subscribe` method supports passing custom arguments from your GraphQL resolvers. This allows for additional filtering or configuration at the subscription level. For example, you might pass an `offset` parameter to control where a subscription starts reading from, or pass filter criteria to perform server-side filtering.

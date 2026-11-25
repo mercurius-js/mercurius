@@ -3,7 +3,7 @@
 import { expect } from 'tstyche'
 import { EventEmitter } from 'events'
 import Fastify, { FastifyRequest } from 'fastify'
-import { Readable } from 'stream'
+import { Readable } from 'node:stream'
 import * as mercuriusNamespaceImport from '../..'
 import mercurius, {
   mercurius as mercuriusNamedImport,
@@ -896,6 +896,13 @@ function testSubscriptionContextType (_ctx: SubscriptionContext) {
   _ctx.pubsub
   _ctx.fastify
   _ctx.queue
+  expect(_ctx.queue.waitForCapacity()).type.toBe<Promise<boolean>>()
+  expect(_ctx.queue.waitForCapacity({ signal: new AbortController().signal })).type.toBe<Promise<boolean>>()
+  expect(_ctx.queue).type.toBeAssignableTo<Readable>()
+  _ctx.subscribe<number>('test').then(queue => {
+    expect(queue.waitForCapacity()).type.toBe<Promise<boolean>>()
+    expect(queue).type.toBeAssignableTo<Readable & AsyncIterableIterator<number>>()
+  })
   _ctx.closed
   _ctx.subscribe('test')
   _ctx.publish({ topic: 'test', payload: 'test' })
@@ -955,6 +962,17 @@ app.register(mercurius, {
 
 // app.graphql.pubsub should be the custom pubsub
 app.graphql.pubsub.publish({ topic: 'test', payload: 'test' })
+
+// A contextually typed custom pubsub receives the capacity API, while the
+// existing implementations above can keep accepting an ordinary Readable.
+const capacityPubSub: CustomPubSub = {
+  async subscribe (topic, queue) {
+    expect(queue.waitForCapacity({ signal: new AbortController().signal })).type.toBe<Promise<boolean>>()
+    expect(queue).type.toBeAssignableTo<Readable>()
+  },
+  publish (event, callback) { callback() }
+}
+app.register(mercurius, { schema, resolvers, subscription: { pubsub: capacityPubSub } })
 
 // Test that a CustomPubSub implementation does not require an `emitter` property:
 // the `emitter` option is only used to construct the default PubSub and is
