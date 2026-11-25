@@ -3,7 +3,6 @@
 import { expect } from 'tstyche'
 import { EventEmitter } from 'events'
 import Fastify, { FastifyRequest } from 'fastify'
-import { Readable } from 'node:stream'
 import * as mercuriusNamespaceImport from '../..'
 import mercurius, {
   mercurius as mercuriusNamedImport,
@@ -18,6 +17,7 @@ import mercurius, {
   MercuriusLoaders,
   CustomPubSub,
   SubscriptionContext,
+  SubscriptionQueue,
   PubSub
 } from '../..'
 import { DocumentNode, ExecutionResult, GraphQLSchema, ValidationContext, ValidationRule } from 'graphql'
@@ -431,10 +431,12 @@ app.graphql.pubsub.publish({
 
 async () => {
   const subscription = await app.graphql.pubsub.subscribe('topic')
-
-  subscription.on('data', (chunk) => {
-    console.log(chunk)
-  })
+  expect(subscription).type.toBe<SubscriptionQueue<any>>()
+  expect(subscription.length).type.toBe<number>()
+  expect(subscription.highWaterMark).type.toBe<number>()
+  expect(subscription.push('event')).type.toBe<boolean>()
+  expect(subscription.push(null)).type.toBe<boolean>()
+  expect(subscription).type.not.toHaveProperty('on')
 
   for await (const data of subscription) {
     console.log(data.newNotification)
@@ -453,7 +455,7 @@ class CustomPubSubImpl implements CustomPubSub {
   }
 
   // typed based on the PubSub implementation
-  async subscribe (topic: string | string[], queue: Readable & { close: () => void }, ...customArgs: any[]): Promise<void> {
+  async subscribe (topic: string | string[], queue: SubscriptionQueue & { close: () => void }, ...customArgs: any[]): Promise<void> {
     const topicStr = (Array.isArray(topic) ? topic[0] : topic) ?? ''
     const listener = (payload: any) => {
       queue.push(payload)
@@ -742,9 +744,8 @@ app.graphql.pubsub.publish({
 
 app.graphql.pubsub.subscribe('topic')
   .then((sub) => {
-    sub.on('data', (chunk) => {
-      console.log(chunk)
-    })
+    sub.end()
+    sub.destroy(new Error('kaboom'))
   })
 
 // Test that subscription.pubsub option accepts CustomPubSub
@@ -773,9 +774,7 @@ app.register(mercurius, {
         subscribe: async (_root, _args, context) => {
           // context.pubsub should be SubscriptionContext in subscription resolvers
           const sub = await context.pubsub.subscribe('new_dog')
-          sub.on('data', (chunk) => {
-            console.log(chunk)
-          })
+          expect(sub).type.toBe<SubscriptionQueue<any>>()
           return sub
         }
       }
@@ -839,7 +838,7 @@ app.register(mercurius, {
       test: {
         subscribe: async (_root, _args, context) => {
           // In subscription resolvers, context.pubsub should have:
-          // - subscribe(topics): Promise<Readable>
+          // - subscribe(topics): Promise<SubscriptionQueue>
           // - publish(event): Promise<void>
           // - close(): boolean
           const sub = await context.pubsub.subscribe('test')
@@ -852,7 +851,7 @@ app.register(mercurius, {
 })
 
 // Test that app.graphql.pubsub has:
-// - subscribe(topics): Promise<Readable & AsyncIterableIterator>
+// - subscribe(topics): Promise<SubscriptionQueue>
 // - publish(event, callback?): void
 app.graphql.pubsub.publish({
   topic: 'test',
@@ -898,10 +897,11 @@ function testSubscriptionContextType (_ctx: SubscriptionContext) {
   _ctx.queue
   expect(_ctx.queue.waitForCapacity()).type.toBe<Promise<boolean>>()
   expect(_ctx.queue.waitForCapacity({ signal: new AbortController().signal })).type.toBe<Promise<boolean>>()
-  expect(_ctx.queue).type.toBeAssignableTo<Readable>()
+  expect(_ctx.queue).type.toBe<SubscriptionQueue>()
   _ctx.subscribe<number>('test').then(queue => {
     expect(queue.waitForCapacity()).type.toBe<Promise<boolean>>()
-    expect(queue).type.toBeAssignableTo<Readable & AsyncIterableIterator<number>>()
+    expect(queue).type.toBe<SubscriptionQueue<number>>()
+    expect(queue).type.toBeAssignableTo<AsyncIterableIterator<number>>()
   })
   _ctx.closed
   _ctx.subscribe('test')
@@ -923,7 +923,7 @@ class MyCustomPubSub implements CustomPubSub {
     this.emitter = new EventEmitter()
   }
 
-  async subscribe (topic: string | string[], queue: Readable & { close: () => void }): Promise<void> {
+  async subscribe (topic: string | string[], queue: SubscriptionQueue & { close: () => void }): Promise<void> {
     // custom implementation
   }
 
@@ -963,12 +963,11 @@ app.register(mercurius, {
 // app.graphql.pubsub should be the custom pubsub
 app.graphql.pubsub.publish({ topic: 'test', payload: 'test' })
 
-// A contextually typed custom pubsub receives the capacity API, while the
-// existing implementations above can keep accepting an ordinary Readable.
+// A contextually typed custom pubsub receives the capacity API
 const capacityPubSub: CustomPubSub = {
   async subscribe (topic, queue) {
     expect(queue.waitForCapacity({ signal: new AbortController().signal })).type.toBe<Promise<boolean>>()
-    expect(queue).type.toBeAssignableTo<Readable>()
+    expect(queue).type.toBeAssignableTo<SubscriptionQueue>()
   },
   publish (event, callback) { callback() }
 }
@@ -978,7 +977,7 @@ app.register(mercurius, { schema, resolvers, subscription: { pubsub: capacityPub
 // the `emitter` option is only used to construct the default PubSub and is
 // ignored when `pubsub` is provided
 class CustomPubSubNoEmitter implements CustomPubSub {
-  async subscribe (topic: string | string[], queue: Readable & { close: () => void }): Promise<void> {
+  async subscribe (topic: string | string[], queue: SubscriptionQueue & { close: () => void }): Promise<void> {
     // custom implementation
   }
 

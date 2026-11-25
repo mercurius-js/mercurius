@@ -169,22 +169,6 @@ test('message delivered to a destroyed queue is dropped', async t => {
   t.assert.ok('message to destroyed queue did not throw')
 })
 
-test('subscription queue error is logged, not fatal', t => {
-  t.plan(1)
-  const pubsub = new PubSub(mq())
-
-  const fastifyMock = {
-    log: {
-      error () {
-        t.assert.ok('error was logged')
-      }
-    }
-  }
-  const sc = new SubscriptionContext({ pubsub, fastify: fastifyMock })
-
-  sc.queue.emit('error', new Error('Dummy error'))
-})
-
 test('subscription context should not call removeListener more than one time when close called multiple times', async t => {
   const q = mq()
   const removeListener = capture(q, 'removeListener')

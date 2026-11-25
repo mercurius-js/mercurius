@@ -3,7 +3,6 @@
 const { test } = require('node:test')
 const { getEventListeners, once } = require('node:events')
 const { setImmediate: immediate } = require('node:timers/promises')
-const { Readable, Writable } = require('node:stream')
 const mq = require('mqemitter')
 const Fastify = require('fastify')
 const WebSocket = require('ws')
@@ -12,11 +11,9 @@ const SubscriptionQueue = require('../lib/subscription-queue')
 const { PubSub, SubscriptionContext } = require('../lib/subscriber')
 const common = require('./internals/common')
 
-test('capacity waiting is additive to the Readable queue', async t => {
-  const queue = new SubscriptionQueue(2)
-  t.assert.ok(queue instanceof Readable)
-  t.assert.strictEqual(queue.readableObjectMode, true)
-  t.assert.strictEqual(queue.readableHighWaterMark, 2)
+test('capacity is waited for until a read brings the queue below its high water mark', async t => {
+  const queue = new SubscriptionQueue({ highWaterMark: 2 })
+  t.assert.strictEqual(queue.highWaterMark, 2)
   t.assert.strictEqual(await queue.waitForCapacity(), true)
   t.assert.strictEqual(queue.push(1), true)
   t.assert.strictEqual(queue.push(2), false)
@@ -26,64 +23,36 @@ test('capacity waiting is additive to the Readable queue', async t => {
   }))
   await immediate()
   t.assert.strictEqual(ready, false)
-  t.assert.strictEqual(queue.read(), 1)
+  t.assert.deepStrictEqual(await queue.next(), { value: 1, done: false })
   await capacity
   t.assert.strictEqual(ready, true)
-  t.assert.strictEqual(queue.readableLength, 1)
-  t.assert.strictEqual(queue.read(), 2)
-  queue.push(null)
+  t.assert.strictEqual(queue.length, 1)
+  t.assert.deepStrictEqual(await queue.next(), { value: 2, done: false })
+  queue.end()
   t.assert.strictEqual(await queue.waitForCapacity(), false)
 })
 
-test('capacity waiting does not become a data consumer when a readable listener is removed', async t => {
-  const queue = new SubscriptionQueue(2)
-  for (let i = 1; i <= 3; i++) queue.push(i)
-  let ready = false
-  const capacity = queue.waitForCapacity().then(common.mustCall(t, value => { ready = value }))
-  queue.once('readable', common.mustCall(t, () => {
-    t.assert.strictEqual(queue.read(), 1)
-  }))
-  await immediate()
-  t.assert.strictEqual(queue.readableLength, 2, 'unrequested events stay buffered')
-  t.assert.strictEqual(queue.readableFlowing, null)
-  t.assert.strictEqual(ready, false)
-  t.assert.strictEqual(queue.read(), 2)
-  await capacity
-  t.assert.strictEqual(ready, true)
-  t.assert.strictEqual(queue.read(), 3)
-  queue.destroy()
-})
-
-test('the default high water mark and Readable validation are preserved', t => {
-  const queue = new SubscriptionQueue()
-  t.assert.strictEqual(queue.readableHighWaterMark, new Readable({ objectMode: true, read () {} }).readableHighWaterMark)
-  for (const value of [NaN, Infinity, 0.5, -1]) {
-    t.assert.throws(() => new SubscriptionQueue(value), { code: 'ERR_INVALID_ARG_VALUE' })
-  }
-  queue.destroy()
-})
-
 test('all waiters wake below the threshold, not while the queue is still full', async t => {
-  const queue = new SubscriptionQueue(2)
+  const queue = new SubscriptionQueue({ highWaterMark: 2 })
   for (let i = 0; i < 4; i++) queue.push(i)
   const controller = new AbortController()
   let completions = 0
   const waits = [1, 2].map(() => queue.waitForCapacity({ signal: controller.signal }).then(
     common.mustCall(t, value => { t.assert.strictEqual(value, true); completions++ })
   ))
-  queue.read()
-  queue.read()
+  await queue.next()
+  await queue.next()
   await immediate()
-  t.assert.strictEqual(queue.readableLength, 2)
+  t.assert.strictEqual(queue.length, 2)
   t.assert.strictEqual(completions, 0)
-  queue.read()
+  await queue.next()
   await Promise.all(waits)
   t.assert.strictEqual(completions, 2)
   t.assert.strictEqual(getEventListeners(controller.signal, 'abort').length, 0)
   queue.destroy()
 })
 
-for (const end of ['eof', 'destroy', 'error', 'context']) {
+for (const end of ['end', 'push(null)', 'destroy', 'error', 'context']) {
   test(`${end} releases capacity waiters without draining queued events`, async t => {
     const sc = new SubscriptionContext({ pubsub: new PubSub(mq()), queueHighWaterMark: 1 })
     const queue = sc.queue
@@ -92,22 +61,22 @@ for (const end of ['eof', 'destroy', 'error', 'context']) {
     const capacity = queue.waitForCapacity({ signal: controller.signal }).then(
       common.mustCall(t, value => t.assert.strictEqual(value, false))
     )
-    if (end === 'eof') queue.push(null)
+    if (end === 'end') queue.end()
+    else if (end === 'push(null)') queue.push(null)
     else if (end === 'context') sc.close()
     else if (end === 'destroy') queue.destroy()
-    else {
-      queue.once('error', common.mustCall(t, error => t.assert.strictEqual(error.message, 'failure')))
-      queue.destroy(new Error('failure'))
-    }
+    else queue.destroy(new Error('failure'))
     await capacity
     await immediate()
     t.assert.strictEqual(await queue.waitForCapacity(), false)
     t.assert.strictEqual(getEventListeners(controller.signal, 'abort').length, 0)
-    if (end === 'eof' || end === 'context') {
-      // EOF retains its normal Readable behavior: buffered events are not lost.
-      t.assert.strictEqual(queue.read(), 'buffered')
+    if (end === 'error') {
+      await t.assert.rejects(queue.next(), { message: 'failure' })
+    } else if (end !== 'destroy') {
+      // ending the queue does not lose the events it holds
+      t.assert.deepStrictEqual(await queue.next(), { value: 'buffered', done: false })
     }
-    queue.destroy()
+    t.assert.deepStrictEqual(await queue.next(), { value: undefined, done: true })
   })
 }
 
@@ -123,11 +92,12 @@ test('returning the async iterator releases a producer waiting for capacity', as
   )
   await iterator.return()
   await capacity
-  t.assert.strictEqual(queue.destroyed, true)
+  t.assert.strictEqual(queue.length, 0)
+  t.assert.strictEqual(queue.push('third'), false)
 })
 
 test('cancellation rejects only its waiter and removes the abort listener', async t => {
-  const queue = new SubscriptionQueue(1)
+  const queue = new SubscriptionQueue({ highWaterMark: 1 })
   queue.push('event')
   const controller = new AbortController()
   const cancelled = queue.waitForCapacity({ signal: controller.signal })
@@ -139,15 +109,16 @@ test('cancellation rejects only its waiter and removes the abort listener', asyn
   await rejected
   t.assert.strictEqual(getEventListeners(controller.signal, 'abort').length, 0)
   t.assert.strictEqual(otherReady, false)
-  t.assert.strictEqual(queue.destroyed, false)
-  t.assert.strictEqual(queue.read(), 'event')
+  // the queue is still open
+  t.assert.deepStrictEqual(await queue.next(), { value: 'event', done: false })
   await other
   t.assert.strictEqual(otherReady, true)
+  t.assert.strictEqual(await queue.waitForCapacity(), true)
   queue.destroy()
 })
 
 test('another abort observer cannot prevent waiter cancellation', async t => {
-  const queue = new SubscriptionQueue(1)
+  const queue = new SubscriptionQueue({ highWaterMark: 1 })
   queue.push('event')
   const controller = new AbortController()
   controller.signal.addEventListener('abort', event => event.stopImmediatePropagation(), { once: true })
@@ -159,7 +130,7 @@ test('another abort observer cannot prevent waiter cancellation', async t => {
 })
 
 test('an already aborted signal rejects without installing a waiter', async t => {
-  const queue = new SubscriptionQueue(1)
+  const queue = new SubscriptionQueue({ highWaterMark: 1 })
   const controller = new AbortController()
   controller.abort()
   await t.assert.rejects(queue.waitForCapacity({ signal: controller.signal }), controller.signal.reason)
@@ -167,62 +138,25 @@ test('an already aborted signal rejects without installing a waiter', async t =>
   queue.destroy()
 })
 
-test('read demand does not report capacity before a synchronous refill', async t => {
-  const queue = new SubscriptionQueue(1)
-  queue.push('first')
-  let refill = true
-  queue._read = () => {
-    if (refill) { refill = false; queue.push('refill') }
-  }
-  let ready = false
-  const capacity = queue.waitForCapacity().then(common.mustCall(t, value => { ready = value }))
-  t.assert.strictEqual(queue.read(), 'first')
-  await immediate()
-  t.assert.strictEqual(queue.readableLength, 1)
-  t.assert.strictEqual(ready, false)
-  t.assert.strictEqual(queue.read(), 'refill')
-  await capacity
-  t.assert.strictEqual(ready, true)
-  queue.destroy()
-})
-
 test('a custom producer can wait for capacity without losing or duplicating events', async t => {
-  const queue = new SubscriptionQueue(2)
+  const queue = new SubscriptionQueue({ highWaterMark: 2 })
   let produced = 0
   const producer = (async () => {
     for (let i = 0; i < 100; i++) {
       produced++
       if (!queue.push(i) && !await queue.waitForCapacity()) return
     }
-    queue.push(null)
+    queue.end()
   })().then(common.mustCall(t, () => {}))
   await immediate()
   t.assert.strictEqual(produced, 2)
   const values = []
   for await (const value of queue) {
     values.push(value)
-    t.assert.ok(queue.readableLength <= 2)
+    t.assert.ok(queue.length <= 2)
   }
   await producer
   t.assert.deepStrictEqual(values, Array.from({ length: 100 }, (_, i) => i))
-})
-
-test('pipe and flowing data consumption still release capacity', async t => {
-  const queue = new SubscriptionQueue(1)
-  queue.push('value')
-  const capacity = queue.waitForCapacity().then(common.mustCall(t, value => t.assert.strictEqual(value, true)))
-  const sink = new Writable({
-    objectMode: true,
-    write: common.mustCall(t, (value, encoding, callback) => {
-      t.assert.strictEqual(value, 'value')
-      callback()
-    })
-  })
-  const finished = once(sink, 'finish')
-  queue.pipe(sink)
-  await capacity
-  queue.push(null)
-  await finished
 })
 
 function deferred () {
@@ -274,7 +208,7 @@ for (const protocol of ['graphql-ws', 'graphql-transport-ws']) {
                 produced++
                 if (!queue.push({ tick: i }) && !await queue.waitForCapacity()) return
               }
-              queue.push(null)
+              queue.end()
             })().then(common.mustCall(t, () => {}))
           },
           publish () { t.assert.fail('not used by this source') }
@@ -305,7 +239,7 @@ for (const protocol of ['graphql-ws', 'graphql-transport-ws']) {
     }))
     await resolving.promise
     await immediate()
-    t.assert.strictEqual(queue.readableLength, 2)
+    t.assert.strictEqual(queue.length, 2)
     t.assert.strictEqual(produced, 3, 'two queued events and one already resolving')
     release.resolve()
     await completed.promise
@@ -324,7 +258,7 @@ test('the built-in PubSub retains nonblocking publish and unlimited buffering', 
       t.assert.strictEqual(result, undefined)
     })
   }
-  t.assert.strictEqual(sc.queue.readableLength, 3)
+  t.assert.strictEqual(sc.queue.length, 3)
   t.assert.strictEqual(pubsub.publish({ topic: 'topic', payload: 3 }), undefined)
   sc.close()
 })
