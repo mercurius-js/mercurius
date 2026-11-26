@@ -67,6 +67,37 @@ test('CSRF enabled - simple GET request should be blocked', async (t) => {
   t.assert.equal(body.data, null)
 })
 
+test('CSRF checks run after the additionalRouteOptions.onRequest hooks', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+  const calls = []
+
+  app.register(GQL, {
+    ...createTestSchema(),
+    csrfPrevention: true,
+    additionalRouteOptions: {
+      onRequest: [
+        (request, reply, done) => {
+          calls.push('callback')
+          done()
+        },
+        async () => {
+          calls.push('async')
+        }
+      ]
+    }
+  })
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/graphql?query={hello}'
+  })
+
+  t.assert.deepEqual(calls, ['callback', 'async'])
+  t.assert.equal(res.statusCode, 400)
+  t.assert.equal(res.json().errors[0].message, CSRF_ERROR_MESSAGE)
+})
+
 test('CSRF enabled - POST with application/json should work', async (t) => {
   const app = Fastify()
   const { schema, resolvers } = createTestSchema()

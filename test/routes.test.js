@@ -2390,6 +2390,38 @@ test('GET graphql endpoint with valid additionalRouteProp constraint', async (t)
   t.assert.equal(res.statusCode, 200)
 })
 
+test('GraphQL HTTP routes honor additionalRouteOptions.onRequest', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+  const hello = t.mock.fn(() => 'world')
+
+  app.register(GQL, {
+    schema: 'type Query { hello: String }',
+    resolvers: { Query: { hello } },
+    additionalRouteOptions: {
+      async onRequest (request, reply) {
+        return reply.code(204).send()
+      }
+    }
+  })
+
+  const query = '{ hello }'
+  const methods = ['GET', 'POST']
+  if (app.supportedMethods?.includes('QUERY')) {
+    methods.push('QUERY')
+  }
+
+  for (const method of methods) {
+    const res = await app.inject({
+      method,
+      url: '/graphql',
+      ...(method === 'GET' ? { query: { query } } : { payload: { query } })
+    })
+    t.assert.equal(res.statusCode, 204, method)
+  }
+  t.assert.equal(hello.mock.callCount(), 0)
+})
+
 test('GET graphql endpoint, additionalRouteOptions should ignore custom handler', async (t) => {
   const app = Fastify()
   const schema = `
