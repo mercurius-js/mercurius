@@ -145,3 +145,18 @@ for (const queueHighWaterMark of ['invalid', -1, 0, 0.5, NaN, Infinity]) {
     })
   })
 }
+
+test('invalid queueOverflow', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      queueOverflow: 'block'
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: "Invalid options: queueOverflow must be one of 'buffer', 'wait', 'drop', 'close'"
+  })
+})

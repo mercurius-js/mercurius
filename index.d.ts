@@ -31,6 +31,18 @@ declare namespace mercurius {
     subscribe<TTopic extends Extract<keyof TPubSubTopics, string>>(
       topics: TTopic | TTopic[],
     ): Promise<SubscriptionQueue<TPubSubTopics[TTopic]>>;
+    /**
+     * Resolves once the event is delivered to the subscriptions. With
+     * `queueOverflow: 'wait'`, that waits for the queues that are full to have
+     * room again. Never rejects: an error of the emitter is ignored.
+     * Pass a callback to get it.
+     */
+    publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
+      event: {
+        topic: TTopic;
+        payload: TPubSubTopics[TTopic];
+      },
+    ): Promise<void>;
     publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
       event: {
         topic: TTopic;
@@ -47,12 +59,16 @@ declare namespace mercurius {
   export interface SubscriptionQueue<T = any> extends AsyncIterableIterator<T> {
     /** The number of events at which `push()` returns false: `queueHighWaterMark`. */
     readonly highWaterMark: number;
+    /** What happens to an event pushed to a full queue: `queueOverflow`. */
+    readonly overflow: 'buffer' | 'wait' | 'drop' | 'close';
     /** The number of events not read yet. */
     readonly length: number;
     /**
      * Adds an event without waiting. Returns false once the queue holds
-     * `highWaterMark` events: the event is kept, and a producer that applies
-     * backpressure waits for `waitForCapacity()` before pushing again.
+     * `highWaterMark` events: a producer that applies backpressure waits for
+     * `waitForCapacity()` before pushing again. An event pushed to a full queue
+     * is kept with `overflow` `'buffer'` and `'wait'`, discarded with `'drop'`,
+     * and ends the queue with an error with `'close'`.
      * Returns false and drops the event once the queue has closed.
      * `push(null)` ends the queue, like `end()`.
      */
@@ -649,6 +665,17 @@ declare namespace mercurius {
         fullWsTransport?: boolean,
         wsDefaultSubprotocol?: string,
         queueHighWaterMark?: number,
+        /**
+         * What happens to an event published to a subscription whose queue holds
+         * `queueHighWaterMark` events:
+         * - `'buffer'` (default): it is added anyway, the queue has no limit;
+         * - `'wait'`: it is added, and the emitter is called back only once the
+         *   queue has room again, so publishers that wait for `publish()` wait
+         *   for the slowest subscriber;
+         * - `'drop'`: it is discarded;
+         * - `'close'`: the subscription ends with an error.
+         */
+        queueOverflow?: 'buffer' | 'wait' | 'drop' | 'close',
       };
     /**
      * Persisted queries, overrides persistedQueryProvider.

@@ -315,15 +315,22 @@ To create a custom PubSub implementation, you need to implement a class with at 
   - `callback`: Function to be called when the publish operation completes
   - Expected behavior: Emit the payload to subscribers of the topic
 
+The built-in pubsub also accepts `publish(event)` without a callback: it returns
+a promise that resolves once the event is delivered, and never rejects. With
+`queueOverflow: 'wait'`, that is once the queues that were full have room again.
+
 #### The subscription queue
 
 The queue is not a stream: the pubsub pushes events to it, and the subscription
 reads them as an async iterator.
 
 - `queue.push(event)` adds an event without waiting. It returns `false` once the
-  queue holds `queueHighWaterMark` events (`queue.highWaterMark`), and the event
-  is still accepted. Once the queue has ended or been destroyed, it returns
-  `false` and drops the event.
+  queue holds `queueHighWaterMark` events (`queue.highWaterMark`). An event pushed
+  to a full queue is handled as `queue.overflow` (the
+  [`queueOverflow`](api/options.md#plugin-options) option) says: it is kept with
+  `'buffer'` and `'wait'`, it is discarded with `'drop'`, and the subscription
+  ends with an error with `'close'`. Once the queue has ended or been destroyed,
+  `push()` returns `false` and drops the event.
 - `queue.end()`, or `queue.push(null)`, ends the queue: the subscription reads
   the events left, then completes.
 - `queue.destroy(error)` ends the subscription now and drops its events. With an
@@ -333,8 +340,8 @@ reads them as an async iterator.
 #### Waiting for queue capacity
 
 Custom pubsubs can opt into backpressure using `queue.waitForCapacity({ signal })`
-after `queue.push(event)` returns `false`. On an open queue, that event was
-accepted: do not retry it.
+after `queue.push(event)` returns `false`. `push()` has already handled that
+event, as `queue.overflow` says: do not retry it.
 
 `waitForCapacity()` returns a promise that resolves:
 
@@ -365,13 +372,16 @@ completion inside `subscribe()`. Subscription setup must finish before GraphQL
 can read the queue. Use the subscription's unsubscribe cleanup to stop the
 source and abort pending work.
 
-The built-in pubsub still calls back publishers without waiting for queue
-capacity. Neither `publish()` nor its return value changes, and pushes past the
-high water mark still buffer events. A custom pubsub must honor the pressure
-signal to limit buffering. Waiting in a shared dispatcher can block healthy
-subscribers behind a slow one; per-subscription replay or another application
-policy may be more appropriate. This API does not bound serialized WebSocket
-bytes or work already executing in a resolver.
+By default (`queueOverflow: 'buffer'`), the built-in pubsub calls back
+publishers without waiting for queue capacity, and pushes past the high water
+mark still buffer events. With `queueOverflow: 'wait'`, it calls back the
+emitter only once `waitForCapacity()` resolves; a custom pubsub that wants
+`'wait'` to make publishers wait must do the same when `queue.overflow` is
+`'wait'`. With `'drop'` and `'close'`, the queue itself stays bounded. Waiting
+in a shared dispatcher can block healthy subscribers behind a slow one;
+per-subscription replay or another application policy may be more appropriate.
+This API does not bound serialized WebSocket bytes or work already executing in
+a resolver.
 
 #### Custom Arguments in subscribe method
 
