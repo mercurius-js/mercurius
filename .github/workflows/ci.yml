@@ -1,5 +1,11 @@
 name: CI workflow
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: [master]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: test (node ${{ matrix.node-version }}, ${{ matrix.os }}, graphql ${{ matrix.graphql-version }})
