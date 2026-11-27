@@ -778,7 +778,8 @@ test('supports GraphQL 17 scalar methods with JIT', async (t) => {
     },
     Tagged: {
       coerceOutputValue: (value) => `coerceOutputValue(${value})`,
-      coerceInputValue: (value) => `coerceInputValue(${value})`
+      coerceInputValue: (value) => `coerceInputValue(${value})`,
+      coerceInputLiteral: (node) => `coerceInputLiteral(${node.value})`
     }
   }
 
@@ -792,15 +793,27 @@ test('supports GraphQL 17 scalar methods with JIT', async (t) => {
   await app.ready()
 
   // GraphQL 16 does not know the GraphQL 17 coercion methods
-  const echo = versionInfo.major >= 17 ? 'coerceOutputValue(coerceInputValue(a))' : 'a'
+  const cases = [
+    {
+      query: 'query ($value: Tagged) { echo(value: $value) }',
+      variables: { value: 'a' },
+      echo: versionInfo.major >= 17 ? 'coerceOutputValue(coerceInputValue(a))' : 'a'
+    },
+    {
+      query: '{ echo(value: "a") }',
+      echo: versionInfo.major >= 17 ? 'coerceOutputValue(coerceInputLiteral(a))' : 'a'
+    }
+  ]
 
-  // the second request compiles the query with graphql-jit
-  for (let i = 0; i < 3; i++) {
-    t.assert.deepEqual(await app.graphql('query ($value: Tagged) { echo(value: $value) }', {}, { value: 'a' }), {
-      data: {
-        echo
-      }
-    })
+  for (const { query, variables, echo } of cases) {
+    // the second request compiles the query with graphql-jit
+    for (let i = 0; i < 3; i++) {
+      t.assert.deepEqual(await app.graphql(query, {}, variables), {
+        data: {
+          echo
+        }
+      })
+    }
   }
 })
 
