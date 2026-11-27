@@ -18,7 +18,6 @@ import {
 } from 'graphql'
 import type { WebSocket } from 'ws'
 import { IncomingMessage, OutgoingHttpHeaders } from 'http'
-import { Readable } from 'node:stream'
 import { EventEmitter } from 'events'
 
 type Mercurius = typeof mercurius
@@ -31,7 +30,7 @@ declare namespace mercurius {
   export interface PubSub<TPubSubTopics extends PubSubTopics = PubSubTopics> {
     subscribe<TTopic extends Extract<keyof TPubSubTopics, string>>(
       topics: TTopic | TTopic[],
-    ): Promise<Readable & AsyncIterableIterator<TPubSubTopics[TTopic]>>;
+    ): Promise<SubscriptionQueue<TPubSubTopics[TTopic]>>;
     publish<TTopic extends Extract<keyof TPubSubTopics, string>>(
       event: {
         topic: TTopic;
@@ -41,14 +40,33 @@ declare namespace mercurius {
     ): void;
   }
 
-  /** The Readable event queue supplied by Mercurius to a subscription. */
-  export interface SubscriptionQueue extends Readable {
+  /**
+   * The events of one subscription, waiting to be sent to its client: the
+   * pubsub pushes them, and the subscription reads them as an async iterator.
+   */
+  export interface SubscriptionQueue<T = any> extends AsyncIterableIterator<T> {
+    /** The number of events at which `push()` returns false: `queueHighWaterMark`. */
+    readonly highWaterMark: number;
+    /** The number of events not read yet. */
+    readonly length: number;
     /**
-     * Resolves true once readableLength is below readableHighWaterMark, or false
-     * if the queue ends or is destroyed. Readiness is not a reservation.
+     * Adds an event without waiting. Returns false once the queue holds
+     * `highWaterMark` events: the event is kept, and a producer that applies
+     * backpressure waits for `waitForCapacity()` before pushing again.
+     * Returns false and drops the event once the queue has closed.
+     * `push(null)` ends the queue, like `end()`.
+     */
+    push(event: T | null): boolean;
+    /**
+     * Resolves true once the queue holds fewer than `highWaterMark` events, or
+     * false once it has ended or been destroyed. Readiness is not a reservation.
      * Aborting rejects with signal.reason and removes this waiter only.
      */
     waitForCapacity(options?: { signal?: AbortSignal }): Promise<boolean>;
+    /** No event is pushed anymore: the subscription reads the ones left, then is done. */
+    end(): void;
+    /** Ends the subscription now, dropping its events. With an error, its next read rejects with it. */
+    destroy(error?: Error): void;
   }
 
   export interface CustomPubSub {
@@ -74,7 +92,7 @@ declare namespace mercurius {
      */
     fastify: FastifyInstance;
     /**
-     * Readable stream for subscription data
+     * The events of the subscription, waiting to be sent to its client
      */
     queue: SubscriptionQueue;
     /**
@@ -85,9 +103,9 @@ declare namespace mercurius {
      * Subscribe to a topic or topics
      * @param topics - A single topic or array of topics to subscribe to
      * @param customArgs - Additional arguments passed to custom pubsub implementations
-     * @returns A readable stream that emits subscription data
+     * @returns The queue of the subscription, an async iterator of its events
      */
-    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<SubscriptionQueue & AsyncIterableIterator<T>>;
+    subscribe<T = any>(topics: string | string[], ...customArgs: any[]): Promise<SubscriptionQueue<T>>;
     /**
      * Publish an event to the pubsub
      * @param event - The event to publish with topic and payload

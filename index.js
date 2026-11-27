@@ -317,10 +317,8 @@ const mercurius = fp(async function (app, opts) {
       throw new MER_ERR_INVALID_OPTS('wsDefaultSubprotocol must be either graphql-ws or graphql-transport-ws')
     }
   }
-  if (queueHighWaterMark) {
-    if (typeof queueHighWaterMark !== 'number' || queueHighWaterMark <= 0) {
-      throw new MER_ERR_INVALID_OPTS('queueHighWaterMark must be a positive number')
-    }
+  if (queueHighWaterMark != null && !(Number.isInteger(queueHighWaterMark) && queueHighWaterMark > 0)) {
+    throw new MER_ERR_INVALID_OPTS('queueHighWaterMark must be a positive integer')
   }
 
   fastifyGraphQl.schema = defer ? addDeferDirective(schema) : schema

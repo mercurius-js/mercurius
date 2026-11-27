@@ -129,32 +129,19 @@ test('invalid wsDefaultSubprotocol', async t => {
   })
 })
 
-test('invalid queueHighWaterMark', async t => {
-  const app = Fastify()
-  t.after(() => app.close())
+for (const queueHighWaterMark of ['invalid', -1, 0, 0.5, NaN, Infinity]) {
+  test(`invalid queueHighWaterMark ${queueHighWaterMark}`, async t => {
+    const app = Fastify()
+    t.after(() => app.close())
 
-  app.register(mercurius, {
-    subscription: {
-      queueHighWaterMark: 'invalid'
-    }
+    app.register(mercurius, {
+      subscription: {
+        queueHighWaterMark
+      }
+    })
+
+    await t.assert.rejects(app.ready(), {
+      message: 'Invalid options: queueHighWaterMark must be a positive integer'
+    })
   })
-
-  await t.assert.rejects(app.ready(), {
-    message: 'Invalid options: queueHighWaterMark must be a positive number'
-  })
-})
-
-test('invalid queueHighWaterMark', async t => {
-  const app = Fastify()
-  t.after(() => app.close())
-
-  app.register(mercurius, {
-    subscription: {
-      queueHighWaterMark: -1
-    }
-  })
-
-  await t.assert.rejects(app.ready(), {
-    message: 'Invalid options: queueHighWaterMark must be a positive number'
-  })
-})
+}

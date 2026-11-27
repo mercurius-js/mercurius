@@ -306,7 +306,7 @@ To create a custom PubSub implementation, you need to implement a class with at 
 
 - **subscribe(topic, queue, ...customArgs)**: 
   - `topic`: String identifier for the subscription topic
-  - `queue`: A Readable stream where subscription data will be pushed
+  - `queue`: The queue of the subscription: push its events with `queue.push(event)`, see [The subscription queue](#the-subscription-queue)
   - `...customArgs`: Optional additional parameters that can be passed from the subscription resolver
   - Returns: A Promise that resolves when the subscription is set up
 
@@ -315,17 +315,32 @@ To create a custom PubSub implementation, you need to implement a class with at 
   - `callback`: Function to be called when the publish operation completes
   - Expected behavior: Emit the payload to subscribers of the topic
 
+#### The subscription queue
+
+The queue is not a stream: the pubsub pushes events to it, and the subscription
+reads them as an async iterator.
+
+- `queue.push(event)` adds an event without waiting. It returns `false` once the
+  queue holds `queueHighWaterMark` events (`queue.highWaterMark`), and the event
+  is still accepted. Once the queue has ended or been destroyed, it returns
+  `false` and drops the event.
+- `queue.end()`, or `queue.push(null)`, ends the queue: the subscription reads
+  the events left, then completes.
+- `queue.destroy(error)` ends the subscription now and drops its events. With an
+  error, the subscription fails with it.
+- `queue.length` is the number of events not read yet.
+
 #### Waiting for queue capacity
 
-The queue is a `Readable` from `node:stream`. Custom pubsubs can opt into backpressure
-using `queue.waitForCapacity({ signal })` after `queue.push(event)` returns `false`.
-On an open queue, that event was accepted: do not retry it.
+Custom pubsubs can opt into backpressure using `queue.waitForCapacity({ signal })`
+after `queue.push(event)` returns `false`. On an open queue, that event was
+accepted: do not retry it.
 
 `waitForCapacity()` returns a promise that resolves:
 
-- `true` when `readableLength` is below `readableHighWaterMark`;
-- `false` when the queue has received `push(null)` or has been destroyed, even
-  if buffered events have not been read yet.
+- `true` when `queue.length` is below `queue.highWaterMark`;
+- `false` when the queue has ended or has been destroyed, even if buffered
+  events have not been read yet.
 
 The optional `AbortSignal` cancels only that wait. The promise rejects with
 `signal.reason`, and its waiter is removed without closing the queue. An already
@@ -338,7 +353,8 @@ For example, an independent producer loop for one subscription can use:
 ```js
 async function deliver (source, queue, signal) {
   for await (const event of source) {
-    if (signal.aborted || queue.destroyed) return
+    if (signal.aborted) return
+    // once the queue has closed, both return false
     if (!queue.push(event) && !await queue.waitForCapacity({ signal })) return
   }
 }

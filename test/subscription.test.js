@@ -758,7 +758,7 @@ test('subscription queue has highWaterMark when queueHighWaterMark is provided',
   }))
 
   const [queue] = await once(emitter, 'onsubscription')
-  t.assert.strictEqual(queue._readableState.highWaterMark, 2)
+  t.assert.strictEqual(queue.highWaterMark, 2)
 })
 
 test('subscription server sends update to subscriptions with custom context', (t, done) => {
