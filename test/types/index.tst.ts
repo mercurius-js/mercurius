@@ -388,6 +388,14 @@ app.register(mercurius, {
 app.register(mercurius, {
   schema,
   resolvers,
+  subscription: {
+    maxOperationsPerConnection: 50
+  }
+})
+
+app.register(mercurius, {
+  schema,
+  resolvers,
   schemaTransforms: []
 })
 

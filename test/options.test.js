@@ -158,3 +158,48 @@ test('invalid queueHighWaterMark', async t => {
     message: 'Invalid options: queueHighWaterMark must be a positive number'
   })
 })
+
+test('invalid maxOperationsPerConnection', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      maxOperationsPerConnection: 'invalid'
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: maxOperationsPerConnection must be a positive integer or null'
+  })
+})
+
+test('invalid maxOperationsPerConnection', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      maxOperationsPerConnection: 0
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: maxOperationsPerConnection must be a positive integer or null'
+  })
+})
+
+test('invalid maxOperationsPerConnection', async t => {
+  const app = Fastify()
+  t.after(() => app.close())
+
+  app.register(mercurius, {
+    subscription: {
+      maxOperationsPerConnection: -1
+    }
+  })
+
+  await t.assert.rejects(app.ready(), {
+    message: 'Invalid options: maxOperationsPerConnection must be a positive integer or null'
+  })
+})
