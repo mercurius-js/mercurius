@@ -125,12 +125,13 @@ test('subscription - hooks basic', async t => {
   {
     let resolve, reject
     hooksCalls.push(new Promise((_resolve, _reject) => { resolve = _resolve; reject = _reject }))
-    app.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id) => {
+    app.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id, variables) => {
       try {
         assert.ok(schema instanceof GraphQLSchema)
         assert.deepEqual(document, parse(query))
         assert.equal(typeof context, 'object')
         assert.equal(id, 'the-subscription-id')
+        assert.equal(variables, undefined)
         assert.ok('preSubscriptionExecution called')
         resolve()
       } catch (error) {
@@ -306,6 +307,49 @@ test('subscription - should handle preSubscriptionExecution hook errors', async 
       payload: [{ message: 'a preSubscriptionExecution error occurred' }]
     })
   }
+})
+
+test('subscription - preSubscriptionExecution hook receives the subscription variables', async t => {
+  t.plan(2)
+  const app = await createTestServer(t)
+
+  const queryWithVariables = `subscription ($withMessage: Boolean!) {
+    notificationAdded {
+      id
+      message @include(if: $withMessage)
+    }
+  }`
+
+  let resolve
+  const hookVariables = new Promise(_resolve => { resolve = _resolve })
+  app.graphql.addHook('preSubscriptionExecution', async (schema, document, context, id, variables) => {
+    resolve(variables)
+  })
+
+  await app.listen({ port: 0 })
+
+  const { client } = createWebSocketClient(t, app)
+
+  client.write(JSON.stringify({
+    type: 'connection_init'
+  }))
+
+  {
+    const [chunk] = await once(client, 'data')
+    const data = JSON.parse(chunk)
+    t.assert.equal(data.type, 'connection_ack')
+  }
+
+  client.write(JSON.stringify({
+    id: 1,
+    type: 'start',
+    payload: {
+      query: queryWithVariables,
+      variables: { withMessage: true }
+    }
+  }))
+
+  t.assert.deepEqual(await hookVariables, { withMessage: true })
 })
 
 // -----------------------

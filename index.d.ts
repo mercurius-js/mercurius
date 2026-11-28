@@ -226,6 +226,7 @@ declare namespace mercurius {
       source: DocumentNode,
       context: TContext,
       id: string | number,
+      variables: Record<string, any> | undefined,
     ): Promise<void> | void;
   }
 
